@@ -682,6 +682,12 @@ contains
 
         allocate(wt_v(Atm(child_grid_num)%bd%isd:Atm(child_grid_num)%bd%ied+1, Atm(child_grid_num)%bd%jsd:Atm(child_grid_num)%bd%jed, 4))
         wt_v = real_snan
+
+	! Fill in the local weights with the ones from Atm just to be safe
+        call fill_weight_grid(wt_h, Atm(n)%neststruct%wt_h)
+        call fill_weight_grid(wt_u, Atm(n)%neststruct%wt_u)
+        call fill_weight_grid(wt_v, Atm(n)%neststruct%wt_v)
+
       else
         allocate(wt_h(1,1,4))
         wt_h = 0.0

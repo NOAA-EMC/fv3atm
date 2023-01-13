@@ -620,9 +620,9 @@ contains
 
 
       ! These are saved between timesteps in fv_moving_nest_main.F90
-      allocate(p_grid(Atm(1)%npx, Atm(1)%npy,2))
-      allocate(p_grid_u(Atm(1)%npx, Atm(1)%npy+1,2))
-      allocate(p_grid_v(Atm(1)%npx+1, Atm(1)%npy,2))
+      allocate(p_grid(parent_geo%nx, parent_geo%ny,2))
+      allocate(p_grid_u(parent_geo%nx, parent_geo%ny+1,2))
+      allocate(p_grid_v(parent_geo%nx+1, parent_geo%ny,2))
 
       p_grid = 0.0
       p_grid_u = 0.0
@@ -2421,88 +2421,113 @@ contains
       do j = 1, ubound(p_grid,2)
         do i = 1, ubound(p_grid,1)
           ! centered grid version
-          p_grid(i, j, 1) = parent_geo%lons(2*i-1, 2*j-1)
-          p_grid(i, j, 2) = parent_geo%lats(2*i-1, 2*j-1)
+          p_grid(i, j, :) = 0.0
+          
+          if (2*i .gt. ubound(parent_geo%lons,1)) then
+            print '("[ERROR] WDR PG_CLONi npe=",I0," 2*i=",I0," ubound=",I0)', mpp_pe(), 2*i, ubound(parent_geo%lons,1)
+          elseif (2*j .gt. ubound(parent_geo%lons,2)) then
+            print '("[ERROR] WDR PG_CLONj npe=",I0," 2*j=",I0," ubound=",I0)', mpp_pe(), 2*j, ubound(parent_geo%lons,2)
+          else
+            p_grid(i, j, 1) = parent_geo%lons(2*i, 2*j)
+            p_grid(i, j, 2) = parent_geo%lats(2*i, 2*j)
+          endif
         enddo
       enddo
+      
 
+    do i = 1, ubound(p_grid,1)
+      do j = 1, ubound(p_grid,2)
 
-!    do i = 1, ubound(p_grid,1)
-!      do j = 1, ubound(p_grid,2)
-!
-!        if (p_grid(i,j,1) .eq. 0.0) then
-!          num_zeros = num_zeros + 1
-!          if (p_grid(i,j,2) .eq. 0.0) then
-!            full_zeros = full_zeros + 1
-!            print '("[INFO] WDR set p_grid FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
-!          endif
-!        endif
-!        if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
-!      enddo
-!    enddo
+        if (p_grid(i,j,1) .eq. 0.0) then
+          num_zeros = num_zeros + 1
+          if (p_grid(i,j,2) .eq. 0.0) then
+            full_zeros = full_zeros + 1
+            print '("[INFO] WDR set p_grid FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
+          endif
+        endif
+        if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
+      enddo
+    enddo
     
-    !print '("[INFO] WDR set p_grid npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
+    if (num_zeros .gt. 0) print '("[INFO] WDR set p_grid npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
 
 
       ! u(npx, npy+1)
     elseif (position == NORTH) then  ! u wind on D-stagger
       do j = 1, ubound(p_grid,2)
         do i = 1, ubound(p_grid,1)
-          ! centered grid version
-          p_grid(i, j, 1) = parent_geo%lons(2*i, 2*j-1)
+          ! u grid version
+          p_grid(i, j, :) = 0.0
+          if (2*i .gt. ubound(parent_geo%lons,1)) then
+            print '("[ERROR] WDR PG_ULONi npe=",I0," 2*i=",I0," ubound=",I0)', mpp_pe(), 2*i, ubound(parent_geo%lons,1)
+          elseif (2*j-1 .gt. ubound(parent_geo%lons,2)) then
+            print '("[ERROR] WDR PG_ULONj npe=",I0," 2*j-1=",I0," ubound=",I0)', mpp_pe(), 2*j-1, ubound(parent_geo%lons,2)
+          else
+            
+            ! This seems correct
+            p_grid(i, j, 1) = parent_geo%lons(2*i, 2*j-1)
           p_grid(i, j, 2) = parent_geo%lats(2*i, 2*j-1)
-        enddo
+        endif
       enddo
+    enddo
+    
+    
+    do i = 1, ubound(p_grid,1)
+      do j = 1, ubound(p_grid,2)
 
+        if (p_grid(i,j,1) .eq. 0.0) then
+          num_zeros = num_zeros + 1
+          if (p_grid(i,j,2) .eq. 0.0) then
+            full_zeros = full_zeros + 1
+            print '("[INFO] WDR set p_grid_u FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
+          endif
+        endif
+        if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
+      enddo
+    enddo
 
-!    do i = 1, ubound(p_grid,1)
-!      do j = 1, ubound(p_grid,2)
-!
-!        if (p_grid(i,j,1) .eq. 0.0) then
-!          num_zeros = num_zeros + 1
-!          if (p_grid(i,j,2) .eq. 0.0) then
-!            full_zeros = full_zeros + 1
-!            print '("[INFO] WDR set p_grid_u FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
-!          endif
-!        endif
-!        if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
-!      enddo
-!    enddo
-
-    !print '("[INFO] WDR set p_grid_u npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
+    if (num_zeros .gt. 0) print '("[INFO] WDR set p_grid_u npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
 
 
       ! v(npx+1, npy)
     elseif (position == EAST) then  ! v wind on D-stagger
       do j = 1, ubound(p_grid,2)
         do i = 1, ubound(p_grid,1)
-          ! centered grid version
-          p_grid(i, j, 1) = parent_geo%lons(2*i-1, 2*j)
-          p_grid(i, j, 2) = parent_geo%lats(2*i-1, 2*j)
+          ! v grid version
+          p_grid(i, j, :) = 0.0
+          if (2*i-1 .gt. ubound(parent_geo%lons,1)) then
+            print '("[ERROR] WDR PG_VLONi npe=",I0," 2*i-1=",I0," ubound=",I0)', mpp_pe(), 2*i-1, ubound(parent_geo%lons,1)
+          elseif (2*j .gt. ubound(parent_geo%lons,2)) then
+            print '("[ERROR] WDR PG_VLONj npe=",I0," 2*j=",I0," ubound=",I0)', mpp_pe(), 2*j, ubound(parent_geo%lons,2)
+          else	
+            ! This seems correct
+            p_grid(i, j, 1) = parent_geo%lons(2*i-1, 2*j)
+            p_grid(i, j, 2) = parent_geo%lats(2*i-1, 2*j)
+          endif
         enddo
       enddo
+      
 
-
-!    do i = 1, ubound(p_grid,1)
-!      do j = 1, ubound(p_grid,2)
-!
-!        if (p_grid(i,j,1) .eq. 0.0) then
-!          num_zeros = num_zeros + 1
-!          if (p_grid(i,j,2) .eq. 0.0) then
-!            full_zeros = full_zeros + 1
-!            print '("[INFO] WDR set p_grid_v FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
-!          endif
-!        endif
-!        if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
-!      enddo
-!    enddo
-
-    !print '("[INFO] WDR set p_grid_v npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
-
-
-
+      do i = 1, ubound(p_grid,1)
+        do j = 1, ubound(p_grid,2)
+          
+          if (p_grid(i,j,1) .eq. 0.0) then
+            num_zeros = num_zeros + 1
+            if (p_grid(i,j,2) .eq. 0.0) then
+              full_zeros = full_zeros + 1
+              print '("[INFO] WDR set p_grid_v FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
+            endif
+          endif
+          if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
+        enddo
+      enddo
+      
+      if (num_zeros .gt. 0) print '("[INFO] WDR set p_grid_v npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
+      
+      
+      
     endif
-
+    
   end subroutine assign_p_grids
 
 
@@ -2549,11 +2574,12 @@ contains
   end subroutine assign_n_grids
 
 
-  subroutine calc_inside(p_grid, ic, jc, n_grid1, n_grid2, istag, jstag, is_inside)
+  subroutine calc_inside(p_grid, ic, jc, n_grid1, n_grid2, istag, jstag, is_inside, verbose)
     real(kind=R_GRID), allocatable, intent(in)   :: p_grid(:,:,:)
     real(kind=R_GRID), intent(in)                :: n_grid1, n_grid2
     integer, intent(in)                          :: ic, jc, istag, jstag
     logical, intent(out)                         :: is_inside
+    logical, intent(in)                         :: verbose
 
     
     real(kind=R_GRID) :: max1, max2, min1, min2, eps
@@ -2567,15 +2593,16 @@ contains
     is_inside = .False.
     
     eps = 0.00001
+    !eps = 0.000001
 
     if (n_grid1 .le. max1+eps .and. n_grid1 .ge. min1-eps) then
       if (n_grid2 .le. max2+eps .and. n_grid2 .ge. min2-eps) then
         is_inside = .True.
-        !print '("[INFO] WDR is_inside TRUE npe=",I0," ic=",I0," jc=",I0," n_grid1=",F12.8," min1=",F12.8," max1=",F12.8," n_grid2=",F12.8," min2=",F12.8," max2=", F12.8," p_grid(",I0,",",I0,",2) istag=",I0," jstag=",I0)', mpp_pe(), ic, jc, n_grid1, min1, max1, n_grid2, min2, max2, ubound(p_grid,1), ubound(p_grid,2), istag, jstag
+        !if (verbose) print '("[INFO] WDR is_inside TRUE npe=",I0," ic=",I0," jc=",I0," n_grid1=",F12.8," min1=",F12.8," max1=",F12.8," n_grid2=",F12.8," min2=",F12.8," max2=", F12.8," p_grid(",I0,",",I0,",2) istag=",I0," jstag=",I0)', mpp_pe(), ic, jc, n_grid1, min1, max1, n_grid2, min2, max2, ubound(p_grid,1), ubound(p_grid,2), istag, jstag
       endif
     endif
 
-    if (.not. is_inside) then
+    if (verbose .and. .not. is_inside) then
       print '("[INFO] WDR is_inside FALSE npe=",I0," ic=",I0," jc=",I0," n_grid1=",F12.8," min1=",F12.8," max1=",F12.8," n_grid2=",F12.8," min2=",F12.8," max2=", F10.4," p_grid(",I0,",",I0,",2) istag=",I0," jstag=",I0)', mpp_pe(), ic, jc, n_grid1, min1, max1, n_grid2, min2, max2, ubound(p_grid,1), ubound(p_grid,2), istag, jstag
     endif
 
@@ -2593,16 +2620,18 @@ contains
     integer, intent(in)                          :: istart_coarse, jstart_coarse, x_refine, y_refine  !< Offsets and nest refinements
     integer, intent(in)                          :: istag, jstag                                      !< Staggers
 
-    integer       :: i,j, ic, jc
+    integer       :: i, j, k, ic, jc
     real          :: dist1, dist2, dist3, dist4, sum
     logical       :: verbose = .false.
     !logical       :: verbose = .true.
-    logical       :: is_inside
+    logical       :: is_inside, adjusted
     integer       :: this_pe
 
     real(kind=R_GRID)  :: pi = 4 * atan(1.0d0)
     real               :: pi180
     real               :: rad2deg, deg2rad
+    real               :: old_weight(4), diff_weight(4)
+    integer            :: del_ic, del_jc, di, dj
 
     pi180 = pi / 180.0
     deg2rad = pi / 180.0
@@ -2622,12 +2651,37 @@ contains
       do j = bbox_fine%js, bbox_fine%je
         ! F90 integer division truncates
         !jc = jstart_coarse  + (j + y_refine/2 + 1) / y_refine
-        jc = jstart_coarse  + floor( real(j - jstag - 1) / real(y_refine) )
+
+	! Subtracting 1 from the nest index makes the higher edge go to the next parent cell
+	! Subtracting 2 from the nest index makes the higher edge stay with the lower parent cell
+	!   But row/column 1 would have gone to -1 instead of 0. 
 
 
+	! Consider subtracting 2 from j instead of 1
+	!        jc = jstart_coarse  + floor( real(j - jstag - 1) / real(y_refine) )
+        !del_jc =  floor( real(j - jstag - 1) / real(y_refine) )
+        del_jc =  floor( real(j - jstag - 2) / real(y_refine) )
+        ! Initial row is handled differently than other rows
+        !if (del_jc .lt. 0) del_jc = 0
+        jc = jstart_coarse  + del_jc
+        
+        
         do i = bbox_fine%is, bbox_fine%ie
+          jc = jstart_coarse  + del_jc  ! Repeat this incase the update code alters the value
+
+
           !ic = istart_coarse  + (i + x_refine/2 + 1) / x_refine
-          ic = istart_coarse  + floor( real(i - istag - 1) / real(x_refine) )
+          ! Consider subtracting 2 from i instead of 1
+          !          ic = istart_coarse  + floor( real(i - istag - 1) / real(x_refine) )
+          !del_ic =  floor( real(i - istag - 1) / real(x_refine) )
+          del_ic =  floor( real(i - istag - 2) / real(x_refine) )
+          !if (del_ic .lt. 0) del_ic = 0    ! Initial row is handled differently than other rows
+          ic = istart_coarse  + del_ic
+
+          if (ic+1 .gt. ubound(p_grid, 1)) print '("[ERROR] WDR CALCWT off end of p_grid i npe=",I0," ic+1=",I0," bound=",I0)', mpp_pe(), ic+1, ubound(p_grid,1)
+          if (jc+1 .gt. ubound(p_grid, 2)) print '("[ERROR] WDR CALCWT off end of p_grid j npe=",I0," jc+1=",I0," bound=",I0)', &
+              mpp_pe(), jc+1, ubound(p_grid,2)
+          
 
           ! dist2side_latlon takes points in longitude-latitude coordinates.
           dist1 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic,jc+1,:),   n_grid(i,j,:))
@@ -2635,7 +2689,40 @@ contains
           dist3 = dist2side_latlon(p_grid(ic+1,jc+1,:), p_grid(ic+1,jc,:),   n_grid(i,j,:))
           dist4 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic+1,jc,:),   n_grid(i,j,:))
 
-          !call calc_inside(p_grid, ic, jc, n_grid(i,j,1), n_grid(i,j,2), istag, jstag, is_inside)
+!          call calc_inside(p_grid, ic, jc, n_grid(i,j,1), n_grid(i,j,2), istag, jstag, is_inside, .True.)
+!
+!          if (.not. is_inside) then
+!            adjusted = .False.
+!
+!            do di = -2,2
+!              do dj = -2,1
+!                if (.not. adjusted) then
+!                  call calc_inside(p_grid, ic+di, jc+dj, n_grid(i,j,1), n_grid(i,j,2), istag, jstag, is_inside, .False.)
+!                  if (is_inside) then
+!                    ic = ic + di
+!                    jc = jc + dj
+                    
+                    
+!                    print '("[INFO] WDR is_inside UPDATED npe=",I0," ic=",I0," jc=",I0," istart_coarse=",I0," jstart_coarse=",I0," i=",I0," j=",I0," di=",I0," dj=",I0," n_grid1=",F12.8," n_grid2=",F12.8," istag=",I0," jstag=",I0)', mpp_pe(), ic, jc, istart_coarse, jstart_coarse, i, j,  di, dj, n_grid(i,j,1), n_grid(i,j,2), istag, jstag
+                    
+                    
+!                    dist1 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic,jc+1,:),   n_grid(i,j,:))
+!                    dist2 = dist2side_latlon(p_grid(ic,jc+1,:),   p_grid(ic+1,jc+1,:), n_grid(i,j,:))
+!                    dist3 = dist2side_latlon(p_grid(ic+1,jc+1,:), p_grid(ic+1,jc,:),   n_grid(i,j,:))
+!                    dist4 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic+1,jc,:),   n_grid(i,j,:))
+                    
+!                    adjusted = .True.
+!                  endif
+!                endif
+!              enddo
+!            enddo
+!            if (.not. adjusted) print '("[ERROR] WDR is_inside UPDATE FAILED npe=",I0," i=",I0," j=",I0," ic=",I0," jc=",I0," n_grid1=",F12.8," n_grid2=",F12.8," istag=",I0," jstag=",I0)', mpp_pe(), i, j, ic, jc, n_grid(i,j,1), n_grid(i,j,2), istag, jstag
+
+!          endif
+          
+
+
+          old_weight = wt(i,j,:)
 
           wt(i,j,1)=dist2*dist3      ! ic,   jc    weight
           wt(i,j,2)=dist3*dist4      ! ic,   jc+1  weight
@@ -2675,7 +2762,14 @@ contains
             wt(i,j,:)=wt(i,j,:)/sum            
           endif
 
-
+          !diff_weight = old_weight - wt(i,j,:)
+          !do k=1,4
+          !  if (abs(diff_weight(k)) .ge. 0.01) then
+          !    print '("[WARN] WDR DIFFWT npe=",I0," old_wt=",F10.6," wt(",I0,",",I0,",",I0,")=",F10.6," diff=",F10.6," istag=",I0," jstag=",I0)', &
+          !        mpp_pe(), old_weight(k), i, j, k, wt(i,j,k), diff_weight(k), istag, jstag
+          !  endif
+          !enddo
+          
         enddo
       enddo
     endif
