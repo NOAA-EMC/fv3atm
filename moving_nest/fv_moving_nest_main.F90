@@ -682,6 +682,12 @@ contains
 
         allocate(wt_v(Atm(child_grid_num)%bd%isd:Atm(child_grid_num)%bd%ied+1, Atm(child_grid_num)%bd%jsd:Atm(child_grid_num)%bd%jed, 4))
         wt_v = real_snan
+
+	! Fill in the local weights with the ones from Atm just to be safe
+        call fill_weight_grid(wt_h, Atm(n)%neststruct%wt_h)
+        call fill_weight_grid(wt_u, Atm(n)%neststruct%wt_u)
+        call fill_weight_grid(wt_v, Atm(n)%neststruct%wt_v)
+
       else
         allocate(wt_h(1,1,4))
         wt_h = 0.0
@@ -912,20 +918,28 @@ contains
         call mn_reset_phys_latlon(Atm, n, tile_geo, fp_super_tile_geo, Atm_block, IPD_control, IPD_data)
 
         if (use_timers) call mpp_clock_end (id_movnest5_2)
-        if (use_timers) call mpp_clock_begin (id_movnest5_3)
+      endif
 
         !!============================================================================
         !! Step 5.2 -- Fill the wt* variables for each stagger
         !!============================================================================
 
+      call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_h)
+      call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_u)
+      call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_v)
+      call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_b)
+
+      if (is_fine_pe) then
+        if (use_timers) call mpp_clock_begin (id_movnest5_3)
+
         call mn_meta_recalc( delta_i_c, delta_j_c, x_refine, y_refine, tile_geo, parent_geo, fp_super_tile_geo, &
-            is_fine_pe, global_nest_domain, position, p_grid, n_grid, wt_h, istart_coarse, jstart_coarse)
+            is_fine_pe, global_nest_domain, position, p_grid, n_grid, wt_h, istart_coarse, jstart_coarse, Atm(child_grid_num)%neststruct%ind_h)
 
         call mn_meta_recalc( delta_i_c, delta_j_c, x_refine, y_refine, tile_geo_u, parent_geo, fp_super_tile_geo, &
-            is_fine_pe, global_nest_domain, position_u, p_grid_u, n_grid_u, wt_u, istart_coarse, jstart_coarse)
+            is_fine_pe, global_nest_domain, position_u, p_grid_u, n_grid_u, wt_u, istart_coarse, jstart_coarse, Atm(child_grid_num)%neststruct%ind_u)
 
         call mn_meta_recalc( delta_i_c, delta_j_c, x_refine, y_refine, tile_geo_v, parent_geo, fp_super_tile_geo, &
-            is_fine_pe, global_nest_domain, position_v, p_grid_v, n_grid_v, wt_v, istart_coarse, jstart_coarse)
+            is_fine_pe, global_nest_domain, position_v, p_grid_v, n_grid_v, wt_v, istart_coarse, jstart_coarse, Atm(child_grid_num)%neststruct%ind_v)
 
         if (use_timers) call mpp_clock_end (id_movnest5_3)
       endif
@@ -936,10 +950,10 @@ contains
       !! Step 5.3 -- Adjust the indices by the values of delta_i_c, delta_j_c
       !!============================================================================
 
-      call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_h)
-      call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_u)
-      call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_v)
-      call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_b)
+      !call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_h)
+      !call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_u)
+      !call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_v)
+      !call mn_shift_index(delta_i_c, delta_j_c, Atm(child_grid_num)%neststruct%ind_b)
 
       if (debug_sync) call mpp_sync(full_pelist)   ! Used to make debugging easier.  Can be removed.
 
@@ -996,6 +1010,8 @@ contains
         case (2)
           ! Static nest smoothing algorithm - interpolation of coarse terrain in halo zone and 5 point blending zone of coarse and fine data
           call set_blended_terrain(Atm(n), mn_static%parent_orog_grid, mn_static%orog_grid, x_refine, Atm(n)%bd%ng, 10, a_step)
+        case (4)  ! Use coarse terrain;  no-op here.
+          ;
         case (5)
           ! 5 pt smoother.  blend zone of 5 to match static nest
           call set_smooth_nest_terrain(Atm(n), mn_static%orog_grid, x_refine, 5, Atm(n)%bd%ng, 5)
