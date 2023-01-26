@@ -26,7 +26,6 @@ Laboratory](https://www.gfdl.noaa.gov/).
 
 This package requires the following
 [NCEPLIBS](https://github.com/NOAA-EMC/NCEPLIBS) packages:
- - [NCEPLIBS-w3nco](https://github.com/NOAA-EMC/NCEPLIBS-w3nco)
  - [NCEPLIBS-w3emc](https://github.com/NOAA-EMC/NCEPLIBS-w3emc)
  - [NCEPLIBS-bacio](https://github.com/NOAA-EMC/NCEPLIBS-bacio)
  - [NCEPLIBS-nemsio](https://github.com/NOAA-EMC/NCEPLIBS-nemsio)

@@ -17,12 +17,14 @@ module module_block_data
     module procedure block_copy_2d_r8_to_3d_r8
     module procedure block_copy_3d_r8_to_3d_r8
     module procedure block_copy_1dslice_r8_to_2d_r8
+    module procedure block_copy_1dslice2_r8_to_2d_r8
     module procedure block_copy_3dslice_r8_to_3d_r8
     module procedure block_copy_1d_r4_to_2d_r8
     module procedure block_copy_2d_r4_to_2d_r8
     module procedure block_copy_2d_r4_to_3d_r8
     module procedure block_copy_3d_r4_to_3d_r8
     module procedure block_copy_1dslice_r4_to_2d_r8
+    module procedure block_copy_1dslice2_r4_to_2d_r8
     module procedure block_copy_3dslice_r4_to_3d_r8
   end interface block_data_copy
 
@@ -35,9 +37,11 @@ module module_block_data
     module procedure block_copy_or_fill_1d_r8_to_2d_r8
     module procedure block_copy_or_fill_2d_r8_to_3d_r8
     module procedure block_copy_or_fill_1dslice_r8_to_2d_r8
+    module procedure block_copy_or_fill_1dslice2_r8_to_2d_r8
     module procedure block_copy_or_fill_1d_r4_to_2d_r8
     module procedure block_copy_or_fill_2d_r4_to_3d_r8
     module procedure block_copy_or_fill_1dslice_r4_to_2d_r8
+    module procedure block_copy_or_fill_1dslice2_r4_to_2d_r8
   end interface block_data_copy_or_fill
 
   interface block_data_combine_fractions
@@ -177,6 +181,48 @@ contains
     if (present(rc)) rc = localrc
 
   end subroutine block_copy_1dslice_r8_to_2d_r8
+
+  ! -- copy: 1D slice to 2D
+
+  subroutine block_copy_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, scale_factor, rc)
+
+    ! -- arguments
+    real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
+    real(kind=8),           pointer     :: source_ptr(:,:,:)
+    integer,                   intent(in)  :: slice1
+    integer,                   intent(in)  :: slice2
+    type (block_control_type), intent(in)  :: block
+    integer,                   intent(in)  :: block_index
+    real(kind=8), optional, intent(in)  :: scale_factor
+    integer,         optional, intent(out) :: rc
+
+    ! -- local variables
+    integer         :: localrc
+    integer         :: i, ib, ix, j, jb
+    real(kind=8) :: factor
+
+    ! -- begin
+    localrc = ESMF_RC_PTR_NOTALLOC
+    if (associated(destin_ptr) .and. associated(source_ptr)) then
+      localrc = ESMF_RC_VAL_OUTOFRANGE
+      if (slice1 > 0 .and. slice1 <= size(source_ptr, dim=2) .and. slice2 > 0 .and. slice2 <= size(source_ptr, dim=3)) then
+        factor = 1._8
+        if (present(scale_factor)) factor = scale_factor
+!$omp parallel do private(ix,ib,jb,i,j)
+        do ix = 1, block%blksz(block_index)
+          ib = block%index(block_index)%ii(ix)
+          jb = block%index(block_index)%jj(ix)
+          i = ib - block%isc + 1
+          j = jb - block%jsc + 1
+          destin_ptr(i,j) = factor * source_ptr(ix,slice1,slice2)
+        enddo
+        localrc = ESMF_SUCCESS
+      end if
+    end if
+
+    if (present(rc)) rc = localrc
+
+  end subroutine block_copy_1dslice2_r8_to_2d_r8
 
   ! -- copy: 2D to 3D
 
@@ -568,6 +614,33 @@ contains
 
   end subroutine block_copy_or_fill_1dslice_r8_to_2d_r8
 
+  ! -- copy/fill: 1D slice to 2D
+
+  subroutine block_copy_or_fill_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, fill_value, block, block_index, rc)
+
+    ! -- arguments
+    real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
+    real(kind=8),           pointer     :: source_ptr(:,:,:)
+    integer,                   intent(in)  :: slice1
+    integer,                   intent(in)  :: slice2
+    real(ESMF_KIND_R8),        intent(in)  :: fill_value
+    type (block_control_type), intent(in)  :: block
+    integer,                   intent(in)  :: block_index
+    integer, optional,         intent(out) :: rc
+
+    ! -- begin
+    if (present(rc)) rc = ESMF_RC_PTR_NOTALLOC
+
+    if (associated(destin_ptr)) then
+      if (associated(source_ptr)) then
+        call block_copy_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, rc=rc)
+      else
+        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+      end if
+    end if
+
+  end subroutine block_copy_or_fill_1dslice2_r8_to_2d_r8
+
   ! -- copy/fill: 2D to 3D
 
   subroutine block_copy_or_fill_2d_r8_to_3d_r8(destin_ptr, source_ptr, fill_value, block, block_index, rc)
@@ -711,6 +784,48 @@ contains
     if (present(rc)) rc = localrc
 
   end subroutine block_copy_1dslice_r4_to_2d_r8
+
+  ! -- copy: 1D slice to 2D
+
+  subroutine block_copy_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, scale_factor, rc)
+
+    ! -- arguments
+    real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:,:)
+    integer,                   intent(in)  :: slice1
+    integer,                   intent(in)  :: slice2
+    type (block_control_type), intent(in)  :: block
+    integer,                   intent(in)  :: block_index
+    real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,         optional, intent(out) :: rc
+
+    ! -- local variables
+    integer         :: localrc
+    integer         :: i, ib, ix, j, jb
+    real(kind=4)    :: factor
+
+    ! -- begin
+    localrc = ESMF_RC_PTR_NOTALLOC
+    if (associated(destin_ptr) .and. associated(source_ptr)) then
+      localrc = ESMF_RC_VAL_OUTOFRANGE
+      if (slice1 > 0 .and. slice1 <= size(source_ptr, dim=2) .and. slice2 > 0 .and. slice2 <= size(source_ptr, dim=3)) then
+        factor = 1._4
+        if (present(scale_factor)) factor = scale_factor
+!$omp parallel do private(ix,ib,jb,i,j)
+        do ix = 1, block%blksz(block_index)
+          ib = block%index(block_index)%ii(ix)
+          jb = block%index(block_index)%jj(ix)
+          i = ib - block%isc + 1
+          j = jb - block%jsc + 1
+          destin_ptr(i,j) = factor * source_ptr(ix,slice1,slice2)
+        enddo
+        localrc = ESMF_SUCCESS
+      end if
+    end if
+
+    if (present(rc)) rc = localrc
+
+  end subroutine block_copy_1dslice2_r4_to_2d_r8
 
   ! -- copy: 2D to 3D
 
@@ -1033,6 +1148,33 @@ contains
     end if
 
   end subroutine block_copy_or_fill_1dslice_r4_to_2d_r8
+
+ ! -- copy/fill: 1D slice to 2D
+
+  subroutine block_copy_or_fill_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, fill_value, block, block_index, rc)
+
+    ! -- arguments
+    real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:,:)
+    integer,                   intent(in)  :: slice1
+    integer,                   intent(in)  :: slice2
+    real(ESMF_KIND_R8),        intent(in)  :: fill_value
+    type (block_control_type), intent(in)  :: block
+    integer,                   intent(in)  :: block_index
+    integer, optional,         intent(out) :: rc
+
+    ! -- begin
+    if (present(rc)) rc = ESMF_RC_PTR_NOTALLOC
+
+    if (associated(destin_ptr)) then
+      if (associated(source_ptr)) then
+        call block_copy_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, rc=rc)
+      else
+        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+      end if
+    end if
+
+  end subroutine block_copy_or_fill_1dslice2_r4_to_2d_r8
 
   ! -- copy/fill: 2D to 3D
 
