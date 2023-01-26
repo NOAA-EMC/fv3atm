@@ -2137,7 +2137,7 @@ module FV3GFS_io_mod
     if( present(timestamp) ) infile=trim(indir)//'/'//trim(timestamp)//'.'//trim(fn_srf)
 
     !--- register axis
-    amiopen=open_file(Sfc_restart, trim(infile), 'overwrite', domain=fv_domain, nc_format="netcdf4", is_restart=.true., dont_add_res_to_filename=.true.)
+    amiopen=open_file(Sfc_restart, trim(infile), 'overwrite', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
     if_amiopen: if( amiopen ) then
       call register_axis(Sfc_restart, 'xaxis_1', 'X')
       call register_field(Sfc_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
@@ -2735,7 +2735,7 @@ module FV3GFS_io_mod
     infile=trim(indir)//'/'//trim(fn_phy)
     if( present(timestamp) ) infile=trim(indir)//'/'//trim(timestamp)//'.'//trim(fn_phy)
     !--- register axis
-    amiopen=open_file(Phy_restart, trim(infile), 'overwrite', domain=fv_domain, nc_format="netcdf4", is_restart=.true., dont_add_res_to_filename=.true.)
+    amiopen=open_file(Phy_restart, trim(infile), 'overwrite', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
     if( amiopen ) then
       call register_axis(Phy_restart, 'xaxis_1', 'X')
       call register_field(Phy_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
