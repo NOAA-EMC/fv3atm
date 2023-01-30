@@ -1398,7 +1398,6 @@
       deallocate(attNameList, attNameList2, typekindList)
 !
 !     write_init_tim = MPI_Wtime() - btim0
-!     write(*,*)'write _init _time=',write_init_tim
 !
 !-----------------------------------------------------------------------
 !
