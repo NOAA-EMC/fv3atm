@@ -703,7 +703,7 @@
                 wrt_int_state%out_grid_info(n)%lonlast = geo_lon
                 wrt_int_state%out_grid_info(n)%latlast = geo_lat
             else if ( trim(output_grid(n)) == 'rotated_latlon_moving' ) then
-                print *,'in wrt grid comp, output grid is rotated_latlon_moving'
+                ! Do not compute lonPtr, latPtr here. Will be done in the run phase
             else if ( trim(output_grid(n)) == 'lambert_conformal' ) then
                 lon1_r8 = dble(lon1(n))
                 lat1_r8 = dble(lat1(n))
