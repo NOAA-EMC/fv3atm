@@ -1383,6 +1383,9 @@ module GFS_typedefs
     logical              :: pre_rad         !< flag for testing purpose
     logical              :: print_diff_pgr  !< print average change in pgr every timestep (does not need debug flag)
 
+!--- lightning threat and diagsnostics
+    logical              :: lightning_threat !< report lightning threat indices
+
 !--- variables modified at each time step
     integer              :: ipt             !< index for diagnostic printout point
     logical              :: lprnt           !< control flag for diagnostic print out
@@ -1938,6 +1941,11 @@ module GFS_typedefs
     ! Auxiliary output arrays for debugging
     real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
     real (kind=kind_phys), pointer :: aux3d(:,:,:)=> null()    !< auxiliary 2d arrays in output (for debugging)
+
+    !--- Lightning threat indices
+    real (kind=kind_phys), pointer :: ltg1_max(:)        => null()  !
+    real (kind=kind_phys), pointer :: ltg2_max(:)        => null()  !
+    real (kind=kind_phys), pointer :: ltg3_max(:)        => null()  !
 
     contains
       procedure :: create    => diag_create
@@ -3460,6 +3468,9 @@ module GFS_typedefs
     logical :: mix_chem = .false.         ! tracer mixing option by MYNN PBL
     logical :: fire_turb = .false.        ! enh vertmix option by MYNN PBL
 
+!-- Lightning threat index
+    logical :: lightning_threat = .true.
+
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 183
     character(len=40)  :: fscav_aero(max_scav_factors)
@@ -3602,7 +3613,9 @@ module GFS_typedefs
                                addsmoke_flag, fire_turb, mix_chem,                          &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
                           !          and (maybe) convection suppression
-                               fh_dfi_radar, radar_tten_limits, do_cap_suppress
+                               fh_dfi_radar, radar_tten_limits, do_cap_suppress,            &
+                          !--- GSL lightning threat indices
+                               lightning_threat
 
 !--- other parameters
     integer :: nctp    =  0                !< number of cloud types in CS scheme
@@ -3675,6 +3688,8 @@ module GFS_typedefs
     Model%flag_for_pbl_generic_tend = .true.
     Model%flag_for_scnv_generic_tend = .true.
     Model%flag_for_dcnv_generic_tend = .true.
+
+    Model%lightning_threat = lightning_threat
 
     Model%fh_dfi_radar     = fh_dfi_radar
     Model%num_dfi_radar    = 0
@@ -7083,6 +7098,15 @@ module GFS_typedefs
 !    if(Model%me==0) print *,'in diag_create, call phys_zero'
     linit = .false.
 
+    if(Model%lightning_threat) then
+       allocate (Diag%ltg1_max(IM))
+       allocate (Diag%ltg2_max(IM))
+       allocate (Diag%ltg3_max(IM))
+       Diag%ltg1_max = zero
+       Diag%ltg2_max = zero
+       Diag%ltg3_max = zero
+    endif
+
   end subroutine diag_create
 
 !-----------------------
@@ -7341,6 +7365,13 @@ module GFS_typedefs
       Diag%totice  = zero
       Diag%totsnw  = zero
       Diag%totgrp  = zero
+    endif
+
+! GSL lightning threat indexes
+    if(lightning_threat) then
+       Diag%ltg1_max = zero
+       Diag%ltg2_max = zero
+       Diag%ltg3_max = zero
     endif
 
   end subroutine diag_phys_zero
