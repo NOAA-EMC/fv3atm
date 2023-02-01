@@ -2026,6 +2026,7 @@ module GFS_typedefs
     allocate (Statein%pgr    (IM))
     allocate (Statein%ugrs   (IM,Model%levs))
     allocate (Statein%vgrs   (IM,Model%levs))
+    allocate (Statein%wgrs   (IM,Model%levs))
     allocate (Statein%qgrs   (IM,Model%levs,Model%ntrac))
 
     Statein%qgrs   = clear_val
