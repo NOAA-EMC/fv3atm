@@ -160,6 +160,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: pgr  (:)     => null()  !< surface pressure (Pa) real
     real (kind=kind_phys), pointer :: ugrs (:,:)   => null()  !< u component of layer wind
     real (kind=kind_phys), pointer :: vgrs (:,:)   => null()  !< v component of layer wind
+    real (kind=kind_phys), pointer :: wgrs (:,:)   => null()  !< w component of layer wind
     real (kind=kind_phys), pointer :: vvl  (:,:)   => null()  !< layer mean vertical velocity in pa/sec
     real (kind=kind_phys), pointer :: tgrs (:,:)   => null()  !< model layer mean temperature in k
     real (kind=kind_phys), pointer :: qgrs (:,:,:) => null()  !< layer mean tracer concentration
@@ -7368,7 +7369,7 @@ module GFS_typedefs
     endif
 
 ! GSL lightning threat indexes
-    if(lightning_threat) then
+    if(Model%lightning_threat) then
        Diag%ltg1_max = zero
        Diag%ltg2_max = zero
        Diag%ltg3_max = zero
