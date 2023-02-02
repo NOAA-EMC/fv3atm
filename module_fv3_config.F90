@@ -19,7 +19,7 @@
 !
   integer                  :: cpl_grid_id
   logical                  :: cplprint_flag
-  logical                  :: quilting, output_1st_tstep_rst
+  logical                  :: quilting, quilting_restart, output_1st_tstep_rst
   logical                  :: restart_endfcst
 !
   real,dimension(:),allocatable                   :: output_fh

@@ -27,7 +27,7 @@ module fv3gfs_cap_mod
                                     label_Finalize,                          &
                                     NUOPC_ModelGet
 !
-  use module_fv3_config,      only: quilting, output_fh,                     &
+  use module_fv3_config,      only: quilting, quilting_restart, output_fh,   &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
                                     calendar, cpl_grid_id,                   &
                                     cplprint_flag,output_1st_tstep_rst,      &
@@ -73,6 +73,7 @@ module fv3gfs_cap_mod
 
   integer                                     :: mype = -1
   integer                                     :: dbug = 0
+  integer                                     :: frestart(999) = -1
 
 !-----------------------------------------------------------------------
 
@@ -187,7 +188,7 @@ module fv3gfs_cap_mod
     real                                   :: nfhmax
     real                                   :: output_startfh, outputfh, outputfh2(2)
     logical                                :: loutput_fh, lfreq
-    character(ESMF_MAXSTR)                 :: name
+    character(ESMF_MAXSTR)                 :: gc_name, fb_name
     integer,dimension(:), allocatable      :: petList, fcstPetList, originPetList, targetPetList
     character(len=esmf_maxstr),allocatable :: fcstItemNameList(:)
     type(ESMF_StateItem_Flag), allocatable :: fcstItemTypeList(:)
@@ -208,6 +209,7 @@ module fv3gfs_cap_mod
     integer                                :: wrttasks_per_group_from_parent, wrtLocalPet
     character(len=64)                      :: rh_filename
     logical                                :: use_saved_routehandles, rh_file_exist
+    logical                                :: fieldbundle_is_restart = .false.
 
 !
 !------------------------------------------------------------------------
@@ -215,7 +217,7 @@ module fv3gfs_cap_mod
     rc = ESMF_SUCCESS
     timeis = MPI_Wtime()
 
-    call ESMF_GridCompGet(gcomp,name=name,vm=vm,rc=rc)
+    call ESMF_GridCompGet(gcomp,name=gc_name,vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_VMGet(vm, petCount=petcount, localpet=mype, rc=rc)
@@ -267,6 +269,10 @@ module fv3gfs_cap_mod
 !
     call ESMF_ConfigGetAttribute(config=CF,value=quilting, &
                                  label ='quilting:',rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_ConfigGetAttribute(config=CF,value=quilting_restart, &
+                                 default=.false., label ='quilting_restart:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_ConfigGetAttribute(config=CF,value=output_1st_tstep_rst, &
@@ -396,7 +402,7 @@ module fv3gfs_cap_mod
 ! determine number elements in fcstState
     call ESMF_StateGet(fcstState, itemCount=FBCount, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if(mype == 0) print *,'af fcstCom FBCount= ',FBcount
+    if(mype == 0) print *,'fv3_cap: field bundles in fcstComp export state, FBCount= ',FBcount
 !
 ! set start time for output
     output_startfh = 0.
@@ -461,6 +467,9 @@ module fv3gfs_cap_mod
         endif
         call ESMF_AttributeGet(fcstFB(i), convention="NetCDF", purpose="FV3", name="grid_id", value=grid_id, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        call ESMF_AttributeGet(fcstFB(i), convention="NetCDF", purpose="FV3", name="frestart", valueList=frestart, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
         is_moving_fb(i) = is_moving(grid_id)
       enddo
 !
@@ -596,8 +605,8 @@ module fv3gfs_cap_mod
           ! loop over all FieldBundle in the states, for moving nests handle GridTransfer
           do j=1, FBcount
             if (is_moving_fb(j)) then
-              ! access the fcst (provider) Grid
-              call ESMF_FieldBundleGet(fcstFB(j), grid=providerGrid, rc=rc)
+              ! access the fcst (provider) Grid and fieldbundle name
+              call ESMF_FieldBundleGet(fcstFB(j), grid=providerGrid, name=fb_name, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               ! access the mirror FieldBundle on the wrtComp
               call ESMF_StateGet(wrtState(i), itemName="mirror_"//trim(fcstItemNameList(j)), fieldbundle=mirrorFB, rc=rc)
@@ -683,22 +692,30 @@ module fv3gfs_cap_mod
             if(mype == 0) print *,'af get wrtfb=',"output_"//trim(fcstItemNameList(j)),' rc=',rc
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            ! determine regridmethod
-            if (index(fcstItemNameList(j),"_bilinear") >0 )  then
-              regridmethod = ESMF_REGRIDMETHOD_BILINEAR
-            else if (index(fcstItemNameList(j),"_patch") >0)  then
-              regridmethod = ESMF_REGRIDMETHOD_PATCH
-            else if (index(fcstItemNameList(j),"_nearest_stod") >0) then
-              regridmethod = ESMF_REGRIDMETHOD_NEAREST_STOD
-            else if (index(fcstItemNameList(j),"_nearest_dtos") >0) then
-              regridmethod = ESMF_REGRIDMETHOD_NEAREST_DTOS
-            else if (index(fcstItemNameList(j),"_conserve") >0) then
-              regridmethod = ESMF_REGRIDMETHOD_CONSERVE
+            fieldbundle_is_restart = .false.
+            if (fcstItemNameList(j)(1:8) == "restart_") then
+              ! restart output forecast bundles, no need to set regridmethod
+              ! Redist will be used instad of Regrid
+              fieldbundle_is_restart = .true.
             else
-              call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
-                                    msg="Unable to determine regrid method.", &
-                                    line=__LINE__, file=__FILE__, rcToReturn=rc)
-              return
+              ! history output forecast bundles
+              ! determine regridmethod
+              if (index(fcstItemNameList(j),"_bilinear") >0 )  then
+                regridmethod = ESMF_REGRIDMETHOD_BILINEAR
+              else if (index(fcstItemNameList(j),"_patch") >0)  then
+                regridmethod = ESMF_REGRIDMETHOD_PATCH
+              else if (index(fcstItemNameList(j),"_nearest_stod") >0) then
+                regridmethod = ESMF_REGRIDMETHOD_NEAREST_STOD
+              else if (index(fcstItemNameList(j),"_nearest_dtos") >0) then
+                regridmethod = ESMF_REGRIDMETHOD_NEAREST_DTOS
+              else if (index(fcstItemNameList(j),"_conserve") >0) then
+                regridmethod = ESMF_REGRIDMETHOD_CONSERVE
+              else
+                call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
+                                      msg="Unable to determine regrid method.", &
+                                      line=__LINE__, file=__FILE__, rcToReturn=rc)
+                return
+              endif
             endif
 
             call ESMF_LogWrite('bf FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
@@ -716,21 +733,34 @@ module fv3gfs_cap_mod
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               else
                 ! this is a Store() for the first wrtComp -> must do the Store()
-                call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()", rc=rc)
-                call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,1), &
-                                                 regridMethod=regridmethod, routehandle=routehandle(j,1), &
-                                                 unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
-                                                 srcTermProcessing=isrcTermProcessing, rc=rc)
-
-  !             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-                if (rc /= ESMF_SUCCESS) then
-                  write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore'
-                  call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore', ESMF_LOGMSG_ERROR, rc=rc)
-                  call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                if (fieldbundle_is_restart) then
+                  call ESMF_TraceRegionEnter("ESMF_FieldBundleRedistStore()", rc=rc)
+                  call ESMF_FieldBundleRedistStore(fcstFB(j), wrtFB(j,1), &
+                                                   routehandle=routehandle(j,1), &
+                                                   rc=rc)
+                  if (rc /= ESMF_SUCCESS) then
+                    write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRedistStore at line ',__LINE__
+                    call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRedistStore', ESMF_LOGMSG_ERROR, rc=rc)
+                    call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                  endif
+                  call ESMF_TraceRegionExit("ESMF_FieldBundleRedistStore()", rc=rc)
+                  call ESMF_LogWrite('af FieldBundleRedistStore', ESMF_LOGMSG_INFO, rc=rc)
+                  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                else
+                  call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()", rc=rc)
+                  call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,1), &
+                                                   regridMethod=regridmethod, routehandle=routehandle(j,1), &
+                                                   unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
+                                                   srcTermProcessing=isrcTermProcessing, rc=rc)
+                  if (rc /= ESMF_SUCCESS) then
+                    write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore at line ',__LINE__
+                    call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore', ESMF_LOGMSG_ERROR, rc=rc)
+                    call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                  endif
+                  call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()", rc=rc)
+                  call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
+                  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
                 endif
-                call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()", rc=rc)
-                call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
                 if (use_saved_routehandles) then
                   call ESMF_RouteHandleWrite(routehandle(j,1), fileName=trim(rh_filename), rc=rc)
@@ -916,7 +946,16 @@ module fv3gfs_cap_mod
       endif ! end loutput_fh
     endif
     if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh)),'lflname_fulltime=',lflname_fulltime
-!
+
+    if ( quilting ) then
+      do i=1, write_groups
+        call ESMF_InfoGetFromHost(wrtState(i), info=info, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        call ESMF_InfoSet(info, key="output_fh", values=output_fh, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      enddo
+    endif
+
     ! --- advertise Fields in importState and exportState -------------------
 
 ! call fcst Initialize (advertise phase)
@@ -1085,7 +1124,7 @@ module fv3gfs_cap_mod
       na = nint(time_elapsed/timeStep)
       call ESMF_TimeIntervalGet(time_elapsed, s=nfseconds, rc=rc)
 
-      output: if (ANY(nint(output_fh(:)*3600.0) == nfseconds)) then
+      output: if (ANY(nint(output_fh(:)*3600.0) == nfseconds) .or. ANY(frestart(:) == nfseconds)) then
 !
         if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run output time=',nfseconds, &
           'FBcount=',FBcount,'na=',na

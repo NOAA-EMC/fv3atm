@@ -56,6 +56,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use data_override_mod,  only: data_override_init
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
   use fv3gfs_io_mod,      only: fv_phys_bundle_setup
+  use fv3gfs_restart_io_mod,  only: fv_phy_restart_bundle_setup, fv_sfc_restart_bundle_setup
 
   use fms2_io_mod,        only: FmsNetcdfFile_t, open_file, close_file, variable_exists, read_data
 
@@ -64,7 +65,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use module_fv3_io_def,  only: num_pes_fcst, num_files, filename_base,    &
                                 nbdlphys, iau_offset
   use module_fv3_config,  only: dt_atmos, fcst_mpi_comm, fcst_ntasks,      &
-                                quilting, calendar, cpl_grid_id,           &
+                                quilting, quilting_restart,                &
+                                calendar, cpl_grid_id,                     &
                                 cplprint_flag, restart_endfcst
 
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
@@ -101,6 +103,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   integer :: numTracers    = 0
 
   integer :: frestart(999)
+
+  integer :: mype
 !
 !-----------------------------------------------------------------------
 !
@@ -311,7 +315,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     type(ESMF_Grid)                        :: grid
     integer                                :: itemCount
-    character(len=ESMF_MAXSTR)             :: itemNameList(1)
+    character(len=ESMF_MAXSTR)             :: itemNameList(1), fb_name
     type(ESMF_FieldBundle)                 :: fb, fcstFB
 
     call ESMF_GridCompGet(nest, grid=grid, rc=rc)
@@ -341,8 +345,16 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_StateAdd(exportState,(/fb/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call fv_dyn_bundle_setup(Atmos%axes, fb, grid, quilting=.true., rc=rc)
+    call ESMF_FieldBundleGet(fb, name=fb_name, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    if (fb_name(1:4) == 'atm_') then
+      call fv_dyn_bundle_setup(Atmos%axes, fb, grid, quilting=.true., rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    else
+      write(0,*)'will call fv_dyn_restart_bundle_setup, for file ',trim(fb_name)
+      ! call fv_dyn_restart_bundle_setup(Atmos%axes, fb, grid, quilting=.true., rc=rc)
+    endif
 
   end subroutine init_dyn_fb
 !
@@ -360,6 +372,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(ESMF_Grid)                        :: grid
     integer                                :: itemCount, i
     character(len=ESMF_MAXSTR), allocatable :: itemNameList(:)
+    character(len=ESMF_MAXSTR)              :: fb_name
     type(ESMF_FieldBundle), allocatable     :: fbList(:)
     type(ESMF_FieldBundle)                  :: fcstFB
 
@@ -388,8 +401,20 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     enddo
 
-    call fv_phys_bundle_setup(Atmos%diag, Atmos%axes, fbList, grid, quilting=.true., nbdlphys=itemCount, rc=rc)
+    ! get the name of the first field bundle and based on that determine if it's a history or restart bundles
+    call ESMF_FieldBundleGet(fbList(1), name=fb_name, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    if (fb_name(1:16) == 'restart_phy_data') then
+      call fv_phy_restart_bundle_setup(fbList(1), grid, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    elseif (fb_name(1:16) == 'restart_sfc_data') then
+      call fv_sfc_restart_bundle_setup(fbList(1), grid, GFS_control, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    else
+      call fv_phys_bundle_setup(Atmos%diag, Atmos%axes, fbList, grid, quilting=.true., nbdlphys=itemCount, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    endif
 
   end subroutine init_phys_fb
 !
@@ -498,7 +523,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer,dimension(6)                   :: date, date_end
 !
     integer :: initClock, unit, total_inttime
-    integer :: mype
     integer :: stat
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
@@ -508,8 +532,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     character(256)                         :: gridfile
 
     character(8) :: bundle_grid
-    type(ESMF_FieldBundle),dimension(:), allocatable    :: fieldbundle     ! dynamics bundles
-    type(ESMF_FieldBundle),dimension(:,:), allocatable  :: fieldbundlephys ! physics bundles
+    type(ESMF_FieldBundle),dimension(:), allocatable    :: fieldbundle             ! dynamics hystory bundles
+    type(ESMF_FieldBundle),dimension(:,:), allocatable  :: fieldbundle_dyn_restart ! dynamics restart bundles
+    type(ESMF_FieldBundle),dimension(:,:), allocatable  :: fieldbundlephys         ! physics hystory bundles
+    type(ESMF_FieldBundle),dimension(:,:), allocatable  :: fieldbundle_phy_restart ! physics restart bundles
 
     real(kind=8) :: mpi_wtime, timeis
 
@@ -966,6 +992,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         nbdlphys = 2
         allocate(fieldbundlephys(nbdlphys,ngrids))
 
+        allocate(fieldbundle_dyn_restart(ngrids,3)) ! fv_core.res fv_srf_wnd.res fv_tracer.res
+        allocate(fieldbundle_phy_restart(ngrids,2)) ! phy_data sfc_data
+
         do n=1,ngrids
         bundle_grid=''
         if (ngrids > 1 .and. n >= 2) then
@@ -992,6 +1021,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            call ESMF_AttributeSet(fieldbundle(n), convention="NetCDF", purpose="FV3", &
                                   name="grid_id", value=n, rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+           call ESMF_AttributeAdd(fieldbundle(n), convention="NetCDF", purpose="FV3", &
+                                  attrList=(/"frestart"/), rc=rc)
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+           call ESMF_AttributeSet(fieldbundle(n), convention="NetCDF", purpose="FV3", &
+                                  name="frestart", valueList=frestart, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            call ESMF_StateAdd(tempState, (/fieldbundle(n)/), rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1020,6 +1057,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                     name="grid_id", value=n, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+             call ESMF_AttributeAdd(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3", &
+                                    attrList=(/"frestart"/), rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+             call ESMF_AttributeSet(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3", &
+                                    name="frestart", valueList=frestart, rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
              call ESMF_StateAdd(tempState, (/fieldbundlephys(j,n)/), rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
            enddo
@@ -1039,8 +1084,110 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
          call ESMF_StateDestroy(tempState, noGarbage=.true., rc=rc)
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        enddo ! num_files
+        enddo ! num_files history
+
+        if ( quilting_restart ) then
+
+          ! do i=1,3 ! 3 dynamics restart bundles
+          do i=1,0 ! 3 dynamics restart bundles
+
+            tempState = ESMF_StateCreate(rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            if (i == 1) then
+              name_FB = 'restart_fv_core.res'
+            elseif (i == 2) then
+              name_FB = 'restart_fv_srf_wnd.res'
+            elseif (i == 3) then
+              name_FB = 'restart_fv_tracer.res'
+            else
+              write(0,*)' unknown name_dynamics restart bundle ', i
+              ESMF_ERR_ABORT(101)
+            endif
+
+            fieldbundle_dyn_restart(n,i) = ESMF_FieldBundleCreate(name=trim(name_FB),rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeAdd(fieldbundle_dyn_restart(n,i), convention="NetCDF", purpose="FV3", &
+                                   attrList=(/"grid_id"/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeSet(fieldbundle_dyn_restart(n,i), convention="NetCDF", purpose="FV3", &
+                                   name="grid_id", value=n, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeAdd(fieldbundle_dyn_restart(n,i), convention="NetCDF", purpose="FV3", &
+                                   attrList=(/"frestart"/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeSet(fieldbundle_dyn_restart(n,i), convention="NetCDF", purpose="FV3", &
+                                   name="frestart", valueList=frestart, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_StateAdd(tempState, (/fieldbundle_dyn_restart(n,i)/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_GridCompInitialize(fcstGridComp(n), importState=tempState, &
+                                         exportState=exportState, phase=1, userrc=urc, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+            call ESMF_StateDestroy(tempState, noGarbage=.true., rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          enddo ! 3 dynamics restart bundles
+
+          do i=1,2 ! 2 physics restart bundles
+
+            tempState = ESMF_StateCreate(rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            if (i == 1) then
+              name_FB = 'restart_phy_data'
+            elseif (i == 2) then
+              name_FB = 'restart_sfc_data'
+            else
+              write(0,*)' unknown name_physics restart bundle ', i
+              ESMF_ERR_ABORT(101)
+            endif
+
+            fieldbundle_phy_restart(n,i) = ESMF_FieldBundleCreate(name=trim(name_FB),rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeAdd(fieldbundle_phy_restart(n,i), convention="NetCDF", purpose="FV3", &
+                                   attrList=(/"grid_id"/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeSet(fieldbundle_phy_restart(n,i), convention="NetCDF", purpose="FV3", &
+                                   name="grid_id", value=n, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeAdd(fieldbundle_phy_restart(n,i), convention="NetCDF", purpose="FV3", &
+                                   attrList=(/"frestart"/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeSet(fieldbundle_phy_restart(n,i), convention="NetCDF", purpose="FV3", &
+                                   name="frestart", valueList=frestart, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_StateAdd(tempState, (/fieldbundle_phy_restart(n,i)/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_GridCompInitialize(fcstGridComp(n), importState=tempState, &
+                                         exportState=exportState, phase=2, userrc=urc, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+            call ESMF_StateDestroy(tempState, noGarbage=.true., rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          enddo ! 2 physics restart bundles
+        endif ! quilting_restart
+
         enddo ! ngrids
+
+        ! total number of field bundles created is ngrids * (1(atm) + 2(phy) + 3(dyn_rest) +2(phy_rest)
+        if (mype == 0) write(*,*)'fcst_initialize: total number of field bundles: ', ngrids*(1+2+0+2)
 
 !end qulting
       endif
@@ -1072,7 +1219,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
     type(ESMF_VM)     :: vm
-    integer           :: mype
     integer           :: n
     integer           :: urc
 
@@ -1084,7 +1230,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_VMGetCurrent(vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_VMGet(vm=vm, localPet=mype, rc=rc)
+    call ESMF_VMGet(vm=vm, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (mype == 0) write(*,*)'fcst_advertise, cpl_grid_id=',cpl_grid_id
 
@@ -1114,7 +1260,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
     type(ESMF_VM)     :: vm
-    integer           :: mype
     integer           :: n
     integer           :: urc
 
@@ -1126,7 +1271,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_VMGetCurrent(vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_VMGet(vm=vm, localPet=mype, rc=rc)
+    call ESMF_VMGet(vm=vm, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (mype == 0) write(*,*)'fcst_realize, cpl_grid_id=',cpl_grid_id
 
@@ -1160,7 +1305,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       logical,save               :: first=.true.
       integer,save               :: dt_cap=0
       type(ESMF_Time)            :: currTime,stopTime
-      integer                    :: mype, seconds
+      integer                    :: seconds
       real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
@@ -1172,9 +1317,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !-----------------------------------------------------------------------
 !
-      call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
       call get_time(Atmos%Time - Atmos%Time_init, seconds)
       n_atmsteps = seconds/dt_atmos
 
@@ -1228,7 +1370,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: mype, date(6), seconds
+      integer                    :: date(6), seconds
       character(len=64)          :: timestamp
       integer                    :: unit
       real(kind=8)               :: mpi_wtime, tbeg1
@@ -1242,10 +1384,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !-----------------------------------------------------------------------
 !
-      call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
-!-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
 
       call atmos_model_exchange_phase_2 (Atmos, rc=rc)
@@ -1306,7 +1444,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: mype
       integer                    :: unit
       integer,dimension(6)       :: date
       real(kind=8)               :: mpi_wtime, tbeg1
@@ -1317,9 +1454,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       tbeg1 = mpi_wtime()
       rc    = ESMF_SUCCESS
-
-      call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call atmos_model_end (Atmos)
 

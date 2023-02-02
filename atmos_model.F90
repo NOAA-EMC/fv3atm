@@ -94,6 +94,7 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_GFS_checksum,                       &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
                               DIAG_SIZE
+use FV3GFS_restart_io_mod,    only: FV3GFS_restart_register, fv_phy_restart_output, fv_sfc_restart_output
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
                               restart_endfcst, output_fh, fcst_mpi_comm, &
@@ -735,6 +736,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
+   call FV3GFS_restart_register (GFS_data%Sfcprop, GFS_restart_var, Atm_block, GFS_control)
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain_for_read, &
                              Atm(mygrid)%flagstruct%warm_start, ignore_rst_cksum)
    if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
@@ -1058,6 +1060,8 @@ subroutine atmos_model_end (Atmos)
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
 
     if(restart_endfcst) then
+      call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
+      call fv_phy_restart_output(GFS_restart_var, Atm_block)
       call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                  GFS_control, Atmos%domain)
 !     call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
@@ -1100,6 +1104,8 @@ subroutine atmos_model_restart(Atmos, timestamp)
   character(len=*),  intent(in)           :: timestamp
 
     call atmosphere_restart(timestamp)
+    call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
+    call fv_phy_restart_output(GFS_restart_var, Atm_block)
     call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                GFS_control, Atmos%domain, timestamp)
     if(GFS_control%do_ca)then
