@@ -2426,6 +2426,14 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[gflux_lnd]
+  standard_name = upward_heat_flux_in_soil_over_land_from_land
+  long_name = soil heat flux over land for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
 [hsnoin_cpl]
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling

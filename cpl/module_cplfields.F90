@@ -156,7 +156,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 56
+  integer,          public, parameter :: NimportFields = 57
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -196,6 +196,7 @@ module module_cplfields
     FieldInfo("mean_potential_laten_heat_flx_lnd        ", "s"), &
     FieldInfo("inst_temp_height2m_lnd                   ", "s"), &
     FieldInfo("inst_spec_humid_height2m_lnd             ", "s"), &
+    FieldInfo("mean_upward_heat_flux_lnd                ", "s"), &
 
     !  For JEDI
     ! dynamics

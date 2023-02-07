@@ -474,6 +474,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ep_lnd(:)              => null()   !< sfc up pot latent heat flux over land
     real (kind=kind_phys), pointer :: t2mmp_lnd(:)           => null()   !< 2 meter temperature over land 
     real (kind=kind_phys), pointer :: q2mp_lnd(:)            => null()   !< 2 meter spec humidity over land
+    real (kind=kind_phys), pointer :: gflux_lnd(:)           => null()   !< soil heat flux over land 
 
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
@@ -2709,6 +2710,7 @@ module GFS_typedefs
       allocate (Coupling%ep_lnd      (IM))
       allocate (Coupling%t2mmp_lnd   (IM))
       allocate (Coupling%q2mp_lnd    (IM))
+      allocate (Coupling%gflux_lnd   (IM))
 
       Coupling%sncovr1_lnd = clear_val
       Coupling%qsurf_lnd   = clear_val
@@ -2717,6 +2719,7 @@ module GFS_typedefs
       Coupling%ep_lnd      = clear_val
       Coupling%t2mmp_lnd   = clear_val
       Coupling%q2mp_lnd    = clear_val
+      Coupling%gflux_lnd   = clear_val
     end if
 
     !-- cellular automata
