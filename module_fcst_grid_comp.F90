@@ -73,7 +73,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use module_cplfields,       only: realizeConnectedCplFields
 
   use atmos_model_mod,        only: setup_exportdata
-  use CCPP_data,              only: GFS_control
 !
 !-----------------------------------------------------------------------
 !
@@ -745,19 +744,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     endif
 ! if to write out restart at the end of forecast
     restart_endfcst = .false.
-    if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
-! frestart only contains intermediate restart
-    do i=1,size(frestart)
-      if(frestart(i) == total_inttime) then
-        frestart(i) = 0
-        exit
-      endif
-    enddo
     if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
       'total_inttime=',total_inttime
-! if there is restart writing during integration
-    intrm_rst         = 0
-    if (frestart(1)>0) intrm_rst = 1
 
 !------ initialize component models ------
 
@@ -1255,9 +1243,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       !--- intermediate restart
-      if (intrm_rst>0) then
-        call get_time(Atmos%Time - Atmos%Time_init, seconds)
-        if (ANY(frestart(:) == seconds)) then
+      call get_time(Atmos%Time - Atmos%Time_init, seconds)
+      if (ANY(frestart(:) == seconds)) then
           if (mype == 0) write(*,*)'write out restart at n_atmsteps=',n_atmsteps,' seconds=',seconds,  &
                                    'integration length=',n_atmsteps*dt_atmos/3600.
 
@@ -1279,7 +1266,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                    'Current model time: year, month, day, hour, minute, second'
               close( unit )
           endif
-        endif
       endif
 
       if (mype == 0) write(*,'(A,I16,A,F16.6)')'PASS: fcstRUN phase 2, n_atmsteps = ', &
