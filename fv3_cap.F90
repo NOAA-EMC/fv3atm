@@ -37,7 +37,8 @@ module fv3gfs_cap_mod
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
-                                    nsout_io, iau_offset, lflname_fulltime
+                                    nsout_io, iau_offset, lflname_fulltime,  &
+                                    time_unlimited
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices
 
@@ -321,6 +322,8 @@ module fv3gfs_cap_mod
       nsout_io = nsout
 !
       if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout,noutput_fh
+
+      call ESMF_ConfigGetAttribute(config=CF, value=time_unlimited, label ='time_unlimited:', default=.false., rc=rc)
 
     endif ! quilting
 !
