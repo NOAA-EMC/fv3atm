@@ -14,11 +14,6 @@ module CCPP_typedefs
     ! Physics type defininitions needed for interstitial DDTs
     use module_radsw_parameters,  only: profsw_type, cmpfsw_type, NBDSW
     use module_radlw_parameters,  only: proflw_type, NBDLW
-    use mo_gas_optics_rrtmgp,     only: ty_gas_optics_rrtmgp
-    use mo_optical_props,         only: ty_optical_props_1scl,ty_optical_props_2str
-    use mo_cloud_optics,          only: ty_cloud_optics
-    use mo_gas_concentrations,    only: ty_gas_concs
-    use mo_source_functions,      only: ty_source_func_lw
     use GFS_typedefs,             only: GFS_control_type
 
     implicit none
@@ -400,7 +395,7 @@ module CCPP_typedefs
     real (kind=kind_phys), pointer      :: fluxswDOWN_allsky(:,:)    => null()  !< RRTMGP downward shortwave all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxswUP_clrsky(:,:)      => null()  !< RRTMGP upward   shortwave clr-sky flux profile
     real (kind=kind_phys), pointer      :: fluxswDOWN_clrsky(:,:)    => null()  !< RRTMGP downward shortwave clr-sky flux profile
-    real (kind=kind_phys), pointer      :: sfc_emiss_byband(:,:)     => null()  !<
+    real (kind=kind_phys), pointer      :: sfc_emiss_byband(:,:)     => null()  !< 
     real (kind=kind_phys), pointer      :: sec_diff_byband(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: sfc_alb_nir_dir(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: sfc_alb_nir_dif(:,:)      => null()  !<
@@ -410,26 +405,12 @@ module CCPP_typedefs
     real (kind=kind_phys), pointer      :: toa_src_sw(:,:)           => null()  !<
     type(proflw_type), pointer          :: flxprf_lw(:,:)            => null()  !< DDT containing RRTMGP longwave fluxes
     type(profsw_type), pointer          :: flxprf_sw(:,:)            => null()  !< DDT containing RRTMGP shortwave fluxes
-    type(ty_optical_props_2str)         :: lw_optical_props_cloudsByBand        !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: lw_optical_props_clouds              !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: lw_optical_props_precipByBand        !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: lw_optical_props_precip              !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: lw_optical_props_cnvcloudsByBand     !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: lw_optical_props_cnvclouds           !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: lw_optical_props_MYNNcloudsByBand    !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_clrsky              !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_aerosol             !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_cloudsByBand        !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_clouds              !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_precipByBand        !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_precip              !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_clrsky              !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_aerosol             !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_cnvcloudsByBand     !< RRTMGP DDT 
-    type(ty_optical_props_2str)         :: sw_optical_props_cnvclouds           !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_MYNNcloudsByBand    !< RRTMGP DDT  
-    type(ty_gas_concs)                  :: gas_concentrations                   !< RRTMGP DDT
-    type(ty_source_func_lw)             :: sources                              !< RRTMGP DDT
+    real (kind=kind_phys), pointer      :: vmr_o2(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: vmr_h2o(:,:)              => null()  !<
+    real (kind=kind_phys), pointer      :: vmr_o3(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: vmr_ch4(:,:)              => null()  !<
+    real (kind=kind_phys), pointer      :: vmr_n2o(:,:)              => null()  !<
+    real (kind=kind_phys), pointer      :: vmr_co2(:,:)              => null()  !<
 
     !-- GSL drag suite
     real (kind=kind_phys), pointer      :: varss(:)           => null()  !<
@@ -808,104 +789,13 @@ contains
        allocate (Interstitial%sfc_alb_uvvis_dif    (Model%rrtmgp_nBandsSW,IM))
        allocate (Interstitial%toa_src_sw           (IM,Model%rrtmgp_nGptsSW))
        allocate (Interstitial%toa_src_lw           (IM,Model%rrtmgp_nGptsLW))
-       !
-       !  gas_concentrations (ty_gas_concs)
-       !
-       Interstitial%gas_concentrations%ncol = IM
-       Interstitial%gas_concentrations%nlay = Model%levs
-       allocate(Interstitial%gas_concentrations%gas_name(Model%nGases))
-       allocate(Interstitial%gas_concentrations%concs(Model%nGases))
-       do iGas=1,Model%nGases
-          allocate(Interstitial%gas_concentrations%concs(iGas)%conc(IM, Model%levs))
-       enddo
-       !
-       ! lw_optical_props_clrsky (ty_optical_props_1scl)
-       !
-       allocate(Interstitial%lw_optical_props_clrsky%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_clrsky%band2gpt     (2,          Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_clrsky%band_lims_wvn(2,          Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_clrsky%gpt2band(                 Model%rrtmgp_nGptsLW  )) 
-       !
-       ! lw_optical_props_aerosol (ty_optical_props_1scl)
-       !
-       allocate(Interstitial%lw_optical_props_aerosol%tau(     IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_aerosol%band2gpt     (2,         Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_aerosol%band_lims_wvn(2,         Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_aerosol%gpt2band(                Model%rrtmgp_nBandsLW ))
-       !
-       ! lw_optical_props_cloudsByBand (ty_optical_props_2str)
-       !
-       allocate(Interstitial%lw_optical_props_cloudsByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cloudsByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cloudsByBand%g(  IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cloudsByBand%band2gpt     (2,    Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cloudsByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cloudsByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
-       !
-       ! lw_optical_props_cnvcloudsByBand (ty_optical_props_2str)
-       !
-       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%g(  IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%band2gpt     (2,    Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
-       !
-       ! lw_optical_props_MYNNcloudsByBand (ty_optical_props_2str)
-       !
-       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%g(  IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%band2gpt     (2,    Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
-       !
-       ! lw_optical_props_precipByBand (ty_optical_props_2str)
-       !
-       allocate(Interstitial%lw_optical_props_precipByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_precipByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_precipByBand%g(  IM, Model%levs, Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_precipByBand%band2gpt     (2,    Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_precipByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_precipByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
-       !
-       ! lw_optical_props_clouds (ty_optical_props_2str)
-       !
-       allocate(Interstitial%lw_optical_props_clouds%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_clouds%ssa(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_clouds%g(        IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_clouds%band2gpt     (2,          Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_clouds%band_lims_wvn(2,          Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_clouds%gpt2band(                 Model%rrtmgp_nGptsLW  ))
-       !
-       ! lw_optical_props_cnvclouds (ty_optical_props_2str) 
-       !
-       allocate(Interstitial%lw_optical_props_cnvclouds%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_cnvclouds%ssa(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_cnvclouds%g(        IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_cnvclouds%band2gpt     (2,          Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cnvclouds%band_lims_wvn(2,          Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_cnvclouds%gpt2band(                 Model%rrtmgp_nGptsLW  ))
-       ! 
-       ! lw_optical_props_precip (ty_optical_props_2str)
-       !
-       allocate(Interstitial%lw_optical_props_precip%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_precip%ssa(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_precip%g(        IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%lw_optical_props_precip%band2gpt     (2,          Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_precip%band_lims_wvn(2,          Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%lw_optical_props_precip%gpt2band(                 Model%rrtmgp_nGptsLW  ))
-       !
-       ! sources (ty_source_func_lw)
-       !
-       allocate(Interstitial%sources%sfc_source(               IM,             Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%sources%lay_source(               IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%sources%lev_source_inc(           IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%sources%lev_source_dec(           IM, Model%levs, Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%sources%sfc_source_Jac(           IM,             Model%rrtmgp_nGptsLW  ))
-       allocate(Interstitial%sources%band2gpt      (           2,              Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%sources%band_lims_wvn (           2,              Model%rrtmgp_nBandsLW ))
-       allocate(Interstitial%sources%gpt2band(                                 Model%rrtmgp_nGptsLW  ))
+       allocate (Interstitial%vmr_o2               (IM, Model%levs))
+       allocate (Interstitial%vmr_h2o              (IM, Model%levs))
+       allocate (Interstitial%vmr_o3               (IM, Model%levs))
+       allocate (Interstitial%vmr_ch4              (IM, Model%levs))
+       allocate (Interstitial%vmr_n2o              (IM, Model%levs))
+       allocate (Interstitial%vmr_co2              (IM, Model%levs))
+
     end if
 
 ! UGWP common
@@ -1302,45 +1192,20 @@ contains
       Interstitial%sfc_alb_uvvis_dif    = clear_val
       Interstitial%toa_src_sw           = clear_val
       Interstitial%toa_src_lw           = clear_val
-      do iGas=1,Model%nGases
-        Interstitial%gas_concentrations%concs(iGas)%conc = clear_val
-      end do
-      Interstitial%lw_optical_props_clrsky%tau       = clear_val
-      Interstitial%lw_optical_props_aerosol%tau      = clear_val
-      Interstitial%lw_optical_props_clouds%tau       = clear_val
-      Interstitial%lw_optical_props_clouds%ssa       = clear_val
-      Interstitial%lw_optical_props_clouds%g         = clear_val
-      Interstitial%lw_optical_props_precip%tau       = clear_val
-      Interstitial%lw_optical_props_precip%ssa       = clear_val
-      Interstitial%lw_optical_props_precip%g         = clear_val
-      Interstitial%lw_optical_props_cloudsByBand%tau = clear_val
-      Interstitial%lw_optical_props_cloudsByBand%ssa = clear_val
-      Interstitial%lw_optical_props_cloudsByBand%g   = clear_val
-      Interstitial%lw_optical_props_precipByBand%tau = clear_val
-      Interstitial%lw_optical_props_precipByBand%ssa = clear_val
-      Interstitial%lw_optical_props_precipByBand%g   = clear_val
-      Interstitial%lw_optical_props_cnvcloudsByBand%tau = clear_val
-      Interstitial%lw_optical_props_cnvcloudsByBand%ssa = clear_val
-      Interstitial%lw_optical_props_cnvcloudsByBand%g   = clear_val
-      Interstitial%lw_optical_props_MYNNcloudsByBand%tau = clear_val
-      Interstitial%lw_optical_props_MYNNcloudsByBand%ssa = clear_val
-      Interstitial%lw_optical_props_MYNNcloudsByBand%g   = clear_val
-      Interstitial%lw_optical_props_cnvclouds%tau       = clear_val
-      Interstitial%lw_optical_props_cnvclouds%ssa       = clear_val
-      Interstitial%lw_optical_props_cnvclouds%g         = clear_val
-      Interstitial%sources%sfc_source                = clear_val
-      Interstitial%sources%lay_source                = clear_val
-      Interstitial%sources%lev_source_inc            = clear_val
-      Interstitial%sources%lev_source_dec            = clear_val
-      Interstitial%sources%sfc_source_Jac            = clear_val
-      Interstitial%flxprf_lw%upfxc                   = clear_val
-      Interstitial%flxprf_lw%dnfxc                   = clear_val
-      Interstitial%flxprf_lw%upfx0                   = clear_val
-      Interstitial%flxprf_lw%dnfx0                   = clear_val
-      Interstitial%flxprf_sw%upfxc                   = clear_val
-      Interstitial%flxprf_sw%dnfxc                   = clear_val
-      Interstitial%flxprf_sw%upfx0                   = clear_val
-      Interstitial%flxprf_sw%dnfx0                   = clear_val
+      Interstitial%vmr_o2               = clear_val
+      Interstitial%vmr_h2o              = clear_val
+      Interstitial%vmr_o3               = clear_val
+      Interstitial%vmr_ch4              = clear_val
+      Interstitial%vmr_n2o              = clear_val
+      Interstitial%vmr_co2              = clear_val
+      Interstitial%flxprf_lw%upfxc      = clear_val
+      Interstitial%flxprf_lw%dnfxc      = clear_val
+      Interstitial%flxprf_lw%upfx0      = clear_val
+      Interstitial%flxprf_lw%dnfx0      = clear_val
+      Interstitial%flxprf_sw%upfxc      = clear_val
+      Interstitial%flxprf_sw%dnfxc      = clear_val
+      Interstitial%flxprf_sw%upfx0      = clear_val
+      Interstitial%flxprf_sw%dnfx0      = clear_val
     end if
     !
   end subroutine gfs_interstitial_rad_reset
