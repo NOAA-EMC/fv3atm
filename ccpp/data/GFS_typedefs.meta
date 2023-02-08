@@ -3201,6 +3201,73 @@
   units = flag
   dimensions = ()
   type = integer
+[iaermdl]
+  standard_name = control_for_aerosol_radiation_scheme
+  long_name = control of aerosol scheme in radiation
+  units = 1
+  dimensions = ()
+  type = integer
+[iaerflg]
+  standard_name = control_for_aerosol_effects_in_radiation
+  long_name = control of aerosol effects in radiation
+  units = 1
+  dimensions = ()
+  type = integer
+[lalw1bd]
+  standard_name = do_longwave_aerosol_band_properties
+  long_name = control of band or multiband longwave aerosol properties
+  units = 1
+  dimensions = ()
+  type = logical
+[aeros_file]
+  standard_name = aerosol_data_file
+  long_name = aerosol data file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[solar_file]
+  standard_name = solar_constant_file
+  long_name = external solar constant data table file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[semis_file]
+  standard_name = surface_emissivity_data_file
+  long_name = surface emissivity data file for radiation
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[co2dat_file]
+  standard_name = co2_monthly_obs_data_table_file
+  long_name = co2 monthly observation data table
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[co2gbl_file]
+  standard_name = co2_global_annual_mean_data_table_file
+  long_name = co2 global annual mean data file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[co2usr_file]
+  standard_name = co2_user_data_table_file
+  long_name =  co2 user defined data table file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[co2cyc_file]
+  standard_name = co2_clim_monthly_cycle_data_table_file
+  long_name = co2 climotological monthly cycle data table file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
 [icliq_sw]
   standard_name = control_for_shortwave_radiation_liquid_clouds
   long_name = sw optical property for liquid clouds
@@ -3255,24 +3322,54 @@
   units = flag
   dimensions = ()
   type = integer
-[crick_proof]
+[iswmode]
+  standard_name = control_for_sw_scattering_choice
+  long_name = control of rrtmg shortwave scattering choice
+  units = 1
+  dimensions = ()
+  type = integer
+[lcrick]
   standard_name = flag_for_CRICK_proof_cloud_water
   long_name = flag for CRICK-Proof cloud water
   units = flag
   dimensions = ()
   type = logical
-[ccnorm]
+[lcnorm]
   standard_name = flag_for_in_cloud_condensate
   long_name = flag for cloud condensate normalized by cloud cover
   units = flag
   dimensions = ()
   type = logical
-[norad_precip]
+[lnoprec]
   standard_name = flag_for_turning_off_precipitation_radiative_effect
   long_name = radiation precip flag for Ferrier/Moorthi
   units = flag
   dimensions = ()
   type = logical
+[rad_hr_units]
+  standard_name = control_for_radiation_heating_rate_units
+  long_name = control of heating rate units
+  units = 1
+  dimensions =  ()
+  type = integer
+[inc_minor_gas]
+  standard_name = flag_to_include_minor_gases_in_rrtmg
+  long_name = flag to include minor trace gases in rrtmg 
+  units = flag
+  dimensions = ()
+  type = logical
+[ipsd0]
+  standard_name = initial_seed_for_mcica
+  long_name = initial permutaion seed for mcica radiation
+  units = 1
+  dimensions =  ()
+  type = integer
+[ipsdlim]
+  standard_name = limit_for_initial_seed_for_mcica
+  long_name = limit for initial permutaion seed for mcica radiation
+  units = 1
+  dimensions =  ()
+  type = integer
 [lwhtr]
   standard_name = flag_for_output_of_tendency_of_air_temperature_due_to_longwave_heating_on_radiation_timestep_assuming_clear_sky
   long_name = flag to output lw heating rate (Radtend%lwhc)
@@ -3522,8 +3619,8 @@
   type = real
   kind = kind_phys
 [top_at_1]
-  standard_name = flag_for_vertical_ordering_in_RRTMGP
-  long_name = flag for vertical ordering in RRTMGP
+  standard_name = flag_for_vertical_ordering_in_radiation
+  long_name = flag for vertical ordering in radiation
   units = flag
   dimensions = ()
   type = logical
@@ -9074,6 +9171,48 @@
   standard_name = lwe_thickness_of_minimum_rain_amount
   long_name = liquid water equivalent thickness of minimum rain amount
   units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_c]
+  standard_name = speed_of_light_in_vacuum
+  long_name = speed of light in vacuum
+  units = m s-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_plnk]
+  standard_name = planck_constant
+  long_name = Planck constant
+  units = J s-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_boltz]
+  standard_name = boltzmann_constant
+  long_name = Boltzmann constant
+  units = J K-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_solr_2008]
+  standard_name = solar_constant_2008
+  long_name = solar constant Tim 2008
+  units = W m-2
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_solr_2002]
+  standard_name = solar_constant_2002
+  long_name= solar constant Liu 2002
+  units = W m-2
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_thgni]
+  standard_name = temperature_ice_nucleation_starts
+  long_name = temperature the H.G.Nuc. ice starts
+  units = K
   dimensions = ()
   type = real
   kind = kind_phys
