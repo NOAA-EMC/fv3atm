@@ -1700,7 +1700,7 @@
   type = real
   kind = kind_phys
 [fullradar_diag]
-  standard_name = flag_for_computing_full_radar_reflectivity
+  standard_name = do_full_radar_reflectivity
   long_name = flag for computing full radar reflectivity
   units = flag
   dimensions = ()
