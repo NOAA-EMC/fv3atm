@@ -1,6 +1,7 @@
 module FV3GFS_restart_io_mod
 
-  use mpp_mod,            only: mpp_pe, mpp_root_pe
+  use esmf
+  use mpp_mod,            only: mpp_pe, mpp_root_pe, mpp_chksum, mpp_pe
   use block_control_mod,  only: block_control_type
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
@@ -15,14 +16,15 @@ module FV3GFS_restart_io_mod
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: phy_var2
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: phy_var3
   character(len=32),dimension(:),allocatable :: phy_var2_names, phy_var3_names
+  character(len=32),dimension(:),allocatable :: phy_var2_cksum, phy_var3_cksum
 
-  integer :: nvar2m, nvar2o, nvar3
-  integer :: nvar2r, nvar2mp, nvar3mp
+  integer :: nvar2m, nvar2o, nvar3, nvar2r, nvar2mp, nvar3mp
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: sfc_var2, sfc_var3ice
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3sn,sfc_var3eq,sfc_var3zn
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3, sfc_var3sn,sfc_var3eq,sfc_var3zn
   character(len=32),allocatable,dimension(:) :: sfc_name2, sfc_name3
+  character(len=32),dimension(:),allocatable :: sfc_var2_cksum, sfc_var3_cksum
 
+  type(ESMF_FieldBundle) :: phy_bundle, sfc_bundle
 
   public FV3GFS_restart_register
 
@@ -69,8 +71,8 @@ module FV3GFS_restart_io_mod
    nvar2d = GFS_Restart%num2d
    nvar3d = GFS_Restart%num3d
 
-   allocate (phy_var2(nx,ny,nvar2d), phy_var2_names(nvar2d))
-   allocate (phy_var3(nx,ny,npz,nvar3d), phy_var3_names(nvar3d))
+   allocate (phy_var2(nx,ny,nvar2d), phy_var2_names(nvar2d), phy_var2_cksum(nvar2d))
+   allocate (phy_var3(nx,ny,npz,nvar3d), phy_var3_names(nvar3d), phy_var3_cksum(nvar3d))
    phy_var2 = zero
    phy_var3 = zero
    do num = 1,nvar2d
@@ -79,9 +81,8 @@ module FV3GFS_restart_io_mod
    do num = 1,nvar3d
      phy_var3_names(num) = trim(GFS_Restart%name3d(num))
    enddo
-
-   ! if(mpp_pe() == mpp_root_pe()) write(0,*)'in FV3GFS_restart_register: allocated phy_var2 ', nx,ny,nvar2d
-   ! if(mpp_pe() == mpp_root_pe()) write(0,*)'in FV3GFS_restart_register: allocated phy_var3 ', nx,ny,npz,nvar3d
+   phy_var2_cksum =''
+   phy_var3_cksum =''
 
    !--------------- sfc
    nvar2m = 48
@@ -111,21 +112,25 @@ module FV3GFS_restart_io_mod
 
    !--- allocate the various containers needed for restarts
    allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r))
-   allocate(sfc_name3(0:nvar3+nvar3mp))
+   allocate(sfc_var2_cksum(nvar2m+nvar2o+nvar2mp+nvar2r))
    allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
-   ! if(mpp_pe() == mpp_root_pe()) write(0,*)' sfc_var2 num variables allocated ', nvar2m+nvar2o+nvar2mp+nvar2r
+
+   allocate(sfc_name3(0:nvar3+nvar3mp))
+   allocate(sfc_var3_cksum(0:nvar3+nvar3mp))
+
+   sfc_var2_cksum = ''
+   sfc_var3_cksum = ''
 
    allocate(sfc_var3ice(nx,ny,Model%kice))
 
    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
      allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
-     ! if(mpp_pe() == mpp_root_pe()) write(0,*)' sfc_var3 num variables allocated ', nvar3
    elseif (Model%lsm == Model%lsm_ruc) then
      allocate(sfc_var3(nx,ny,Model%lsoil_lsm,nvar3))
-     ! if(mpp_pe() == mpp_root_pe()) write(0,*)' sfc_var3 num variables allocated ', nvar3
    endif
    sfc_var2   = -9999.0_r8
    sfc_var3   = -9999.0_r8
+
    if (Model%lsm == Model%lsm_noahmp) then
      allocate(sfc_var3sn(nx,ny,-2:0,4:6))
      allocate(sfc_var3eq(nx,ny,1:4,7:7))
@@ -172,9 +177,7 @@ module FV3GFS_restart_io_mod
    integer :: i, j, k, n
    integer :: nb, ix, num
    integer :: isc, iec, jsc, jec, npz, nx, ny
-
-   if(mpp_pe() == mpp_root_pe()) write(0,*)'in fv_phy_restart_output'
-   if(mpp_pe() == mpp_root_pe()) write(*,*)'in fv_phy_restart_output'
+   integer(8) :: rchk
 
    isc = Atm_block%isc
    iec = Atm_block%iec
@@ -202,9 +205,7 @@ module FV3GFS_restart_io_mod
           phy_var2(i,j,num) = GFS_Restart%data(nb,num)%var2p(ix)
         enddo
       enddo
-      ! if(mpp_pe() == mpp_root_pe()) then
-      !   write(*,*)'fv_phy_restart_output: 2d ',num,trim(GFS_Restart%name2d(num)),minval(phy_var2(:,:,num)), maxval(phy_var2(:,:,num)), phy_var2(1,1,num)
-      ! endif
+      write(phy_var2_cksum(num),'(Z16)') mpp_chksum(phy_var2(:,:,num))
     enddo
 
     !--- 3D variables
@@ -219,7 +220,11 @@ module FV3GFS_restart_io_mod
           enddo
         enddo
       enddo
+      write(phy_var3_cksum(num),'(Z16)') mpp_chksum(phy_var3(:,:,:,num))
     enddo
+
+    call update_chksums(phy_bundle, nvar2d, phy_var2_names, phy_var2_cksum)
+    call update_chksums(phy_bundle, nvar3d, phy_var3_names, phy_var3_cksum)
 
  end subroutine fv_phy_restart_output
 
@@ -236,9 +241,6 @@ module FV3GFS_restart_io_mod
     integer, allocatable :: ii1(:), jj1(:)
     real(kind_phys) :: ice
     integer :: is, ie
-
-   if(mpp_pe() == mpp_root_pe()) write(0,*)'in fv_sfc_restart_output'
-   if(mpp_pe() == mpp_root_pe()) write(*,*)'in fv_sfc_restart_output'
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -387,7 +389,6 @@ module FV3GFS_restart_io_mod
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%deeprechxy)
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%rechxy)
        endif
-       ! if(mpp_pe() == mpp_root_pe()) write(0,*)' sfc_var2 num variables assigned', nt
 
        do k = 1,Model%kice
          do ix = 1, Atm_block%blksz(nb)
@@ -406,7 +407,6 @@ module FV3GFS_restart_io_mod
           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%stc)
           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%smc)
           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%slc)
-          ! if(mpp_pe() == mpp_root_pe()) write(0,*)' sfc_var3 num variables assigned ', nt
 ! 5 Noah MP 3D
           if (Model%lsm == Model%lsm_noahmp) then
 
@@ -457,14 +457,31 @@ module FV3GFS_restart_io_mod
           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%sh2o)
           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%keepsmfr)
           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%flag_frsoil)
-          ! if(mpp_pe() == mpp_root_pe()) write(0,*)' sfc_var3 num variables assigned ', nt
         end if
 
        deallocate(ii1,jj1)
     enddo block_loop
 
-   if(mpp_pe() == mpp_root_pe()) write(0,*)'in fv_sfc_restart_output'
-   if(mpp_pe() == mpp_root_pe()) write(*,*)'in fv_sfc_restart_output'
+    ! compute fields checksum and update field's checksum attribute
+    do num = 1,size(sfc_var2,dim=3)
+      write(sfc_var2_cksum(num),'(Z16)') mpp_chksum(sfc_var2(:,:,num))
+    enddo
+    call update_chksums(sfc_bundle, size(sfc_var2,dim=3), sfc_name2, sfc_var2_cksum)
+
+    write(sfc_var3_cksum(0),'(Z16)') mpp_chksum(sfc_var3ice(:,:,:))
+    do num = 1,nvar3
+      write(sfc_var3_cksum(num),'(Z16)') mpp_chksum(sfc_var3(:,:,:,num))
+    enddo
+
+    if (Model%lsm == Model%lsm_noahmp) then
+      do num = nvar3+1,nvar3+3
+         write(sfc_var3_cksum(num),'(Z16)') mpp_chksum(sfc_var3sn(:,:,:,num))
+      enddo
+      write(sfc_var3_cksum(7),'(Z16)') mpp_chksum(sfc_var3eq(:,:,:,7))
+      write(sfc_var3_cksum(8),'(Z16)') mpp_chksum(sfc_var3zn(:,:,:,8))
+    endif ! lsm = lsm_noahmp
+
+    call update_chksums(sfc_bundle, 1+nvar3+nvar3mp, sfc_name3(0:nvar3+nvar3mp), sfc_var3_cksum(0:nvar3+nvar3mp))
 
  end subroutine fv_sfc_restart_output
 
@@ -491,14 +508,14 @@ module FV3GFS_restart_io_mod
    real(kind_phys),dimension(:,:,:),pointer   :: temp_r3d
    integer :: num
 
-   if(mpp_pe() == mpp_root_pe()) write(0,*)'in fv_phy_restart_bundle_setup'
-
    if (.not. allocated(phy_var2)) then
      write(0,*)'ERROR phy_var2, NOT allocated'
    endif
    if (.not. allocated(phy_var3)) then
      write(0,*)'ERROR phy_var3 NOT allocated'
    endif
+
+   phy_bundle = bundle
 
    call ESMF_FieldBundleGet(bundle, name=bdl_name,rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -544,14 +561,14 @@ module FV3GFS_restart_io_mod
 
    integer :: num
 
-   if(mpp_pe() == mpp_root_pe()) write(0,*)'in fv_sfc_restart_bundle_setup'
-
    if (.not. allocated(sfc_var2)) then
      write(0,*)'ERROR sfc_var2, NOT allocated'
    endif
    if (.not. allocated(sfc_var3)) then
      write(0,*)'ERROR sfc_var3 NOT allocated'
    endif
+
+   sfc_bundle = bundle
 
    call ESMF_FieldBundleGet(bundle, name=sfcbdl_name,rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -562,7 +579,7 @@ module FV3GFS_restart_io_mod
 
    do num = 1,nvar2m
       temp_r2d => sfc_var2(:,:,num)
-       call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc_name2(num)), outputfile, grid, bundle)
+      call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc_name2(num)), outputfile, grid, bundle)
    enddo
 
    if (Model%nstf_name(1) > 0) then
@@ -606,10 +623,10 @@ module FV3GFS_restart_io_mod
       enddo
 
       temp_r3d => sfc_var3eq(:,:,:,7)
-      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc_name3(num)), "zaxis_2", Model%lsoil, trim(outputfile), grid, bundle)
+      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc_name3(7)), "zaxis_2", Model%lsoil, trim(outputfile), grid, bundle)
 
       temp_r3d => sfc_var3zn(:,:,:,8)
-      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc_name3(num)), "zaxis_4", 7, trim(outputfile), grid, bundle)
+      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc_name3(8)), "zaxis_4", 7, trim(outputfile), grid, bundle)
    endif ! lsm = lsm_noahmp
 
  end subroutine fv_sfc_restart_bundle_setup
@@ -635,8 +652,11 @@ module FV3GFS_restart_io_mod
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__, file=__FILE__)) &
    call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"output_file"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"checksum"/), rc=rc)
+   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"output_file"/), rc=rc)
+   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name='output_file', value=trim(outputfile), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
@@ -664,14 +684,16 @@ module FV3GFS_restart_io_mod
 
    integer :: rc, i
 
-   ! if(mpp_pe() == mpp_root_pe()) write(0,*)'in add 3d field to bundle ', trim(field_name)
    field = ESMF_FieldCreate(grid, temp_r3d, datacopyflag=ESMF_DATACOPY_REFERENCE, &
                             name=trim(field_name), indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__, file=__FILE__)) &
    call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"output_file"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"checksum"/), rc=rc)
+   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"output_file"/), rc=rc)
+   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name='output_file', value=trim(outputfile), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
@@ -696,16 +718,16 @@ module FV3GFS_restart_io_mod
    real(kind_phys), allocatable, dimension(:) :: buffer
    integer :: rc, i
 
-   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-                          attrList=(/"ESMF:ungridded_dim_labels"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+                          ! attrList=(/"ESMF:ungridded_dim_labels"/), rc=rc)
+   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
                           name="ESMF:ungridded_dim_labels", valueList=(/trim(axis_name)/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3-dim",  &
-                          attrList=(/trim(axis_name),trim(axis_name)//":cartesian_axis"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3-dim",  &
+                          ! attrList=(/trim(axis_name),trim(axis_name)//":cartesian_axis"/), rc=rc)
+   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
    allocate( buffer(num_levels) )
    do i=1, num_levels
@@ -721,6 +743,26 @@ module FV3GFS_restart_io_mod
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
  end subroutine add_zaxis_to_field
+
+ subroutine update_chksums(bundle, nvar, var_names, var_cksums)
+
+   type(ESMF_FieldBundle), intent(inout) :: bundle
+   integer, intent(in) :: nvar
+   character(len=*), dimension(:), intent(in) :: var_names, var_cksums
+
+   integer :: n, rc
+   type(ESMF_Field) :: field
+
+   do n = 1, nvar
+     call ESMF_FieldBundleGet(bundle, var_names(n), field=field, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name="checksum", value=var_cksums(n), rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+   end do
+
+ end subroutine update_chksums
 
    pure subroutine fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar_s2m,warm_start)
      implicit none

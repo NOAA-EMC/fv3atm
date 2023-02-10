@@ -57,6 +57,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
   use fv3gfs_io_mod,      only: fv_phys_bundle_setup
   use fv3gfs_restart_io_mod,  only: fv_phy_restart_bundle_setup, fv_sfc_restart_bundle_setup
+  use fv_ufs_restart_io_mod,  only: fv_srf_wnd_restart_bundle_setup, &
+                                    fv_tracer_restart_bundle_setup
 
   use fms2_io_mod,        only: FmsNetcdfFile_t, open_file, close_file, variable_exists, read_data
 
@@ -348,12 +350,15 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_FieldBundleGet(fb, name=fb_name, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if (fb_name(1:4) == 'atm_') then
-      call fv_dyn_bundle_setup(Atmos%axes, fb, grid, quilting=.true., rc=rc)
+    if (fb_name(1:22) == 'restart_fv_srf_wnd.res') then
+      call fv_srf_wnd_restart_bundle_setup(fb, grid, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    else if (fb_name(1:21) == 'restart_fv_tracer.res') then
+      call fv_tracer_restart_bundle_setup(fb, grid, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     else
-      write(0,*)'will call fv_dyn_restart_bundle_setup, for file ',trim(fb_name)
-      ! call fv_dyn_restart_bundle_setup(Atmos%axes, fb, grid, quilting=.true., rc=rc)
+      call fv_dyn_bundle_setup(Atmos%axes, fb, grid, quilting=.true., rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
 
   end subroutine init_dyn_fb
@@ -773,12 +778,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     restart_endfcst = .false.
     if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
 ! frestart only contains intermediate restart
-    do i=1,size(frestart)
-      if(frestart(i) == total_inttime) then
-        frestart(i) = 0
-        exit
-      endif
-    enddo
+    ! do i=1,size(frestart)
+    !   if(frestart(i) == total_inttime) then
+    !     frestart(i) = 0
+    !     exit
+    !   endif
+    ! enddo
     if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
       'total_inttime=',total_inttime
 ! if there is restart writing during integration
@@ -1089,7 +1094,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if ( quilting_restart ) then
 
           ! do i=1,3 ! 3 dynamics restart bundles
-          do i=1,0 ! 3 dynamics restart bundles
+          do i=2,3 ! 3 dynamics restart bundles
 
             tempState = ESMF_StateCreate(rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return

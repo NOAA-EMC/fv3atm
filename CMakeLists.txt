@@ -88,6 +88,7 @@ add_library(fv3atm
   io/FV3GFS_io.F90
   io/FV3GFS_restart_io.F90
   io/module_write_netcdf.F90
+  io/module_write_restart_netcdf.F90
   io/module_fv3_io_def.F90
   io/module_write_internal_state.F90
   io/module_wrt_grid_comp.F90

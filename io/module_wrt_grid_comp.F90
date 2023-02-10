@@ -68,6 +68,7 @@
       logical,save      :: write_nsflip
       logical,save      :: change_wrtidate=.false.
       integer,save      :: frestart(999) = -1
+      logical           :: lprnt
 !
 !-----------------------------------------------------------------------
 !
@@ -200,7 +201,6 @@
       character(256)                          :: gridfile
       integer                                 :: num_output_file
 !
-      logical                                 :: lprnt
 
       integer :: grid_id
       logical :: top_parent_is_global
@@ -1637,7 +1637,7 @@
       type(ESMF_TimeInterval)               :: io_currtimediff
       type(ESMF_Grid)                       :: fbgrid, wrtGrid
       type(ESMF_State),save                 :: stateGridFB
-      type(optimizeT), save                 :: optimize(4)
+      type(optimizeT), save                 :: optimize(40)   ! FIXME
       type(ESMF_GridComp), save, allocatable   :: compsGridFB(:)
       type(ESMF_RouteHandle)                :: rh
       type(ESMF_RegridMethod_Flag)          :: regridmethod
@@ -1996,10 +1996,7 @@
 
       if ( (wrt_int_state%output_history .and. ANY(nint(output_fh(:)*3600.0) == fcst_seconds)) .or. ANY(frestart(:) == fcst_seconds) ) then
 
-        ! if (lprnt) write(0,*)'wrt_run: loop over wrt_int_state%FBCount ',wrt_int_state%FBCount, ' nfhour ',  nfhour, ' cdate ', cdate(1:6)
         file_loop_all: do nbdl=1, wrt_int_state%FBCount
-!
-          ! if (lprnt) write(0,*)'wrt_run: nbdl = ',nbdl, ' fb name ',trim(wrt_int_state%wrtFB_names(nbdl))
 
           if (wrt_int_state%wrtFB_names(nbdl)(1:8) == 'restart_') then
             if (.not.(ANY(frestart(:) == fcst_seconds))) cycle
@@ -3082,6 +3079,8 @@
 
   subroutine ioCompRun(comp, importState, exportState, clock, rc)
     use netcdf
+    use module_write_restart_netcdf
+
     type(ESMF_GridComp)   :: comp
     type(ESMF_State)      :: importState, exportState
     type(ESMF_Clock)      :: clock
@@ -3118,7 +3117,8 @@
     logical                          :: thereAreVerticals
     integer                          :: ch_dimid, timeiso_varid
     character(len=ESMF_MAXSTR)       :: time_iso
-    logical                          :: is_restart
+    integer                          :: wrt_mpi_comm
+    type(ESMF_VM)                    :: vm
 
     rc = ESMF_SUCCESS
 
@@ -3136,8 +3136,6 @@
     call ESMF_AttributeGet(comp, name="tileFileName", value=tileFileName, rc=rc)
 
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    is_restart = tileFileName(1:7) == 'RESTART'
 
     call ESMF_AttributeGet(comp, name="convention", value=convention, rc=rc)
 
@@ -3163,6 +3161,21 @@
       status=ESMF_FILESTATUS_OLD
     else if (trim(statusStr) == "ESMF_FILESTATUS_REPLACE") then
       status = ESMF_FILESTATUS_REPLACE
+    endif
+
+    if ( tileFileName(1:7) == 'RESTART' ) then
+
+      ! Write out restart files using write_restart_netcdf, then return from this subroutine
+      if(timeslice == 1) then
+        call ESMF_GridCompGet(comp, localPet=localPet, vm=vm, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        call ESMF_VMGet(vm=vm, mpiCommunicator=wrt_mpi_comm, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        call write_restart_netcdf(wrtTileFB, trim(tileFileName), .false., wrt_mpi_comm, localPet, rc)
+      endif
+      return
     endif
 
     call ESMF_LogWrite("In ioCompRun() before writing to: "// &
@@ -3231,7 +3244,7 @@
           deallocate(udimList)
         enddo ! fieldCount
         deallocate(fieldList)
-        if (thereAreVerticals .and. .not.is_restart) then
+        if (thereAreVerticals) then
           ! see if the vertical_dim_labels attribute exists on the grid, and
           ! if so access it and write out verticals accordingly
           call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
@@ -3283,7 +3296,6 @@
                                dimids=(/dimid/), varid=varid)
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-          if (.not.is_restart) then
           ncerr = nf90_def_dim(ncid, "nchars", 20, ch_dimid)
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
           ncerr = nf90_def_var(ncid, "time_iso", NF90_CHAR, [ch_dimid,dimid], timeiso_varid)
@@ -3294,7 +3306,6 @@
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
           ncerr = nf90_put_att(ncid, timeiso_varid, "_Encoding", "UTF-8")
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-          endif
 
           ncerr = nf90_enddef(ncid=ncid)
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -3302,10 +3313,8 @@
           ncerr = nf90_put_var(ncid, varid, values=time)
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-          if (.not.is_restart) then
           ncerr = nf90_put_var(ncid, timeiso_varid, values=[trim(time_iso)])
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-          endif
 
           ! loop over all the grid attributes that start with "time:", and
           ! put them on the "time" variable in the NetCDF file

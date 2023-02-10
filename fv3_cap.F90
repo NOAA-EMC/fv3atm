@@ -58,6 +58,7 @@ module fv3gfs_cap_mod
   type(ESMF_GridComp)                         :: fcstComp
   type(ESMF_State)                            :: fcstState
   type(ESMF_FieldBundle), allocatable         :: fcstFB(:)
+  integer,dimension(:), allocatable           :: fcstPetList
   integer, save                               :: FBCount
 
   type(ESMF_GridComp),    allocatable         :: wrtComp(:)
@@ -189,7 +190,7 @@ module fv3gfs_cap_mod
     real                                   :: output_startfh, outputfh, outputfh2(2)
     logical                                :: loutput_fh, lfreq
     character(ESMF_MAXSTR)                 :: gc_name, fb_name
-    integer,dimension(:), allocatable      :: petList, fcstPetList, originPetList, targetPetList
+    integer,dimension(:), allocatable      :: petList, originPetList, targetPetList
     character(len=esmf_maxstr),allocatable :: fcstItemNameList(:)
     type(ESMF_StateItem_Flag), allocatable :: fcstItemTypeList(:)
     character(20)                          :: cwrtcomp
@@ -549,8 +550,7 @@ module fv3gfs_cap_mod
 
         if(mype==0) print *,'af wrtState reconcile, FBcount=',FBcount
 
-        call ESMF_AttributeCopy(fcstState, wrtState(i), &
-                                attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
+        call ESMF_AttributeCopy(fcstState, wrtState(i), attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! deal with GridTransfer if needed
@@ -695,7 +695,7 @@ module fv3gfs_cap_mod
             fieldbundle_is_restart = .false.
             if (fcstItemNameList(j)(1:8) == "restart_") then
               ! restart output forecast bundles, no need to set regridmethod
-              ! Redist will be used instad of Regrid
+              ! Redist will be used instead of Regrid
               fieldbundle_is_restart = .true.
             else
               ! history output forecast bundles
@@ -1092,14 +1092,14 @@ module fv3gfs_cap_mod
     character(240)              :: msgString
 
     type(ESMF_Clock)            :: clock, clock_out
-
+    type(ESMF_VM)               :: vm
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase2: ")
 
-    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
+    call ESMF_GridCompGet(gcomp, clock=clock, vm=vm, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock, phase=2, userRc=urc, rc=rc)
@@ -1116,6 +1116,15 @@ module fv3gfs_cap_mod
 !*** if it is output time, call data transfer and write grid comp run
     if( quilting ) then
 
+      ! during the run phase some of the fcst field attributes have been updated (for example
+      ! restart fields checksums) so we need to update fcstState across all PETs of the cap and then
+      ! copy the attributes (Info) from fcstState -> wrtState(n_group)
+      call ESMF_AttributeUpdate(fcstState, vm, rootList=fcstPetList, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_AttributeCopy(fcstState, wrtState(n_group), attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       call ESMF_ClockGet(clock_out, startTime=startTime, currTime=currTime, &
                          timeStep=timeStep, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1125,7 +1134,7 @@ module fv3gfs_cap_mod
       call ESMF_TimeIntervalGet(time_elapsed, s=nfseconds, rc=rc)
 
       output: if (ANY(nint(output_fh(:)*3600.0) == nfseconds) .or. ANY(frestart(:) == nfseconds)) then
-!
+
         if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run output time=',nfseconds, &
           'FBcount=',FBcount,'na=',na
 
