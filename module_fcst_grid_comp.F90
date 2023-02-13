@@ -65,7 +65,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 nbdlphys, iau_offset
   use module_fv3_config,  only: dt_atmos, fcst_mpi_comm, fcst_ntasks,      &
                                 quilting, calendar, cpl_grid_id,           &
-                                cplprint_flag, restart_endfcst
+                                cplprint_flag
 
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
   use module_cplfields,       only: nExportFields, exportFields, exportFieldsInfo, &
@@ -743,9 +743,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       endif
     endif
 ! if to write out restart at the end of forecast
-    restart_endfcst = .false.
-    if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
-      'total_inttime=',total_inttime
+    if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'total_inttime=',total_inttime
 
 !------ initialize component models ------
 
