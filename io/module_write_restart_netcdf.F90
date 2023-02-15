@@ -17,11 +17,6 @@ module module_write_restart_netcdf
 
   logical :: par
 
-  interface quantize_array
-     module procedure quantize_array_3d
-     module procedure quantize_array_4d
-  end interface
-
   contains
 
 !----------------------------------------------------------------------------------------
@@ -38,7 +33,6 @@ module module_write_restart_netcdf
 !
 !** local vars
     integer, parameter :: i8_kind=8
-    integer(i8_kind) :: mold(1)
     integer :: i,j,k,t, istart,iend,jstart,jend
     integer :: im, jm, lm
 
@@ -80,8 +74,8 @@ module module_write_restart_netcdf
     integer :: ncid
     integer :: oldMode
     integer :: dimid
-    integer :: im_dimid, im_p1_dimid, jm_dimid, jm_p1_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
-    integer :: im_varid, im_p1_varid, jm_varid, jm_p1_varid, tile_varid, lon_varid, lat_varid, time_varid, timeiso_varid
+    integer :: im_dimid, im_p1_dimid, jm_dimid, jm_p1_dimid, time_dimid
+    integer :: im_varid, im_p1_varid, jm_varid, jm_p1_varid, time_varid
     integer, dimension(:), allocatable :: dimids_2d, dimids_3d
     integer, dimension(:), allocatable :: varids, zaxis_dimids
     logical shuffle
@@ -96,10 +90,11 @@ module module_write_restart_netcdf
     integer :: par_access
 
     real(ESMF_KIND_R8), allocatable  :: valueListr8(:)
-    logical :: isPresent, thereAreVerticals, is_restart_core
+    logical :: isPresent, thereAreVerticals, is_restart_core, dynamics_restart_file
     integer :: udimCount
     character(80), allocatable :: udimList(:)
     character(32), allocatable :: field_checksums(:)
+    character(32) :: axis_attr_name
     character(32) :: field_checksum
 
     integer :: ncchksz = 64*1024 ! same as in FMS
@@ -214,34 +209,43 @@ module module_write_restart_netcdf
        ! disable auto filling.
        ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
 
+       dynamics_restart_file = index(trim(filename),"fv_") > 0
+
+       ! Unnecessary naming inconsistency
+       if (dynamics_restart_file) then
+          axis_attr_name = "axis"
+       else
+          axis_attr_name = "cartesian_axis"
+       end if
+
        ! define dimensions [xaxis_1, yaxis_1 ,(zaxis_1,...), Time]
        if ( .not.is_restart_core ) then
 
           ncerr = nf90_def_dim(ncid, "xaxis_1", im, im_dimid); NC_ERR_STOP(ncerr)
           ncerr = nf90_def_var(ncid, "xaxis_1", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_varid, "cartesian_axis", "X"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, im_varid, trim(axis_attr_name), "X"); NC_ERR_STOP(ncerr)
 
           ncerr = nf90_def_dim(ncid, "yaxis_1", jm, jm_dimid); NC_ERR_STOP(ncerr)
           ncerr = nf90_def_var(ncid, "yaxis_1", NF90_DOUBLE, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_varid, "cartesian_axis", "Y"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, jm_varid, trim(axis_attr_name), "Y"); NC_ERR_STOP(ncerr)
 
        else
 
           ncerr = nf90_def_dim(ncid, "xaxis_1", im, im_dimid); NC_ERR_STOP(ncerr)
           ncerr = nf90_def_var(ncid, "xaxis_1", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_varid, "axis", "X"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, im_varid, trim(axis_attr_name), "X"); NC_ERR_STOP(ncerr)
 
           ncerr = nf90_def_dim(ncid, "xaxis_2", im+1, im_p1_dimid); NC_ERR_STOP(ncerr)
           ncerr = nf90_def_var(ncid, "xaxis_2", NF90_DOUBLE, im_p1_dimid, im_p1_varid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_p1_varid, "axis", "X"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, im_p1_varid, trim(axis_attr_name), "X"); NC_ERR_STOP(ncerr)
 
           ncerr = nf90_def_dim(ncid, "yaxis_1", jm+1, jm_p1_dimid); NC_ERR_STOP(ncerr)
           ncerr = nf90_def_var(ncid, "yaxis_1", NF90_DOUBLE, jm_p1_dimid, jm_p1_varid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_p1_varid, "axis", "Y"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, jm_p1_varid, trim(axis_attr_name), "Y"); NC_ERR_STOP(ncerr)
 
           ncerr = nf90_def_dim(ncid, "yaxis_2", jm, jm_dimid); NC_ERR_STOP(ncerr)
           ncerr = nf90_def_var(ncid, "yaxis_2", NF90_DOUBLE, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_varid, "axis", "Y"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, jm_varid, trim(axis_attr_name), "Y"); NC_ERR_STOP(ncerr)
 
        end if
 
@@ -273,7 +277,15 @@ module module_write_restart_netcdf
 
        ncerr = nf90_def_dim(ncid, "Time", NF90_UNLIMITED, time_dimid); NC_ERR_STOP(ncerr)
        ncerr = nf90_def_var(ncid, "Time", NF90_DOUBLE, time_dimid, time_varid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_put_att(ncid, time_varid, "cartesian_axis", "T"); NC_ERR_STOP(ncerr)
+
+       ! Again, unnecessary naming inconsistency
+       if (dynamics_restart_file) then
+          ncerr = nf90_put_att(ncid, time_varid, "cartesian_axis", "T"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, time_varid, "units", "time level"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, time_varid, "long_name", "Time"); NC_ERR_STOP(ncerr)
+       else
+          ncerr = nf90_put_att(ncid, time_varid, trim(axis_attr_name), "T"); NC_ERR_STOP(ncerr)
+       end if
 
        ncerr = nf90_redef(ncid=ncid)
 
@@ -521,14 +533,14 @@ contains
       endif
       if( typekind == ESMF_TYPEKIND_R4 ) then
         ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_FLOAT, dimids=(/dimid/), varid=varid); NC_ERR_STOP(ncerr)
-        ncerr = nf90_put_att(ncid, varid, "cartesian_axis", "Z"); NC_ERR_STOP(ncerr)
+        ncerr = nf90_put_att(ncid, varid, trim(axis_attr_name), "Z"); NC_ERR_STOP(ncerr)
         ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
         ncerr = nf90_put_var(ncid, varid, values=valueListr4); NC_ERR_STOP(ncerr)
         ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
         deallocate(valueListr4)
       else if(typekind == ESMF_TYPEKIND_R8) then
         ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_DOUBLE,  dimids=(/dimid/), varid=varid); NC_ERR_STOP(ncerr)
-        ncerr = nf90_put_att(ncid, varid, "cartesian_axis", "Z"); NC_ERR_STOP(ncerr)
+        ncerr = nf90_put_att(ncid, varid, trim(axis_attr_name), "Z"); NC_ERR_STOP(ncerr)
         ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
         ncerr = nf90_put_var(ncid, varid, values=valueListr8); NC_ERR_STOP(ncerr)
         ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
@@ -569,262 +581,6 @@ contains
     end subroutine
 
   end subroutine write_restart_netcdf
-
-!----------------------------------------------------------------------------------------
-  subroutine get_global_attr(fldbundle, ncid, rc)
-    type(ESMF_FieldBundle), intent(in) :: fldbundle
-    integer, intent(in)                :: ncid
-    integer, intent(out)               :: rc
-
-! local variable
-    integer :: i, attCount
-    integer :: ncerr
-    character(len=ESMF_MAXSTR) :: attName
-    type(ESMF_TypeKind_Flag)   :: typekind
-
-    integer :: varival
-    real(ESMF_KIND_R4), dimension(:), allocatable :: varr4list
-    real(ESMF_KIND_R8), dimension(:), allocatable :: varr8list
-    integer :: itemCount
-    character(len=ESMF_MAXSTR) :: varcval
-!
-    call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                           attnestflag=ESMF_ATTNEST_OFF, count=attCount, &
-                           rc=rc); ESMF_ERR_RETURN(rc)
-
-    do i=1,attCount
-
-      call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                             attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
-                             typekind=typekind, itemCount=itemCount, rc=rc); ESMF_ERR_RETURN(rc)
-
-      if (typekind==ESMF_TYPEKIND_I4) then
-         call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                name=trim(attName), value=varival, rc=rc); ESMF_ERR_RETURN(rc)
-         ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), varival); NC_ERR_STOP(ncerr)
-
-      else if (typekind==ESMF_TYPEKIND_R4) then
-         allocate (varr4list(itemCount))
-         call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                name=trim(attName), valueList=varr4list, rc=rc); ESMF_ERR_RETURN(rc)
-         ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), varr4list); NC_ERR_STOP(ncerr)
-         deallocate(varr4list)
-
-      else if (typekind==ESMF_TYPEKIND_R8) then
-         allocate (varr8list(itemCount))
-         call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                name=trim(attName), valueList=varr8list, rc=rc); ESMF_ERR_RETURN(rc)
-         ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), varr8list); NC_ERR_STOP(ncerr)
-         deallocate(varr8list)
-
-      else if (typekind==ESMF_TYPEKIND_CHARACTER) then
-         call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                name=trim(attName), value=varcval, rc=rc); ESMF_ERR_RETURN(rc)
-         ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), trim(varcval)); NC_ERR_STOP(ncerr)
-
-      end if
-
-    end do
-
-  end subroutine get_global_attr
-
-!----------------------------------------------------------------------------------------
-  subroutine get_grid_attr(grid, prefix, ncid, varid, rc)
-    type(ESMF_Grid), intent(in)  :: grid
-    character(len=*), intent(in) :: prefix
-    integer, intent(in)          :: ncid
-    integer, intent(in)          :: varid
-    integer, intent(out)         :: rc
-
-! local variable
-    integer :: i, attCount, n, ind
-    integer :: ncerr
-    character(len=ESMF_MAXSTR) :: attName
-    type(ESMF_TypeKind_Flag)   :: typekind
-
-    integer :: varival
-    real(ESMF_KIND_R4) :: varr4val
-    real(ESMF_KIND_R8) :: varr8val
-    character(len=ESMF_MAXSTR) :: varcval
-!
-    call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                           attnestflag=ESMF_ATTNEST_OFF, count=attCount, &
-                           rc=rc); ESMF_ERR_RETURN(rc)
-
-    do i=1,attCount
-
-      call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                             attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
-                             typekind=typekind, itemCount=n, rc=rc); ESMF_ERR_RETURN(rc)
-
-      if (index(trim(attName), trim(prefix)//":")==1) then
-         ind = len(trim(prefix)//":")
-
-         if (typekind==ESMF_TYPEKIND_I4) then
-            call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                                   name=trim(attName), value=varival, rc=rc); ESMF_ERR_RETURN(rc)
-            ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), varival); NC_ERR_STOP(ncerr)
-
-         else if (typekind==ESMF_TYPEKIND_R4) then
-            call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                                   name=trim(attName), value=varr4val, rc=rc); ESMF_ERR_RETURN(rc)
-            ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), varr4val); NC_ERR_STOP(ncerr)
-
-         else if (typekind==ESMF_TYPEKIND_R8) then
-            call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                                   name=trim(attName), value=varr8val, rc=rc); ESMF_ERR_RETURN(rc)
-            if (trim(attName) /= '_FillValue') then
-              ! FIXME:  _FillValue must be cast to var type when using
-              ! NF90_NETCDF4. Until this is fixed, using netCDF default _FillValue.
-              ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), varr8val); NC_ERR_STOP(ncerr)
-            end if
-
-         else if (typekind==ESMF_TYPEKIND_CHARACTER) then
-            call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                                   name=trim(attName), value=varcval, rc=rc); ESMF_ERR_RETURN(rc)
-            ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), trim(varcval)); NC_ERR_STOP(ncerr)
-
-         end if
-
-      end if
-
-    end do
-
-  end subroutine get_grid_attr
-
-!----------------------------------------------------------------------------------------
-  subroutine add_dim(ncid, dim_name, dimid, grid, rc)
-    integer, intent(in)             :: ncid
-    character(len=*), intent(in)    :: dim_name
-    integer, intent(inout) :: dimid
-    type(ESMF_Grid), intent(in)     :: grid
-    integer, intent(out)            :: rc
-
-! local variable
-    integer :: n, dim_varid
-    integer :: ncerr
-    type(ESMF_TypeKind_Flag)   :: typekind
-
-    real(ESMF_KIND_R4), allocatable  :: valueListR4(:)
-    real(ESMF_KIND_R8), allocatable  :: valueListR8(:)
-!
-    call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                           attnestflag=ESMF_ATTNEST_OFF, name=dim_name, &
-                           typekind=typekind, itemCount=n, rc=rc); ESMF_ERR_RETURN(rc)
-
-    if (trim(dim_name) == "time") then
-      ! using an unlimited dim requires collective mode (NF90_COLLECTIVE)
-      ! for parallel writes, which seems to slow things down on hera.
-      ! if (time_unlimited) then
-        ! ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
-      ! else
-        ncerr = nf90_def_dim(ncid, trim(dim_name), 1, dimid); NC_ERR_STOP(ncerr)
-      ! end if
-    else
-      ncerr = nf90_def_dim(ncid, trim(dim_name), n, dimid); NC_ERR_STOP(ncerr)
-    end if
-
-    if (typekind==ESMF_TYPEKIND_R8) then
-       ncerr = nf90_def_var(ncid, dim_name, NF90_REAL8, dimids=[dimid], varid=dim_varid); NC_ERR_STOP(ncerr)
-       allocate(valueListR8(n))
-       call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                              name=trim(dim_name), valueList=valueListR8, rc=rc); ESMF_ERR_RETURN(rc)
-       ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_put_var(ncid, dim_varid, values=valueListR8); NC_ERR_STOP(ncerr)
-       ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-       deallocate(valueListR8)
-     else if (typekind==ESMF_TYPEKIND_R4) then
-       ncerr = nf90_def_var(ncid, dim_name, NF90_REAL4, dimids=[dimid], varid=dim_varid); NC_ERR_STOP(ncerr)
-       allocate(valueListR4(n))
-       call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
-                              name=trim(dim_name), valueList=valueListR4, rc=rc); ESMF_ERR_RETURN(rc)
-       ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_put_var(ncid, dim_varid, values=valueListR4); NC_ERR_STOP(ncerr)
-       ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-       deallocate(valueListR4)
-     else
-        write(0,*)'Error in module_write_netcdf.F90(add_dim) unknown typekind for ',trim(dim_name)
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
-    end if
-    if (par) then
-       ncerr = nf90_var_par_access(ncid, dim_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
-    end if
-
-    call get_grid_attr(grid, dim_name, ncid, dim_varid, rc)
-
-  end subroutine add_dim
-
-!----------------------------------------------------------------------------------------
-  subroutine quantize_array_3d(array, dataMin, dataMax, nbits, compress_err)
-
-    real(4), dimension(:,:,:), intent(inout)   :: array
-    real(4), intent(in)                        :: dataMin, dataMax
-    integer, intent(in)                        :: nbits
-    real(4), intent(out)                       :: compress_err
-
-    real(4) :: scale_fact, offset
-    real(4), dimension(:,:,:), allocatable     :: array_save
-    ! Lossy compression if nbits>0.
-    ! The floating point data is quantized to improve compression
-    ! See doi:10.5194/gmd-10-413-2017.  The method employed
-    ! here is identical to the 'scaled linear packing' method in
-    ! that paper, except that the data are scaling into an arbitrary
-    ! range (2**nbits-1 not just 2**16-1) and are stored as
-    ! re-scaled floats instead of short integers.
-    ! The zlib algorithm does almost as
-    ! well packing the re-scaled floats as it does the scaled
-    ! integers, and this avoids the need for the client to apply the
-    ! rescaling (plus it allows the ability to adjust the packing
-    ! range).
-    scale_fact = (dataMax - dataMin) / (2**nbits-1)
-    offset = dataMin
-    if (scale_fact > 0.) then
-       allocate(array_save, source=array)
-       array = scale_fact*(nint((array_save - offset) / scale_fact)) + offset
-       ! compute max abs compression error
-       compress_err = maxval(abs(array_save-array))
-       deallocate(array_save)
-    else
-       ! field is constant
-       compress_err = 0.
-    end if
-  end subroutine quantize_array_3d
-
-  subroutine quantize_array_4d(array, dataMin, dataMax, nbits, compress_err)
-
-    real(4), dimension(:,:,:,:), intent(inout) :: array
-    real(4), intent(in)                        :: dataMin, dataMax
-    integer, intent(in)                        :: nbits
-    real(4), intent(out)                       :: compress_err
-
-    real(4) :: scale_fact, offset
-    real(4), dimension(:,:,:,:), allocatable   :: array_save
-
-    ! Lossy compression if nbits>0.
-    ! The floating point data is quantized to improve compression
-    ! See doi:10.5194/gmd-10-413-2017.  The method employed
-    ! here is identical to the 'scaled linear packing' method in
-    ! that paper, except that the data are scaling into an arbitrary
-    ! range (2**nbits-1 not just 2**16-1) and are stored as
-    ! re-scaled floats instead of short integers.
-    ! The zlib algorithm does almost as
-    ! well packing the re-scaled floats as it does the scaled
-    ! integers, and this avoids the need for the client to apply the
-    ! rescaling (plus it allows the ability to adjust the packing
-    ! range).
-    scale_fact = (dataMax - dataMin) / (2**nbits-1)
-    offset = dataMin
-    if (scale_fact > 0.) then
-       allocate(array_save, source=array)
-       array = scale_fact*(nint((array_save - offset) / scale_fact)) + offset
-       ! compute max abs compression error
-       compress_err = maxval(abs(array_save-array))
-       deallocate(array_save)
-    else
-       ! field is constant
-       compress_err = 0.
-    end if
-  end subroutine quantize_array_4d
 
 !----------------------------------------------------------------------------------------
 end module module_write_restart_netcdf

@@ -719,16 +719,9 @@ module FV3GFS_restart_io_mod
    real(kind_phys), allocatable, dimension(:) :: buffer
    integer :: rc, i
 
-   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-                          ! attrList=(/"ESMF:ungridded_dim_labels"/), rc=rc)
-   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
                           name="ESMF:ungridded_dim_labels", valueList=(/trim(axis_name)/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3-dim",  &
-                          ! attrList=(/trim(axis_name),trim(axis_name)//":cartesian_axis"/), rc=rc)
-   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
    allocate( buffer(num_levels) )
    do i=1, num_levels

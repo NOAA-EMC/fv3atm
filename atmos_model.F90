@@ -54,7 +54,7 @@ use fms_mod,            only: clock_flag_default
 use fms_mod,            only: check_nml_error
 use diag_manager_mod,   only: diag_send_complete_instant
 use time_manager_mod,   only: time_type, get_time, get_date, &
-                              operator(+), operator(-),real_to_time_type
+                              operator(+), operator(-),real_to_time_type, date_to_string
 use field_manager_mod,  only: MODEL_ATMOS
 use tracer_manager_mod, only: get_number_tracers, get_tracer_names, &
                               get_tracer_index, NO_TRACER
@@ -1065,7 +1065,7 @@ subroutine atmos_model_end (Atmos)
     if(restart_endfcst) then
       call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
       call fv_phy_restart_output(GFS_restart_var, Atm_block)
-      call fv_dyn_restart_output(Atm(mygrid))
+      call fv_dyn_restart_output(Atm(mygrid), date_to_string(Atmos%Time))
       call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                  GFS_control, Atmos%domain)
 !     call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
@@ -1110,7 +1110,7 @@ subroutine atmos_model_restart(Atmos, timestamp)
     call atmosphere_restart(timestamp)
     call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
     call fv_phy_restart_output(GFS_restart_var, Atm_block)
-    call fv_dyn_restart_output(Atm(mygrid))
+    call fv_dyn_restart_output(Atm(mygrid), timestamp)
     call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                GFS_control, Atmos%domain, timestamp)
     if(GFS_control%do_ca)then
