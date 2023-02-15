@@ -19,7 +19,8 @@ module FV3GFS_restart_io_mod
   character(len=32),dimension(:),allocatable :: phy_var2_cksum, phy_var3_cksum
 
   integer :: nvar2m, nvar2o, nvar3, nvar2r, nvar2mp, nvar3mp
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: sfc_var2, sfc_var3ice
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: sfc_var2
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: sfc_var3ice
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3, sfc_var3sn,sfc_var3eq,sfc_var3zn
   character(len=32),allocatable,dimension(:) :: sfc_name2, sfc_name3
   character(len=32),dimension(:),allocatable :: sfc_var2_cksum, sfc_var3_cksum

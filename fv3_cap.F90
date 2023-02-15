@@ -468,7 +468,7 @@ module fv3gfs_cap_mod
         endif
         call ESMF_AttributeGet(fcstFB(i), convention="NetCDF", purpose="FV3", name="grid_id", value=grid_id, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        call ESMF_AttributeGet(fcstFB(i), convention="NetCDF", purpose="FV3", name="frestart", valueList=frestart, rc=rc)
+        call ESMF_AttributeGet(fcstFB(i), convention="NetCDF", purpose="FV3-nooutput", name="frestart", valueList=frestart, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         is_moving_fb(i) = is_moving(grid_id)
@@ -741,7 +741,8 @@ module fv3gfs_cap_mod
                   if (rc /= ESMF_SUCCESS) then
                     write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRedistStore at line ',__LINE__
                     call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRedistStore', ESMF_LOGMSG_ERROR, rc=rc)
-                    call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                    ! call ESMF_Finalize(endflag=ESMF_END_ABORT)
                   endif
                   call ESMF_TraceRegionExit("ESMF_FieldBundleRedistStore()", rc=rc)
                   call ESMF_LogWrite('af FieldBundleRedistStore', ESMF_LOGMSG_INFO, rc=rc)

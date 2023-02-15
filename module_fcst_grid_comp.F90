@@ -57,7 +57,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
   use fv3gfs_io_mod,      only: fv_phys_bundle_setup
   use fv3gfs_restart_io_mod,  only: fv_phy_restart_bundle_setup, fv_sfc_restart_bundle_setup
-  use fv_ufs_restart_io_mod,  only: fv_srf_wnd_restart_bundle_setup, &
+  use fv_ufs_restart_io_mod,  only: fv_core_restart_bundle_setup, &
+                                    fv_srf_wnd_restart_bundle_setup, &
                                     fv_tracer_restart_bundle_setup
 
   use fms2_io_mod,        only: FmsNetcdfFile_t, open_file, close_file, variable_exists, read_data
@@ -350,7 +351,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_FieldBundleGet(fb, name=fb_name, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if (fb_name(1:22) == 'restart_fv_srf_wnd.res') then
+    if (fb_name(1:29) == 'restart_fv_core.res') then
+      call fv_core_restart_bundle_setup(fb, grid, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    else if (fb_name(1:22) == 'restart_fv_srf_wnd.res') then
       call fv_srf_wnd_restart_bundle_setup(fb, grid, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     else if (fb_name(1:21) == 'restart_fv_tracer.res') then
@@ -1027,11 +1031,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                   name="grid_id", value=n, rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-           call ESMF_AttributeAdd(fieldbundle(n), convention="NetCDF", purpose="FV3", &
+           call ESMF_AttributeAdd(fieldbundle(n), convention="NetCDF", purpose="FV3-nooutput", &
                                   attrList=(/"frestart"/), rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-           call ESMF_AttributeSet(fieldbundle(n), convention="NetCDF", purpose="FV3", &
+           call ESMF_AttributeSet(fieldbundle(n), convention="NetCDF", purpose="FV3-nooutput", &
                                   name="frestart", valueList=frestart, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1062,11 +1066,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                     name="grid_id", value=n, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-             call ESMF_AttributeAdd(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3", &
+             call ESMF_AttributeAdd(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3-nooutput", &
                                     attrList=(/"frestart"/), rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-             call ESMF_AttributeSet(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3", &
+             call ESMF_AttributeSet(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3-nooutput", &
                                     name="frestart", valueList=frestart, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1093,8 +1097,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
         if ( quilting_restart ) then
 
-          ! do i=1,3 ! 3 dynamics restart bundles
-          do i=2,3 ! 3 dynamics restart bundles
+          do i=1,3 ! 3 dynamics restart bundles
 
             tempState = ESMF_StateCreate(rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1121,11 +1124,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                    name="grid_id", value=n, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            call ESMF_AttributeAdd(fieldbundle_dyn_restart(n,i), convention="NetCDF", purpose="FV3", &
+            call ESMF_AttributeAdd(fieldbundle_dyn_restart(n,i), convention="NetCDF", purpose="FV3-nooutput", &
                                    attrList=(/"frestart"/), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            call ESMF_AttributeSet(fieldbundle_dyn_restart(n,i), convention="NetCDF", purpose="FV3", &
+            call ESMF_AttributeSet(fieldbundle_dyn_restart(n,i), convention="NetCDF", purpose="FV3-nooutput", &
                                    name="frestart", valueList=frestart, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1167,11 +1170,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                    name="grid_id", value=n, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            call ESMF_AttributeAdd(fieldbundle_phy_restart(n,i), convention="NetCDF", purpose="FV3", &
+            call ESMF_AttributeAdd(fieldbundle_phy_restart(n,i), convention="NetCDF", purpose="FV3-nooutput", &
                                    attrList=(/"frestart"/), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            call ESMF_AttributeSet(fieldbundle_phy_restart(n,i), convention="NetCDF", purpose="FV3", &
+            call ESMF_AttributeSet(fieldbundle_phy_restart(n,i), convention="NetCDF", purpose="FV3-nooutput", &
                                    name="frestart", valueList=frestart, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 

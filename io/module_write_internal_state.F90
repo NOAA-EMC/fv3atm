@@ -48,10 +48,10 @@
 !*** file bundle for output
 !--------------------------
       integer :: FBCount
-      integer,dimension(:), allocatable           :: ncount_attribs
-      integer,dimension(:), allocatable           :: ncount_fields
+!not_used      integer,dimension(:), allocatable           :: ncount_attribs
+!not_used      integer,dimension(:), allocatable           :: ncount_fields
       character(128),dimension(:),allocatable     :: wrtFB_names
-      character(128),dimension(:,:),allocatable   :: field_names
+!not_used      character(128),dimension(:,:),allocatable   :: field_names
 !
 !-----------------------------------------------------------------------
 !***  THE OUTPUT FILE

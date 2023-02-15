@@ -61,6 +61,7 @@ module module_write_restart_netcdf
 
     type(ESMF_Field), allocatable        :: fcstField(:)
     type(ESMF_TypeKind_Flag)             :: typekind
+    type(ESMF_StaggerLoc)                :: staggerloc
     type(ESMF_TypeKind_Flag)             :: attTypeKind
     type(ESMF_Grid)                      :: wrtgrid
     type(ESMF_Array)                     :: array
@@ -79,12 +80,13 @@ module module_write_restart_netcdf
     integer :: ncid
     integer :: oldMode
     integer :: dimid
-    integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
-    integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid, time_varid, timeiso_varid
+    integer :: im_dimid, im_p1_dimid, jm_dimid, jm_p1_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
+    integer :: im_varid, im_p1_varid, jm_varid, jm_p1_varid, tile_varid, lon_varid, lat_varid, time_varid, timeiso_varid
     integer, dimension(:), allocatable :: dimids_2d, dimids_3d
     integer, dimension(:), allocatable :: varids, zaxis_dimids
     logical shuffle
 
+    logical :: get_im_jm, found_im_jm
     integer :: rank, deCount, localDeCount, dimCount, tileCount
     integer :: my_tile, start_i, start_j
     integer, dimension(:,:), allocatable :: minIndexPDe, maxIndexPDe
@@ -94,7 +96,7 @@ module module_write_restart_netcdf
     integer :: par_access
 
     real(ESMF_KIND_R8), allocatable  :: valueListr8(:)
-    logical :: isPresent, thereAreVerticals
+    logical :: isPresent, thereAreVerticals, is_restart_core
     integer :: udimCount
     character(80), allocatable :: udimList(:)
     character(32), allocatable :: field_checksums(:)
@@ -102,6 +104,8 @@ module module_write_restart_netcdf
 
     integer :: ncchksz = 64*1024 ! same as in FMS
 !
+    is_restart_core = .false.
+    if ( index(trim(filename),'fv_core.res') > 0 ) is_restart_core = .true.
     tileCount = 0
     my_tile = 0
     start_i = -10000000
@@ -125,6 +129,7 @@ module module_write_restart_netcdf
 
     call ESMF_GridGet(wrtgrid, dimCount=gridDimCount, rc=rc); ESMF_ERR_RETURN(rc)
 
+    found_im_jm = .false.
     do i=1,fieldCount
        call ESMF_FieldGet(fcstField(i), dimCount=fieldDimCount, array=array, rc=rc); ESMF_ERR_RETURN(rc)
        call ESMF_FieldGet(fcstField(i), name=fldName, rank=rank, typekind=typekind, rc=rc); ESMF_ERR_RETURN(rc)
@@ -135,7 +140,12 @@ module module_write_restart_netcdf
        end if
 
        ! use first field to determine tile number, grid size, start index etc.
-       if (i == 1) then
+       if (is_restart_core) then
+          get_im_jm = trim(fldName) /= 'u' .and. trim(fldName) /= 'v' ! skip staggered fields
+       else
+          get_im_jm = (i==1)
+       end if
+       if ( .not.found_im_jm .and. get_im_jm) then
           call ESMF_ArrayGet(array, &
                              distgrid=distgrid, &
                              dimCount=dimCount, &
@@ -169,6 +179,7 @@ module module_write_restart_netcdf
              start_i = 1
              start_j = 1
           end if
+          found_im_jm = .true.
        end if
 
        if (fieldDimCount > gridDimCount) then
@@ -204,15 +215,37 @@ module module_write_restart_netcdf
        ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
 
        ! define dimensions [xaxis_1, yaxis_1 ,(zaxis_1,...), Time]
-       ncerr = nf90_def_dim(ncid, "xaxis_1", im, im_dimid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_def_var(ncid, "xaxis_1", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_put_att(ncid, im_varid, "cartesian_axis", "X"); NC_ERR_STOP(ncerr)
+       if ( .not.is_restart_core ) then
 
-       ncerr = nf90_def_dim(ncid, "yaxis_1", jm, jm_dimid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_def_var(ncid, "yaxis_1", NF90_DOUBLE, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_put_att(ncid, jm_varid, "cartesian_axis", "Y"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_dim(ncid, "xaxis_1", im, im_dimid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "xaxis_1", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, im_varid, "cartesian_axis", "X"); NC_ERR_STOP(ncerr)
 
-       ! define coordinate variables
+          ncerr = nf90_def_dim(ncid, "yaxis_1", jm, jm_dimid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "yaxis_1", NF90_DOUBLE, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, jm_varid, "cartesian_axis", "Y"); NC_ERR_STOP(ncerr)
+
+       else
+
+          ncerr = nf90_def_dim(ncid, "xaxis_1", im, im_dimid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "xaxis_1", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, im_varid, "axis", "X"); NC_ERR_STOP(ncerr)
+
+          ncerr = nf90_def_dim(ncid, "xaxis_2", im+1, im_p1_dimid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "xaxis_2", NF90_DOUBLE, im_p1_dimid, im_p1_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, im_p1_varid, "axis", "X"); NC_ERR_STOP(ncerr)
+
+          ncerr = nf90_def_dim(ncid, "yaxis_1", jm+1, jm_p1_dimid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "yaxis_1", NF90_DOUBLE, jm_p1_dimid, jm_p1_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, jm_p1_varid, "axis", "Y"); NC_ERR_STOP(ncerr)
+
+          ncerr = nf90_def_dim(ncid, "yaxis_2", jm, jm_dimid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "yaxis_2", NF90_DOUBLE, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, jm_varid, "axis", "Y"); NC_ERR_STOP(ncerr)
+
+       end if
+
+       ! define ungridded (vertical) coordinate variables
        do i=1,fieldCount
           call ESMF_FieldGet(fcstField(i), name=fldName, rank=rank, typekind=typekind, rc=rc); ESMF_ERR_RETURN(rc)
           call ESMF_AttributeGetAttPack(fcstField(i), convention="NetCDF", purpose="FV3", isPresent=isPresent, rc=rc); ESMF_ERR_RETURN(rc)
@@ -249,10 +282,15 @@ module module_write_restart_netcdf
        allocate(dimids_3d(4))
 
        do i=1, fieldCount
-         call ESMF_FieldGet(fcstField(i), name=fldName, rank=rank, typekind=typekind, rc=rc); ESMF_ERR_RETURN(rc)
+         call ESMF_FieldGet(fcstField(i), name=fldName, rank=rank, typekind=typekind, staggerloc=staggerloc, rc=rc); ESMF_ERR_RETURN(rc)
          field_checksum = ''
          call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", name="checksum", value=field_checksum, defaultValue="missingattribute", rc=rc); ESMF_ERR_RETURN(rc)
          field_checksums(i) = field_checksum
+
+         ! FIXME remove this once ESMF_FieldGet above returns correct staggerloc
+         staggerloc = ESMF_STAGGERLOC_CENTER
+         if (is_restart_core .and. trim(fldName) == 'u' ) staggerloc = ESMF_STAGGERLOC_EDGE2
+         if (is_restart_core .and. trim(fldName) == 'v' ) staggerloc = ESMF_STAGGERLOC_EDGE1
 
          par_access = NF90_INDEPENDENT
          ! define variables
@@ -267,7 +305,20 @@ module module_write_restart_netcdf
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
            end if
          else if (rank == 3) then
-           dimids_3d = [im_dimid,jm_dimid,zaxis_dimids(i),time_dimid]
+           if ( .not.is_restart_core ) then
+             dimids_3d = [im_dimid,jm_dimid,zaxis_dimids(i),time_dimid]
+           else
+             if (staggerloc == ESMF_STAGGERLOC_CENTER) then
+                dimids_3d = [im_dimid,jm_dimid,zaxis_dimids(i),time_dimid]
+             else if (staggerloc == ESMF_STAGGERLOC_EDGE1) then  ! east
+                dimids_3d = [im_p1_dimid,jm_dimid,zaxis_dimids(i),time_dimid]
+             else if (staggerloc == ESMF_STAGGERLOC_EDGE2) then  ! south
+                dimids_3d = [im_dimid,jm_p1_dimid,zaxis_dimids(i),time_dimid]
+             else
+               write(0,*)'Unsupported staggerloc ', staggerloc
+               call ESMF_Finalize(endflag=ESMF_END_ABORT)
+             end if
+           end if
            if (typekind == ESMF_TYPEKIND_R4) then
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, dimids_3d, varids(i)); NC_ERR_STOP(ncerr)
            else if (typekind == ESMF_TYPEKIND_R8) then
@@ -288,27 +339,43 @@ module module_write_restart_netcdf
 
        ncerr = nf90_put_att(ncid, NF90_GLOBAL, "NumFilesInSet", 1); NC_ERR_STOP(ncerr)
 
+! end of define mode
        ncerr = nf90_enddef(ncid); NC_ERR_STOP(ncerr)
+
+       if (allocated(valueListr8)) deallocate(valueListr8)
+       allocate (valueListr8(im))
+       valueListr8 = (/(i, i=1,im)/)
+       ncerr = nf90_put_var(ncid, im_varid, values=valueListr8); NC_ERR_STOP(ncerr)
+
+       if (allocated(valueListr8)) deallocate(valueListr8)
+       allocate (valueListr8(jm))
+       valueListr8 = (/(i, i=1,jm)/)
+       ncerr = nf90_put_var(ncid, jm_varid, values=valueListr8); NC_ERR_STOP(ncerr)
+
+       if ( is_restart_core ) then
+          if (allocated(valueListr8)) deallocate(valueListr8)
+          allocate (valueListr8(im+1))
+          valueListr8 = (/(i, i=1,im+1)/)
+          ncerr = nf90_put_var(ncid, im_p1_varid, values=valueListr8); NC_ERR_STOP(ncerr)
+
+          if (allocated(valueListr8)) deallocate(valueListr8)
+          allocate (valueListr8(jm+1))
+          valueListr8 = (/(i, i=1,jm+1)/)
+          ncerr = nf90_put_var(ncid, jm_p1_varid, values=valueListr8); NC_ERR_STOP(ncerr)
+       end if
+
+       ncerr = nf90_put_var(ncid, time_varid, values=[1]); NC_ERR_STOP(ncerr)
     end if
-    ! end of define mode
-
-
-    if (allocated(valueListr8)) deallocate(valueListr8)
-    allocate (valueListr8(im))
-    valueListr8 = (/(i, i=1,im)/)
-    ncerr = nf90_put_var(ncid, im_varid, values=valueListr8); NC_ERR_STOP(ncerr)
-
-    if (allocated(valueListr8)) deallocate(valueListr8)
-    allocate (valueListr8(jm))
-    valueListr8 = (/(i, i=1,jm)/)
-    ncerr = nf90_put_var(ncid, jm_varid, values=valueListr8); NC_ERR_STOP(ncerr)
-
-    ncerr = nf90_put_var(ncid, time_varid, values=[1]); NC_ERR_STOP(ncerr)
 
     ! write variables (fields)
     do i=1, fieldCount
 
-       call ESMF_FieldGet(fcstField(i),name=fldName,rank=rank,typekind=typekind, rc=rc); ESMF_ERR_RETURN(rc)
+       call ESMF_FieldGet(fcstField(i),name=fldName,rank=rank,typekind=typekind,staggerloc=staggerloc, rc=rc); ESMF_ERR_RETURN(rc)
+
+       ! FIXME remove this once ESMF_FieldGet above returns correct staggerloc
+       staggerloc = ESMF_STAGGERLOC_CENTER
+       if (is_restart_core .and. trim(fldName) == 'u' ) staggerloc = ESMF_STAGGERLOC_EDGE2
+       if (is_restart_core .and. trim(fldName) == 'v' ) staggerloc = ESMF_STAGGERLOC_EDGE1
 
        if (rank == 2) then
 
@@ -334,6 +401,10 @@ module module_write_restart_netcdf
                ncerr = nf90_put_var(ncid, varids(i), values=array_r8, start=start_idx); NC_ERR_STOP(ncerr)
             else
                allocate(array_r8(im,jm))
+               call ESMF_FieldGet(fcstField(i), array=array, rc=rc); ESMF_ERR_RETURN(rc)
+               ! call ESMf_ArrayPrint(array)
+               ! write(*,*)'size(array_r8) = ', shape(array_r8)
+               ! call ESMF_ArrayWrite(array, "dump"//trim(filename), rc=rc);ESMF_ERR_RETURN(rc)
                call ESMF_FieldGather(fcstField(i), array_r8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                if (do_io) then
                   ncerr = nf90_put_var(ncid, varids(i), values=array_r8, start=start_idx); NC_ERR_STOP(ncerr)
@@ -353,7 +424,16 @@ module module_write_restart_netcdf
                call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4_3d, rc=rc); ESMF_ERR_RETURN(rc)
                ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
             else
-               allocate(array_r4_3d(im,jm,fldlev(i)))
+               if (staggerloc == ESMF_STAGGERLOC_CENTER) then
+                 allocate(array_r4_3d(im,jm,fldlev(i)))
+               else if (staggerloc == ESMF_STAGGERLOC_EDGE1) then  ! east
+                 allocate(array_r4_3d(im+1,jm,fldlev(i)))
+               else if (staggerloc == ESMF_STAGGERLOC_EDGE2) then  ! south
+                 allocate(array_r4_3d(im,jm+1,fldlev(i)))
+               else
+                 write(0,*)'Unsupported staggerloc ', staggerloc
+                 call ESMF_Finalize(endflag=ESMF_END_ABORT)
+               end if
                call ESMF_FieldGather(fcstField(i), array_r4_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                if (mype==0) then
                   ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
