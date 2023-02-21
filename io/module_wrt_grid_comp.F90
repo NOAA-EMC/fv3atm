@@ -40,8 +40,9 @@
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
                                       stdlat1, stdlat2, dx, dy, iau_offset,     &
                                       ideflate, lflname_fulltime
+      use module_fv3_config,   only:  fv3atmStopTime
       use module_write_netcdf, only : write_netcdf
-    use module_write_restart_netcdf
+      use module_write_restart_netcdf
       use physcons,            only : pi => con_pi
 #ifdef INLINE_POST
       use post_fv3,            only : post_run_fv3
@@ -897,9 +898,22 @@
               ! Look at the tile count, and if it's 6, assume it is a cube sphere
               call ESMF_GridGet(fcstGrid, tileCount=tileCount, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              ! write(0,*)'tileCount = ', tileCount , ' wrt_int_state%petcount ', wrt_int_state%petcount
+
+              if (tileCount == 6 .and. (wrt_int_state%petcount < 6 .or. mod(wrt_int_state%petcount,6) /= 0)) then
+                call ESMF_LogSetError(ESMF_RC_ARG_BAD,                          &
+                                      msg="Write grid comp petCount must be >=6 and divisible by 6.", &
+                                      line=__LINE__, file=__FILE__, rcToReturn=rc)
+              endif
 
               if (tileCount == 6) then
                 ! fcstGrid is cubed_sphere, create a grid by reading the grid file
+                if (wrt_int_state%petcount < 6 .or. mod(wrt_int_state%petcount,6) /= 0) then
+                  call ESMF_LogSetError(ESMF_RC_ARG_BAD,                          &
+                                        msg="Write grid comp petCount must be >=6 and divisible by 6.", &
+                                        line=__LINE__, file=__FILE__, rcToReturn=rc)
+                endif
+
                 gridfile = 'grid_spec.nc'
                 do tl=1,6
                   decomptile(1,tl) = 1
@@ -1713,7 +1727,7 @@
       logical                               :: opened
       logical                               :: lmask_fields
 !
-      character(esmf_maxstr)                :: filename,compname, traceString
+      character(esmf_maxstr)                :: filename,compname,wrtFBName,traceString
       character(40)                         :: cfhour, cform
       character(20)                         :: time_iso
       character(15)                         :: time_restart
@@ -1785,7 +1799,7 @@
 !-----------------------------------------------------------------------
 !*** get current time and elapsed forecast time
 
-      call ESMF_ClockGet(clock=CLOCK, currTime=CURRTIME, rc=rc)
+      call ESMF_ClockGet(clock=CLOCK, currTime=currTime, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_TimeGet(time=currTime,yy=cdate(1),mm=cdate(2),dd=cdate(3), &
@@ -2021,8 +2035,13 @@
               trim(output_grid(n)) == 'rotated_latlon_moving' .or. &
               trim(output_grid(n)) == 'lambert_conformal') then
 
-              !mask fields according to sfc pressure
+              !mask fields according to sfc pressure, only history bundles
               do nbdl=1, wrt_int_state%FBCount
+                call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), name=wrtFBName, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
+
+                if (wrtFBName(1:8) == 'restart_') cycle
+
                 call mask_fields(wrt_int_state%wrtFB(nbdl),rc)
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               enddo
@@ -2161,7 +2180,9 @@
 
             ! FIXME eventually change 'RESTART_new' to just 'RESTART', this is just for testing and comparing the restart files
             !       written by the write grid component to those created by FMS
-            filename = 'RESTART_new/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.nc'
+            ! filename = 'RESTART_new/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.nc'
+            filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.nc'
+            if (currTime == fv3atmStopTime) filename = 'RESTART/'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.nc'
 
             ! I hate this kind of inconsistencies
             ! If it's a restart bundle and the output grid is not cubed sphere and the output restart file is
@@ -2176,7 +2197,9 @@
 
             if (tileCount == 1) then ! non cubed sphere restart bundles
               if (wrt_int_state%wrtFB_names(nbdl)(9:11) == 'fv_') then ! 'dynamics' restart bundles, append 'tile1'
-                filename = 'RESTART_new/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.tile1'//'.nc'
+                ! filename = 'RESTART_new/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.tile1'//'.nc'
+                filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.tile1'//'.nc'
+                if (currTime == fv3atmStopTime) filename = 'RESTART/'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.tile1'//'.nc'
               endif
             endif
 
@@ -2216,6 +2239,8 @@
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
           endif
 
+          wbeg = MPI_Wtime()
+
           if (is_restart_bundle) then ! restart bundle
             ! restart bundles are always on forecast grid, either cubed sphere or regional/nest
 
@@ -2242,10 +2267,10 @@
                                   .false., wrt_mpi_comm, wrt_int_state%mype, &
                                   rc)
             endif ! cubed sphere vs. regional/nest write grid
+
           else ! history bundle
           if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
 
-            wbeg = MPI_Wtime()
             if (trim(output_file(nnnn)) == 'netcdf_parallel') then
               call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
                                .true., wrt_mpi_comm,wrt_int_state%mype, &
@@ -2267,24 +2292,13 @@
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
             end if
-            wend = MPI_Wtime()
-            if (lprnt) then
-              write(*,'(A15,A,F10.5,A,I4.2,A,I2.2,1X,A)')trim(output_file(nnnn)),' Write Time is ',wend-wbeg  &
-                     ,' at Fcst ',NF_HOURS,':',NF_MINUTES
-            endif
 
           else if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
                    trim(output_grid(grid_id)) == 'global_latlon') then
 
-            wbeg = MPI_Wtime()
             call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
                              use_parallel_netcdf, wrt_mpi_comm,wrt_int_state%mype, &
                              grid_id,rc)
-            wend = MPI_Wtime()
-            if (lprnt) then
-              write(*,'(A15,A,F10.5,A,I4.2,A,I2.2,1X,A)')trim(output_file(nnnn)),' Write Time is ',wend-wbeg  &
-                      ,' at Fcst ',NF_HOURS,':',NF_MINUTES
-            endif
 
           else if (trim(output_grid(grid_id)) == 'regional_latlon' .or.        &
                    trim(output_grid(grid_id)) == 'regional_latlon_moving' .or. &
@@ -2294,13 +2308,8 @@
 
             !mask fields according to sfc pressure
             if( .not. lmask_fields ) then
-              wbeg = MPI_Wtime()
               call mask_fields(file_bundle,rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              wend = MPI_Wtime()
-              if (lprnt) then
-                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' mask_fields time is ',wend-wbeg
-              endif
             endif
 
             if (nbits(grid_id) /= 0) then
@@ -2308,15 +2317,9 @@
               call ESMF_Finalize(endflag=ESMF_END_ABORT)
             end if
 
-            wbeg = MPI_Wtime()
             call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
                               use_parallel_netcdf, wrt_mpi_comm,wrt_int_state%mype, &
                               grid_id,rc)
-            wend = MPI_Wtime()
-            if (lprnt) then
-              write(*,'(A15,A,F10.5,A,I4.2,A,I2.2,1X,A)')trim(output_file(nnnn)),' Write Time is ',wend-wbeg  &
-                      ,' at Fcst ',NF_HOURS,':',NF_MINUTES
-            endif
 
           else ! unknown output_grid
 
@@ -2325,6 +2328,11 @@
 
           endif
           endif  ! restart or history bundle
+          wend = MPI_Wtime()
+          if (lprnt) then
+            write(*,'(A48,A,F10.5,A,I4.2,A,I2.2,1X,A)')trim(filename),' Write Time is ',wend-wbeg  &
+                   ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+          endif
 
         enddo file_loop_all
 
@@ -2348,7 +2356,7 @@
       write_run_tim = MPI_Wtime() - tbeg
 !
       IF (lprnt) THEN
-        WRITE(*,'(A,F10.5,A,I4.2,A,I2.2)')' total            Write Time is ',write_run_tim  &
+        write(*,'(A48,A,F10.5,A,I4.2,A,I2.2,1X,A)')'------- total',' Write Time is ',write_run_tim &
                  ,' at Fcst ',NF_HOURS,':',NF_MINUTES
       ENDIF
 !
@@ -3205,7 +3213,7 @@
     type(ESMF_FileStatus_Flag)       :: status
     character(len=80)                :: itemNameList(1)
 
-    integer                          :: localPet, i, j, k, ind
+    integer                          :: localPet, petCount, i, j, k, ind
     type(ESMF_Grid)                  :: grid
     real(ESMF_KIND_R4), allocatable  :: valueListr4(:)
     real(ESMF_KIND_R8), allocatable  :: valueListr8(:)
@@ -3276,14 +3284,19 @@
     if ( tileFileName(1:7) == 'RESTART' ) then
 
       ! Write out restart files using write_restart_netcdf, then return from this subroutine
-      if(timeslice == 1) then
-        call ESMF_GridCompGet(comp, localPet=localPet, vm=vm, rc=rc)
+      if (timeslice == 1) then
+        call ESMF_GridCompGet(comp, localPet=localPet, petCount=petCount, vm=vm, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_VMGet(vm=vm, mpiCommunicator=wrt_mpi_comm, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        call write_restart_netcdf(wrtTileFB, trim(tileFileName), .false., wrt_mpi_comm, localPet, rc)
+        if (petCount > 1) then
+          call write_restart_netcdf(wrtTileFB, trim(tileFileName), .true., wrt_mpi_comm, localPet, rc)
+        else
+          call write_restart_netcdf(wrtTileFB, trim(tileFileName), .false., wrt_mpi_comm, localPet, rc)
+        endif
+
       endif
       return
     endif

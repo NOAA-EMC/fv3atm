@@ -26,4 +26,6 @@
   character(esmf_maxstr),dimension(:),allocatable :: filename_base
   character(17)            :: calendar='                 '
 !
+  type(ESMF_Time)          :: fv3atmStartTime, fv3atmStopTime
+
   end module module_fv3_config

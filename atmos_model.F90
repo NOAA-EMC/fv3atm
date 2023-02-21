@@ -54,7 +54,7 @@ use fms_mod,            only: clock_flag_default
 use fms_mod,            only: check_nml_error
 use diag_manager_mod,   only: diag_send_complete_instant
 use time_manager_mod,   only: time_type, get_time, get_date, &
-                              operator(+), operator(-),real_to_time_type, date_to_string
+                              operator(+), operator(-), operator (==), real_to_time_type, date_to_string
 use field_manager_mod,  only: MODEL_ATMOS
 use tracer_manager_mod, only: get_number_tracers, get_tracer_names, &
                               get_tracer_index, NO_TRACER
@@ -94,13 +94,15 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_GFS_checksum,                       &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
                               DIAG_SIZE
-use FV3GFS_restart_io_mod,    only: FV3GFS_restart_register, fv_phy_restart_output, fv_sfc_restart_output
+use FV3GFS_restart_io_mod,    only: FV3GFS_restart_register, &
+                                    fv_phy_restart_output, &
+                                    fv_sfc_restart_output
 use fv_ufs_restart_io_mod,    only: fv_dyn_restart_register, &
                                     fv_dyn_restart_output
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
                               restart_endfcst, output_fh, fcst_mpi_comm, &
-                              fcst_ntasks
+                              fcst_ntasks, quilting_restart
 use module_block_data,  only: block_atmos_copy, block_data_copy,         &
                               block_data_copy_or_fill,                   &
                               block_data_combine_fractions
@@ -158,6 +160,7 @@ public setup_exportdata
      type(time_type)               :: Time               ! current time
      type(time_type)               :: Time_step          ! atmospheric time step.
      type(time_type)               :: Time_init          ! reference time.
+     type(time_type)               :: Time_end           ! end of the forecast time.
      type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange
      type(GFS_externaldiag_type), pointer, dimension(:) :: Diag
  end type atmos_data_type
@@ -519,7 +522,7 @@ end subroutine atmos_timestep_diagnostics
 ! Routine to initialize the atmospheric model
 ! </OVERVIEW>
 
-subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
+subroutine atmos_model_init (Atmos, Time_init, Time, Time_step, Time_end)
 
 #ifdef _OPENMP
   use omp_lib
@@ -527,7 +530,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   use update_ca, only: read_ca_restart
 
   type (atmos_data_type), intent(inout) :: Atmos
-  type (time_type), intent(in) :: Time_init, Time, Time_step
+  type (time_type), intent(in) :: Time_init, Time, Time_step, Time_end
 !--- local variables ---
   integer :: unit, i
   integer :: mlon, mlat, nlon, nlat, nlev, sec
@@ -552,6 +555,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Atmos % Time_init = Time_init
    Atmos % Time      = Time
    Atmos % Time_step = Time_step
+   Atmos % Time_end  = Time_end
    call get_time (Atmos % Time_step, sec)
    dt_phys = real(sec)      ! integer seconds
 
@@ -738,8 +742,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
-   call FV3GFS_restart_register (GFS_data%Sfcprop, GFS_restart_var, Atm_block, GFS_control)
-   call fv_dyn_restart_register (Atm(mygrid))
+   if (quilting_restart) then
+      call fv_dyn_restart_register (Atm(mygrid))
+      call FV3GFS_restart_register (GFS_data%Sfcprop, GFS_restart_var, Atm_block, GFS_control)
+   endif
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain_for_read, &
                              Atm(mygrid)%flagstruct%warm_start, ignore_rst_cksum)
    if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
@@ -1060,14 +1066,20 @@ subroutine atmos_model_end (Atmos)
     endif
 #endif
 
+    if (quilting_restart) then
+    call atmosphere_end (Atmos % Time, Atmos%grid, .false.)
+    else
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
+    endif
 
-    if(restart_endfcst) then
-      call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
-      call fv_phy_restart_output(GFS_restart_var, Atm_block)
-      call fv_dyn_restart_output(Atm(mygrid), date_to_string(Atmos%Time))
-      call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
-                                 GFS_control, Atmos%domain)
+    if (restart_endfcst) then
+      if (quilting_restart) then
+        ! call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
+        ! call fv_phy_restart_output(GFS_restart_var, Atm_block)
+        ! call fv_dyn_restart_output(Atm(mygrid), date_to_string(Atmos%Time))
+      else
+        call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain)
+      endif
 !     call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
     endif
     if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
@@ -1107,14 +1119,29 @@ subroutine atmos_model_restart(Atmos, timestamp)
   type (atmos_data_type),   intent(inout) :: Atmos
   character(len=*),  intent(in)           :: timestamp
 
-    call atmosphere_restart(timestamp)
-    call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
-    call fv_phy_restart_output(GFS_restart_var, Atm_block)
-    call fv_dyn_restart_output(Atm(mygrid), timestamp)
-    call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
-                               GFS_control, Atmos%domain, timestamp)
+    if (quilting_restart) then
+       call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
+       call fv_phy_restart_output(GFS_restart_var, Atm_block)
+       if (Atmos%Time == Atmos%Time_end) then
+          call fv_dyn_restart_output(Atm(mygrid), '')
+       else
+          call fv_dyn_restart_output(Atm(mygrid), timestamp)
+       endif
+    else
+       call atmosphere_restart(timestamp)
+       call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
+                                  GFS_control, Atmos%domain, timestamp)
+    endif
     if(GFS_control%do_ca)then
-       call write_ca_restart(timestamp)
+       if (quilting_restart) then
+          if (Atmos%Time == Atmos%Time_end) then
+             call write_ca_restart()
+          else
+             call write_ca_restart(timestamp)
+          endif
+       else
+          call write_ca_restart(timestamp)
+       endif
     endif
 end subroutine atmos_model_restart
 ! </SUBROUTINE>

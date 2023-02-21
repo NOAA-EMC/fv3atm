@@ -351,7 +351,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_FieldBundleGet(fb, name=fb_name, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if (fb_name(1:29) == 'restart_fv_core.res') then
+    if (fb_name(1:19) == 'restart_fv_core.res') then
       call fv_core_restart_bundle_setup(fb, grid, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     else if (fb_name(1:22) == 'restart_fv_srf_wnd.res') then
@@ -579,6 +579,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     integer,allocatable           :: grid_number_on_all_pets(:)
     logical,allocatable           :: is_moving_on_all_pets(:), is_moving(:)
+    character(len=7)              :: nest_suffix
 
     type(FmsNetcdfFile_t)         :: fileobj
 !
@@ -796,7 +797,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
 !------ initialize component models ------
 
-     call  atmos_model_init (Atmos, Time_init, Time, Time_step)
+     call  atmos_model_init (Atmos, Time_init, Time, Time_step, Time_end)
 !
      inquire(FILE='data_table', EXIST=fexist)
      if (fexist) then
@@ -1113,6 +1114,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
               ESMF_ERR_ABORT(101)
             endif
 
+            if (n > 1) then
+              write(nest_suffix,'(A5,I2.2)') '.nest', n
+              name_FB = trim(name_FB)//nest_suffix
+            endif
+
             fieldbundle_dyn_restart(n,i) = ESMF_FieldBundleCreate(name=trim(name_FB),rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1157,6 +1163,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             else
               write(0,*)' unknown name_physics restart bundle ', i
               ESMF_ERR_ABORT(101)
+            endif
+
+            if (n > 1) then
+              write(nest_suffix,'(A5,I2.2)') '.nest', n
+              name_FB = trim(name_FB)//nest_suffix
             endif
 
             fieldbundle_phy_restart(n,i) = ESMF_FieldBundleCreate(name=trim(name_FB),rc=rc)
@@ -1413,9 +1424,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
           !----- write restart file ------
           if (mpp_pe() == mpp_root_pe())then
-              call get_date (Atmos%Time, date(1), date(2), date(3),  &
-                                                     date(4), date(5), date(6))
-              open( newunit=unit, file='RESTART/'//trim(timestamp)//'.coupler.res' )
+              call get_date (Atmos%Time, date(1), date(2), date(3), date(4), date(5), date(6))
+              if (Atmos%Time == Atmos%Time_end) then
+                 open( newunit=unit, file='RESTART/'//'coupler.res' )
+              else
+                 open( newunit=unit, file='RESTART/'//trim(timestamp)//'.coupler.res' )
+              end if
               write( unit, '(i6,8x,a)' )calendar_type, &
                    '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
 

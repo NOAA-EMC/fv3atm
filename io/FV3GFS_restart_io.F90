@@ -129,8 +129,10 @@ module FV3GFS_restart_io_mod
    elseif (Model%lsm == Model%lsm_ruc) then
      allocate(sfc_var3(nx,ny,Model%lsoil_lsm,nvar3))
    endif
+
    sfc_var2   = -9999.0_r8
    sfc_var3   = -9999.0_r8
+   sfc_var3ice= -9999.0_r8
 
    if (Model%lsm == Model%lsm_noahmp) then
      allocate(sfc_var3sn(nx,ny,-2:0,4:6))
@@ -197,7 +199,6 @@ module FV3GFS_restart_io_mod
    endif
 
    !--- 2D variables
-!$omp parallel do default(shared) private(i, j, num, nb, ix)
     do num = 1,nvar2d
       do nb = 1,Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
@@ -210,7 +211,6 @@ module FV3GFS_restart_io_mod
     enddo
 
     !--- 3D variables
-!$omp parallel do default(shared) private(i, j, k, num, nb, ix)
     do num = 1,nvar3d
       do nb = 1,Atm_block%nblks
         do k=1,npz

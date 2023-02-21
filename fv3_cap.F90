@@ -31,7 +31,7 @@ module fv3gfs_cap_mod
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
                                     calendar, cpl_grid_id,                   &
                                     cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt
+                                    first_kdt, fv3atmStartTime, fv3atmStopTime
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
@@ -207,7 +207,7 @@ module fv3gfs_cap_mod
     character(len=*),parameter             :: subname='(fv3_cap:InitializeAdvertise)'
     real(kind=8)                           :: MPI_Wtime, timeis, timerhs
 
-    integer                                :: wrttasks_per_group_from_parent, wrtLocalPet
+    integer                                :: wrttasks_per_group_from_parent, wrtLocalPet, num_threads
     character(len=64)                      :: rh_filename
     logical                                :: use_saved_routehandles, rh_file_exist
     logical                                :: fieldbundle_is_restart = .false.
@@ -218,14 +218,23 @@ module fv3gfs_cap_mod
     rc = ESMF_SUCCESS
     timeis = MPI_Wtime()
 
-    call ESMF_GridCompGet(gcomp,name=gc_name,vm=vm,rc=rc)
+    call ESMF_GridCompGet(gcomp, name=gc_name, vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_VMGet(vm, petCount=petcount, localpet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+    ! num_threads is needed to compute actual wrttasks_per_group_from_parent
+    call ESMF_InfoGetFromHost(gcomp, info=info, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call ESMF_InfoGet(info, key="/NUOPC/Hint/PePerPet/MaxCount", value=num_threads, default=1, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
     ! query for importState and exportState
     call NUOPC_ModelGet(gcomp, driverClock=clock, importState=importState, exportState=exportState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_ClockGet(clock, startTime=fv3atmStartTime, stopTime=fv3atmStopTime, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_AttributeGet(gcomp, name="cpl_grid_id", value=value, defaultValue="1", &
@@ -275,6 +284,8 @@ module fv3gfs_cap_mod
     call ESMF_ConfigGetAttribute(config=CF,value=quilting_restart, &
                                  default=.false., label ='quilting_restart:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    if (.not.quilting) quilting_restart = .false.
 
     call ESMF_ConfigGetAttribute(config=CF,value=output_1st_tstep_rst, &
                                  default=.false., label ='output_1st_tstep_rst:',rc=rc)
@@ -358,6 +369,7 @@ module fv3gfs_cap_mod
 ! create fcst grid component
 
     if( quilting ) then
+      wrttasks_per_group_from_parent = wrttasks_per_group_from_parent * num_threads
       num_pes_fcst = petcount - write_groups * wrttasks_per_group_from_parent
     else
       num_pes_fcst = petcount
@@ -1120,11 +1132,13 @@ module fv3gfs_cap_mod
       ! during the run phase some of the fcst field attributes have been updated (for example
       ! restart fields checksums) so we need to update fcstState across all PETs of the cap and then
       ! copy the attributes (Info) from fcstState -> wrtState(n_group)
-      call ESMF_AttributeUpdate(fcstState, vm, rootList=fcstPetList, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      call ESMF_AttributeCopy(fcstState, wrtState(n_group), attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      ! changes gocart output ! CHECK WHY
+      !call ESMF_AttributeUpdate(fcstState, vm, rootList=fcstPetList, rc=rc)
+      !if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      !call ESMF_AttributeCopy(fcstState, wrtState(n_group), attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
+      !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_ClockGet(clock_out, startTime=startTime, currTime=currTime, &
                          timeStep=timeStep, rc=rc)

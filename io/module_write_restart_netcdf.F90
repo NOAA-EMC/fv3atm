@@ -198,11 +198,12 @@ module module_write_restart_netcdf
 
        if (par) then
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(NF90_CLOBBER,NF90_64BIT_OFFSET),&
-                  comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid, chunksize=ncchksz); NC_ERR_STOP(ncerr)
+                  cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+                  comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
        else
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(NF90_CLOBBER,NF90_64BIT_OFFSET),&
+                  ! cmode=IOR(NF90_CLOBBER,NF90_64BIT_OFFSET),&
+                  cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
                   ncid=ncid, chunksize=ncchksz); NC_ERR_STOP(ncerr)
        end if
 
@@ -276,7 +277,11 @@ module module_write_restart_netcdf
        end do
 
        ncerr = nf90_def_dim(ncid, "Time", NF90_UNLIMITED, time_dimid); NC_ERR_STOP(ncerr)
+       ! ncerr = nf90_def_dim(ncid, "Time", 1, time_dimid); NC_ERR_STOP(ncerr)
        ncerr = nf90_def_var(ncid, "Time", NF90_DOUBLE, time_dimid, time_varid); NC_ERR_STOP(ncerr)
+       if (par) then
+          ncerr = nf90_var_par_access(ncid, time_varid, NF90_COLLECTIVE); NC_ERR_STOP(ncerr)
+       end if
 
        ! Again, unnecessary naming inconsistency
        if (dynamics_restart_file) then
@@ -304,7 +309,8 @@ module module_write_restart_netcdf
          if (is_restart_core .and. trim(fldName) == 'u' ) staggerloc = ESMF_STAGGERLOC_EDGE2
          if (is_restart_core .and. trim(fldName) == 'v' ) staggerloc = ESMF_STAGGERLOC_EDGE1
 
-         par_access = NF90_INDEPENDENT
+         ! par_access = NF90_INDEPENDENT
+         par_access = NF90_COLLECTIVE   ! because of time unlimited
          ! define variables
          if (rank == 2) then
            dimids_2d =             [im_dimid,jm_dimid,                       time_dimid]
@@ -414,9 +420,6 @@ module module_write_restart_netcdf
             else
                allocate(array_r8(im,jm))
                call ESMF_FieldGet(fcstField(i), array=array, rc=rc); ESMF_ERR_RETURN(rc)
-               ! call ESMf_ArrayPrint(array)
-               ! write(*,*)'size(array_r8) = ', shape(array_r8)
-               ! call ESMF_ArrayWrite(array, "dump"//trim(filename), rc=rc);ESMF_ERR_RETURN(rc)
                call ESMF_FieldGather(fcstField(i), array_r8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                if (do_io) then
                   ncerr = nf90_put_var(ncid, varids(i), values=array_r8, start=start_idx); NC_ERR_STOP(ncerr)
@@ -457,7 +460,16 @@ module module_write_restart_netcdf
                call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r8_3d, rc=rc); ESMF_ERR_RETURN(rc)
                ncerr = nf90_put_var(ncid, varids(i), values=array_r8_3d, start=start_idx); NC_ERR_STOP(ncerr)
             else
-               allocate(array_r8_3d(im,jm,fldlev(i)))
+               if (staggerloc == ESMF_STAGGERLOC_CENTER) then
+                 allocate(array_r8_3d(im,jm,fldlev(i)))
+               else if (staggerloc == ESMF_STAGGERLOC_EDGE1) then  ! east
+                 allocate(array_r8_3d(im+1,jm,fldlev(i)))
+               else if (staggerloc == ESMF_STAGGERLOC_EDGE2) then  ! south
+                 allocate(array_r8_3d(im,jm+1,fldlev(i)))
+               else
+                 write(0,*)'Unsupported staggerloc ', staggerloc
+                 call ESMF_Finalize(endflag=ESMF_END_ABORT)
+               end if
                call ESMF_FieldGather(fcstField(i), array_r8_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                if (mype==0) then
                   ncerr = nf90_put_var(ncid, varids(i), values=array_r8_3d, start=start_idx); NC_ERR_STOP(ncerr)
@@ -507,9 +519,18 @@ contains
       real(ESMF_KIND_R4)               :: valueR4
       real(ESMF_KIND_R8)               :: valueR8
 
-      ! inquire if NetCDF file already contains this ungridded dimension
+      ! inquire if NetCDF file already contains this ungridded dimension variable
       ncerr = nf90_inq_varid(ncid, trim(dimLabel), varid=varid)
-      if (ncerr == NF90_NOERR) return
+      if (ncerr == NF90_NOERR) then
+         ! if it does inquire dimid, it must be defined already
+         ncerr = nf90_inq_dimid(ncid, trim(dimLabel), dimid=dimid)
+         if (ncerr == NF90_NOERR) then
+           return
+         else
+           write(0,*) 'in write_out_ungridded_dim_atts: ERROR missing dimid for already defined ungridded dimension variable '
+           ESMF_ERR_RETURN(-1)
+        endif
+      endif
 
       ! the variable does not exist in the NetCDF file yet -> add it
       ! access the undistributed dimension attribute on the grid
