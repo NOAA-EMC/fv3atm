@@ -207,7 +207,6 @@
 
       type(ESMF_DistGrid)                     :: acceptorDG, newAcceptorDG
       integer                                 :: grid_id
-      integer                                 :: tileCount
       logical                                 :: top_parent_is_global
 !
 !-----------------------------------------------------------------------
@@ -893,66 +892,15 @@
             ! must be the same grid as forecast grid, not the output grid for this grid_id (wrtGrid(grid_id)).
             ! For 'cubed_sphere_grid' these are the same, but for all other output grids (like Lambert) they are not.
             if (fcstItemNameList(i)(1:8) == 'restart_') then
-
-              ! forecast grid of this restart bundle can be either cubed sphere or not (regional/nest)
-              ! Look at the tile count, and if it's 6, assume it is a cube sphere
-              call ESMF_GridGet(fcstGrid, tileCount=tileCount, rc=rc)
+              ! create a grid from fcstGrid on forecast grid comp, by rebalancing distgrid to the local PETs
+              ! access the acceptor DistGrid
+              call ESMF_GridGet(fcstGrid, distgrid=acceptorDG, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              ! write(0,*)'tileCount = ', tileCount , ' wrt_int_state%petcount ', wrt_int_state%petcount
-
-              if (tileCount == 6 .and. (wrt_int_state%petcount < 6 .or. mod(wrt_int_state%petcount,6) /= 0)) then
-                call ESMF_LogSetError(ESMF_RC_ARG_BAD,                          &
-                                      msg="Write grid comp petCount must be >=6 and divisible by 6.", &
-                                      line=__LINE__, file=__FILE__, rcToReturn=rc)
-              endif
-
-              if (tileCount == 6) then
-                ! fcstGrid is cubed_sphere, create a grid by reading the grid file
-                if (wrt_int_state%petcount < 6 .or. mod(wrt_int_state%petcount,6) /= 0) then
-                  call ESMF_LogSetError(ESMF_RC_ARG_BAD,                          &
-                                        msg="Write grid comp petCount must be >=6 and divisible by 6.", &
-                                        line=__LINE__, file=__FILE__, rcToReturn=rc)
-                endif
-
-                gridfile = 'grid_spec.nc'
-                do tl=1,6
-                  decomptile(1,tl) = 1
-                  decomptile(2,tl) = jidx
-                  decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
-                enddo
-                call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
-                                       name="gridfile", value=gridfile, rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-                actualWrtGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
-                                                      regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
-                                                      decompflagPTile=decompflagPTile,                                   &
-                                                      staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
-                                                      name='wrt_grid', rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-              else
-                ! fcstGrid is not cubed_sphere (regional/nest)
-                ! create a grid from fcstGrid on forecast grid comp, by rebalancing distgrid to the local PETs
-                call ESMF_FieldGet(fcstField(1), grid=fcstGrid, rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-                ! access the acceptor DistGrid
-                call ESMF_GridGet(fcstGrid, distgrid=acceptorDG, rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-                ! if (lprnt) then
-                   ! call ESMF_DistgridPrint(acceptorDG)
-                ! end if
-                ! rebalance the acceptor DistGrid across the local PETs
-                newAcceptorDG = ESMF_DistGridCreate(acceptorDG, balanceflag=.true., rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-                ! if (lprnt) then
-                   ! call ESMF_DistgridPrint(newAcceptorDG)
-                ! end if
-                ! create a new Grid on the rebalanced DistGrid
-                actualWrtGrid = ESMF_GridCreate(fcstGrid, newAcceptorDG, rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-              end if ! cubes sphere vs. regional/nest forecast grid
+              ! rebalance the acceptor DistGrid across the local PETs
+              newAcceptorDG = ESMF_DistGridCreate(acceptorDG, balanceflag=.true., rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              actualWrtGrid = ESMF_GridCreate(fcstGrid, newAcceptorDG, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             end if ! end of setting actualWrtGrid for restart bundle
 
             do j=1, fieldCount

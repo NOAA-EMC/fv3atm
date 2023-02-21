@@ -1134,11 +1134,11 @@ module fv3gfs_cap_mod
       ! copy the attributes (Info) from fcstState -> wrtState(n_group)
 
       ! changes gocart output ! CHECK WHY
-      !call ESMF_AttributeUpdate(fcstState, vm, rootList=fcstPetList, rc=rc)
-      !if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      call ESMF_AttributeUpdate(fcstState, vm, rootList=fcstPetList, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      !call ESMF_AttributeCopy(fcstState, wrtState(n_group), attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
-      !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      call ESMF_AttributeCopy(fcstState, wrtState(n_group), attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_ClockGet(clock_out, startTime=startTime, currTime=currTime, &
                          timeStep=timeStep, rc=rc)

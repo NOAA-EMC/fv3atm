@@ -149,6 +149,11 @@ module module_write_restart_netcdf
                              tileCount=tileCount, &
                              rc=rc); ESMF_ERR_RETURN(rc)
 
+          if (tileCount /= 1) then
+             write(0,*)"write_restart_netcdf: Only tileCount==1 fields are supported!"
+             call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          endif
+
           allocate(minIndexPDe(dimCount,deCount))
           allocate(maxIndexPDe(dimCount,deCount))
           allocate(minIndexPTile(dimCount, tileCount))
@@ -166,8 +171,8 @@ module module_write_restart_netcdf
                              rc=rc); ESMF_ERR_RETURN(rc)
 
           my_tile = deToTileMap(localDeToDeMap(1)+1)
-          im = maxIndexPTile(1,1)
-          jm = maxIndexPTile(2,1)
+          im = maxIndexPTile(1,1) - minIndexPTile(1,1) + 1
+          jm = maxIndexPTile(2,1) - minIndexPTile(2,1) + 1
           start_i = minIndexPDe(1,localDeToDeMap(1)+1)
           start_j = minIndexPDe(2,localDeToDeMap(1)+1)
           if (.not. par) then
@@ -175,6 +180,15 @@ module module_write_restart_netcdf
              start_j = 1
           end if
           found_im_jm = .true.
+          start_i = mod(start_i, im) ! for cubed sphere multi-tile grid
+          start_j = mod(start_j, jm) ! for cubed sphere multi-tile grid
+
+          deallocate(minIndexPDe)
+          deallocate(maxIndexPDe)
+          deallocate(minIndexPTile)
+          deallocate(maxIndexPTile)
+          deallocate(deToTileMap)
+          deallocate(localDeToDeMap)
        end if
 
        if (fieldDimCount > gridDimCount) then
@@ -419,7 +433,6 @@ module module_write_restart_netcdf
                ncerr = nf90_put_var(ncid, varids(i), values=array_r8, start=start_idx); NC_ERR_STOP(ncerr)
             else
                allocate(array_r8(im,jm))
-               call ESMF_FieldGet(fcstField(i), array=array, rc=rc); ESMF_ERR_RETURN(rc)
                call ESMF_FieldGather(fcstField(i), array_r8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                if (do_io) then
                   ncerr = nf90_put_var(ncid, varids(i), values=array_r8, start=start_idx); NC_ERR_STOP(ncerr)
