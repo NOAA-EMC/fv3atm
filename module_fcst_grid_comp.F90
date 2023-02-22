@@ -781,7 +781,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     endif
 ! if to write out restart at the end of forecast
     restart_endfcst = .false.
-    ! if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
+    if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
 ! frestart only contains intermediate restart
     ! do i=1,size(frestart)
     !   if(frestart(i) == total_inttime) then

@@ -905,14 +905,10 @@
 
             do j=1, fieldCount
 
-              call ESMF_FieldGet(fcstField(j), typekind=typekind, &
-                                 ! dimCount=fieldDimCount, name=fieldName, grid=fcstGrid, rc=rc)
-                                 dimCount=fieldDimCount, name=fieldName, rc=rc)
+              call ESMF_FieldGet(fcstField(j), typekind=typekind, dimCount=fieldDimCount, name=fieldName, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-              !---  get grid dim count
-              ! call ESMF_GridGet(wrtGrid(grid_id), dimCount=gridDimCount, rc=rc)
-              call ESMF_GridGet(actualWrtGrid, dimCount=gridDimCount, rc=rc)
+              call ESMF_GridGet(actualWrtGrid, dimCount=gridDimCount, rc=rc) ! use actualWrtGrid instead of wrtGrid(grid_id)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
               allocate(gridToFieldMap(gridDimCount))
@@ -929,10 +925,8 @@
 !                        'gridToFieldMap=',gridToFieldMap,'ungriddedLBound=',ungriddedLBound,         &
 !                        'ungriddedUBound=',ungriddedUBound,'rc=',rc
 
-
 ! create the output field on output grid
-              ! field_work = ESMF_FieldCreate(wrtGrid(grid_id), typekind, name=fieldName, &
-              field_work = ESMF_FieldCreate(actualWrtGrid   , typekind, name=fieldName, &
+              field_work = ESMF_FieldCreate(actualWrtGrid, typekind, name=fieldName, & ! use actualWrtGrid instead of wrtGrid(grid_id)
                                             staggerloc=staggerloc,             &
                                             gridToFieldMap=gridToFieldMap,     &
                                             ungriddedLBound=ungriddedLBound,   &

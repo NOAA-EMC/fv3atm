@@ -339,6 +339,13 @@ module FV3GFS_restart_io_mod
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%ifd)    !--- nsstm ifd
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%dt_cool)!--- nsstm dt_cool
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qrain)  !--- nsstm qrain
+
+         ! FIXME convert negative zero (-0.0) to zero (0.0)
+         do j=1,ny
+         do i=1,nx
+            if(sfc_var2(i,j,nt) == 0.0) sfc_var2(i,j,nt) = 0.0
+         end do
+         end do
        endif
 
        if (Model%lsm == Model%lsm_ruc) then
