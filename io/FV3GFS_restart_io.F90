@@ -1,7 +1,6 @@
 module FV3GFS_restart_io_mod
 
   use esmf
-  use mpp_mod,            only: mpp_pe, mpp_root_pe, mpp_chksum, mpp_pe
   use block_control_mod,  only: block_control_type
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
@@ -16,14 +15,12 @@ module FV3GFS_restart_io_mod
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: phy_var2
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: phy_var3
   character(len=32),dimension(:),allocatable :: phy_var2_names, phy_var3_names
-  character(len=32),dimension(:),allocatable :: phy_var2_cksum, phy_var3_cksum
 
   integer :: nvar2m, nvar2o, nvar3, nvar2r, nvar2mp, nvar3mp
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: sfc_var2
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: sfc_var3ice
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3, sfc_var3sn,sfc_var3eq,sfc_var3zn
   character(len=32),allocatable,dimension(:) :: sfc_name2, sfc_name3
-  character(len=32),dimension(:),allocatable :: sfc_var2_cksum, sfc_var3_cksum
 
   type(ESMF_FieldBundle) :: phy_bundle, sfc_bundle
 
@@ -72,8 +69,8 @@ module FV3GFS_restart_io_mod
    nvar2d = GFS_Restart%num2d
    nvar3d = GFS_Restart%num3d
 
-   allocate (phy_var2(nx,ny,nvar2d), phy_var2_names(nvar2d), phy_var2_cksum(nvar2d))
-   allocate (phy_var3(nx,ny,npz,nvar3d), phy_var3_names(nvar3d), phy_var3_cksum(nvar3d))
+   allocate (phy_var2(nx,ny,nvar2d), phy_var2_names(nvar2d))
+   allocate (phy_var3(nx,ny,npz,nvar3d), phy_var3_names(nvar3d))
    phy_var2 = zero
    phy_var3 = zero
    do num = 1,nvar2d
@@ -82,8 +79,6 @@ module FV3GFS_restart_io_mod
    do num = 1,nvar3d
      phy_var3_names(num) = trim(GFS_Restart%name3d(num))
    enddo
-   phy_var2_cksum =''
-   phy_var3_cksum =''
 
    !--------------- sfc
    nvar2m = 48
@@ -113,15 +108,8 @@ module FV3GFS_restart_io_mod
 
    !--- allocate the various containers needed for restarts
    allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r))
-   allocate(sfc_var2_cksum(nvar2m+nvar2o+nvar2mp+nvar2r))
    allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
-
    allocate(sfc_name3(0:nvar3+nvar3mp))
-   allocate(sfc_var3_cksum(0:nvar3+nvar3mp))
-
-   sfc_var2_cksum = ''
-   sfc_var3_cksum = ''
-
    allocate(sfc_var3ice(nx,ny,Model%kice))
 
    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
@@ -207,7 +195,6 @@ module FV3GFS_restart_io_mod
           phy_var2(i,j,num) = GFS_Restart%data(nb,num)%var2p(ix)
         enddo
       enddo
-      write(phy_var2_cksum(num),'(Z16)') mpp_chksum(phy_var2(:,:,num))
     enddo
 
     !--- 3D variables
@@ -221,11 +208,7 @@ module FV3GFS_restart_io_mod
           enddo
         enddo
       enddo
-      write(phy_var3_cksum(num),'(Z16)') mpp_chksum(phy_var3(:,:,:,num))
     enddo
-
-    call update_chksums(phy_bundle, nvar2d, phy_var2_names, phy_var2_cksum)
-    call update_chksums(phy_bundle, nvar3d, phy_var3_names, phy_var3_cksum)
 
  end subroutine fv_phy_restart_output
 
@@ -470,27 +453,6 @@ module FV3GFS_restart_io_mod
        deallocate(ii1,jj1)
     enddo block_loop
 
-    ! compute fields checksum and update field's checksum attribute
-    do num = 1,size(sfc_var2,dim=3)
-      write(sfc_var2_cksum(num),'(Z16)') mpp_chksum(sfc_var2(:,:,num))
-    enddo
-    call update_chksums(sfc_bundle, size(sfc_var2,dim=3), sfc_name2, sfc_var2_cksum)
-
-    write(sfc_var3_cksum(0),'(Z16)') mpp_chksum(sfc_var3ice(:,:,:))
-    do num = 1,nvar3
-      write(sfc_var3_cksum(num),'(Z16)') mpp_chksum(sfc_var3(:,:,:,num))
-    enddo
-
-    if (Model%lsm == Model%lsm_noahmp) then
-      do num = nvar3+1,nvar3+3
-         write(sfc_var3_cksum(num),'(Z16)') mpp_chksum(sfc_var3sn(:,:,:,num))
-      enddo
-      write(sfc_var3_cksum(7),'(Z16)') mpp_chksum(sfc_var3eq(:,:,:,7))
-      write(sfc_var3_cksum(8),'(Z16)') mpp_chksum(sfc_var3zn(:,:,:,8))
-    endif ! lsm = lsm_noahmp
-
-    call update_chksums(sfc_bundle, 1+nvar3+nvar3mp, sfc_name3(0:nvar3+nvar3mp), sfc_var3_cksum(0:nvar3+nvar3mp))
-
  end subroutine fv_sfc_restart_output
 
  subroutine fv_phy_restart_bundle_setup(bundle, grid, rc)
@@ -660,12 +622,6 @@ module FV3GFS_restart_io_mod
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__, file=__FILE__)) &
    call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"checksum"/), rc=rc)
-   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"output_file"/), rc=rc)
-   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name='output_file', value=trim(outputfile), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
@@ -696,12 +652,6 @@ module FV3GFS_restart_io_mod
                             name=trim(field_name), indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__, file=__FILE__)) &
    call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"checksum"/), rc=rc)
-   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-   ! call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", attrList=(/"output_file"/), rc=rc)
-   ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name='output_file', value=trim(outputfile), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
@@ -744,26 +694,6 @@ module FV3GFS_restart_io_mod
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
  end subroutine add_zaxis_to_field
-
- subroutine update_chksums(bundle, nvar, var_names, var_cksums)
-
-   type(ESMF_FieldBundle), intent(inout) :: bundle
-   integer, intent(in) :: nvar
-   character(len=*), dimension(:), intent(in) :: var_names, var_cksums
-
-   integer :: n, rc
-   type(ESMF_Field) :: field
-
-   do n = 1, nvar
-     call ESMF_FieldBundleGet(bundle, var_names(n), field=field, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-     call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name="checksum", value=var_cksums(n), rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-   end do
-
- end subroutine update_chksums
 
    pure subroutine fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar_s2m,warm_start)
      implicit none

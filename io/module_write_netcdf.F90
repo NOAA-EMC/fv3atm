@@ -766,7 +766,8 @@ module module_write_netcdf
     character(len=ESMF_MAXSTR) :: attName
     type(ESMF_TypeKind_Flag)   :: typekind
 
-    integer :: varival
+    integer(ESMF_KIND_I4) :: varival_i4
+    integer(ESMF_KIND_I8) :: varival_i8
     real(ESMF_KIND_R4), dimension(:), allocatable :: varr4list
     real(ESMF_KIND_R8), dimension(:), allocatable :: varr8list
     integer :: itemCount
@@ -784,8 +785,14 @@ module module_write_netcdf
 
       if (typekind==ESMF_TYPEKIND_I4) then
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                name=trim(attName), value=varival, rc=rc); ESMF_ERR_RETURN(rc)
-         ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), varival); NC_ERR_STOP(ncerr)
+                                name=trim(attname), value=varival_i4, rc=rc); ESMF_ERR_RETURN(rc)
+         ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i4); NC_ERR_STOP(ncerr)
+
+      else if (typekind==ESMF_TYPEKIND_I8) then
+         call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                                name=trim(attname), value=varival_i8, rc=rc); ESMF_ERR_RETURN(rc)
+         varival_i4 = varival_i8
+         ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i4); NC_ERR_STOP(ncerr)
 
       else if (typekind==ESMF_TYPEKIND_R4) then
          allocate (varr4list(itemCount))
@@ -806,6 +813,10 @@ module module_write_netcdf
                                 name=trim(attName), value=varcval, rc=rc); ESMF_ERR_RETURN(rc)
          ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), trim(varcval)); NC_ERR_STOP(ncerr)
 
+      else
+
+         write(0,*)'Unsupported trypekind ', typekind
+         call ESMF_Finalize(endflag=ESMF_END_ABORT)
       end if
 
     end do

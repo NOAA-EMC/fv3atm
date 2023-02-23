@@ -8,6 +8,7 @@
 module module_write_restart_netcdf
 
   use esmf
+  use fms
   use netcdf
   use mpi
 
@@ -93,11 +94,9 @@ module module_write_restart_netcdf
     logical :: isPresent, thereAreVerticals, is_restart_core, dynamics_restart_file
     integer :: udimCount
     character(80), allocatable :: udimList(:)
-    character(32), allocatable :: field_checksums(:)
+    ! character(32), allocatable :: field_checksums(:)
     character(32) :: axis_attr_name
     character(32) :: field_checksum
-
-    integer :: ncchksz = 64*1024 ! same as in FMS
 !
     is_restart_core = .false.
     if ( index(trim(filename),'fv_core.res') > 0 ) is_restart_core = .true.
@@ -116,7 +115,7 @@ module module_write_restart_netcdf
     allocate(fcstField(fieldCount))
     allocate(varids(fieldCount))
     allocate(zaxis_dimids(fieldCount))
-    allocate(field_checksums(fieldCount))
+    ! allocate(field_checksums(fieldCount))
 
     call ESMF_FieldBundleGet(wrtfb, fieldList=fcstField, grid=wrtGrid, &
                              itemorderflag=ESMF_ITEMORDER_ADDORDER, &
@@ -218,7 +217,7 @@ module module_write_restart_netcdf
           ncerr = nf90_create(trim(filename),&
                   ! cmode=IOR(NF90_CLOBBER,NF90_64BIT_OFFSET),&
                   cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
-                  ncid=ncid, chunksize=ncchksz); NC_ERR_STOP(ncerr)
+                  ncid=ncid); NC_ERR_STOP(ncerr)
        end if
 
        ! disable auto filling.
@@ -314,9 +313,6 @@ module module_write_restart_netcdf
 
        do i=1, fieldCount
          call ESMF_FieldGet(fcstField(i), name=fldName, rank=rank, typekind=typekind, staggerloc=staggerloc, rc=rc); ESMF_ERR_RETURN(rc)
-         field_checksum = ''
-         call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", name="checksum", value=field_checksum, defaultValue="missingattribute", rc=rc); ESMF_ERR_RETURN(rc)
-         field_checksums(i) = field_checksum
 
          ! FIXME remove this once ESMF_FieldGet above returns correct staggerloc
          staggerloc = ESMF_STAGGERLOC_CENTER
@@ -416,8 +412,9 @@ module module_write_restart_netcdf
          start_idx = [start_i,start_j,        1]
 
          if (typekind == ESMF_TYPEKIND_R4) then
+            call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4, rc=rc); ESMF_ERR_RETURN(rc)
+            write(field_checksum,'(Z16)') mpp_chksum(array_r4)
             if (par) then
-               call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4, rc=rc); ESMF_ERR_RETURN(rc)
                ncerr = nf90_put_var(ncid, varids(i), values=array_r4, start=start_idx); NC_ERR_STOP(ncerr)
             else
                allocate(array_r4(im,jm))
@@ -428,8 +425,9 @@ module module_write_restart_netcdf
                deallocate(array_r4)
             end if
          else if (typekind == ESMF_TYPEKIND_R8) then
+            call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r8, rc=rc); ESMF_ERR_RETURN(rc)
+            write(field_checksum,'(Z16)') mpp_chksum(array_r8)
             if (par) then
-               call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r8, rc=rc); ESMF_ERR_RETURN(rc)
                ncerr = nf90_put_var(ncid, varids(i), values=array_r8, start=start_idx); NC_ERR_STOP(ncerr)
             else
                allocate(array_r8(im,jm))
@@ -448,8 +446,9 @@ module module_write_restart_netcdf
          start_idx = [start_i,start_j,1,        1]
 
          if (typekind == ESMF_TYPEKIND_R4) then
+            call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4_3d, rc=rc); ESMF_ERR_RETURN(rc)
+            write(field_checksum,'(Z16)') mpp_chksum(array_r4_3d)
             if (par) then
-               call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4_3d, rc=rc); ESMF_ERR_RETURN(rc)
                ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
             else
                if (staggerloc == ESMF_STAGGERLOC_CENTER) then
@@ -469,8 +468,9 @@ module module_write_restart_netcdf
                deallocate(array_r4_3d)
             end if
          else if (typekind == ESMF_TYPEKIND_R8) then
+            call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r8_3d, rc=rc); ESMF_ERR_RETURN(rc)
+            write(field_checksum,'(Z16)') mpp_chksum(array_r8_3d)
             if (par) then
-               call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r8_3d, rc=rc); ESMF_ERR_RETURN(rc)
                ncerr = nf90_put_var(ncid, varids(i), values=array_r8_3d, start=start_idx); NC_ERR_STOP(ncerr)
             else
                if (staggerloc == ESMF_STAGGERLOC_CENTER) then
@@ -497,16 +497,15 @@ module module_write_restart_netcdf
          call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
       end if ! end rank
+      if (do_io) then
+         ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
+         ncerr = nf90_put_att(ncid, varids(i), 'checksum', field_checksum); NC_ERR_STOP(ncerr)
+         ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+      end if
 
     end do ! end fieldCount
 
     if (do_io) then
-       ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-       do i=1, fieldCount
-          ncerr = nf90_put_att(ncid, varids(i), 'checksum', field_checksums(i)); NC_ERR_STOP(ncerr)
-       end do
-       ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
-
        ncerr = nf90_close(ncid=ncid); NC_ERR_STOP(ncerr)
     end if
 
@@ -580,39 +579,7 @@ contains
         ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
         deallocate(valueListr8)
       endif
-#if 0
-      ! add attributes to this vertical variable
-      call ESMF_AttributeGet(field, convention="NetCDF", purpose="FV3-dim", attnestflag=ESMF_ATTNEST_OFF, count=attCount, rc=rc); ESMF_ERR_RETURN(rc)
-      ! loop over all the attributes
-      do j=1, attCount
-        call ESMF_AttributeGet(field, convention="NetCDF", purpose="FV3-dim",       &
-                               attnestflag=ESMF_ATTNEST_OFF, attributeIndex=j, &
-                               name=attName, typekind=typekind, rc=rc); ESMF_ERR_RETURN(rc)
-
-        ! test for name starting with trim(dimLabel)":"
-        if (index(trim(attName), trim(dimLabel)//":") == 1) then
-          ind = len(trim(dimLabel)//":")
-          ! found a matching attributes
-          if (typekind == ESMF_TYPEKIND_CHARACTER) then
-            call ESMF_AttributeGet(field, convention="NetCDF", purpose="FV3-dim", name=trim(attName), value=valueS, rc=rc); ESMF_ERR_RETURN(rc)
-            ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), values=valueS); NC_ERR_STOP(ncerr)
-
-          else if (typekind == ESMF_TYPEKIND_I4) then
-            call ESMF_AttributeGet(field, convention="NetCDF", purpose="FV3-dim", name=trim(attName), value=valueI4, rc=rc); ESMF_ERR_RETURN(rc)
-            ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), values=valueI4); NC_ERR_STOP(ncerr)
-
-          else if (typekind == ESMF_TYPEKIND_R4) then
-            call ESMF_AttributeGet(field, convention="NetCDF", purpose="FV3-dim", name=trim(attName), value=valueR4, rc=rc); ESMF_ERR_RETURN(rc)
-            ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), values=valueR4); NC_ERR_STOP(ncerr)
-
-          else if (typekind == ESMF_TYPEKIND_R8) then
-            call ESMF_AttributeGet(field, convention="NetCDF", purpose="FV3-dim", name=trim(attName), value=valueR8, rc=rc); ESMF_ERR_RETURN(rc)
-            ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), values=valueR8); NC_ERR_STOP(ncerr)
-          endif
-        endif
-      enddo
-#endif
-    end subroutine
+    end subroutine write_out_ungridded_dim_atts_from_field
 
   end subroutine write_restart_netcdf
 

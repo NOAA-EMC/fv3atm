@@ -1097,7 +1097,7 @@ module fv3gfs_cap_mod
     type(ESMF_Time)             :: startTime
     type(ESMF_TimeInterval)     :: time_elapsed
 
-    integer                     :: na, i, j, urc
+    integer                     :: na, j, urc
     integer                     :: nfseconds
     logical                     :: fcstpe
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase2)'
@@ -1105,15 +1105,6 @@ module fv3gfs_cap_mod
     character(240)              :: msgString
 
     type(ESMF_Clock)            :: clock, clock_out
-    type(ESMF_VM)               :: vm
-
-    integer                                 :: fcstStateItemCount
-    character(len=esmf_maxstr),allocatable  :: fcstItemNameList(:)
-    type(ESMF_StateItem_Flag), allocatable  :: fcstItemTypeList(:)
-    type(ESMF_FieldBundle)                  :: fcstFieldBundle
-    integer                                 :: fieldCount
-    type(ESMF_Field), allocatable           :: fcstField(:)
-    type(ESMF_Info)                         :: info
 
 !-----------------------------------------------------------------------------
 
@@ -1121,7 +1112,7 @@ module fv3gfs_cap_mod
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase2: ")
 
-    call ESMF_GridCompGet(gcomp, clock=clock, vm=vm, rc=rc)
+    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock, phase=2, userRc=urc, rc=rc)
@@ -1150,52 +1141,6 @@ module fv3gfs_cap_mod
 
         if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run output time=',nfseconds, &
           'FBcount=',FBcount,'na=',na
-
-        ! during the run phase some of the fcst field attributes have been updated (for example
-        ! restart fields checksums) so we need to update fcstState across all PETs of the cap and then
-        ! copy the attributes (Info) from fcstState -> wrtState(n_group)
-
-        ! changes gocart output ! CHECK WHY
-        ! call ESMF_AttributeUpdate(fcstState, vm, rootList=fcstPetList, rc=rc)
-        ! if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-        call ESMF_StateGet(fcstState, itemCount=fcstStateItemCount, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-        allocate(fcstItemNameList(fcstStateItemCount), fcstItemTypeList(fcstStateItemCount))
-
-        call ESMF_StateGet(fcstState, itemNameList=fcstItemNameList, itemTypeList=fcstItemTypeList, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-        do i=1, fcstStateItemCount
-          if (fcstItemTypeList(i) == ESMF_STATEITEM_FIELDBUNDLE .and. fcstItemNameList(i)(1:8) == 'restart_') then
-            call ESMF_StateGet(fcstState, itemName=fcstItemNameList(i), fieldbundle=fcstFieldBundle, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-            call ESMF_FieldBundleGet(fcstFieldBundle, fieldCount=fieldCount, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-            allocate(fcstField(fieldCount))
-            call ESMF_FieldBundleGet(fcstFieldBundle, fieldList=fcstField,     &
-                                     itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-            do j=1, fieldCount
-              ! call ESMF_AttributeUpdate(fcstField(j), vm, rootList=fcstPetList, rc=rc)
-              ! if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-              call ESMF_InfoGetFromHost(fcstField(j), info=info, rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_InfoBroadcast(info, rootPet=fcstPetList(1), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            end do
-
-            deallocate(fcstField)
-          endif
-        end do
-
-        call ESMF_AttributeCopy(fcstState, wrtState(n_group), attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_TraceRegionEnter("ESMF_VMEpoch:fcstFB->wrtFB", rc=rc)
 

@@ -28,6 +28,7 @@
 !
       use mpi
       use esmf
+      use fms
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
@@ -244,6 +245,9 @@
       lead_write_task = 0
       last_write_task = ntasks -1
       lprnt = lead_write_task == wrt_int_state%mype
+
+      call fms_init(wrt_mpi_comm)
+      call mpp_init()
 
 !      print *,'in wrt, lead_write_task=', &
 !         lead_write_task,'last_write_task=',last_write_task, &
@@ -2206,7 +2210,7 @@
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             else
               call  write_restart_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                  .false., wrt_mpi_comm, wrt_int_state%mype, &
+                                  .true., wrt_mpi_comm, wrt_int_state%mype, &
                                   rc)
             endif ! cubed sphere vs. regional/nest write grid
 
@@ -2349,6 +2353,8 @@
       if (ESMF_LogFoundDeallocError(statusToCheck=stat, &
           msg="Deallocation of internal state memory failed.", &
           line=__LINE__, file=__FILE__)) return
+
+      call fms_end
 !
 !-----------------------------------------------------------------------
 !
