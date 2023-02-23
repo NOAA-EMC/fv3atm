@@ -2434,6 +2434,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[runoff_lnd]
+  standard_name = surface_runoff_flux_from_land
+  long_name = surface runoff flux over land for coupling
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[drain_lnd]
+  standard_name = subsurface_runoff_flux_from_land
+  long_name = subsurface runoff flux over land for coupling
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
 [hsnoin_cpl]
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling

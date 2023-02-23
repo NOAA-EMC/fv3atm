@@ -2498,6 +2498,46 @@ end subroutine update_atmos_chemistry
             endif
           endif
 
+! get surface runoff in soil (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'mean_runoff_rate_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%runoff_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get spec_humid for land'
+            endif
+          endif
+
+! get subsurface runoff in soil (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'mean_subsurface_runoff_rate_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%drain_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get spec_humid for land'
+            endif
+          endif
+
 
         endif ! if (datar8(isc,jsc) > -99999.0) then
 
