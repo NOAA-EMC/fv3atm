@@ -1044,7 +1044,7 @@ module post_fv3
             endif
 
             ! Lightning threat index 1
-            if(trim(fieldname)=='ltg1max') then
+            if(trim(fieldname)=='ltg1_max') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ltg1_max,arrayr42d,fillValue,spval)
               do j=jsta,jend
                 do i=ista, iend
@@ -1055,7 +1055,7 @@ module post_fv3
             endif
 
             ! Lightning threat index 2
-            if(trim(fieldname)=='ltg2max') then
+            if(trim(fieldname)=='ltg2_max') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ltg2_max,arrayr42d,fillValue,spval)
               do j=jsta,jend
                 do i=ista, iend
@@ -1066,7 +1066,7 @@ module post_fv3
             endif
 
             ! Lightning threat index 3
-            if(trim(fieldname)=='ltg3max') then
+            if(trim(fieldname)=='ltg3_max') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ltg3_max,arrayr42d,fillValue,spval)
               do j=jsta,jend
                 do i=ista, iend
