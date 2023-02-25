@@ -787,18 +787,18 @@
                         ,startTime=wrt_int_state%IO_BASETIME            &  !<-- The Clock's starting time
                         ,rc       =RC)
 
-      call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
-                        m=idate(5),s=idate(6),rc=rc)
+      call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3), &
+                                                        h=idate(4), m=idate(5), s=idate(6),rc=rc)
 !     if (lprnt) write(0,*) 'in wrt initial, io_baseline time=',idate,'rc=',rc
       idate(7) = 1
       wrt_int_state%idate = idate
       wrt_int_state%fdate = idate
 ! update IO-BASETIME and idate on write grid comp when IAU is enabled
-      if(iau_offset > 0 ) then
+      if (iau_offset > 0) then
         call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
         wrt_int_state%IO_BASETIME = wrt_int_state%IO_BASETIME + IAU_offsetTI
-        call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
-                          m=idate(5),s=idate(6),rc=rc)
+        call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3), &
+                                                          h=idate(4), m=idate(5), s=idate(6),rc=rc)
         wrt_int_state%idate = idate
         change_wrtidate = .true.
         if (lprnt) print *,'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
@@ -1766,9 +1766,6 @@
                                ,h_r8=nfhour,h=nf_hours,m=nf_minutes,s=nf_seconds,rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      call ESMF_TimeIntervalGet(timeinterval=io_currtimediff, s=fcst_seconds, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
       if (nf_hours < 0) return
 
       if (nsout > 0 .or. lflname_fulltime) then
@@ -2026,6 +2023,17 @@
 !-----------------------------------------------------------------------
 ! ** now loop through output field bundle
 !-----------------------------------------------------------------------
+
+      call ESMF_TimeIntervalGet(timeinterval=io_currtimediff, s=fcst_seconds, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      ! fcst_seconds is number of seconds in io_currtimediff, which is time interval between currenttime and io_basetime.
+      ! io_basetime has been adjusted by iau_offset in initialize phase.
+      ! Since output_fh and frestart and NOT adjusted by iau_offset, in order to compare
+      ! them with fcst_seconds, we must also adjust fcst_seconds by iau_offset
+      if (iau_offset > 0) then
+        fcst_seconds = fcst_seconds + iau_offset*3600
+      endif
 
       if ( (wrt_int_state%output_history .and. ANY(nint(output_fh(:)*3600.0) == fcst_seconds)) .or. ANY(frestart(:) == fcst_seconds) ) then
 
