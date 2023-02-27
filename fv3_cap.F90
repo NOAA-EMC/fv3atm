@@ -31,7 +31,7 @@ module fv3gfs_cap_mod
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
                                     calendar, cpl_grid_id,                   &
                                     cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt, fv3atmStartTime, fv3atmStopTime
+                                    first_kdt
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
@@ -232,9 +232,6 @@ module fv3gfs_cap_mod
 
     ! query for importState and exportState
     call NUOPC_ModelGet(gcomp, driverClock=clock, importState=importState, exportState=exportState, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_ClockGet(clock, startTime=fv3atmStartTime, stopTime=fv3atmStopTime, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_AttributeGet(gcomp, name="cpl_grid_id", value=value, defaultValue="1", &

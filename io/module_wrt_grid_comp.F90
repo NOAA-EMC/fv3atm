@@ -41,7 +41,6 @@
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
                                       stdlat1, stdlat2, dx, dy, iau_offset,     &
                                       ideflate, lflname_fulltime
-      use module_fv3_config,   only:  fv3atmStopTime
       use module_write_netcdf, only : write_netcdf
       use module_write_restart_netcdf
       use physcons,            only : pi => con_pi
@@ -2144,12 +2143,7 @@
             write(time_restart,'(I4,I2.2,I2.2,".",I2.2,I2.2,I2.2)') cdate(1:6)
 
             ! strip leading 'restart_' from a bundle name and replace it with a directory name 'RESTART/' to create actual file name
-
-            ! FIXME eventually change 'RESTART_new' to just 'RESTART', this is just for testing and comparing the restart files
-            !       written by the write grid component to those created by FMS
-            ! filename = 'RESTART_new/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.nc'
             filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.nc'
-            if (currTime == fv3atmStopTime) filename = 'RESTART/'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.nc'
 
             ! I hate this kind of inconsistencies
             ! If it's a restart bundle and the output grid is not cubed sphere and the output restart file is
@@ -2164,9 +2158,7 @@
 
             if (tileCount == 1) then ! non cubed sphere restart bundles
               if (wrt_int_state%wrtFB_names(nbdl)(9:11) == 'fv_') then ! 'dynamics' restart bundles, append 'tile1'
-                ! filename = 'RESTART_new/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.tile1'//'.nc'
                 filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.tile1'//'.nc'
-                if (currTime == fv3atmStopTime) filename = 'RESTART/'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.tile1'//'.nc'
               endif
             endif
 
