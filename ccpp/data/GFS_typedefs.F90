@@ -1082,7 +1082,7 @@ module GFS_typedefs
     logical              :: do_mynnedmf
     logical              :: do_mynnsfclay
     ! DH* TODO - move this to MYNN namelist section
-    logical              :: bl_mynn_tkebudget  !< flag for activating TKE budget
+    integer              :: tke_budget         !< flag for activating TKE budget
     logical              :: bl_mynn_tkeadvect  !< activate computation of TKE advection (not yet in use for FV3)
     integer              :: bl_mynn_cloudpdf   !< flag to determine which cloud PDF to use
     integer              :: bl_mynn_mixlength  !< flag for different version of mixing length formulation
@@ -3252,7 +3252,7 @@ module GFS_typedefs
     logical              :: do_mynnedmf       = .false.               !< flag for MYNN-EDMF
     logical              :: do_mynnsfclay     = .false.               !< flag for MYNN Surface Layer Scheme
     ! DH* TODO - move to MYNN namelist section
-    logical              :: bl_mynn_tkebudget = .false.
+    integer              :: tke_budget        = 0
     logical              :: bl_mynn_tkeadvect = .false.
     integer              :: bl_mynn_cloudpdf  = 2
     integer              :: bl_mynn_mixlength = 1
@@ -3549,7 +3549,7 @@ module GFS_typedefs
                                bl_mynn_cloudpdf, bl_mynn_edmf, bl_mynn_edmf_mom,            &
                                bl_mynn_edmf_tke, bl_mynn_mixlength, bl_mynn_cloudmix,       &
                                bl_mynn_mixqt, bl_mynn_output, icloud_bl, bl_mynn_tkeadvect, &
-                               bl_mynn_closure, bl_mynn_tkebudget,                          &
+                               bl_mynn_closure, tke_budget,                                 &
                                isftcflx, iz0tlnd, sfclay_compute_flux, sfclay_compute_diag, &
                                ! *DH
                                gwd_opt, do_ugwp_v0, do_ugwp_v0_orog_only,                   &
@@ -4320,7 +4320,7 @@ module GFS_typedefs
     Model%bl_mynn_output    = bl_mynn_output
     Model%bl_mynn_tkeadvect = bl_mynn_tkeadvect
     Model%bl_mynn_closure   = bl_mynn_closure
-    Model%bl_mynn_tkebudget = bl_mynn_tkebudget
+    Model%tke_budget        = tke_budget
     Model%icloud_bl         = icloud_bl
     Model%isftcflx          = isftcflx
     Model%iz0tlnd           = iz0tlnd
@@ -7052,7 +7052,7 @@ module GFS_typedefs
         allocate (Diag%det_thl   (IM,Model%levs))
         allocate (Diag%det_sqv   (IM,Model%levs))
       endif
-      if (Model%bl_mynn_tkebudget) then
+      if (Model%tke_budget .gt. 0) then
         allocate (Diag%dqke      (IM,Model%levs))
         allocate (Diag%qwt       (IM,Model%levs))
         allocate (Diag%qshear    (IM,Model%levs))
@@ -7076,7 +7076,7 @@ module GFS_typedefs
         Diag%det_thl       = clear_val
         Diag%det_sqv       = clear_val
       endif
-      if (Model%bl_mynn_tkebudget) then
+      if (Model%tke_budget .gt. 0) then
         Diag%dqke          = clear_val
         Diag%qwt           = clear_val
         Diag%qshear        = clear_val

@@ -6198,12 +6198,12 @@
   units = flag
   dimensions = ()
   type = logical
-[bl_mynn_tkebudget]
+[tke_budget]
   standard_name = control_for_tke_budget_output
   long_name = flag for activating TKE budget
   units = flag
   dimensions = ()
-  type = logical
+  type = integer
 [bl_mynn_tkeadvect]
   standard_name = flag_for_tke_advection
   long_name = flag for activating TKE advection
