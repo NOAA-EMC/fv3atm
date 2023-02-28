@@ -3488,7 +3488,7 @@ module GFS_typedefs
     logical :: fire_turb = .false.        ! enh vertmix option by MYNN PBL
 
 !-- Lightning threat index
-    logical :: lightning_threat = .true.
+    logical :: lightning_threat = .false.
 
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 183
