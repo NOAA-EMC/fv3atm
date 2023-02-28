@@ -8781,6 +8781,7 @@
   type = real
   kind = kind_phys
   intent = inout
+  active = (lightning_threat_indices_enabled)
 [ltg2_max]
   standard_name = gsl_lightning_threat_index_2
   long_name = GSL lightning threat index 2
@@ -8789,6 +8790,7 @@
   type = real
   kind = kind_phys
   intent = inout
+  active = (lightning_threat_indices_enabled)
 [ltg3_max]
   standard_name = gsl_lightning_threat_index_3
   long_name = GSL lightning threat index 3
@@ -8797,6 +8799,7 @@
   type = real
   kind = kind_phys
   intent = inout
+  active = (lightning_threat_indices_enabled)
 
 ########################################################################
 [ccpp-table-properties]
