@@ -2036,13 +2036,19 @@ module GFS_typedefs
     allocate (Statein%pgr    (IM))
     allocate (Statein%ugrs   (IM,Model%levs))
     allocate (Statein%vgrs   (IM,Model%levs))
-    allocate (Statein%wgrs   (IM,Model%levs))
+    if(Model%lightning_threat) then
+      allocate (Statein%wgrs   (IM,Model%levs))
+    endif
     allocate (Statein%qgrs   (IM,Model%levs,Model%ntrac))
 
     Statein%qgrs   = clear_val
     Statein%pgr    = clear_val
     Statein%ugrs   = clear_val
     Statein%vgrs   = clear_val
+
+    if(Model%lightning_threat) then
+      Statein%wgrs = clear_val
+    endif
 
     !--- soil state variables - for soil SPPT - sfc-perts, mgehne
     allocate (Statein%smc  (IM,Model%lsoil))
@@ -4994,6 +5000,13 @@ module GFS_typedefs
     Model%restart          = restart
     Model%lsm_cold_start   = .not. restart
     Model%hydrostatic      = hydrostatic
+
+    if(Model%hydrostatic .and. Model%lightning_threat) then
+      write(0,*) 'Turning off lightning threat index for hydrostatic run.'
+      Model%lightning_threat = .false.
+      lightning_threat = .false.
+    endif
+
     Model%jdat(1:8)        = jdat(1:8)
     allocate(Model%si(Model%levs+1))
     !--- Define sigma level for radiation initialization
@@ -6248,6 +6261,9 @@ module GFS_typedefs
       print *, ' restart           : ', Model%restart
       print *, ' lsm_cold_start    : ', Model%lsm_cold_start
       print *, ' hydrostatic       : ', Model%hydrostatic
+      print *, ' '
+      print *, 'lightning threat indexes'
+      print *, ' lightning_threat  : ', Model%lightning_threat
     endif
 
   end subroutine control_print
