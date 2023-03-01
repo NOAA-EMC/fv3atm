@@ -1194,7 +1194,7 @@ module FV3GFS_io_mod
       ! Tell CLM Lake to allocate data, and register its axes and fields
       if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
         call clm_lake%allocate_data(Model)
-        call clm_lake%fill_with_zero(Model, Sfcprop, Atm_block)
+        call clm_lake%copy_to_temporaries(Model,Sfcprop,Atm_block)
         call clm_lake%register_axes(Model, Sfc_restart)
         call clm_lake%register_fields(Sfc_restart)
       endif
