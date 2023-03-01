@@ -1386,9 +1386,6 @@ module GFS_typedefs
     logical              :: pre_rad         !< flag for testing purpose
     logical              :: print_diff_pgr  !< print average change in pgr every timestep (does not need debug flag)
 
-!--- lightning threat and diagsnostics
-    logical              :: lightning_threat !< report lightning threat indices
-
 !--- variables modified at each time step
     integer              :: ipt             !< index for diagnostic printout point
     logical              :: lprnt           !< control flag for diagnostic print out
@@ -1432,6 +1429,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: dxmin           ! minimum scaling factor for critical relative humidity, replaces dxmin in physcons.F90
     real(kind=kind_phys) :: rhcmax          ! maximum critical relative humidity, replaces rhc_max in physcons.F90
     real(kind=kind_phys) :: huge            !< huge fill value
+
+!--- lightning threat and diagsnostics
+    logical              :: lightning_threat !< report lightning threat indices
 
     contains
       procedure :: init            => control_initialize
@@ -6857,6 +6857,15 @@ module GFS_typedefs
       Diag%old_pgr = clear_val
     endif
 
+    if(Model%lightning_threat) then
+       allocate (Diag%ltg1_max(IM))
+       allocate (Diag%ltg2_max(IM))
+       allocate (Diag%ltg3_max(IM))
+       Diag%ltg1_max = zero
+       Diag%ltg2_max = zero
+       Diag%ltg3_max = zero
+    endif
+
     !--- Radiation
     allocate (Diag%fluxr   (IM,Model%nfxr))
     allocate (Diag%topfsw  (IM))
@@ -7152,15 +7161,6 @@ module GFS_typedefs
     call Diag%phys_zero (Model, linit=linit)
 !    if(Model%me==0) print *,'in diag_create, call phys_zero'
     linit = .false.
-
-    if(Model%lightning_threat) then
-       allocate (Diag%ltg1_max(IM))
-       allocate (Diag%ltg2_max(IM))
-       allocate (Diag%ltg3_max(IM))
-       Diag%ltg1_max = zero
-       Diag%ltg2_max = zero
-       Diag%ltg3_max = zero
-    endif
 
   end subroutine diag_create
 
