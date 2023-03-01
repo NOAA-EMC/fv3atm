@@ -22,11 +22,6 @@ VARIABLE_DEFINITION_FILES = [
     'physics/physics/h2o_def.f',
     'physics/physics/ozne_def.f',
     'physics/physics/radiation_surface.f',
-    'physics/physics/rte-rrtmgp/rrtmgp/mo_gas_optics_rrtmgp.F90',
-    'physics/physics/rte-rrtmgp/rrtmgp/mo_gas_concentrations.F90',
-    'physics/physics/rte-rrtmgp/rte/mo_optical_props.F90',
-    'physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90',
-    'physics/physics/rte-rrtmgp/rte/mo_source_functions.F90',
     'data/CCPP_typedefs.F90',
     'data/GFS_typedefs.F90',
     'data/CCPP_data.F90',
@@ -67,27 +62,6 @@ TYPEDEFS_NEW_METADATA = {
         'GFS_grid_type'         : 'GFS_Data(cdata%blk_no)%Grid',
         'GFS_stateout_type'     : 'GFS_Data(cdata%blk_no)%Stateout',
         'GFS_typedefs' : '',
-        },
-    'mo_gas_concentrations' : {
-        'ty_gas_concs' : '',
-        'mo_gas_concentrations' : '',
-        },
-    'mo_gas_optics_rrtmgp' : {
-        'ty_gas_optics_rrtmgp' : '',
-        'mo_gas_optics_rrtmgp' : '',
-        },
-    'mo_optical_props' : {
-        'ty_optical_props_1scl' : '',
-        'ty_optical_props_2str' : '',
-        'mo_optical_props' : '',
-        },
-    'mo_cloud_optics' : {
-        'ty_cloud_optics' : '',
-        'mo_cloud_optics' : '',
-        },
-    'mo_source_functions' : {
-        'ty_source_func_lw' : '',
-        'mo_source_functions' : '',
         },
     }
 
@@ -218,23 +192,15 @@ SCHEME_FILES = [
     'physics/smoke/rrfs_smoke_postpbl.F90',
     'physics/smoke/rrfs_smoke_lsdep_wrapper.F90',
     # RRTMGP
-    'physics/physics/rrtmgp_lw_gas_optics.F90',
-    'physics/physics/rrtmgp_lw_cloud_optics.F90',
-    'physics/physics/rrtmgp_sw_gas_optics.F90',
-    'physics/physics/rrtmgp_sw_cloud_optics.F90',
     'physics/physics/rrtmgp_aerosol_optics.F90',
-    'physics/physics/rrtmgp_lw_rte.F90',
-    'physics/physics/rrtmgp_sw_rte.F90',
+    'physics/physics/rrtmgp_lw_main.F90',
+    'physics/physics/rrtmgp_sw_main.F90',
     'physics/physics/GFS_rrtmgp_setup.F90',
     'physics/physics/GFS_rrtmgp_pre.F90',
-    'physics/physics/rrtmgp_lw_pre.F90',
-    'physics/physics/GFS_rrtmgp_lw_post.F90',
-    'physics/physics/rrtmgp_lw_cloud_sampling.F90',
-    'physics/physics/rrtmgp_sw_cloud_sampling.F90',
     'physics/physics/GFS_cloud_diagnostics.F90',
     'physics/physics/GFS_rrtmgp_cloud_mp.F90',
     'physics/physics/GFS_rrtmgp_cloud_overlap.F90',
-    'physics/physics/GFS_rrtmgp_sw_post.F90'
+    'physics/physics/GFS_rrtmgp_post.F90'
     ]
 
 # Default build dir, relative to current working directory,

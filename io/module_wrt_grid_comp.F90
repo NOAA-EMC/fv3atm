@@ -754,12 +754,14 @@
           allocate( wrt_int_state%out_grid_info(n)%latPtr(wrt_int_state%out_grid_info(n)%i_start:wrt_int_state%out_grid_info(n)%i_end, &
                                                           wrt_int_state%out_grid_info(n)%j_start:wrt_int_state%out_grid_info(n)%j_end) )
 
-          do j=wrt_int_state%out_grid_info(n)%j_start, wrt_int_state%out_grid_info(n)%j_end
-          do i=wrt_int_state%out_grid_info(n)%i_start, wrt_int_state%out_grid_info(n)%i_end
-              wrt_int_state%out_grid_info(n)%latPtr(i,j) = latPtr(i,j)
-              wrt_int_state%out_grid_info(n)%lonPtr(i,j) = lonPtr(i,j)
-          enddo
-          enddo
+          if ( trim(output_grid(n)) /= 'regional_latlon_moving' .and. trim(output_grid(n)) /= 'rotated_latlon_moving' ) then
+            do j=wrt_int_state%out_grid_info(n)%j_start, wrt_int_state%out_grid_info(n)%j_end
+            do i=wrt_int_state%out_grid_info(n)%i_start, wrt_int_state%out_grid_info(n)%i_end
+                wrt_int_state%out_grid_info(n)%latPtr(i,j) = latPtr(i,j)
+                wrt_int_state%out_grid_info(n)%lonPtr(i,j) = lonPtr(i,j)
+            enddo
+            enddo
+          endif
 
           wrt_int_state%out_grid_info(n)%im = imo(n)
           wrt_int_state%out_grid_info(n)%jm = jmo(n)
@@ -1077,18 +1079,19 @@
               call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      attrList=(/"lon1","lat1","lon2","lat2","dlon","dlat"/), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon1", value=lon1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat1", value=lat1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon2", value=lon2(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat2", value=lat2(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="dlon", value=dlon(grid_id), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="dlat", value=dlat(grid_id), rc=rc)
-
+              if (trim(output_grid(grid_id)) /= 'regional_latlon_moving') then
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+                                       name="lon1", value=lon1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+                                       name="lat1", value=lat1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+                                       name="lon2", value=lon2(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+                                       name="lat2", value=lat2(grid_id), rc=rc)
+              endif
             else if (trim(output_grid(grid_id)) == 'rotated_latlon' &
                 .or. trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
 
@@ -1109,18 +1112,19 @@
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="cen_lat", value=cen_lat(grid_id), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon1", value=lon1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat1", value=lat1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon2", value=lon2(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat2", value=lat2(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="dlon", value=dlon(grid_id), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="dlat", value=dlat(grid_id), rc=rc)
-
+              if (trim(output_grid(grid_id)) /= 'rotated_latlon_moving') then 
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+                                       name="lon1", value=lon1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+                                       name="lat1", value=lat1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+                                       name="lon2", value=lon2(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+                                     name="lat2", value=lat2(grid_id), rc=rc)
+              endif
             else if (trim(output_grid(grid_id)) == 'lambert_conformal') then
 
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
@@ -1393,7 +1397,7 @@
 
       deallocate(attNameList, attNameList2, typekindList)
 !
-!      write_init_tim = MPI_Wtime() - btim0
+!     write_init_tim = MPI_Wtime() - btim0
 !
 !-----------------------------------------------------------------------
 !
@@ -1931,22 +1935,31 @@
 #ifdef INLINE_POST
         wbeg = MPI_Wtime()
         do n=1,ngrids
-          if (trim(output_grid(n)) == 'regional_latlon' .or. &
-              trim(output_grid(n)) == 'regional_latlon_moving' .or. &
-              trim(output_grid(n)) == 'rotated_latlon' .or. &
-              trim(output_grid(n)) == 'rotated_latlon_moving' .or. &
-              trim(output_grid(n)) == 'lambert_conformal') then
 
-              !mask fields according to sfc pressure
-              do nbdl=1, wrt_int_state%FBCount
-                call mask_fields(wrt_int_state%wrtFB(nbdl),rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              enddo
-              lmask_fields = .true.
+          if (trim(output_grid(n)) /= 'cubed_sphere_grid') then
+
+            if (trim(output_grid(n)) == 'regional_latlon' .or. &
+                trim(output_grid(n)) == 'regional_latlon_moving' .or. &
+                trim(output_grid(n)) == 'rotated_latlon' .or. &
+                trim(output_grid(n)) == 'rotated_latlon_moving' .or. &
+                trim(output_grid(n)) == 'lambert_conformal') then
+
+                !mask fields according to sfc pressure
+                do nbdl=1, wrt_int_state%FBCount
+                  call mask_fields(wrt_int_state%wrtFB(nbdl),rc)
+                  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                enddo
+                lmask_fields = .true.
+            endif
+
+            call post_run_fv3(wrt_int_state, n, mype, wrt_mpi_comm, lead_write_task, &
+                              itasks, jtasks, nf_hours, nf_minutes, nf_seconds)
+          else
+            rc = ESMF_RC_NOT_IMPL
+            print *,'Inline post not available for cubed_sphere_grid'
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return
           endif
-
-          call post_run_fv3(wrt_int_state, n, mype, wrt_mpi_comm, lead_write_task, &
-                            itasks, jtasks, nf_hours, nf_minutes, nf_seconds)
         enddo
         wend = MPI_Wtime()
         if (lprnt) then
