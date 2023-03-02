@@ -3850,6 +3850,27 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[nssl_alphar]
+  standard_name = nssl_alpha_rain
+  long_name = rain PSD shape parameter in NSSL micro
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_ehw0_in]
+  standard_name = nssl_hw_collec_eff
+  long_name = graupel droplet collection efficiency in NSSL micro
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_ehlw0_in]
+  standard_name = nssl_hlw_collec_eff
+  long_name = graupel droplet collection efficiency in NSSL micro
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [nssl_ccn_on]
   standard_name = nssl_ccn_on
   long_name = CCN activation flag in NSSL micro
