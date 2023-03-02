@@ -200,11 +200,11 @@ module module_write_netcdf
 
        if (par) then
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+                  cmode=IOR(NF90_CLOBBER,NF90_NETCDF4),&
                   comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
        else
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+                  cmode=IOR(NF90_CLOBBER,NF90_NETCDF4),&
                   ncid=ncid); NC_ERR_STOP(ncerr)
        end if
 
@@ -791,8 +791,7 @@ module module_write_netcdf
       else if (typekind==ESMF_TYPEKIND_I8) then
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
                                 name=trim(attname), value=varival_i8, rc=rc); ESMF_ERR_RETURN(rc)
-         varival_i4 = varival_i8
-         ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i4); NC_ERR_STOP(ncerr)
+         ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i8); NC_ERR_STOP(ncerr)
 
       else if (typekind==ESMF_TYPEKIND_R4) then
          allocate (varr4list(itemCount))

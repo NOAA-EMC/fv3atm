@@ -211,12 +211,12 @@ module module_write_restart_netcdf
 
        if (par) then
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+                  cmode=IOR(NF90_CLOBBER,NF90_NETCDF4),&
                   comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
        else
           ncerr = nf90_create(trim(filename),&
                   ! cmode=IOR(NF90_CLOBBER,NF90_64BIT_OFFSET),&
-                  cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+                  cmode=IOR(NF90_CLOBBER,NF90_NETCDF4),&
                   ncid=ncid); NC_ERR_STOP(ncerr)
        end if
 
