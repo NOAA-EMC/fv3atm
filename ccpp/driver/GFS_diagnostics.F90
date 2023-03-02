@@ -2550,6 +2550,17 @@ module GFS_diagnostics
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%lake_is_salty(:)
         enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_cannot_freeze'
+        ExtDiag(idx)%desc = 'clm lake model considers the point to be so salty it cannot freeze'
+        ExtDiag(idx)%unit = '1'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+           ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%lake_cannot_freeze(:)
+        enddo
         
         idx = idx + 1
         ExtDiag(idx)%axes = 2
