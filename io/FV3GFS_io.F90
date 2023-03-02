@@ -2335,21 +2335,11 @@ module FV3GFS_io_mod
    if(Model%lkm>0) then
      if(Model%iopt_lake==Model%iopt_lake_flake  ) then
        if(Model%me==0) then
-         if(size(sfc_name2)/=nvar2me+10) then
-3814       format("ERROR: size mismatch size(sfc_name2)=",I0," /= nvar2me+10=",I0)
-           write(0,3814) size(sfc_name2),nvar2me+10
+         if(size(sfc_name2)/=nvar_before_lake+10) then
+3814       format("ERROR: size mismatch size(sfc_name2)=",I0," /= nvar_before_lake+10=",I0)
+           write(0,3814) size(sfc_name2),nvar_before_lake+10
          endif
        endif
-       sfc_name2(nvar2me+1) = 'T_snow'
-       sfc_name2(nvar2me+2) = 'T_ice'
-       sfc_name2(nvar2me+3)  = 'h_ML'
-       sfc_name2(nvar2me+4)  = 't_ML'
-       sfc_name2(nvar2me+5)  = 't_mnw'
-       sfc_name2(nvar2me+6)  = 'h_talb'
-       sfc_name2(nvar2me+7)  = 't_talb'
-       sfc_name2(nvar2me+8)  = 't_bot1'
-       sfc_name2(nvar2me+9)  = 't_bot2'
-       sfc_name2(nvar2me+10)  = 'c_t'
      else if(Model%iopt_lake==Model%iopt_lake_clm) then
        ! Tell clm_lake to register all of its fields
        call clm_lake%register_fields(Sfc_restart)
