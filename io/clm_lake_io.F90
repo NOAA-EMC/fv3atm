@@ -45,9 +45,6 @@ module clm_lake_io
     ! allocate_data allocates all of the pointers in this object
     procedure, public :: allocate_data => clm_lake_allocate_data
 
-    ! fill_with_zero allocates fills the temporary arrays with 0
-    procedure, public :: fill_with_zero => clm_lake_fill_with_zero
-
     ! register_fields calls register_field on Sfc_restart for all CLM Lake model restart variables
     procedure, public :: register_fields => clm_lake_register_fields
 
@@ -236,59 +233,6 @@ module clm_lake_io
       enddo
     enddo
   end subroutine clm_lake_copy_to_temporaries
-
-  subroutine clm_lake_fill_with_zero(data, Model, Sfcprop, Atm_block)
-    ! Fills all temporary variables with 0.
-    ! Terrible things will happen if you don't call data%allocate_data first.
-    implicit none
-    class(clm_lake_data_type) :: data
-    type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
-    type(GFS_control_type),   intent(in) :: Model
-    type(block_control_type), intent(in) :: Atm_block
-
-    integer :: nb, ix, isc, jsc, i, j
-    isc = Model%isc
-    jsc = Model%jsc
-
-    ! Copy data to temporary arrays
-
-!$omp parallel do default(shared) private(i, j, nb, ix)
-    do nb = 1, Atm_block%nblks
-      do ix = 1, Atm_block%blksz(nb)
-        i = Atm_block%index(nb)%ii(ix) - isc + 1
-        j = Atm_block%index(nb)%jj(ix) - jsc + 1
-
-        data%T_snow(i,j) = 0
-        data%T_ice(i,j) = 0
-        data%lake_snl2d(i,j) = 0
-        data%lake_h2osno2d(i,j) = 0
-        data%lake_tsfc(i,j) = 0
-        data%lake_savedtke12d(i,j) = 0
-        data%lake_sndpth2d(i,j) = 0
-        data%clm_lakedepth(i,j) = 0
-        data%clm_lake_initialized(i,j) = 0
-
-        data%lake_z3d(i,j,:) = 0
-        data%lake_dz3d(i,j,:) = 0
-        data%lake_soil_watsat3d(i,j,:) = 0
-        data%lake_csol3d(i,j,:) = 0
-        data%lake_soil_tkmg3d(i,j,:) = 0
-        data%lake_soil_tkdry3d(i,j,:) = 0
-        data%lake_soil_tksatu3d(i,j,:) = 0
-        data%lake_snow_z3d(i,j,:) = 0
-        data%lake_snow_dz3d(i,j,:) = 0
-        data%lake_snow_zi3d(i,j,:) = 0
-        data%lake_h2osoi_vol3d(i,j,:) = 0
-        data%lake_h2osoi_liq3d(i,j,:) = 0
-        data%lake_h2osoi_ice3d(i,j,:) = 0
-        data%lake_t_soisno3d(i,j,:) = 0
-        data%lake_t_lake3d(i,j,:) = 0
-        data%lake_icefrac3d(i,j,:) = 0
-        data%lake_clay3d(i,j,:) = 0
-        data%lake_sand3d(i,j,:) = 0
-      enddo
-    enddo
-  end subroutine clm_lake_fill_with_zero
 
   subroutine clm_lake_copy_from_temporaries(data, Model, Sfcprop, Atm_block)
     ! Copies from data temporary variables to the corresponding Sfcprop variables.
