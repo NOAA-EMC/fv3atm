@@ -812,8 +812,6 @@
 
       allocate(fcstItemNameList(FBCount), fcstItemTypeList(FBCount))
       allocate(wrt_int_state%wrtFB_names(FBCount))       ! this array should be allocated as wrt_int_state%FBCount long not FBCount
-!not_used      allocate(wrt_int_state%ncount_fields(FBCount),wrt_int_state%ncount_attribs(FBCount))
-!not_used      allocate(wrt_int_state%field_names(2000,FBCount))
       allocate(outfilename(2000,FBCount))
       outfilename = ''
 
@@ -884,8 +882,6 @@
 
           if (fieldCount > 0) then
 
-!not_used            wrt_int_state%ncount_fields(i) = fieldCount
-
             allocate(fcstField(fieldCount))
             call ESMF_FieldBundleGet(fcstFB, fieldList=fcstField,     &
                                      itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
@@ -937,8 +933,6 @@
                                             ungriddedLBound=ungriddedLBound,   &
                                             ungriddedUBound=ungriddedUBound, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-!not_used              wrt_int_state%field_names(j,i) = trim(fieldName)
 
               call ESMF_AttributeCopy(fcstField(j), field_work, attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
