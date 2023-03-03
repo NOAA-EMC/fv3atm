@@ -12,5 +12,5 @@
   branch = clm_lake_revert.v9
 [submodule "upp"]
   path = upp
-  url = https://github.com/NOAA-EMC/UPP
-  branch = develop
+  url = https://github.com/SamuelTrahan-NOAA/UPP
+  branch = uv10-exch-errors
