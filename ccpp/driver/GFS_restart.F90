@@ -88,6 +88,15 @@ module GFS_restart
         else if( trim(ExtDiag(idx)%name) == 'totgrp_ave') then
           ndiag_rst = ndiag_rst +1
           ndiag_idx(ndiag_rst) = idx
+        else if( trim(ExtDiag(idx)%name) == 'tsnowp') then
+          ndiag_rst = ndiag_rst +1
+          ndiag_idx(ndiag_rst) = idx
+        else if( trim(ExtDiag(idx)%name) == 'frozr') then
+          ndiag_rst = ndiag_rst +1
+          ndiag_idx(ndiag_rst) = idx
+        else if( trim(ExtDiag(idx)%name) == 'frzr') then
+          ndiag_rst = ndiag_rst +1
+          ndiag_idx(ndiag_rst) = idx
         endif
       endif
     enddo

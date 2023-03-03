@@ -7,7 +7,9 @@ module GFS_typedefs
                                        con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
                                        con_sbc, con_tice, cimin, con_p0, rhowater,     &
                                        con_csol, con_epsqs, con_rocp, con_rog,         &
-                                       con_omega, con_rerth, con_psat, karman, rainmin
+                                       con_omega, con_rerth, con_psat, karman, rainmin,&
+                                       con_c, con_plnk, con_boltz, con_solr_2008,      &
+                                       con_solr_2002, con_thgni
 
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
    use module_radlw_parameters,  only: topflw_type, sfcflw_type
@@ -370,7 +372,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: clw_surf_ice(:)    => null()  !< RUC LSM: moist cloud water mixing ratio at surface over ice
     real (kind=kind_phys), pointer :: qwv_surf_land(:)   => null()  !< RUC LSM: water vapor mixing ratio at surface over land
     real (kind=kind_phys), pointer :: qwv_surf_ice(:)    => null()  !< RUC LSM: water vapor mixing ratio at surface over ice
-    real (kind=kind_phys), pointer :: rhofr(:)           => null()  !< RUC LSM: density of frozen precipitation
     real (kind=kind_phys), pointer :: tsnow_land(:)      => null()  !< RUC LSM: snow temperature at the bottom of the first snow layer over land
     real (kind=kind_phys), pointer :: tsnow_ice(:)       => null()  !< RUC LSM: snow temperature at the bottom of the first snow layer over ice
     real (kind=kind_phys), pointer :: snowfallac_land(:) => null()  !< ruc lsm diagnostics over land
@@ -719,6 +720,12 @@ module GFS_typedefs
     integer              :: nrcm            !< second dimension of random number stream for RAS
     integer              :: iflip           !< iflip - is not the same as flipv
     integer              :: isol            !< use prescribed solar constant
+                                            !< 0  => fixed value=1366.0\f$W/m^2\f$(old standard)
+                                            !< 10 => fixed value=1360.8\f$W/m^2\f$(new standard)
+                                            !< 1  => NOAA ABS-scale TSI table (yearly) w 11-yr cycle approx
+                                            !< 2  => NOAA TIM-scale TSI table (yearly) w 11-yr cycle approx
+                                            !< 3  => CMIP5 TIM-scale TSI table (yearly) w 11-yr cycle approx
+                                            !< 4  => CMIP5 TIM-scale TSI table (monthly) w 11-yr cycle approx
     integer              :: ico2            !< prescribed global mean value (old opernl)
     integer              :: ialb            !< use climatology alb, based on sfc type
                                             !< 1 => use modis based alb
@@ -726,11 +733,21 @@ module GFS_typedefs
     integer              :: iems            !< 1 => use fixed value of 1.0
                                             !< 2 => use LSM emiss
     integer              :: iaer            !< default aerosol effect in sw only
+    integer              :: iaermdl         !< tropospheric aerosol model scheme flag
+    integer              :: iaerflg         !< aerosol effect control flag
+    character(len=26)    :: aeros_file      !< external file: aerosol data file
+    character(len=26)    :: solar_file      !< external file: solar constant data table
+    character(len=26)    :: semis_file      !< external file: surface emissivity data for radiation
+    character(len=26)    :: co2dat_file     !< external file: co2 monthly observation data table
+    character(len=26)    :: co2gbl_file     !< external file: co2 global annual mean data table
+    character(len=26)    :: co2usr_file     !< external file: co2 user defined data table
+    character(len=26)    :: co2cyc_file     !< external file: co2 climotological monthly cycle data
+    logical              :: lalw1bd         !< selects 1 band or multi bands for LW aerosol properties
     integer              :: icliq_sw        !< sw optical property for liquid clouds
     integer              :: icice_sw        !< sw optical property for ice clouds
     integer              :: icliq_lw        !< lw optical property for liquid clouds
     integer              :: icice_lw        !< lw optical property for ice clouds
-    integer              :: iovr            !< max-random overlap clouds for sw & lw (maximum of both)
+    integer              :: iovr            !< cloud-overlap used in cloud-sampling by radiation scheme(s)
     integer              :: ictm            !< ictm=0 => use data at initial cond time, if not
                                             !<           available; use latest; no extrapolation.
                                             !< ictm=1 => use data at the forecast time, if not
@@ -748,16 +765,25 @@ module GFS_typedefs
                                             !< =1 => sub-grid cloud with prescribed seeds
                                             !< =2 => sub-grid cloud with randomly generated
                                             !< seeds
+    integer              :: iswmode         !< SW control flag for scattering process approximation
+                                            !< =1 => two-stream delta-eddington (Joseph et al. 1976)
+                                            !< =2 => two-stream PIFM            (Zdunkowski et al. 1980)
+                                            !< =3 => discrete ordinates         (Liou, 1973)
     integer              :: idcor           !< Decorrelation length type for overlap assumption
                                             !< =0 => Use constant decorrelation length, decorr_con
                                             !< =1 => Use spatially varying decorrelation length (Hogan et al. 2010)
                                             !< =2 => Use spatially and temporally varyint decorrelation length (Oreopoulos et al. 2012)
     real(kind_phys)      :: dcorr_con       !< Decorrelation length constant (km) (if idcor = 0)
-    logical              :: crick_proof     !< CRICK-Proof cloud water
-    logical              :: ccnorm          !< Cloud condensate normalized by cloud cover
-    logical              :: norad_precip    !< radiation precip flag for Ferrier/Moorthi
+    logical              :: lcrick          !< CRICK-Proof cloud water
+    logical              :: lcnorm          !< Cloud condensate normalized by cloud cover
+    logical              :: lnoprec         !< radiation precip flag for Ferrier/Moorthi
     logical              :: lwhtr           !< flag to output lw heating rate (Radtend%lwhc)
     logical              :: swhtr           !< flag to output sw heating rate (Radtend%swhc)
+    integer              :: rad_hr_units    !< flag to control units of lw/sw heating rate
+                                            !< 1: K day-1 - 2: K s-1
+    logical              :: inc_minor_gas   !< Include minor trace gases in RRTMG radiation calculation?
+    integer              :: ipsd0           !< initial permutaion seed for mcica radiation
+    integer              :: ipsdlim         !< limit initial permutaion seed for mcica radiation 
     logical              :: lrseeds         !< flag to use host-provided random seeds
     integer              :: nrstreams       !< number of random number streams in host-provided random seed array
     logical              :: lextop          !< flag for using an extra top layer for radiation
@@ -810,24 +836,24 @@ module GFS_typedefs
                                                            !< and if yes, perform them; hardcoded to .true. for now
     !--- new microphysical switch
     integer              :: imp_physics                    !< choice of microphysics scheme
-    integer              :: imp_physics_gfdl = 11          !< choice of GFDL     microphysics scheme
-    integer              :: imp_physics_thompson = 8       !< choice of Thompson microphysics scheme
-    integer              :: imp_physics_wsm6 = 6           !< choice of WSMG     microphysics scheme
-    integer              :: imp_physics_zhao_carr = 99     !< choice of Zhao-Carr microphysics scheme
+    integer              :: imp_physics_gfdl          = 11 !< choice of GFDL     microphysics scheme
+    integer              :: imp_physics_thompson      = 8  !< choice of Thompson microphysics scheme
+    integer              :: imp_physics_wsm6          = 6  !< choice of WSMG     microphysics scheme
+    integer              :: imp_physics_zhao_carr     = 99 !< choice of Zhao-Carr microphysics scheme
     integer              :: imp_physics_zhao_carr_pdf = 98 !< choice of Zhao-Carr microphysics scheme with PDF clouds
-    integer              :: imp_physics_mg = 10            !< choice of Morrison-Gettelman microphysics scheme
-    integer              :: imp_physics_fer_hires = 15     !< choice of Ferrier-Aligo microphysics scheme
-    integer :: iovr_rand        = 0 !< choice of cloud-overlap: random
-    integer :: iovr_maxrand     = 1 !< choice of cloud-overlap: maximum random
-    integer :: iovr_max         = 2 !< choice of cloud-overlap: maximum
-    integer :: iovr_dcorr       = 3 !< choice of cloud-overlap: decorrelation length
-    integer :: iovr_exp         = 4 !< choice of cloud-overlap: exponential
-    integer :: iovr_exprand     = 5 !< choice of cloud-overlap: exponential random
-    integer :: idcor_con        = 0 !< choice for decorrelation-length: Use constant value
-    integer :: idcor_hogan      = 1 !< choice for decorrelation-length: (https://rmets.onlinelibrary.wiley.com/doi/full/10.1002/qj.647)
-    integer :: idcor_oreopoulos = 2 !< choice for decorrelation-length: (10.5194/acp-12-9097-2012)
-    integer              :: imp_physics_nssl      = 17       !< choice of NSSL microphysics scheme with background CCN
-    integer              :: imp_physics_nssl2mccn = 18       !< choice of NSSL microphysics scheme with predicted CCN (compatibility)
+    integer              :: imp_physics_mg            = 10 !< choice of Morrison-Gettelman microphysics scheme
+    integer              :: imp_physics_fer_hires     = 15 !< choice of Ferrier-Aligo microphysics scheme
+    integer              :: imp_physics_nssl          = 17 !< choice of NSSL microphysics scheme with background CCN
+    integer              :: imp_physics_nssl2mccn     = 18 !< choice of NSSL microphysics scheme with predicted CCN (compatibility)
+    integer              :: iovr_rand                 = 0  !< choice of cloud-overlap: random
+    integer              :: iovr_maxrand              = 1  !< choice of cloud-overlap: maximum random
+    integer              :: iovr_max                  = 2  !< choice of cloud-overlap: maximum
+    integer              :: iovr_dcorr                = 3  !< choice of cloud-overlap: decorrelation length
+    integer              :: iovr_exp                  = 4  !< choice of cloud-overlap: exponential
+    integer              :: iovr_exprand              = 5  !< choice of cloud-overlap: exponential random
+    integer              :: idcor_con                 = 0  !< choice for decorrelation-length: Use constant value
+    integer              :: idcor_hogan               = 1  !< choice for decorrelation-length: (https://rmets.onlinelibrary.wiley.com/doi/full/10.1002/qj.647)
+    integer              :: idcor_oreopoulos          = 2  !< choice for decorrelation-length: (10.5194/acp-12-9097-2012)
     !--- Z-C microphysical parameters
     real(kind=kind_phys) :: psautco(2)         !< [in] auto conversion coeff from ice to snow
     real(kind=kind_phys) :: prautco(2)         !< [in] auto conversion coeff from cloud to rain
@@ -893,7 +919,7 @@ module GFS_typedefs
     logical              :: ltaerosol       !< flag for aerosol version
     logical              :: mraerosol       !< flag for merra2_aerosol_aware
     logical              :: lradar          !< flag for radar reflectivity
-    real(kind=kind_phys) :: nsradar_reset   !< seconds between resetting radar reflectivity calculation
+    real(kind=kind_phys) :: nsfullradar_diag!< seconds between resetting radar reflectivity calculation
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
     logical              :: ext_diag_thompson !< flag for extended diagnostic output from Thompson
     integer              :: thompson_ext_ndiag3d=37 !< number of 3d arrays for extended diagnostic output from Thompson
@@ -927,6 +953,7 @@ module GFS_typedefs
     integer              :: lsnow_lsm       !< maximum number of snow layers internal to land surface model
     integer              :: lsnow_lsm_lbound!< lower bound for snow arrays, depending on lsnow_lsm
     integer              :: lsnow_lsm_ubound!< upper bound for snow arrays, depending on lsnow_lsm
+    logical              :: exticeden       !< flag for calculating frozen precip ice density outside of the LSM
     real(kind=kind_phys), pointer :: zs(:)    => null() !< depth of soil levels for land surface model
     real(kind=kind_phys), pointer :: dzs(:)   => null() !< thickness of soil levels for land surface model
     real(kind=kind_phys), pointer :: pores(:) => null() !< max soil moisture for a given soil type for land surface model
@@ -1731,6 +1758,14 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: toticeb(:)     => null()   !< accumulated ice precipitation in bucket (kg/m2)
     real (kind=kind_phys), pointer :: totsnwb(:)     => null()   !< accumulated snow precipitation in bucket (kg/m2)
     real (kind=kind_phys), pointer :: totgrpb(:)     => null()   !< accumulated graupel precipitation in bucket (kg/m2)
+    real (kind=kind_phys), pointer :: frzr   (:)     => null()   !< accumulated surface freezing rain (m)
+    real (kind=kind_phys), pointer :: frzrb  (:)     => null()   !< accumulated surface freezing rain in bucket (m)
+    real (kind=kind_phys), pointer :: frozr  (:)     => null()   !< accumulated surface graupel (m)
+    real (kind=kind_phys), pointer :: frozrb (:)     => null()   !< accumulated surface graupel in bucket (m)
+    real (kind=kind_phys), pointer :: tsnowp (:)     => null()   !< accumulated surface snowfall (m)
+    real (kind=kind_phys), pointer :: tsnowpb(:)     => null()   !< accumulated surface snowfall in bucket (m)
+    real (kind=kind_phys), pointer :: rhonewsn1(:)   => null()   !< precipitation ice density outside RUC LSM (kg/m3)
+    real (kind=kind_phys), pointer :: rhosnf(:)      => null()   !< precipitation ice density inside RUC LSM (kg/m3)
 
     !--- MYNN variables
     real (kind=kind_phys), pointer :: edmf_a     (:,:)   => null()  !
@@ -2422,7 +2457,6 @@ module GFS_typedefs
        allocate (Sfcprop%clw_surf_ice    (IM))
        allocate (Sfcprop%qwv_surf_land   (IM))
        allocate (Sfcprop%qwv_surf_ice    (IM))
-       allocate (Sfcprop%rhofr           (IM))
        allocate (Sfcprop%tsnow_land      (IM))
        allocate (Sfcprop%tsnow_ice       (IM))
        allocate (Sfcprop%snowfallac_land (IM))
@@ -2438,7 +2472,6 @@ module GFS_typedefs
        Sfcprop%qwv_surf_land   = clear_val
        Sfcprop%qwv_surf_ice    = clear_val
        Sfcprop%flag_frsoil     = clear_val
-       Sfcprop%rhofr           = clear_val
        Sfcprop%tsnow_land      = clear_val
        Sfcprop%tsnow_ice       = clear_val
        Sfcprop%snowfallac_land = clear_val
@@ -2970,6 +3003,12 @@ module GFS_typedefs
     integer              :: iccn           =  0              !< logical to use IN CCN forcing for MG2/3
     integer              :: iflip          =  1              !< iflip - is not the same as flipv
     integer              :: isol           =  0              !< use prescribed solar constant
+                                                             !< 0  => fixed value=1366.0\f$W/m^2\f$(old standard)
+                                                             !< 10 => fixed value=1360.8\f$W/m^2\f$(new standard)
+                                                             !< 1  => NOAA ABS-scale TSI table (yearly) w 11-yr cycle approx
+                                                             !< 2  => NOAA TIM-scale TSI table (yearly) w 11-yr cycle approx
+                                                             !< 3  => CMIP5 TIM-scale TSI table (yearly) w 11-yr cycle approx
+                                                             !< 4  => CMIP5 TIM-scale TSI table (monthly) w 11-yr cycle approx
     integer              :: ico2           =  0              !< prescribed global mean value (old opernl)
     integer              :: ialb           =  0              !< use climatology alb, based on sfc type
                                                              !< 1 => use modis based alb (RUC lsm)
@@ -2977,11 +3016,32 @@ module GFS_typedefs
     integer              :: iems           =  0              !< 1.0 => Noah lsm
                                                              !< 2.0 => Noah MP and RUC lsms
     integer              :: iaer           =  1              !< default aerosol effect in sw only
+    integer              :: iaermdl        =  0              !< default tropospheric aerosol model scheme flag
+                                                             !< 0: seasonal global distributed OPAC aerosol climatology
+                                                             !< 1: monthly global distributed GOCART aerosol climatology
+                                                             !< 2: GOCART prognostic aerosol model
+                                                             !< 5: OPAC climatoloy with new band mapping
+    integer              :: iaerflg        =  0              !< aerosol effect control flag
+                                                             !< 3-digit flag 'abc':
+                                                             !< a-stratospheric volcanic aerols
+                                                             !< b-tropospheric aerosols for LW
+                                                             !< c-tropospheric aerosols for SW
+                                                             !<  =0:aerosol effect is not included; =1:aerosol effect is included
+    logical              :: lalw1bd        = .false.         !< selects 1 band or multi bands for LW aerosol properties
+                                                             !< true.:  aerosol properties calculated in 1 broad LW band
+                                                             !< false.: aerosol properties calculated for each LW bands
+    character(len=26)    :: aeros_file     = 'aerosol.dat               '
+    character(len=26)    :: solar_file     = 'solarconstant_noaa_a0.txt '
+    character(len=26)    :: semis_file     = 'sfc_emissivity_idx.txt    '
+    character(len=26)    :: co2dat_file    = 'co2historicaldata_2004.txt'
+    character(len=26)    :: co2gbl_file    = 'co2historicaldata_glob.txt'
+    character(len=26)    :: co2usr_file    = 'co2userdata.txt           '
+    character(len=26)    :: co2cyc_file    = 'co2monthlycyc.txt         '
     integer              :: icliq_sw       =  1              !< sw optical property for liquid clouds
     integer              :: icice_sw       =  3              !< sw optical property for ice clouds
     integer              :: icliq_lw       =  1              !< lw optical property for liquid clouds
     integer              :: icice_lw       =  3              !< lw optical property for ice clouds
-    integer              :: iovr           =  1              !< cloud-overlap: max-random overlap clouds
+    integer              :: iovr           =  1              !< cloud-overlap used in cloud-sampling by radiation scheme(s)
     integer              :: ictm           =  1              !< ictm=0 => use data at initial cond time, if not
                                                              !<           available; use latest; no extrapolation.
                                                              !< ictm=1 => use data at the forecast time, if not
@@ -2999,16 +3059,24 @@ module GFS_typedefs
                                                              !< =1 => sub-grid cloud with prescribed seeds
                                                              !< =2 => sub-grid cloud with randomly generated
                                                              !< seeds
+    integer              :: iswmode           =  2           !< SW control flag for scattering process approximation
+                                                             !< =1 => two-stream delta-eddington (Joseph et al. 1976)
+                                                             !< =2 => two-stream PIFM            (Zdunkowski et al. 1980)
+                                                             !< =3 => discrete ordinates         (Liou, 1973)
     integer              :: idcor = 1                        !< Decorrelation length type for overlap assumption
                                                              !< =0 => Use constant decorrelation length, decorr_con
                                                              !< =1 => Use spatially varying decorrelation length (Hogan et al. 2010)
                                                              !< =2 => Use spatially and temporally varyint decorrelation length (Oreopoulos et al. 2012)
     real(kind_phys)      :: dcorr_con         = 2.5          !< Decorrelation length constant (km) (if idcor = 0)
-    logical              :: crick_proof       = .false.      !< CRICK-Proof cloud water
-    logical              :: ccnorm            = .false.      !< Cloud condensate normalized by cloud cover
-    logical              :: norad_precip      = .false.      !< radiation precip flag for Ferrier/Moorthi
+    logical              :: lcrick            = .false.      !< CRICK-Proof cloud water
+    logical              :: lcnorm            = .false.      !< Cloud condensate normalized by cloud cover
+    logical              :: lnoprec           = .false.      !< radiation precip flag for Ferrier/Moorthi
     logical              :: lwhtr             = .true.       !< flag to output lw heating rate (Radtend%lwhc)
     logical              :: swhtr             = .true.       !< flag to output sw heating rate (Radtend%swhc)
+    integer              :: rad_hr_units      = 2            !< heating rate units are K s-1
+    logical              :: inc_minor_gas     = .true.       !< Include minor trace gases in RRTMG radiation calculation
+    integer              :: ipsd0             = 0            !< initial permutaion seed for mcica radiation 
+    integer              :: ipsdlim           = 1e8          !< limit initial permutaion seed for mcica radiation
     logical              :: lrseeds           = .false.      !< flag to use host-provided random seeds
     integer              :: nrstreams         = 2            !< number of random number streams in host-provided random seed array
     logical              :: lextop            = .false.      !< flag for using an extra top layer for radiation
@@ -3102,7 +3170,7 @@ module GFS_typedefs
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
     logical              :: mraerosol      = .false.            !< flag for merra2_aerosol_aware
     logical              :: lradar         = .false.            !< flag for radar reflectivity
-    real(kind=kind_phys) :: nsradar_reset  = -999.0             !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
+    real(kind=kind_phys) :: nsfullradar_diag  = -999.0          !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
     logical              :: ext_diag_thompson = .false.         !< flag for extended diagnostic output from Thompson
     real(kind=kind_phys) :: dt_inner       = -999.0             !< time step for the inner loop 
@@ -3120,6 +3188,7 @@ module GFS_typedefs
     integer              :: lsoil          =  4              !< number of soil layers
     integer              :: lsoil_lsm      =  -1             !< number of soil layers internal to land surface model; -1 use lsoil
     integer              :: lsnow_lsm      =  3              !< maximum number of snow layers internal to land surface model
+    logical              :: exticeden      = .false.         !< Use variable precip ice density for NOAH LSM if true or original formulation
     logical              :: rdlai          = .false.         !< read LAI from input file (for RUC LSM or NOAH LSM WRFv4)
     logical              :: ua_phys        = .false.         !< flag for using University of Arizona? extension to NOAH LSM WRFv4
     logical              :: usemonalb      = .true.          !< flag to read surface diffused shortwave albedo from input file for NOAH LSM WRFv4
@@ -3493,7 +3562,7 @@ module GFS_typedefs
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr, ictm, isubc_sw,            &
-                               isubc_lw, crick_proof, ccnorm, lwhtr, swhtr,                 &
+                               isubc_lw, lcrick, lcnorm, lwhtr, swhtr,                      &
                                nhfrad, idcor, dcorr_con,                                    &
                           ! --- RRTMGP
                                do_RRTMGP, active_gases, nGases, rrtmgp_root,                &
@@ -3514,7 +3583,7 @@ module GFS_typedefs
                                mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
-                               ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
+                               ltaerosol, lradar, nsfullradar_diag, lrefres, ttendlim,      &
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                                sedi_semi, decfl,                                            &
                                nssl_cccn, nssl_alphah, nssl_alphahl,                        &
@@ -3524,7 +3593,7 @@ module GFS_typedefs
                           !--- land/surface model control
                                lsm, lsoil, lsoil_lsm, lsnow_lsm, kice, rdlai,               &
                                nmtvr, ivegsrc, use_ufo, iopt_thcnd, ua_phys, usemonalb,     &
-                               aoasis, fasdas,                                              &
+                               aoasis, fasdas,exticeden,                                    &
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
@@ -3878,6 +3947,31 @@ module GFS_typedefs
     endif
     Model%levrp1           = Model%levr + 1
 
+    if (isubc_sw < 0 .or. isubc_sw > 2) then
+       write(0,'(a,i0)') 'ERROR: shortwave cloud-sampling (isubc_sw) scheme selected not valid: ',isubc_sw
+       stop
+    endif
+    if (isubc_lw < 0 .or. isubc_lw > 2) then
+       write(0,'(a,i0)') 'ERROR: longwave cloud-sampling (isubc_lw) scheme selected not valid: ',isubc_lw
+       stop
+    endif
+
+
+    if ((iovr .ne. Model%iovr_rand) .and. (iovr .ne. Model%iovr_maxrand) .and.       &
+        (iovr .ne. Model%iovr_max)  .and. (iovr .ne. Model%iovr_dcorr)   .and.       &
+        (iovr .ne. Model%iovr_exp)  .and. (iovr .ne. Model%iovr_exprand)) then
+       write(0,'(a,i0)') 'ERROR: cloud-overlap (iovr) scheme selected not valid: ',iovr
+       stop
+    endif
+
+    if ((isubc_sw == 0 .or. isubc_lw == 0) .and. iovr > 2 ) then
+        if (me == 0) then
+           print *,'  *** IOVR=',iovr,' is not available for ISUBC_SW(LW)=0 setting!!'
+           print *,'      The program will use maximum/random overlap instead.'
+        endif
+        iovr = 1
+     endif
+
     Model%nfxr             = nfxr
     Model%iccn             = iccn
     ! further down: set Model%iccn to .false.
@@ -3898,6 +3992,16 @@ module GFS_typedefs
     else
       ntrcaer = 1
     endif
+    Model%lalw1bd          = lalw1bd
+    Model%iaerflg          = iaerflg
+    Model%iaermdl          = iaermdl
+    Model%aeros_file       = aeros_file
+    Model%solar_file       = solar_file
+    Model%semis_file       = semis_file
+    Model%co2dat_file      = co2dat_file
+    Model%co2gbl_file      = co2gbl_file
+    Model%co2usr_file      = co2usr_file
+    Model%co2cyc_file      = co2cyc_file
     Model%ntrcaer          = ntrcaer
     Model%idcor            = idcor
     Model%dcorr_con        = dcorr_con
@@ -3909,10 +4013,15 @@ module GFS_typedefs
     Model%ictm             = ictm
     Model%isubc_sw         = isubc_sw
     Model%isubc_lw         = isubc_lw
-    Model%crick_proof      = crick_proof
-    Model%ccnorm           = ccnorm
+    Model%iswmode          = iswmode
+    Model%lcrick           = lcrick
+    Model%lcnorm           = lcnorm
     Model%lwhtr            = lwhtr
     Model%swhtr            = swhtr
+    Model%rad_hr_units     = rad_hr_units
+    Model%inc_minor_gas    = inc_minor_gas
+    Model%ipsd0            = ipsd0
+    Model%ipsdlim          = ipsdlim
     Model%lrseeds          = lrseeds
     Model%nrstreams        = nrstreams
     Model%lextop           = (ltp > 0)
@@ -4064,7 +4173,7 @@ module GFS_typedefs
       stop
     end if
     Model%lradar           = lradar
-    Model%nsradar_reset    = nsradar_reset
+    Model%nsfullradar_diag = nsfullradar_diag 
     Model%ttendlim         = ttendlim
     Model%ext_diag_thompson= ext_diag_thompson
     if (dt_inner>0) then
@@ -4172,7 +4281,15 @@ module GFS_typedefs
     Model%ivegsrc          = ivegsrc
     Model%isot             = isot
     Model%use_ufo          = use_ufo
-
+    Model%exticeden        = exticeden
+    if (Model%exticeden .and. &
+      (Model%imp_physics /= Model%imp_physics_gfdl .and. Model%imp_physics /= Model%imp_physics_thompson .and. &
+       Model%imp_physics /= Model%imp_physics_nssl )) then
+      !see GFS_MP_generic_post.F90; exticeden is only compatible with GFDL,
+      !Thompson, or NSSL MP 
+      print *,' Using exticeden = T is only valid when using GFDL, Thompson, or NSSL microphysics.'
+      stop
+    end if
 ! GFDL surface layer options
     Model%lcurr_sf         = lcurr_sf
     Model%pert_cd          = pert_cd
@@ -4193,7 +4310,11 @@ module GFS_typedefs
     Model%iopt_inf         = iopt_inf
     Model%iopt_rad         = iopt_rad
     Model%iopt_alb         = iopt_alb
-    Model%iopt_snf         = iopt_snf
+    if (Model%lsm==Model%lsm_noahmp .and. Model%exticeden .and. iopt_snf == 4) then
+      Model%iopt_snf         = 5
+    else
+      Model%iopt_snf         = iopt_snf
+    end if
     Model%iopt_tbot        = iopt_tbot
     Model%iopt_stc         = iopt_stc
     Model%iopt_trs         = iopt_trs
@@ -4968,6 +5089,17 @@ module GFS_typedefs
     Model%sec              = 0
     Model%yearlen          = 365
     Model%julian           = -9999.
+    !--- Set vertical flag used by radiation schemes
+    Model%top_at_1         = .false.
+    if (Model%do_RRTMGP) then
+       if (Model%top_at_1) then
+          Model%iSFC = Model%levs
+          Model%iTOA = 1
+       else
+          Model%iSFC = 1
+          Model%iTOA = Model%levs
+       endif
+    endif
 
 !--- BEGIN CODE FROM GFS_PHYSICS_INITIALIZE
 !--- define physcons module variables
@@ -5062,6 +5194,7 @@ module GFS_typedefs
     if (Model%me == Model%master) then
       if (Model%lsm == 1) then
         print *,' NOAH Land Surface Model used'
+
       elseif (Model%lsm == 0) then
         print *,' OSU no longer supported - job aborted'
         stop
@@ -5202,8 +5335,8 @@ module GFS_typedefs
       if (Model%do_cnvgwd) then
         print *,' Convective GWD parameterization used, do_cnvgwd=',Model%do_cnvgwd
       endif
-      if (Model%crick_proof) print *,' CRICK-Proof cloud water used in radiation '
-      if (Model%ccnorm)      print *,' Cloud condensate normalized by cloud cover for radiation'
+      if (Model%lcrick) print *,' CRICK-Proof cloud water used in radiation '
+      if (Model%lcnorm) print *,' Cloud condensate normalized by cloud cover for radiation'
       if (Model%iovr == Model%iovr_rand) then
          print *,' random cloud overlap for Radiation IOVR=',            Model%iovr
       elseif (Model%iovr == Model%iovr_dcorr) then
@@ -5358,7 +5491,7 @@ module GFS_typedefs
                                           ' decfl=',decfl, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
-                                          ' nsradar_reset =',Model%nsradar_reset, &
+                                          ' nsfullradar_diag =',Model%nsfullradar_diag, &
                                           ' num_p3d =',Model%num_p3d, &
                                           ' num_p2d =',Model%num_p2d
 
@@ -5796,6 +5929,12 @@ module GFS_typedefs
       print *, ' ialb              : ', Model%ialb
       print *, ' iems              : ', Model%iems
       print *, ' iaer              : ', Model%iaer
+      print *, ' iaermdl           : ', Model%iaermdl
+      print *, ' iaerflg           : ', Model%iaerflg
+      print *, ' lalw1bd           : ', Model%lalw1bd
+      print *, ' aeros_file        : ', Model%aeros_file
+      print *, ' solar_file        : ', Model%solar_file
+      print *, ' semis_file        : ', Model%semis_file
       print *, ' icliq_sw          : ', Model%icliq_sw
       print *, ' icice_sw          : ', Model%icice_sw
       print *, ' icliq_lw          : ', Model%icliq_lw
@@ -5806,11 +5945,16 @@ module GFS_typedefs
       print *, ' ictm              : ', Model%ictm
       print *, ' isubc_sw          : ', Model%isubc_sw
       print *, ' isubc_lw          : ', Model%isubc_lw
-      print *, ' crick_proof       : ', Model%crick_proof
-      print *, ' ccnorm            : ', Model%ccnorm
-      print *, ' norad_precip      : ', Model%norad_precip
+      print *, ' iswmode           : ', Model%iswmode
+      print *, ' lcrick            : ', Model%lcrick
+      print *, ' lcnorm            : ', Model%lcnorm
+      print *, ' lnoprec           : ', Model%lnoprec
       print *, ' lwhtr             : ', Model%lwhtr
       print *, ' swhtr             : ', Model%swhtr
+      print *, ' rad_hr_units      : ', Model%rad_hr_units
+      print *, ' inc_minor_gas     : ', Model%inc_minor_gas
+      print *, ' ipsd0             : ', Model%ipsd0
+      print *, ' ipsdlim           : ', Model%ipsdlim
       print *, ' lrseeds           : ', Model%lrseeds
       print *, ' nrstreams         : ', Model%nrstreams
       print *, ' lextop            : ', Model%lextop
@@ -5861,7 +6005,7 @@ module GFS_typedefs
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' mraerosol         : ', Model%mraerosol
         print *, ' lradar            : ', Model%lradar
-        print *, ' nsradar_reset     : ', Model%nsradar_reset
+        print *, ' nsfullradar_diag  : ', Model%nsfullradar_diag
         print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
         print *, ' ext_diag_thompson : ', Model%ext_diag_thompson
@@ -6885,6 +7029,14 @@ module GFS_typedefs
     allocate (Diag%epi     (IM))
     allocate (Diag%smcwlt2 (IM))
     allocate (Diag%smcref2 (IM))
+    allocate (Diag%rhonewsn1 (IM))
+    allocate (Diag%rhosnf  (IM))
+    allocate (Diag%frzr    (IM))
+    allocate (Diag%frzrb   (IM))
+    allocate (Diag%frozr   (IM))
+    allocate (Diag%frozrb  (IM))
+    allocate (Diag%tsnowp  (IM))
+    allocate (Diag%tsnowpb (IM))
     if (.not. Model%lsm == Model%lsm_ruc) then
       allocate (Diag%wet1    (IM))
     end if
@@ -7220,6 +7372,9 @@ module GFS_typedefs
     Diag%toticeb    = zero
     Diag%totsnwb    = zero
     Diag%totgrpb    = zero
+    Diag%frzrb      = zero
+    Diag%frozrb     = zero
+    Diag%tsnowpb    = zero
 
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
@@ -7340,7 +7495,9 @@ module GFS_typedefs
     Diag%t02min      = 999.
     Diag%rh02max     = -999.
     Diag%rh02min     = 999.
-    Diag%pratemax     = 0.
+    Diag%pratemax    = 0.
+    Diag%rhonewsn1   = 200.
+    Diag%rhosnf      = -1.e3
     set_totprcp      = .false.
     if (present(linit) ) set_totprcp = linit
     if (present(iauwindow_center) ) set_totprcp = iauwindow_center
@@ -7350,6 +7507,9 @@ module GFS_typedefs
       Diag%totice  = zero
       Diag%totsnw  = zero
       Diag%totgrp  = zero
+      Diag%frzr    = zero
+      Diag%frozr   = zero
+      Diag%tsnowp  = zero
     endif
 
   end subroutine diag_phys_zero
