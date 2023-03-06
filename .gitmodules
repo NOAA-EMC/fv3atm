@@ -3,7 +3,8 @@
   #url = https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
   #branch = dev/emc
   url = https://github.com/jcsda/GFDL_atmos_cubed_sphere
-  branch = feature/no_physics_dependencies_based_on_dev_emc
+  #branch = feature/no_physics_dependencies_based_on_dev_emc
+  branch = feature/no_physics_dependencies_based_on_dev_emc_update_from_dev_emc_20230306
 [submodule "ccpp/framework"]
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
@@ -13,7 +14,8 @@
   #url = https://github.com/ufs-community/ccpp-physics
   #branch = ufs/dev
   url = https://github.com/climbfuji/ccpp-physics
-  branch = feature/ufs_dom
+  #branch = feature/ufs_dom
+  branch = feature/ufs_dom_update_from_ufs_dev_20230306
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
