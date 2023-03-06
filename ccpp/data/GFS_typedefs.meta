@@ -4584,6 +4584,12 @@
   units = flag
   dimensions = ()
   type = integer
+[imfshalcnv_unified]
+  standard_name = identifier_for_unified_shallow_convection
+  long_name = flag for Unified shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imfshalcnv_ntiedtke]
   standard_name = identifier_for_new_tiedtke_shallow_convection
   long_name = flag for new Tiedtke shallow convection scheme
@@ -4611,6 +4617,12 @@
 [imfdeepcnv_gf]
   standard_name = identifier_for_grell_freitas_deep_convection
   long_name = flag for Grell-Freitas deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_unified]
+  standard_name = identifier_for_unified_deep_convection
+  long_name = flag for Unified deep convection scheme
   units = flag
   dimensions = ()
   type = integer
