@@ -4251,7 +4251,7 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'ltg1_max'
-      ExtDiag(idx)%desc = 'GSL Max Lightning Threat 1'
+      ExtDiag(idx)%desc = 'Max Lightning Threat 1'
       ExtDiag(idx)%unit = 'flashes/(5 min)'
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
@@ -4262,7 +4262,7 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'ltg2_max'
-      ExtDiag(idx)%desc = 'GSL Max Lightning Threat 2'
+      ExtDiag(idx)%desc = 'Max Lightning Threat 2'
       ExtDiag(idx)%unit = 'flashes/(5 min)'
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
@@ -4273,7 +4273,7 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'ltg3_max'
-      ExtDiag(idx)%desc = 'GSL Max Lightning Threat 3'
+      ExtDiag(idx)%desc = 'Max Lightning Threat 3'
       ExtDiag(idx)%unit = 'flashes/(5 min)'
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
