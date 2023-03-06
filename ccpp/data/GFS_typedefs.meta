@@ -118,7 +118,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (lightning_threat_indices_enabled)
+  active = (do_lightning_threat_index_calculations)
 [vvl]
   standard_name = lagrangian_tendency_of_air_pressure
   long_name = layer mean vertical velocity
@@ -8781,7 +8781,7 @@
   type = real
   kind = kind_phys
   intent = inout
-  active = (lightning_threat_indices_enabled)
+  active = (do_lightning_threat_index_calculations)
 [ltg2_max]
   standard_name = lightning_threat_index_2
   long_name = lightning threat index 2
@@ -8790,7 +8790,7 @@
   type = real
   kind = kind_phys
   intent = inout
-  active = (lightning_threat_indices_enabled)
+  active = (do_lightning_threat_index_calculations)
 [ltg3_max]
   standard_name = lightning_threat_index_3
   long_name = lightning threat index 3
@@ -8799,7 +8799,7 @@
   type = real
   kind = kind_phys
   intent = inout
-  active = (lightning_threat_indices_enabled)
+  active = (do_lightning_threat_index_calculations)
 
 ########################################################################
 [ccpp-table-properties]
