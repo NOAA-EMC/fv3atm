@@ -13,4 +13,4 @@
 [submodule "upp"]
   path = upp
   url = https://github.com/SamuelTrahanNOAA/UPP
-  branch = ifi-inline-post
+  branch = ifi_acorn
