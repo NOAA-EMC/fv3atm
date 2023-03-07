@@ -2450,6 +2450,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[cmm_lnd]
+  standard_name = surface_drag_wind_speed_for_momentum_in_air_over_land_from_land
+  long_name = momentum exchange coefficient over land for coupling
+  units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[chh_lnd]
+  standard_name = surface_drag_mass_flux_for_heat_and_moisture_in_air_over_land_from_land
+  long_name = thermal exchange coefficient over land for coupling
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
 [hsnoin_cpl]
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling

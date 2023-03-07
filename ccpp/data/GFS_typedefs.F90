@@ -477,6 +477,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: gflux_lnd(:)           => null()   !< soil heat flux over land
     real (kind=kind_phys), pointer :: runoff_lnd(:)          => null()   !< surface runoff over land
     real (kind=kind_phys), pointer :: drain_lnd(:)           => null()   !< subsurface runoff over land
+    real (kind=kind_phys), pointer :: cmm_lnd(:)             => null()   !< surface drag wind speed for momentum
+    real (kind=kind_phys), pointer :: chh_lnd(:)             => null()   !< surface drag mass flux for heat and moisture 
 
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
@@ -2725,6 +2727,8 @@ module GFS_typedefs
       allocate (Coupling%gflux_lnd   (IM))
       allocate (Coupling%runoff_lnd  (IM))
       allocate (Coupling%drain_lnd   (IM))
+      allocate (Coupling%cmm_lnd     (IM))
+      allocate (Coupling%chh_lnd     (IM))
 
       Coupling%sncovr1_lnd = clear_val
       Coupling%qsurf_lnd   = clear_val
@@ -2736,6 +2740,8 @@ module GFS_typedefs
       Coupling%gflux_lnd   = clear_val
       Coupling%runoff_lnd  = clear_val
       Coupling%drain_lnd   = clear_val
+      Coupling%cmm_lnd     = clear_val
+      Coupling%chh_lnd     = clear_val
     end if
 
     !-- cellular automata
