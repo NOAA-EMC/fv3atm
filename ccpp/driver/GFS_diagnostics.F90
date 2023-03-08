@@ -1060,7 +1060,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'ssrun_acc'
-    ExtDiag(idx)%desc = 'surface storm water runoff - GFS lsm'
+    ExtDiag(idx)%desc = 'Accumulated surface storm water runoff'
     ExtDiag(idx)%unit = 'kg/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
@@ -1071,7 +1071,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'evbs_ave'
-    ExtDiag(idx)%desc = 'Direct Evaporation from Bare Soil - GFS lsm'
+    ExtDiag(idx)%desc = 'Direct Evaporation from Bare Soil'
     ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%time_avg = .TRUE.
@@ -1083,7 +1083,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'evcw_ave'
-    ExtDiag(idx)%desc = 'Canopy water evaporation - GFS lsm'
+    ExtDiag(idx)%desc = 'Canopy water evaporation'
     ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%time_avg = .TRUE.
@@ -1095,7 +1095,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'snohf'
-    ExtDiag(idx)%desc = 'Snow Phase Change Heat Flux - GFS lsm'
+    ExtDiag(idx)%desc = 'Snow Phase Change Heat Flux'
     ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%time_avg = .TRUE.
@@ -1108,7 +1108,7 @@ module GFS_diagnostics
      idx = idx + 1
      ExtDiag(idx)%axes = 2
      ExtDiag(idx)%name = 'pah_ave'
-     ExtDiag(idx)%desc = ' Total Precipitation Advected Heat - GFS lsm'
+     ExtDiag(idx)%desc = ' Total Precipitation Advected Heat'
      ExtDiag(idx)%unit = 'W/m**2'
      ExtDiag(idx)%mod_name = 'gfs_phys'
      ExtDiag(idx)%time_avg = .TRUE.
@@ -1121,7 +1121,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'trans_ave'
-    ExtDiag(idx)%desc = 'transpiration - GFS lsm'
+    ExtDiag(idx)%desc = 'transpiration'
     ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%time_avg = .TRUE.
@@ -1133,7 +1133,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'sbsno_ave'
-    ExtDiag(idx)%desc = 'Sublimation (evaporation from snow) - GFS lsm'
+    ExtDiag(idx)%desc = 'Sublimation (evaporation from snow)'
     ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%time_avg = .TRUE.
@@ -1144,15 +1144,17 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'snowc_ave'
-    ExtDiag(idx)%desc = 'snow cover - GFS lsm'
+    ExtDiag(idx)%name = 'snowc'
+    !ExtDiag(idx)%name = 'snowc_ave'
+    ExtDiag(idx)%desc = 'snow cover '
     ExtDiag(idx)%unit = '%'
     ExtDiag(idx)%mod_name = 'gfs_phys'
-    ExtDiag(idx)%time_avg = .TRUE.
+    !ExtDiag(idx)%time_avg = .TRUE.
     ExtDiag(idx)%cnvfac = cn_100
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snowca(:)
+      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%sncovr(:)
+      !ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snowca(:)
     enddo
 
     idx = idx + 1
@@ -1295,7 +1297,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'dlwsfc'
-    ExtDiag(idx)%desc = 'time accumulated downward lw flux at surface- GFS physics'
+    ExtDiag(idx)%desc = 'time accumulated downward lw flux at surface'
     ExtDiag(idx)%unit = 'w/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
@@ -1307,7 +1309,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'ulwsfc'
-    ExtDiag(idx)%desc = 'time accumulated upward lw flux at surface- GFS physics'
+    ExtDiag(idx)%desc = 'time accumulated upward lw flux at surface'
     ExtDiag(idx)%unit = 'w/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
@@ -1796,12 +1798,11 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'toticeb_ave'
-    ExtDiag(idx)%desc = 'bucket surface ice precipitation rate'
-    ExtDiag(idx)%unit = 'kg/m**2/s'
+    ExtDiag(idx)%name = 'toticeb'
+    ExtDiag(idx)%desc = 'bucket surface ice precipitation'
+    ExtDiag(idx)%unit = 'kg/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_th
-    ExtDiag(idx)%time_avg = .TRUE.
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%toticeb(:)
@@ -1823,12 +1824,11 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'totsnwb_ave'
-    ExtDiag(idx)%desc = 'bucket surface snow precipitation rate'
-    ExtDiag(idx)%unit = 'kg/m**2/s'
+    ExtDiag(idx)%name = 'totsnwb'
+    ExtDiag(idx)%desc = 'bucket surface snow precipitation'
+    ExtDiag(idx)%unit = 'kg/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_th
-    ExtDiag(idx)%time_avg = .TRUE.
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%totsnwb(:)
@@ -1850,12 +1850,11 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'totgrpb_ave'
-    ExtDiag(idx)%desc = 'bucket surface graupel precipitation rate'
-    ExtDiag(idx)%unit = 'kg/m**2/s'
+    ExtDiag(idx)%name = 'totgrpb'
+    ExtDiag(idx)%desc = 'bucket surface graupel precipitation'
+    ExtDiag(idx)%unit = 'kg/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_th
-    ExtDiag(idx)%time_avg = .TRUE.
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%totgrpb(:)
@@ -1863,7 +1862,7 @@ module GFS_diagnostics
 
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af totgrp,idx=',idx
 
-!--- RRFS Smoke ---
+!--- RRFS Smoke & Dust ---
     if (Model%rrfs_smoke) then
     idx = idx + 1
     ExtDiag(idx)%axes = 3
@@ -2206,7 +2205,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'cpofp'
     ExtDiag(idx)%desc = 'Percent frozen precipitation'
-    ExtDiag(idx)%unit = '%'
+    ExtDiag(idx)%unit = 'fraction'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -2755,7 +2754,7 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dudt_tot(:,:)
     enddo
 
-    idx = idx + 1
+     idx = idx + 1
     ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'dtdt_tot'
     ExtDiag(idx)%desc = ' dtdt_tot averaged Temp dycore-tendency'
@@ -2765,6 +2764,7 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dtdt_tot(:,:)
     enddo
+   !ENDIF
 
     idx = idx + 1
     ExtDiag(idx)%axes = 3
@@ -3304,7 +3304,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'canopy'
     ExtDiag(idx)%desc = 'canopy water (cnwat in gfs data)'
-    ExtDiag(idx)%unit = 'XXX'
+    ExtDiag(idx)%unit = 'mm'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
@@ -3403,7 +3403,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'hice'
     ExtDiag(idx)%desc = 'sea ice thickness (icetk in gfs_data)'
-    ExtDiag(idx)%unit = 'XXX'
+    ExtDiag(idx)%unit = 'm'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
@@ -3455,7 +3455,62 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%snowd(:)
     enddo
 
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'sbsno'
+    ExtDiag(idx)%desc = 'instantaneous sublimation (evaporation from snow)'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%sbsno(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'evbs'
+    ExtDiag(idx)%desc = 'instantaneous direct evaporation over land'
+    ExtDiag(idx)%unit = 'W m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%evbs(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'evcw'
+    ExtDiag(idx)%desc = 'instantaneous canopy evaporation'
+    ExtDiag(idx)%unit = 'W m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%evcw(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'trans'
+    ExtDiag(idx)%desc = 'instantaneous transpiration'
+    ExtDiag(idx)%unit = 'W m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%trans(:)
+    enddo
+
     if (Model%lsm == Model%lsm_ruc) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'rhofr'
+      ExtDiag(idx)%desc = 'density of frozen precipitation'
+      ExtDiag(idx)%unit = 'kg m-3'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%rhofr(:)
+      enddo
+
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'snowfall_acc_land'
@@ -3469,6 +3524,28 @@ module GFS_diagnostics
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'acsnow_land'
+      ExtDiag(idx)%desc = 'total accumulated SWE of frozen precipitation over land'
+      ExtDiag(idx)%unit = 'kg m-2'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%acsnow_land(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'snowmt_land'
+      ExtDiag(idx)%desc = 'accumulated snow melt over land'
+      ExtDiag(idx)%unit = 'kg m-2'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snowmt_land(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'snowfall_acc_ice'
       ExtDiag(idx)%desc = 'total accumulated frozen precipitation over ice'
       ExtDiag(idx)%unit = 'kg m-2'
@@ -3477,7 +3554,29 @@ module GFS_diagnostics
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%snowfallac_ice(:)
       enddo
-    endif
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'acsnow_ice'
+      ExtDiag(idx)%desc = 'total accumulated SWE of frozen precipitation over ice'
+      ExtDiag(idx)%unit = 'kg m-2'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%acsnow_ice(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'snowmt_ice'
+      ExtDiag(idx)%desc = 'accumulated snow melt over ice'
+      ExtDiag(idx)%unit = 'kg m-2'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snowmt_ice(:)
+      enddo
+    endif ! RUC lsm
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -3589,8 +3688,8 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'tprcp'
-    ExtDiag(idx)%desc = 'total precipitation'
-    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%desc = 'total time-step precipitation'
+    ExtDiag(idx)%unit = 'm'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
@@ -3600,7 +3699,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'vtype'
-    ExtDiag(idx)%desc = 'vegetation type in integer 1-13'
+    ExtDiag(idx)%desc = 'vegetation type in integer'
     ExtDiag(idx)%unit = 'number'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
@@ -3666,6 +3765,18 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%vfrac(:)
     enddo
 
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'wetness'
+    ExtDiag(idx)%desc = 'soil moisture availability in top soil layer'
+    ExtDiag(idx)%unit = 'fraction'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    ExtDiag(idx)%cnvfac = cn_100
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%wetness(:)
+    enddo
+
   if (Model%rdlai) then
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -3678,6 +3789,34 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%xlaixy(:)
     enddo
   endif
+
+    do num = 1,Model%nvegcat
+      write (xtra,'(i2)') num
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'vfrac_'//trim(xtra)
+      ExtDiag(idx)%desc = 'fraction of vegetation category'//trim(xtra)
+      ExtDiag(idx)%unit = 'frac'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%vegtype_frac(:,num)
+      enddo
+    enddo
+
+    do num = 1,Model%nsoilcat
+      write (xtra,'(i2)') num
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'sfrac_'//trim(xtra)
+      ExtDiag(idx)%desc = 'fraction of soil category'//trim(xtra)
+      ExtDiag(idx)%unit = 'frac'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%soiltype_frac(:,num)
+      enddo
+    enddo
 
   if (Model%lsm == Model%lsm_ruc) then
     do num = 1,Model%lsoil_lsm
