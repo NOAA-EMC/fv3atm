@@ -2466,6 +2466,14 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[zvfun_lnd]
+  standard_name = function_of_surface_roughness_length_and_green_vegetation_fraction_from_land
+  long_name = function of surface roughness length and green vegetation fraction
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
 [hsnoin_cpl]
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling

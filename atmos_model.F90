@@ -2578,6 +2578,26 @@ end subroutine update_atmos_chemistry
             endif
           endif
 
+! get function of surface roughness length and green vegetation fraction (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'inst_func_of_roughness_length_and_vfrac'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%zvfun_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get func. of roughness length and vfrac form land'
+            endif
+          endif
+
         endif ! if (datar8(isc,jsc) > -99999.0) then
 
 !-------------------------------------------------------

@@ -156,7 +156,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 61
+  integer,          public, parameter :: NimportFields = 62
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -201,6 +201,7 @@ module module_cplfields
     FieldInfo("mean_subsurface_runoff_rate_lnd          ", "s"), &
     FieldInfo("inst_drag_wind_speed_for_momentum        ", "s"), &
     FieldInfo("inst_drag_mass_flux_for_heat_and_moisture", "s"), &
+    FieldInfo("inst_func_of_roughness_length_and_vfrac  ", "s"), &
 
     !  For JEDI
     ! dynamics
