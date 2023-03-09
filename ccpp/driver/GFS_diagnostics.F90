@@ -1863,6 +1863,59 @@ module GFS_diagnostics
 
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af totgrp,idx=',idx
 
+    if(associated(Coupling(1)%dqdti)) then
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'tsflw'
+    ExtDiag(idx)%desc = 'tsflw'
+    ExtDiag(idx)%unit = 'K'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%dqdti(:,:)
+    enddo
+    endif
+
+    if(associated(Coupling(1)%sfcdlw)) then
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'sfcdlw'
+    ExtDiag(idx)%desc = 'sfcdlw'
+    ExtDiag(idx)%unit = 'W m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%sfcdlw(:)
+    enddo
+    endif
+
+    if(associated(Coupling(1)%htrlw)) then
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'htrlw'
+    ExtDiag(idx)%desc = 'htrlw'
+    ExtDiag(idx)%unit = 'W m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%htrlw(:,:)
+    enddo
+    endif
+
+    if(associated(Radtend(1)%lwhc)) then
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'lwhc'
+    ExtDiag(idx)%desc = 'lwhc'
+    ExtDiag(idx)%unit = 'K s-1'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => Radtend(nb)%lwhc(:,:)
+    enddo
+    endif
+
+
 !--- RRFS Smoke ---
     if (Model%rrfs_smoke) then
     idx = idx + 1
