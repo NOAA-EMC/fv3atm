@@ -689,11 +689,10 @@ module FV3GFS_io_mod
    end subroutine copy_to_GFS_Data_3d_int2phys
 
 
-   pure subroutine fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar_s2m,nvar_before_lake,warm_start)
+   pure subroutine fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar_s2m,warm_start)
      implicit none
      type(GFS_control_type),    intent(in) :: Model
      integer, intent(in) :: nvar_s2m
-     integer, intent(out) :: nvar_before_lake
      character(len=32),intent(out) :: sfc_name2(:), sfc_name3(:)
      logical, intent(in) :: warm_start
      integer :: nt
@@ -835,8 +834,6 @@ module FV3GFS_io_mod
       else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
         nt=nt+1 ; sfc_name2(nt) = 'lai'
       endif
-
-      nvar_before_lake = nt
 
       if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
         nt=nt+1 ; sfc_name2(nt) = 'T_snow'
@@ -1065,6 +1062,8 @@ module FV3GFS_io_mod
     else
        nvar_s2l = 0
     endif
+
+    nvar_before_lake=nvar_s2m+nvar_s2o+nvar_s2r+nvar_s2mp
 
     !--- deallocate containers and free restart container
     deallocate(oro_name2, oro_var2)
@@ -1346,7 +1345,7 @@ module FV3GFS_io_mod
         sfc_var3zn = -9999.0_r8
       end if
 
-      call fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar_s2m,nvar_before_lake,warm_start)
+      call fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar_s2m,warm_start)
 
       is_lsoil=.false.
       if ( .not. warm_start ) then
@@ -2214,6 +2213,8 @@ module FV3GFS_io_mod
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
 
+    nvar_before_lake=nvar2m+nvar2o+nvar2r+nvar2mp
+
     if (Model%lsm == Model%lsm_ruc) then
       if (allocated(sfc_name2)) then
         ! Re-allocate if one or more of the dimensions don't match
@@ -2300,7 +2301,7 @@ module FV3GFS_io_mod
     else
       call mpp_error(FATAL, 'Error in opening file'//trim(infile) )
     end if if_amiopen
-
+    
     ! Tell clm_lake to allocate data, register its axes, and call write_data for each axis's variable
     if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
       call clm_lake%allocate_data(Model)
@@ -2329,7 +2330,7 @@ module FV3GFS_io_mod
         sfc_var3eq = -9999.0_r8
         sfc_var3zn = -9999.0_r8
       endif
-      call fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar2m,nvar_before_lake,.true.)
+      call fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar2m,.true.)
    end if
 
    if(Model%lkm>0) then
@@ -2452,6 +2453,16 @@ module FV3GFS_io_mod
       nullify(var3_p2)
       nullify(var3_p3)
    endif ! lsm = lsm_noahmp
+
+    !Flake
+    if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
+      mand = .false.
+      do num = nvar_before_lake+1,nvar_before_lake+nvar2l
+        var2_p => sfc_var2(:,:,num)
+        call register_restart_field(Sfc_restart, sfc_name2(num),var2_p,dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
+             &is_optional=.not.mand)
+      enddo
+    endif
 
     ! Tell clm_lake to copy Sfcprop data to its internal temporary arrays.
     if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
