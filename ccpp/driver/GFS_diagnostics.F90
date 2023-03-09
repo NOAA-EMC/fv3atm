@@ -1144,17 +1144,26 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'snowc'
-    !ExtDiag(idx)%name = 'snowc_ave'
-    ExtDiag(idx)%desc = 'snow cover '
+    ExtDiag(idx)%name = 'snowc_ave'
+    ExtDiag(idx)%desc = 'snow cover - GFS lsm'
     ExtDiag(idx)%unit = '%'
     ExtDiag(idx)%mod_name = 'gfs_phys'
-    !ExtDiag(idx)%time_avg = .TRUE.
+    ExtDiag(idx)%time_avg = .TRUE.
     ExtDiag(idx)%cnvfac = cn_100
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snowca(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'snowc'
+    ExtDiag(idx)%desc = 'snow cover '
+    ExtDiag(idx)%unit = 'fraction'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%sncovr(:)
-      !ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snowca(:)
     enddo
 
     idx = idx + 1
@@ -1798,11 +1807,12 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'toticeb'
-    ExtDiag(idx)%desc = 'bucket surface ice precipitation'
-    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%name = 'toticeb_ave'
+    ExtDiag(idx)%desc = 'bucket surface ice precipitation rate'
+    ExtDiag(idx)%unit = 'kg/m**2/s'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_th
+    ExtDiag(idx)%time_avg = .TRUE.
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%toticeb(:)
@@ -1824,11 +1834,12 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'totsnwb'
-    ExtDiag(idx)%desc = 'bucket surface snow precipitation'
-    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%name = 'totsnwb_ave'
+    ExtDiag(idx)%desc = 'bucket surface snow precipitation rate'
+    ExtDiag(idx)%unit = 'kg/m**2/s'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_th
+    ExtDiag(idx)%time_avg = .TRUE.
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%totsnwb(:)
@@ -1850,11 +1861,12 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'totgrpb'
-    ExtDiag(idx)%desc = 'bucket surface graupel precipitation'
-    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%name = 'totgrpb_ave'
+    ExtDiag(idx)%desc = 'bucket surface graupel precipitation rate'
+    ExtDiag(idx)%unit = 'kg/m**2/s'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_th
+    ExtDiag(idx)%time_avg = .TRUE.
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%totgrpb(:)
@@ -2754,7 +2766,7 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dudt_tot(:,:)
     enddo
 
-     idx = idx + 1
+    idx = idx + 1
     ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'dtdt_tot'
     ExtDiag(idx)%desc = ' dtdt_tot averaged Temp dycore-tendency'
@@ -2764,7 +2776,6 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dtdt_tot(:,:)
     enddo
-   !ENDIF
 
     idx = idx + 1
     ExtDiag(idx)%axes = 3
