@@ -1,6 +1,6 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
-  url = https://github.com/hafs-community/GFDL_atmos_cubed_sphere
+  url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
   branch = production/hafs.v1
 [submodule "ccpp/framework"]
   path = ccpp/framework
@@ -13,4 +13,4 @@
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
-  branch = develop
+  branch = release/hafs_v1
