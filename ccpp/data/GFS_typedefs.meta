@@ -761,9 +761,9 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
-[smoke_GBBEPx]
-  standard_name = emission_smoke_GBBEPx
-  long_name = emission fire GBBEPx
+[smoke_RRFS]
+  standard_name = emission_smoke_RRFS
+  long_name = emission fire RRFS
   units = various
   dimensions = (horizontal_dimension,24,3)
   type = real
@@ -1860,6 +1860,78 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[emdust]
+  standard_name = emission_of_dust_for_smoke
+  long_name = emission of dust for smoke
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[emseas]
+  standard_name = emission_of_seas_for_smoke
+  long_name = emission of seas for smoke
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[emanoc]
+  standard_name = emission_of_anoc_for_thompson_mp
+  long_name = emission of anoc for thompson mp
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[ebb_smoke_hr]
+  standard_name = surface_smoke_emission
+  long_name = emission of surface smoke
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[frp_hr]
+  standard_name = frp_hourly
+  long_name = hourly fire radiative power
+  units = MW
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[frp_std_hr]
+  standard_name = frp_std_hourly
+  long_name = hourly stdandard deviation of fire radiative power
+  units = MW
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[fhist]
+  standard_name = fire_hist
+  long_name = coefficient to scale the fire activity depending on the fire duration
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[coef_bb_dc]
+  standard_name = coef_bb_dc
+  long_name = coef to estimate the fire emission
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[fire_in]
+  standard_name = smoke_fire_auxiliary_input
+  long_name = smoke fire auxiliary input variables
+  units = various
+  dimensions = (horizontal_loop_extent,fire_auxiliary_data_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 
 ########################################################################
 [ccpp-table-properties]
@@ -2496,14 +2568,6 @@
   type = real
   kind = kind_phys
   active = (control_for_stochastic_land_surface_perturbation /= 0)
-[dqdti]
-  standard_name = instantaneous_water_vapor_specific_humidity_tendency_due_to_convection
-  long_name = instantaneous moisture tendency due to convection
-  units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
 [nwfa2d]
   standard_name = tendency_of_hygroscopic_aerosols_at_surface_adjacent_layer
   long_name = instantaneous water-friendly sfc aerosol source
@@ -2520,70 +2584,6 @@
   type = real
   kind = kind_phys
   active = (control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .and. flag_for_aerosol_physics)
-[emdust]
-  standard_name = emission_of_dust_for_smoke
-  long_name = emission of dust for smoke
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[emseas]
-  standard_name = emission_of_seas_for_smoke
-  long_name = emission of seas for smoke
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[emanoc]
-  standard_name = emission_of_anoc_for_thompson_mp
-  long_name = emission of anoc for thompson mp
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[ebb_smoke_hr]
-  standard_name = surface_smoke_emission
-  long_name = emission of surface smoke
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[frp_hr]
-  standard_name = frp_hourly
-  long_name = hourly fire radiative power
-  units = MW
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[frp_std_hr]
-  standard_name = frp_std_hourly
-  long_name = hourly stdandard deviation of fire radiative power
-  units = MW
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[fhist]
-  standard_name = fire_hist
-  long_name = coefficient to scale the fire activity depending on the fire duration
-  units = none
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[coef_bb_dc]
-  standard_name = coef_bb_dc
-  long_name = coef to estimate the fire emission
-  units = none
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
 [ebu_smoke]
   standard_name = ebu_smoke
   long_name = buffer of vertical fire emission
@@ -2612,7 +2612,15 @@
   standard_name = chem3d_mynn_pbl_transport
   long_name = mynn pbl transport of smoke and dust
   units = various
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,2)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,3)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[ddvel]
+  standard_name = dry_deposition_velocity_mynn_pbl_transport
+  long_name = dry deposition velocity by mynn pbl transport
+  units = m s-1
+  dimensions = (horizontal_loop_extent,3)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3002,18 +3010,12 @@
   units = flag
   dimensions = ()
   type = logical
-[rrfs_smoke]
+[rrfs_sd]
   standard_name = do_smoke_coupling
-  long_name = flag controlling rrfs_smoke collection (default off)
+  long_name = flag controlling rrfs_sd collection (default off)
   units = flag
   dimensions = ()
   type = logical
-[dust_smoke_rrtmg_band_number]
-  standard_name = index_of_shortwave_band_affected_by_smoke
-  long_name = rrtmg band number that smoke and dust should affect
-  units = count
-  dimensions = ()
-  type = integer
 [cpl_imp_mrg]
   standard_name = flag_for_merging_imported_data
   long_name = flag controlling cpl_imp_mrg for imported data (default off)
@@ -5651,6 +5653,12 @@
   units = index
   dimensions = ()
   type = integer
+[ntcoarsepm]
+  standard_name = index_for_coarse_pm_in_tracer_concentration_array
+  long_name = tracer index for coarse pm
+  units = index
+  dimensions = ()
+  type = integer
 [nchem]
   standard_name = number_of_chemical_species_vertically_mixed
   long_name = number of chemical vertically mixed
@@ -5857,12 +5865,36 @@
   dimensions = ()
   type = logical
   active = (do_smoke_coupling)
-[fire_turb]
+[enh_mix]
   standard_name = do_planetary_boundary_layer_fire_enhancement
   long_name = flag for rrfs smoke mynn enh vermix
   units = flag
   dimensions = ()
   type = logical
+  active = (do_smoke_coupling)
+[dust_alpha]
+  standard_name = alpha_fengsha_dust_scheme
+  long_name = alpha paramter for fengsha dust scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[dust_gamma]
+  standard_name = gamma_fengsha_dust_scheme
+  long_name = gamma paramter for fengsha dust scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[wetdep_ls_alpha]
+  standard_name = alpha_for_ls_wet_depoistion
+  long_name = alpha paramter for ls wet deposition
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
   active = (do_smoke_coupling)
 [seas_opt]
   standard_name = control_for_smoke_sea_salt
@@ -5878,16 +5910,16 @@
   dimensions = ()
   type = integer
   active = (do_smoke_coupling)
-[biomass_burn_opt]
-  standard_name = control_for_smoke_biomass_burn
-  long_name = rrfs smoke biomass burning option
+[drydep_opt]
+  standard_name = control_for_smoke_dry_deposition
+  long_name = rrfs smoke dry deposition option
   units = index
   dimensions = ()
   type = integer
   active = (do_smoke_coupling)
-[drydep_opt]
-  standard_name = control_for_smoke_dry_deposition
-  long_name = rrfs smoke dry deposition option
+[coarsepm_settling]
+  standard_name = control_for_smoke_coarsepm_settling
+  long_name = rrfs smoke coarsepm settling option
   units = index
   dimensions = ()
   type = integer
@@ -5922,10 +5954,10 @@
   active = (do_smoke_coupling)
 [smoke_forecast]
   standard_name = do_smoke_forecast
-  long_name = flag for rrfs smoke forecast
-  units = flag
+  long_name = index for rrfs smoke forecast
+  units = index
   dimensions = ()
-  type = logical
+  type = integer
   active = (do_smoke_coupling)
 [aero_ind_fdb]
   standard_name = do_smoke_aerosol_indirect_feedback
@@ -6520,6 +6552,12 @@
   units = flag
   dimensions = ()
   type = logical
+[fire_aux_data_levels]
+  standard_name = fire_auxiliary_data_extent
+  long_name = number of levels of fire auxiliary data
+  units = count
+  dimensions = ()
+  type = integer
 
 ########################################################################
 [ccpp-table-properties]
@@ -7398,6 +7436,13 @@
   long_name = surface lw emissivity in fraction
   units = frac
   dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ext550]
+  standard_name = atmosphere_optical_thickness_3d
+  long_name = 3d optical extinction for total aerosol species
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [swhc]
