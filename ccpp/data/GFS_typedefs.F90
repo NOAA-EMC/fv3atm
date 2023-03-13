@@ -3312,7 +3312,7 @@ module GFS_typedefs
 
     logical              :: hwrf_samfdeep     = .false.               !< flag for HWRF SAMF deepcnv scheme
     logical              :: hwrf_samfshal     = .false.               !< flag for HWRF SAMF shalcnv scheme
-    logical              :: progsigma         = .false.               !< flag for prognostic updraft area fraction closure in saSAS
+    logical              :: progsigma         = .false.               !< flag for prognostic updraft area fraction closure in saSAS or Unified conv.
     logical              :: do_mynnedmf       = .false.               !< flag for MYNN-EDMF
     logical              :: do_mynnsfclay     = .false.               !< flag for MYNN Surface Layer Scheme
     ! DH* TODO - move to MYNN namelist section
@@ -4350,10 +4350,10 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
-    if (progsigma .and. imfdeepcnv/=2) then
-       write(*,*) 'Logic error: progsigma requires imfdeepcnv=2'
-       stop
-    end if
+    !if (progsigma .and. (imfdeepcnv/=2 .or. imfdeepcnv/=5)) then
+    !   write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
+    !   stop
+    !end if
     Model%progsigma = progsigma
 
     if (oz_phys .and. oz_phys_2015) then
