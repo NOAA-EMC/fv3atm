@@ -33,7 +33,11 @@ module fv_moving_nest_main_mod
   ! FMS modules:
   !-----------------
   use block_control_mod,      only: block_control_type
+#ifdef OVERLOAD_R4
+  use constantsR4_mod,        only: cp_air, rdgas, grav, rvgas, kappa, pstd_mks
+#else
   use constants_mod,          only: cp_air, rdgas, grav, rvgas, kappa, pstd_mks
+#endif
   use time_manager_mod,       only: time_type, get_time, get_date, set_time, operator(+), &
       operator(-), operator(/), time_type_to_real
   use fms_mod,                only: file_exist, open_namelist_file,    &
