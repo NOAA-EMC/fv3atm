@@ -12,5 +12,5 @@
   branch = develop
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/Jili-Dong/community-ccpp-physics.git
-  branch = rrfs_dev
+  url = https://github.com/grantfirl/ccpp-physics
+  branch = 20230313_combo
