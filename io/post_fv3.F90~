@@ -744,6 +744,9 @@ module post_fv3
           ncfrst(i,j) = 1.0
           bgroff(i,j) = spval
           rswinc(i,j) = spval
+          ltg1_max(i,j) = spval
+          ltg2_max(i,j) = spval
+          ltg3_max(i,j) = spval
         enddo
       enddo
 
