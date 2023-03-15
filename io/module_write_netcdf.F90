@@ -216,13 +216,13 @@ module module_write_netcdf
        ncerr = nf90_def_dim(ncid, "grid_yt", jm, jm_dimid); NC_ERR_STOP(ncerr)
        ncerr = nf90_def_dim(ncid, "nchars", 20, ch_dimid); NC_ERR_STOP(ncerr)
        if (lm > 1) then
-         call add_dim(ncid, "pfull", pfull_dimid, wrtgrid, rc)
-         call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, rc)
+         call add_dim(ncid, "pfull", pfull_dimid, wrtgrid, mype, rc)
+         call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, mype, rc)
        end if
        if (is_cubed_sphere) then
           ncerr = nf90_def_dim(ncid, "tile", tileCount, tile_dimid); NC_ERR_STOP(ncerr)
        end if
-       call add_dim(ncid, "time", time_dimid, wrtgrid, rc)
+       call add_dim(ncid, "time", time_dimid, wrtgrid, mype, rc)
 
        ! define coordinate variables
        ncerr = nf90_def_var(ncid, "grid_xt", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
@@ -291,7 +291,7 @@ module module_write_netcdf
        end if
 
 
-       call get_global_attr(wrtfb, ncid, rc)
+       call get_global_attr(wrtfb, ncid, mype, rc)
 
 
        ! define variables (fields)
@@ -755,9 +755,10 @@ module module_write_netcdf
   end subroutine write_netcdf
 
 !----------------------------------------------------------------------------------------
-  subroutine get_global_attr(fldbundle, ncid, rc)
+  subroutine get_global_attr(fldbundle, ncid, mype, rc)
     type(ESMF_FieldBundle), intent(in) :: fldbundle
     integer, intent(in)                :: ncid
+    integer, intent(in)                :: mype
     integer, intent(out)               :: rc
 
 ! local variable
@@ -887,11 +888,12 @@ module module_write_netcdf
   end subroutine get_grid_attr
 
 !----------------------------------------------------------------------------------------
-  subroutine add_dim(ncid, dim_name, dimid, grid, rc)
+  subroutine add_dim(ncid, dim_name, dimid, grid, mype, rc)
     integer, intent(in)             :: ncid
     character(len=*), intent(in)    :: dim_name
     integer, intent(inout) :: dimid
     type(ESMF_Grid), intent(in)     :: grid
+    integer, intent(in)             :: mype
     integer, intent(out)            :: rc
 
 ! local variable
