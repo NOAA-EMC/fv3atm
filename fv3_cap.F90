@@ -748,7 +748,6 @@ module fv3gfs_cap_mod
                                                    routehandle=routehandle(j,1), &
                                                    rc=rc)
                   if (rc /= ESMF_SUCCESS) then
-                    write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRedistStore at line ',__LINE__
                     call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRedistStore', ESMF_LOGMSG_ERROR, rc=rc)
                     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
                     ! call ESMF_Finalize(endflag=ESMF_END_ABORT)
@@ -763,7 +762,6 @@ module fv3gfs_cap_mod
                                                    unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
                                                    srcTermProcessing=isrcTermProcessing, rc=rc)
                   if (rc /= ESMF_SUCCESS) then
-                    write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore at line ',__LINE__
                     call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore', ESMF_LOGMSG_ERROR, rc=rc)
                     call ESMF_Finalize(endflag=ESMF_END_ABORT)
                   endif
