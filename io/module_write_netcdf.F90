@@ -122,7 +122,7 @@ module module_write_netcdf
        call ESMF_FieldGet(fcstField(i), dimCount=fieldDimCount, array=array, rc=rc); ESMF_ERR_RETURN(rc)
 
        if (fieldDimCount > 3) then
-          write(0,*)"write_netcdf: Only 2D and 3D fields are supported!"
+          if (mype==0) write(0,*)"write_netcdf: Only 2D and 3D fields are supported!"
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
 
@@ -344,7 +344,7 @@ module module_write_netcdf
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
                                   dimids_2d, varids(i)); NC_ERR_STOP(ncerr)
            else
-             write(0,*)'Unsupported typekind ', typekind
+             if (mype==0) write(0,*)'Unsupported typekind ', typekind
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
            end if
          else if (rank == 3) then
@@ -384,11 +384,11 @@ module module_write_netcdf
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
                                   dimids_3d, varids(i)); NC_ERR_STOP(ncerr)
            else
-             write(0,*)'Unsupported typekind ', typekind
+             if (mype==0) write(0,*)'Unsupported typekind ', typekind
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
            end if
          else
-           write(0,*)'Unsupported rank ', rank
+           if (mype==0) write(0,*)'Unsupported rank ', rank
            call ESMF_Finalize(endflag=ESMF_END_ABORT)
          end if
          if (par) then
@@ -513,7 +513,7 @@ module module_write_netcdf
           end do
           ncerr = nf90_put_var(ncid, im_varid, values=x); NC_ERR_STOP(ncerr)
        else
-          write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
+          if (mype==0) write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
@@ -564,7 +564,7 @@ module module_write_netcdf
           end do
           ncerr = nf90_put_var(ncid, jm_varid, values=y); NC_ERR_STOP(ncerr)
        else
-          write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
+          if (mype==0) write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
@@ -708,7 +708,7 @@ module module_write_netcdf
 
       else
 
-         write(0,*)'Unsupported rank ', rank
+         if (mype==0) write(0,*)'Unsupported rank ', rank
          call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
       end if ! end rank
@@ -814,7 +814,7 @@ module module_write_netcdf
 
       else
 
-         write(0,*)'Unsupported trypekind ', typekind
+         if (mype==0) write(0,*)'Unsupported typekind ', typekind
          call ESMF_Finalize(endflag=ESMF_END_ABORT)
       end if
 
@@ -937,7 +937,7 @@ module module_write_netcdf
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        deallocate(valueListR4)
      else
-        write(0,*)'Error in module_write_netcdf.F90(add_dim) unknown typekind for ',trim(dim_name)
+        if (mype==0) write(0,*)'Error in module_write_netcdf.F90(add_dim) unknown typekind for ',trim(dim_name)
         call ESMF_Finalize(endflag=ESMF_END_ABORT)
     end if
     if (par) then

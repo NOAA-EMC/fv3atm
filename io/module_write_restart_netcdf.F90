@@ -129,7 +129,7 @@ module module_write_restart_netcdf
        call ESMF_FieldGet(fcstField(i), name=fldName, rank=rank, typekind=typekind, rc=rc); ESMF_ERR_RETURN(rc)
 
        if (fieldDimCount > 3) then
-          write(0,*)"write_netcdf: Only 2D and 3D fields are supported!"
+          if (mype==0) write(0,*)"write_netcdf: Only 2D and 3D fields are supported!"
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
 
@@ -149,7 +149,7 @@ module module_write_restart_netcdf
                              rc=rc); ESMF_ERR_RETURN(rc)
 
           if (tileCount /= 1) then
-             write(0,*)"write_restart_netcdf: Only tileCount==1 fields are supported!"
+             if (mype==0) write(0,*)"write_restart_netcdf: Only tileCount==1 fields are supported!"
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
           endif
 
@@ -272,7 +272,7 @@ module module_write_restart_netcdf
                                    name="ESMF:ungridded_dim_labels", isPresent=isPresent, &
                                    itemCount=udimCount, rc=rc); ESMF_ERR_RETURN(rc)
             if (udimCount>1) then
-              write(0,*)'udimCount>1 for ', trim(fldName)
+              if (mype==0) write(0,*)'udimCount>1 for ', trim(fldName)
               ESMF_ERR_RETURN(-1)
             end if
             if (udimCount>0 .and. isPresent) then
@@ -329,7 +329,7 @@ module module_write_restart_netcdf
            else if (typekind == ESMF_TYPEKIND_R8) then
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, dimids_2d, varids(i)); NC_ERR_STOP(ncerr)
            else
-             write(0,*)'Unsupported typekind ', typekind
+             if (mype==0) write(0,*)'Unsupported typekind ', typekind
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
            end if
          else if (rank == 3) then
@@ -343,7 +343,7 @@ module module_write_restart_netcdf
              else if (staggerloc == ESMF_STAGGERLOC_EDGE2) then  ! south
                 dimids_3d = [im_dimid,jm_p1_dimid,zaxis_dimids(i),time_dimid]
              else
-               write(0,*)'Unsupported staggerloc ', staggerloc
+               if (mype==0) write(0,*)'Unsupported staggerloc ', staggerloc
                call ESMF_Finalize(endflag=ESMF_END_ABORT)
              end if
            end if
@@ -352,11 +352,11 @@ module module_write_restart_netcdf
            else if (typekind == ESMF_TYPEKIND_R8) then
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, dimids_3d, varids(i)); NC_ERR_STOP(ncerr)
            else
-             write(0,*)'Unsupported typekind ', typekind
+             if (mype==0) write(0,*)'Unsupported typekind ', typekind
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
            end if
          else
-           write(0,*)'Unsupported rank ', rank
+           if (mype==0) write(0,*)'Unsupported rank ', rank
            call ESMF_Finalize(endflag=ESMF_END_ABORT)
          end if
          if (par) then
@@ -458,7 +458,7 @@ module module_write_restart_netcdf
                else if (staggerloc == ESMF_STAGGERLOC_EDGE2) then  ! south
                  allocate(array_r4_3d(im,jm+1,fldlev(i)))
                else
-                 write(0,*)'Unsupported staggerloc ', staggerloc
+                 if (mype==0) write(0,*)'Unsupported staggerloc ', staggerloc
                  call ESMF_Finalize(endflag=ESMF_END_ABORT)
                end if
                call ESMF_FieldGather(fcstField(i), array_r4_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
@@ -480,7 +480,7 @@ module module_write_restart_netcdf
                else if (staggerloc == ESMF_STAGGERLOC_EDGE2) then  ! south
                  allocate(array_r8_3d(im,jm+1,fldlev(i)))
                else
-                 write(0,*)'Unsupported staggerloc ', staggerloc
+                 if (mype==0) write(0,*)'Unsupported staggerloc ', staggerloc
                  call ESMF_Finalize(endflag=ESMF_END_ABORT)
                end if
                call ESMF_FieldGather(fcstField(i), array_r8_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
@@ -493,7 +493,7 @@ module module_write_restart_netcdf
 
       else
 
-         write(0,*)'Unsupported rank ', rank
+         if (mype==0) write(0,*)'Unsupported rank ', rank
          call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
       end if ! end rank
@@ -539,7 +539,7 @@ contains
          if (ncerr == NF90_NOERR) then
            return
          else
-           write(0,*) 'in write_out_ungridded_dim_atts: ERROR missing dimid for already defined ungridded dimension variable '
+           if (mype==0) write(0,*) 'in write_out_ungridded_dim_atts: ERROR missing dimid for already defined ungridded dimension variable '
            ESMF_ERR_RETURN(-1)
         endif
       endif
@@ -554,7 +554,7 @@ contains
         allocate(valueListr8(valueCount))
         call ESMF_AttributeGet(field, convention="NetCDF", purpose="FV3-dim", name=trim(dimLabel), valueList=valueListr8, rc=rc); ESMF_ERR_RETURN(rc)
       else
-        write(0,*) 'in write_out_ungridded_dim_atts: ERROR unknown typekind'
+        if (mype==0) write(0,*) 'in write_out_ungridded_dim_atts: ERROR unknown typekind'
         ESMF_ERR_RETURN(-1)
       endif
 
