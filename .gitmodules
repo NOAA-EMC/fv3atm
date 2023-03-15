@@ -6,11 +6,11 @@
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
   branch = main
+[submodule "ccpp/physics"]
+  path = ccpp/physics
+  url = https://github.com/ufs-community/ccpp-physics
+  branch = ufs/dev
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
   branch = develop
-[submodule "ccpp/physics"]
-  path = ccpp/physics
-  url = https://github.com/grantfirl/ccpp-physics
-  branch = 20230313_combo
