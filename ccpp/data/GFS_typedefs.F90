@@ -2794,12 +2794,12 @@ module GFS_typedefs
     endif
 
     !--prognostic closure - moisture coupling
-    if(Model%progsigma)then
+    !if(Model%progsigma)then
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
        allocate(Coupling%tmf (IM,Model%levs))
        Coupling%tmf = clear_val
        Coupling%dqdt_qmicro = clear_val
-    endif
+    !endif
 
     !--- stochastic physics option
     if (Model%do_sppt .or. Model%ca_global) then
@@ -6551,7 +6551,7 @@ module GFS_typedefs
     allocate (Tbd%hpbl (IM))
     Tbd%hpbl     = clear_val
 
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == Model%imfshalcnv_samf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == Model%imfshalcnv_samf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified .or. Model%imfshalcnv == Model%imfshalcnv_unified) then
        allocate(Tbd%prevsq(IM, Model%levs))
        Tbd%prevsq = clear_val
     endif

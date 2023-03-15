@@ -155,7 +155,7 @@ module GFS_restart
     endif
     ! Unified convection
     if (Model%imfdeepcnv == 5) then
-      Restart%num3d = Restart%num3d + 3
+      Restart%num3d = Restart%num3d + 4
     endif
     ! MYNN PBL
     if (Model%do_mynnedmf) then
