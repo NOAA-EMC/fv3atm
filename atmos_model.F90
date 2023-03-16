@@ -96,8 +96,7 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
-                              restart_endfcst, output_fh, fcst_mpi_comm, &
-                              fcst_ntasks
+                              output_fh, fcst_mpi_comm, fcst_ntasks
 use module_block_data,  only: block_atmos_copy, block_data_copy,         &
                               block_data_copy_or_fill,                   &
                               block_data_combine_fractions
@@ -178,6 +177,7 @@ logical :: dycore_only  = .false.
 logical :: debug        = .false.
 !logical :: debug        = .true.
 logical :: sync         = .false.
+logical :: restart_endfcst = .false.
 real    :: avg_max_length=3600.
 logical :: ignore_rst_cksum = .false.
 namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, ccpp_suite, avg_max_length, &
@@ -1477,6 +1477,10 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+      call cplFieldGet(state,'inst_pres_interface', farrayPtr3d=prsi, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
       if (GFS_Control%cplaqm) then
 
         call cplFieldGet(state,'canopy_moisture_storage', farrayPtr2d=canopy, rc=localrc)
@@ -1541,10 +1545,6 @@ subroutine update_atmos_chemistry(state, rc)
 
       else
 
-        call cplFieldGet(state,'inst_pres_interface', farrayPtr3d=prsi, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
         call cplFieldGet(state,'inst_liq_nonconv_tendency_levels', &
                          farrayPtr3d=pflls, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -1592,6 +1592,7 @@ subroutine update_atmos_chemistry(state, rc)
             ix = Atm_block%ixp(ib,jb)
             !--- interface values
             phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
+            prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
             !--- layer values
             prsl(i,j,k) = GFS_Data(nb)%Statein%prsl(ix,k)
             phil(i,j,k) = GFS_Data(nb)%Statein%phil(ix,k)
@@ -1600,8 +1601,6 @@ subroutine update_atmos_chemistry(state, rc)
             va  (i,j,k) = GFS_Data(nb)%Stateout%gv0(ix,k)
             cldfra(i,j,k) = GFS_Data(nb)%IntDiag%cldfra(ix,k)
             if (.not.GFS_Control%cplaqm) then
-              !--- interface values
-              prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
               !--- layer values
               pfils (i,j,k) = GFS_Data(nb)%Coupling%pfi_lsan(ix,k)
               pflls (i,j,k) = GFS_Data(nb)%Coupling%pfl_lsan(ix,k)
@@ -1620,8 +1619,7 @@ subroutine update_atmos_chemistry(state, rc)
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
           phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
-          if (.not.GFS_Control%cplaqm) &
-            prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
+          prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
         enddo
       enddo
 
@@ -1728,6 +1726,7 @@ subroutine update_atmos_chemistry(state, rc)
 
       if (GFS_control%debug) then
         ! -- diagnostics
+        write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
         write(6,'("update_atmos: phii   - min/max/avg",3g16.6)') minval(phii),   maxval(phii),   sum(phii)/size(phii)
         write(6,'("update_atmos: prsl   - min/max/avg",3g16.6)') minval(prsl),   maxval(prsl),   sum(prsl)/size(prsl)
         write(6,'("update_atmos: phil   - min/max/avg",3g16.6)') minval(phil),   maxval(phil),   sum(phil)/size(phil)
@@ -1766,7 +1765,6 @@ subroutine update_atmos_chemistry(state, rc)
           write(6,'("update_atmos: xlai   - min/max/avg",3g16.6)') minval(xlai),   maxval(xlai),   sum(xlai)/size(xlai)
           write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
         else
-          write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
           write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
           write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
           write(6,'("update_atmos: shfsfc - min/max/avg",3g16.6)') minval(shfsfc), maxval(shfsfc), sum(shfsfc)/size(shfsfc)

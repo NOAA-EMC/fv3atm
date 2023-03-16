@@ -65,7 +65,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 nbdlphys, iau_offset
   use module_fv3_config,  only: dt_atmos, fcst_mpi_comm, fcst_ntasks,      &
                                 quilting, calendar, cpl_grid_id,           &
-                                cplprint_flag, restart_endfcst
+                                cplprint_flag
 
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
   use module_cplfields,       only: nExportFields, exportFields, exportFieldsInfo, &
@@ -73,7 +73,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use module_cplfields,       only: realizeConnectedCplFields
 
   use atmos_model_mod,        only: setup_exportdata
-  use CCPP_data,              only: GFS_control
 !
 !-----------------------------------------------------------------------
 !
@@ -90,7 +89,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   type(ESMF_GridComp),dimension(:),allocatable    :: fcstGridComp
   integer                                         :: ngrids, mygrid
 
-  integer                     :: intrm_rst, n_atmsteps
+  integer                     :: n_atmsteps
 
 !----- coupled model data -----
 
@@ -744,20 +743,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       endif
     endif
 ! if to write out restart at the end of forecast
-    restart_endfcst = .false.
-    if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
-! frestart only contains intermediate restart
-    do i=1,size(frestart)
-      if(frestart(i) == total_inttime) then
-        frestart(i) = 0
-        exit
-      endif
-    enddo
-    if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
-      'total_inttime=',total_inttime
-! if there is restart writing during integration
-    intrm_rst         = 0
-    if (frestart(1)>0) intrm_rst = 1
+    if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'total_inttime=',total_inttime
 
 !------ initialize component models ------
 
@@ -1255,9 +1241,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       !--- intermediate restart
-      if (intrm_rst>0) then
-        call get_time(Atmos%Time - Atmos%Time_init, seconds)
-        if (ANY(frestart(:) == seconds)) then
+      call get_time(Atmos%Time - Atmos%Time_init, seconds)
+      if (ANY(frestart(:) == seconds)) then
           if (mype == 0) write(*,*)'write out restart at n_atmsteps=',n_atmsteps,' seconds=',seconds,  &
                                    'integration length=',n_atmsteps*dt_atmos/3600.
 
@@ -1279,7 +1264,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                    'Current model time: year, month, day, hour, minute, second'
               close( unit )
           endif
-        endif
       endif
 
       if (mype == 0) write(*,'(A,I16,A,F16.6)')'PASS: fcstRUN phase 2, n_atmsteps = ', &
@@ -1322,24 +1306,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call atmos_model_end (Atmos)
-
-!*** write restart file
-      if( restart_endfcst ) then
-        call get_date (Atmos%Time, date(1), date(2), date(3),  &
-                               date(4), date(5), date(6))
-        call mpp_set_current_pelist()
-        if (mpp_pe() == mpp_root_pe())then
-          open( newunit=unit, file='RESTART/coupler.res' )
-          write( unit, '(i6,8x,a)' )calendar_type, &
-              '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
-
-          write( unit, '(6i6,8x,a)' )date_init, &
-              'Model start time:   year, month, day, hour, minute, second'
-          write( unit, '(6i6,8x,a)' )date, &
-              'Current model time: year, month, day, hour, minute, second'
-          close( unit )
-        endif
-      endif
 
       call diag_manager_end (Atmos%Time)
 

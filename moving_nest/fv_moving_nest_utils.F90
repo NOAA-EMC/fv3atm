@@ -67,7 +67,11 @@ module fv_moving_nest_utils_mod
   use IPD_typedefs,      only: kind_phys => IPD_kind_phys
 #endif
 
+#ifdef OVERLOAD_R4
+  use constantsR4_mod,   only: grav
+#else
   use constants_mod,     only: grav
+#endif
 
   use boundary_mod,      only: update_coarse_grid, update_coarse_grid_mpp
   use bounding_box_mod,  only: bbox, bbox_get_C2F_index, fill_bbox
@@ -930,7 +934,7 @@ contains
     character(*), intent(in)              :: nc_filename
     integer, intent(in)                   :: nxp, nyp, refine
     integer, allocatable, intent(in)      :: pelist(:)
-    type(grid_geometry), intent(out)      :: fp_tile_geo
+    type(grid_geometry), intent(inout)    :: fp_tile_geo
     integer, intent(out)                  :: fp_istart_fine, fp_iend_fine, fp_jstart_fine, fp_jend_fine
 
     !========================================================================================

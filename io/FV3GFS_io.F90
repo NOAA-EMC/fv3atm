@@ -3784,7 +3784,7 @@ module FV3GFS_io_mod
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-                          name='missing_value',value=missing_value,rc=rc)
+                          name='missing_value',value=real(missing_value,kind=4),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
@@ -3794,7 +3794,7 @@ module FV3GFS_io_mod
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-                          name='_FillValue',value=missing_value,rc=rc)
+                          name='_FillValue',value=real(missing_value,kind=4),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 

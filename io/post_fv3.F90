@@ -527,7 +527,8 @@ module post_fv3
                              rel_vort_max, rel_vort_maxhy1, refd_max,          &
                              refdm10c_max, u10max, v10max, wspd10max, sfcuxi,  &
                              sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
-                             albedo, tg, prate_max, pwat
+                             albedo, tg, prate_max, pwat, snow_acm, snow_bkt,  &
+                             acgraup, graup_bucket, acfrain, frzrn_bucket 
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -1187,6 +1188,72 @@ module post_fv3
                   else
                     cprate(i,j) = 0.
                   endif
+                enddo
+              enddo
+            endif
+
+            !Accumulated snowfall 
+            if(trim(fieldname)=='tsnowp') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snow_acm,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  snow_acm(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) snow_acm(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            !Snowfall bucket 
+            if(trim(fieldname)=='tsnowpb') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snow_bkt,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  snow_bkt(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) snow_bkt(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            !Accumulated graupel 
+            if(trim(fieldname)=='frozr') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,acgraup,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  acgraup(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) acgraup(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            !Graupel bucket 
+            if(trim(fieldname)=='frozrb') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,graup_bucket,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  graup_bucket(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) graup_bucket(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            !Accumulated freezing rain 
+            if(trim(fieldname)=='frzr') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,acfrain,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  acfrain(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) acfrain(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            !Freezing rain bucket
+            if(trim(fieldname)=='frzrb') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,frzrn_bucket,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  frzrn_bucket(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) frzrn_bucket(i,j) = spval
                 enddo
               enddo
             endif
