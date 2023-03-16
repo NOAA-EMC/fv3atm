@@ -2353,14 +2353,31 @@ end subroutine update_atmos_chemistry
         if (trim(impfield_name) == trim(fldname)) then
           findex  = queryImportFields(fldname)
           if (importFieldsValid(findex)) then
+            write(0,'(a,(*(i6)))') 'DH in u TOP: lbound(datar83d)=', lbound(datar83d)
+            write(0,'(a,(*(i6)))') 'DH in u TOP: lbound(Atm(mygrid)%u)=', lbound(Atm(mygrid)%u)
+            write(0,'(a,(*(i6)))') 'DH in u TOP: ubound(datar83d)=', ubound(datar83d)
+            write(0,'(a,(*(i6)))') 'DH in u TOP: ubound(Atm(mygrid)%u)=', ubound(Atm(mygrid)%u)
+            write(0,'(a,e16.7)') 'DH in u TOP: minval(datar83d)=', minval(datar83d)
+            write(0,'(a,e16.7)') 'DH in u TOP: maxval(datar83d)=', maxval(datar83d)
+            write(0,'(a,e16.7)') 'DH in u TOP: minval(Atm(mygrid)%u)=', minval(Atm(mygrid)%u)
+            write(0,'(a,e16.7)') 'DH in u TOP: maxval(Atm(mygrid)%u)=', maxval(Atm(mygrid)%u)
 !$omp parallel do default(shared) private(i,j,k)
             do k=1,nk
             do j=jsc,jec
               do i=isc,iec
                 Atm(mygrid)%u(i,j,k) = datar83d(i-isc+1,j-jsc+1,k)
+                !write(0,'(a,5i6,e16.7)') 'DH in u:', i, j, k, i-isc+1, j-jsc+1, datar83d(i-isc+1,j-jsc+1,k)
               enddo
             enddo
             enddo
+            write(0,'(a,(*(i6)))') 'DH in u BOT: lbound(datar83d)=', lbound(datar83d)
+            write(0,'(a,(*(i6)))') 'DH in u BOT: lbound(Atm(mygrid)%u)=', lbound(Atm(mygrid)%u)
+            write(0,'(a,(*(i6)))') 'DH in u BOT: ubound(datar83d)=', ubound(datar83d)
+            write(0,'(a,(*(i6)))') 'DH in u BOT: ubound(Atm(mygrid)%u)=', ubound(Atm(mygrid)%u)
+            write(0,'(a,e16.7)') 'DH in u BOT: minval(datar83d)=', minval(datar83d)
+            write(0,'(a,e16.7)') 'DH in u BOT: maxval(datar83d)=', maxval(datar83d)
+            write(0,'(a,e16.7)') 'DH in u BOT: minval(Atm(mygrid)%u)=', minval(Atm(mygrid)%u)
+            write(0,'(a,e16.7)') 'DH in u BOT: maxval(Atm(mygrid)%u)=', maxval(Atm(mygrid)%u)
           endif
         endif
 
@@ -2825,7 +2842,7 @@ end subroutine update_atmos_chemistry
     integer, optional, intent(out) :: rc
 
     !--- local variables
-    integer                :: i, j, ix
+    integer                :: i, j, k, ix
     integer                :: isc, iec, jsc, jec
     integer                :: nb, nk
     integer                :: sphum, liq_wat, ice_wat, o3mr
@@ -3074,37 +3091,7 @@ end subroutine update_atmos_chemistry
             ! bottom layer height (z)
             case('inst_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%z_bot, zeror8, Atm_block, nb, rc=localrc)
-            !--- JEDI fields
-            case ('u')
-              call block_atmos_copy(datar83d, Atm(mygrid)%u(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
-            case ('v')
-              call block_atmos_copy(datar83d, Atm(mygrid)%v(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
-            case ('ua')
-              call block_atmos_copy(datar83d, Atm(mygrid)%ua(isc:iec,jsc:jec,:),Atm_block, nb, rc=localrc)
-            case ('va')
-              call block_atmos_copy(datar83d, Atm(mygrid)%va(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
-            case ('t')
-              call block_atmos_copy(datar83d, Atm(mygrid)%pt(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
-            case ('delp')
-              call block_atmos_copy(datar83d, Atm(mygrid)%delp(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
-            case ('sphum')
-              sphum = get_tracer_index(MODEL_ATMOS, 'sphum')
-              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc:iec,jsc:jec,:,:), sphum, Atm_block, nb, rc=localrc)
-            case ('ice_wat')
-              ice_wat = get_tracer_index(MODEL_ATMOS, 'ice_wat')
-              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc:iec,jsc:jec,:,:), ice_wat, Atm_block, nb, rc=localrc)
-            case ('liq_wat')
-              liq_wat = get_tracer_index(MODEL_ATMOS, 'liq_wat')
-              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc:iec,jsc:jec,:,:), liq_wat, Atm_block, nb, rc=localrc)
-            case ('o3mr')
-              o3mr = get_tracer_index(MODEL_ATMOS, 'o3mr')
-              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc:iec,jsc:jec,:,:), o3mr, Atm_block, nb, rc=localrc)
-            case ('phis')
-              call block_atmos_copy(datar82d, Atm(mygrid)%phis(isc:iec,jsc:jec), Atm_block, nb, rc=localrc)
-            case ('u_srf')
-              call block_atmos_copy(datar82d, Atm(mygrid)%u_srf(isc:iec,jsc:jec), Atm_block, nb, rc=localrc)
-            case ('v_srf')
-              call block_atmos_copy(datar82d, Atm(mygrid)%v_srf(isc:iec,jsc:jec), Atm_block, nb, rc=localrc)
+            !--- JEDI physics fields
             case ('weasd')
               call block_data_copy(datar82d, GFS_data(nb)%sfcprop%weasd, Atm_block, nb, rc=localrc)
             case ('tsea')
@@ -3131,6 +3118,195 @@ end subroutine update_atmos_chemistry
               localrc = ESMF_RC_NOT_FOUND
           end select
         enddo
+
+        !--- Additional JEDI dynamics fields
+        select case (trim(fieldname))
+            case ('u')
+              write(0,'(a,(*(i6)))') 'DH out u TOP: lbound(Atm(mygrid)%u)=', lbound(Atm(mygrid)%u)
+              write(0,'(a,(*(i6)))') 'DH out u TOP: lbound(Atm(mygrid)%u(isc:iec,jsc:jec,:))=', lbound(Atm(mygrid)%u(isc:iec,jsc:jec,:))
+              write(0,'(a,(*(i6)))') 'DH out u TOP: lbound(datar83d)=', lbound(datar83d)
+              write(0,'(a,(*(i6)))') 'DH out u TOP: ubound(Atm(mygrid)%u)=', ubound(Atm(mygrid)%u)
+              write(0,'(a,(*(i6)))') 'DH out u TOP: ubound(Atm(mygrid)%u(isc:iec,jsc:jec,:))=', ubound(Atm(mygrid)%u(isc:iec,jsc:jec,:))
+              write(0,'(a,(*(i6)))') 'DH out u TOP: ubound(datar83d)=', ubound(datar83d)
+              write(0,'(a,e16.7)') 'DH out u TOP: minval(Atm(mygrid)%u)=', minval(Atm(mygrid)%u)
+              write(0,'(a,e16.7)') 'DH out u TOP: maxval(Atm(mygrid)%u)=', maxval(Atm(mygrid)%u)
+              write(0,'(a,e16.7)') 'DH out u TOP: minval(Atm(mygrid)%u(isc:iec,jsc:jec,:))=', minval(Atm(mygrid)%u(isc:iec,jsc:jec,:))
+              write(0,'(a,e16.7)') 'DH out u TOP: maxval(Atm(mygrid)%u(isc:iec,jsc:jec,:))=', maxval(Atm(mygrid)%u(isc:iec,jsc:jec,:))
+              write(0,'(a,e16.7)') 'DH out u TOP: minval(datar83d)=', minval(datar83d)
+              write(0,'(a,e16.7)') 'DH out u TOP: maxval(datar83d)=', maxval(datar83d)
+!$omp parallel do default(shared) private(i,j,k)
+              do k=1,nk
+              do j=jsc,jec
+                do i=isc,iec
+                  datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%u(i,j,k)
+                  !write(0,'(a,5i6,2e16.7)') 'DH out u:', i, j, k, i-isc+1, j-jsc+1, datar83d(i-isc+1,j-jsc+1,k), Atm(mygrid)%u(i,j,k)
+                enddo
+              enddo
+              enddo
+              localrc = ESMF_SUCCESS
+              write(0,'(a,(*(i6)))') 'DH out u BOT: lbound(Atm(mygrid)%u)=', lbound(Atm(mygrid)%u)
+              write(0,'(a,(*(i6)))') 'DH out u BOT: lbound(Atm(mygrid)%u(isc:iec,jsc:jec,:))=', lbound(Atm(mygrid)%u(isc:iec,jsc:jec,:))
+              write(0,'(a,(*(i6)))') 'DH out u BOT: lbound(datar83d)=', lbound(datar83d)
+              write(0,'(a,(*(i6)))') 'DH out u BOT: ubound(Atm(mygrid)%u)=', ubound(Atm(mygrid)%u)
+              write(0,'(a,(*(i6)))') 'DH out u BOT: ubound(Atm(mygrid)%u(isc:iec,jsc:jec,:))=', ubound(Atm(mygrid)%u(isc:iec,jsc:jec,:))
+              write(0,'(a,(*(i6)))') 'DH out u BOT: ubound(datar83d)=', ubound(datar83d)
+              write(0,'(a,e16.7)') 'DH out u BOT: minval(Atm(mygrid)%u)=', minval(Atm(mygrid)%u)
+              write(0,'(a,e16.7)') 'DH out u BOT: maxval(Atm(mygrid)%u)=', maxval(Atm(mygrid)%u)
+              write(0,'(a,e16.7)') 'DH out u BOT: minval(Atm(mygrid)%u(isc:iec,jsc:jec,:))=', minval(Atm(mygrid)%u(isc:iec,jsc:jec,:))
+              write(0,'(a,e16.7)') 'DH out u BOT: maxval(Atm(mygrid)%u(isc:iec,jsc:jec,:))=', maxval(Atm(mygrid)%u(isc:iec,jsc:jec,:))
+              write(0,'(a,e16.7)') 'DH out u BOT: minval(datar83d)=', minval(datar83d)
+              write(0,'(a,e16.7)') 'DH out u BOT: maxval(datar83d)=', maxval(datar83d)
+            case ('v')
+              write(0,'(a,(*(i6)))') 'DH out v TOP: lbound(Atm(mygrid)%v)=', lbound(Atm(mygrid)%v)
+              write(0,'(a,(*(i6)))') 'DH out v TOP: lbound(Atm(mygrid)%v(isc:iec,jsc:jec,:))=', lbound(Atm(mygrid)%v(isc:iec,jsc:jec,:))
+              write(0,'(a,(*(i6)))') 'DH out v TOP: lbound(datar83d)=', lbound(datar83d)
+              write(0,'(a,(*(i6)))') 'DH out v TOP: ubound(Atm(mygrid)%v)=', ubound(Atm(mygrid)%v)
+              write(0,'(a,(*(i6)))') 'DH out v TOP: ubound(Atm(mygrid)%v(isc:iec,jsc:jec,:))=', ubound(Atm(mygrid)%v(isc:iec,jsc:jec,:))
+              write(0,'(a,(*(i6)))') 'DH out v TOP: ubound(datar83d)=', ubound(datar83d)
+              write(0,'(a,e16.7)') 'DH out v TOP: minval(Atm(mygrid)%v)=', minval(Atm(mygrid)%v)
+              write(0,'(a,e16.7)') 'DH out v TOP: maxval(Atm(mygrid)%v)=', maxval(Atm(mygrid)%v)
+              write(0,'(a,e16.7)') 'DH out v TOP: minval(Atm(mygrid)%v(isc:iec,jsc:jec,:))=', minval(Atm(mygrid)%v(isc:iec,jsc:jec,:))
+              write(0,'(a,e16.7)') 'DH out v TOP: maxval(Atm(mygrid)%v(isc:iec,jsc:jec,:))=', maxval(Atm(mygrid)%v(isc:iec,jsc:jec,:))
+              write(0,'(a,e16.7)') 'DH out v TOP: minval(datar83d)=', minval(datar83d)
+              write(0,'(a,e16.7)') 'DH out v TOP: maxval(datar83d)=', maxval(datar83d)
+!$omp parallel do default(shared) private(i,j,k)
+              do k=1,nk
+              do j=jsc,jec
+                do i=isc,iec
+                  datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%v(i,j,k)
+                enddo
+              enddo
+              enddo
+              localrc = ESMF_SUCCESS
+              write(0,'(a,(*(i6)))') 'DH out v BOT: lbound(Atm(mygrid)%v)=', lbound(Atm(mygrid)%v)
+              write(0,'(a,(*(i6)))') 'DH out v BOT: lbound(Atm(mygrid)%v(isc:iec,jsc:jec,:))=', lbound(Atm(mygrid)%v(isc:iec,jsc:jec,:))
+              write(0,'(a,(*(i6)))') 'DH out v BOT: lbound(datar83d)=', lbound(datar83d)
+              write(0,'(a,(*(i6)))') 'DH out v BOT: ubound(Atm(mygrid)%v)=', ubound(Atm(mygrid)%v)
+              write(0,'(a,(*(i6)))') 'DH out v BOT: ubound(Atm(mygrid)%v(isc:iec,jsc:jec,:))=', ubound(Atm(mygrid)%v(isc:iec,jsc:jec,:))
+              write(0,'(a,(*(i6)))') 'DH out v BOT: ubound(datar83d)=', ubound(datar83d)
+              write(0,'(a,e16.7)') 'DH out v BOT: minval(Atm(mygrid)%v)=', minval(Atm(mygrid)%v)
+              write(0,'(a,e16.7)') 'DH out v BOT: maxval(Atm(mygrid)%v)=', maxval(Atm(mygrid)%v)
+              write(0,'(a,e16.7)') 'DH out v BOT: minval(Atm(mygrid)%v(isc:iec,jsc:jec,:))=', minval(Atm(mygrid)%v(isc:iec,jsc:jec,:))
+              write(0,'(a,e16.7)') 'DH out v BOT: maxval(Atm(mygrid)%v(isc:iec,jsc:jec,:))=', maxval(Atm(mygrid)%v(isc:iec,jsc:jec,:))
+              write(0,'(a,e16.7)') 'DH out v BOT: minval(datar83d)=', minval(datar83d)
+              write(0,'(a,e16.7)') 'DH out v BOT: maxval(datar83d)=', maxval(datar83d)
+            case ('ua')
+!$omp parallel do default(shared) private(i,j,k)
+              do k=1,nk
+              do j=jsc,jec
+                do i=isc,iec
+                  datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%ua(i,j,k)
+                enddo
+              enddo
+              enddo
+              localrc = ESMF_SUCCESS
+            case ('va')
+!$omp parallel do default(shared) private(i,j,k)
+              do k=1,nk
+              do j=jsc,jec
+                do i=isc,iec
+                  datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%va(i,j,k)
+                enddo
+              enddo
+              enddo
+              localrc = ESMF_SUCCESS
+            case ('t')
+!$omp parallel do default(shared) private(i,j,k)
+              do k=1,nk
+              do j=jsc,jec
+                do i=isc,iec
+                  datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%pt(i,j,k)
+                enddo
+              enddo
+              enddo
+              localrc = ESMF_SUCCESS
+            case ('delp')
+!$omp parallel do default(shared) private(i,j,k)
+              do k=1,nk
+              do j=jsc,jec
+                do i=isc,iec
+                  datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%delp(i,j,k)
+                enddo
+              enddo
+              enddo
+              localrc = ESMF_SUCCESS
+            case ('sphum')
+              sphum = get_tracer_index(MODEL_ATMOS, 'sphum')
+              if (sphum > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+                do k=1,nk
+                do j=jsc,jec
+                  do i=isc,iec
+                    datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,sphum)
+                  enddo
+                enddo
+                enddo
+                localrc = ESMF_SUCCESS
+              end if
+            case ('ice_wat')
+              ice_wat = get_tracer_index(MODEL_ATMOS, 'ice_wat')
+              if (ice_wat > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+                do k=1,nk
+                do j=jsc,jec
+                  do i=isc,iec
+                    datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,ice_wat)
+                  enddo
+                enddo
+                enddo
+                localrc = ESMF_SUCCESS
+              end if
+            case ('liq_wat')
+              liq_wat = get_tracer_index(MODEL_ATMOS, 'liq_wat')
+              if (liq_wat > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+                do k=1,nk
+                do j=jsc,jec
+                  do i=isc,iec
+                    datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,liq_wat)
+                  enddo
+                enddo
+                enddo
+                localrc = ESMF_SUCCESS
+              end if
+            case ('o3mr')
+              o3mr = get_tracer_index(MODEL_ATMOS, 'o3mr')
+              if (o3mr > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+                do k=1,nk
+                do j=jsc,jec
+                  do i=isc,iec
+                    datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,o3mr)
+                  enddo
+                enddo
+                enddo
+                localrc = ESMF_SUCCESS
+              end if
+            case ('phis')
+!$omp parallel do default(shared) private(i,j)
+              do j=jsc,jec
+                do i=isc,iec
+                  datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%phis(i,j)
+                enddo
+              enddo
+              localrc = ESMF_SUCCESS
+            case ('u_srf')
+!$omp parallel do default(shared) private(i,j)
+              do j=jsc,jec
+                do i=isc,iec
+                  datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%u_srf(i,j)
+                enddo
+              enddo
+              localrc = ESMF_SUCCESS
+            case ('v_srf')
+!$omp parallel do default(shared) private(i,j)
+              do j=jsc,jec
+                do i=isc,iec
+                  datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%v_srf(i,j)
+                enddo
+              enddo
+              localrc = ESMF_SUCCESS
+        end select
         if (ESMF_LogFoundError(rcToCheck=localrc, msg="Failure to populate exported field: "//trim(fieldname), &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       endif
