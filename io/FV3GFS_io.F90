@@ -754,34 +754,33 @@ module FV3GFS_io_mod
         nt=nt+1 ; sfc_name2(nt) = 'albdifvis_ice'
         nt=nt+1 ; sfc_name2(nt) = 'albdirnir_ice'
         nt=nt+1 ; sfc_name2(nt) = 'albdifnir_ice'
-!        nt=nt+1 ; sfc_name2(nt) = 'sfalb_ice'
       endif
 
       if(Model%cplwav) then
-        sfc_name2(nvar_s2m) = 'zorlwav' !zorl from wave component
+        nt=nt+1 ; sfc_name2(nvar_s2m) = 'zorlwav' !zorl from wave component
       endif
 
-      nt = nvar_s2m ! next variable will be at nvar_s2m
-
+      if (Model%nstf_name(1) > 0) then
       !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
-      nt=nt+1 ; sfc_name2(nt) = 'tref'
-      nt=nt+1 ; sfc_name2(nt) = 'z_c'
-      nt=nt+1 ; sfc_name2(nt) = 'c_0'
-      nt=nt+1 ; sfc_name2(nt) = 'c_d'
-      nt=nt+1 ; sfc_name2(nt) = 'w_0'
-      nt=nt+1 ; sfc_name2(nt) = 'w_d'
-      nt=nt+1 ; sfc_name2(nt) = 'xt'
-      nt=nt+1 ; sfc_name2(nt) = 'xs'
-      nt=nt+1 ; sfc_name2(nt) = 'xu'
-      nt=nt+1 ; sfc_name2(nt) = 'xv'
-      nt=nt+1 ; sfc_name2(nt) = 'xz'
-      nt=nt+1 ; sfc_name2(nt) = 'zm'
-      nt=nt+1 ; sfc_name2(nt) = 'xtts'
-      nt=nt+1 ; sfc_name2(nt) = 'xzts'
-      nt=nt+1 ; sfc_name2(nt) = 'd_conv'
-      nt=nt+1 ; sfc_name2(nt) = 'ifd'
-      nt=nt+1 ; sfc_name2(nt) = 'dt_cool'
-      nt=nt+1 ; sfc_name2(nt) = 'qrain'
+        nt=nt+1 ; sfc_name2(nt) = 'tref'
+        nt=nt+1 ; sfc_name2(nt) = 'z_c'
+        nt=nt+1 ; sfc_name2(nt) = 'c_0'
+        nt=nt+1 ; sfc_name2(nt) = 'c_d'
+        nt=nt+1 ; sfc_name2(nt) = 'w_0'
+        nt=nt+1 ; sfc_name2(nt) = 'w_d'
+        nt=nt+1 ; sfc_name2(nt) = 'xt'
+        nt=nt+1 ; sfc_name2(nt) = 'xs'
+        nt=nt+1 ; sfc_name2(nt) = 'xu'
+        nt=nt+1 ; sfc_name2(nt) = 'xv'
+        nt=nt+1 ; sfc_name2(nt) = 'xz'
+        nt=nt+1 ; sfc_name2(nt) = 'zm'
+        nt=nt+1 ; sfc_name2(nt) = 'xtts'
+        nt=nt+1 ; sfc_name2(nt) = 'xzts'
+        nt=nt+1 ; sfc_name2(nt) = 'd_conv'
+        nt=nt+1 ; sfc_name2(nt) = 'ifd'
+        nt=nt+1 ; sfc_name2(nt) = 'dt_cool'
+        nt=nt+1 ; sfc_name2(nt) = 'qrain'
+      endif
 !
 ! Only needed when Noah MP LSM is used - 29 2D
 !
@@ -899,7 +898,11 @@ module FV3GFS_io_mod
 
     nvar_o2  = 19
     nvar_oro_ls_ss = 10
-    nvar_s2o = 18
+    if (Model%nstf_name(1) > 0) then
+      nvar_s2o = 18
+    else
+      nvar_s2o = 0
+    endif
     if(Model%rrfs_smoke) then
       nvar_dust12m = 5
       nvar_gbbepx  = 3
@@ -1626,7 +1629,8 @@ module FV3GFS_io_mod
 !         call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_ice)
         endif
         if(Model%cplwav) then
-          nt = nvar_s2m-1 ! Next item will be at nvar_s2m
+          !tgs - the following line is a bug. It should be nt = nt
+          !nt = nvar_s2m-1 ! Next item will be at nvar_s2m
           call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorlwav) !--- (zorl from wave model)
         else
           Sfcprop(nb)%zorlwav  = Sfcprop(nb)%zorlw
@@ -1739,7 +1743,8 @@ module FV3GFS_io_mod
 
         !
         !--- NSSTM variables
-        nt = nvar_s2m
+        !tgs - the following line is a bug that will show if(Model%cplwav) = true
+        !nt = nvar_s2m 
         if (Model%nstf_name(1) > 0) then
           if (Model%nstf_name(2) == 1) then             ! nsst spinup
           !--- nsstm tref
@@ -1782,8 +1787,6 @@ module FV3GFS_io_mod
             call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%dt_cool) !--- nsstm dt_cool
             call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qrain) !--- nsstm qrain
           endif
-        else
-          nt = nt + 18
         endif
 
         if (Model%lsm == Model%lsm_ruc .and. warm_start) then
@@ -2180,7 +2183,11 @@ module FV3GFS_io_mod
 !     nvar2m = nvar2m + 5
     endif
     if (Model%cplwav) nvar2m = nvar2m + 1
-    nvar2o = 18
+    if (Model%nstf_name(1) > 0) then
+      nvar2o = 18
+    else
+      nvar2o = 0
+    endif
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
         nvar2r = 13
@@ -2575,7 +2582,7 @@ module FV3GFS_io_mod
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_ice)
          if (Model%rdlai) then
            call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xlaixy)
-         endif
+         endif 
        else if (Model%lsm == Model%lsm_noahmp) then
          !--- Extra Noah MP variables
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowxy)
