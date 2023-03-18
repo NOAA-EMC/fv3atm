@@ -402,7 +402,6 @@ contains
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
           destin_ptr(i,j,k) = factor * source_arr(ib,jb,k)
-          write(0,'(a,6i6,2e16.7)') 'DH out u:', ix, i, j, k, ib, jb, source_arr(ib,jb,k), destin_ptr(i,j,k)
         enddo
       enddo
       localrc = ESMF_SUCCESS
