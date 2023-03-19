@@ -7091,6 +7091,7 @@ module GFS_typedefs
     allocate (Diag%epi     (IM))
     allocate (Diag%smcwlt2 (IM))
     allocate (Diag%smcref2 (IM))
+    allocate (Diag%rhonewsn1 (IM))
     allocate (Diag%frzr    (IM))
     allocate (Diag%frzrb   (IM))
     allocate (Diag%frozr   (IM))
