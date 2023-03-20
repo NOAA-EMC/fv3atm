@@ -1228,7 +1228,7 @@ module fv3gfs_cap_mod
     date(1:6) = 0
     call ESMF_TimeGet(time=currTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                       m=date(5),s=date(6),rc=rc)
-    print *,'in fv3_checkimport, currtime=',date(1:6)
+    if(mype == 0) print *,'in fv3_checkimport, currtime=',date(1:6)
 
     ! set up invalid time (by convention)
     call ESMF_TimeSet(invalidTime, yy=99999999, mm=01, dd=01, &
@@ -1244,11 +1244,11 @@ module fv3gfs_cap_mod
 
     importFieldsValid(:) = .true.
     if (associated(fieldList)) then
-      print *,'in fv3_checkimport, inside associated(fieldList)'
+      if(mype == 0) print *,'in fv3_checkimport, inside associated(fieldList)'
       do n = 1,size(fieldList)
         call ESMF_FieldGet(fieldList(n), name=fldname, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        print *,'in fv3_checkimport, in fieldList loop for field ' // trim(fldname)
+        if(mype == 0) print *,'in fv3_checkimport, in fieldList loop for field ' // trim(fldname)
 
         ! check if import field carries a valid timestamp
         call NUOPC_GetTimestamp(fieldList(n), isValid=isValid, rc=rc)
