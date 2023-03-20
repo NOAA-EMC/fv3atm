@@ -35,6 +35,10 @@ else()
   remove_definitions(-DCCPP_32BIT)
 endif()
 
+if(JEDI_DRIVER)
+  add_definitions(-DJEDI_DRIVER)
+endif()
+
 if(NOT PARALLEL_NETCDF)
   list(APPEND _fv3atm_defs_private NO_PARALLEL_NETCDF)
 endif()

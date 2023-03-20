@@ -72,7 +72,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                     nImportFields, importFields, importFieldsInfo
   use module_cplfields,       only: realizeConnectedCplFields
 
-  use atmos_model_mod,        only: setup_exportdata
+  use atmos_model_mod,        only: assign_importdata, setup_exportdata
 !
 !-----------------------------------------------------------------------
 !
@@ -1145,7 +1145,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       logical,save               :: first=.true.
       integer,save               :: dt_cap=0
-      type(ESMF_Time)            :: currTime,stopTime
+      type(ESMF_Time)            :: currTime,stopTime,startTime
       integer                    :: mype, seconds
       real(kind=8)               :: mpi_wtime, tbeg1
 !
@@ -1165,7 +1165,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       n_atmsteps = seconds/dt_atmos
 
       if (first) then
-        call ESMF_ClockGet(clock, currTime=currTime, stopTime=stopTime, rc=rc)
+        call ESMF_ClockGet(clock, startTime=startTime, currTime=currTime, stopTime=stopTime, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_TimeIntervalGet(stopTime-currTime, s=dt_cap, rc=rc)
@@ -1179,6 +1179,16 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       else
         Atmos%isAtCapTime = .false.
       endif
+
+! DH*
+#ifdef JEDI_DRIVER
+      if (Atmos%isAtCapTime) then
+        call assign_importdata(rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      endif
+#endif
+! *DH
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
@@ -1214,6 +1224,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
+      type(ESMF_Time)            :: currTime,stopTime,startTime
+      type(ESMF_TimeInterval)    :: timeStep
       integer                    :: mype, date(6), seconds
       character(len=64)          :: timestamp
       integer                    :: unit
@@ -1265,6 +1277,18 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
               close( unit )
           endif
       endif
+
+#ifdef JEDI_DRIVER
+      call ESMF_ClockGet(clock, startTime=startTime, currTime=currTime, stopTime=stopTime, &
+        timeStep=timeStep, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      !
+      if (currTime+timeStep==stopTime) then
+        call setup_exportdata(rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      endif
+#endif
 
       if (mype == 0) write(*,'(A,I16,A,F16.6)')'PASS: fcstRUN phase 2, n_atmsteps = ', &
                                                n_atmsteps,' time is ',mpi_wtime()-tbeg1
