@@ -2797,12 +2797,12 @@ module GFS_typedefs
     endif
 
     !--prognostic closure - moisture coupling
-    !if(Model%progsigma)then
+    if(Model%progsigma)then
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
        allocate(Coupling%tmf (IM,Model%levs))
        Coupling%tmf = clear_val
        Coupling%dqdt_qmicro = clear_val
-    !endif
+    endif
 
     !--- stochastic physics option
     if (Model%do_sppt .or. Model%ca_global) then
@@ -4360,10 +4360,10 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
-    !if (progsigma .and. (imfdeepcnv/=2 .or. imfdeepcnv/=5)) then
-    !   write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
-    !   stop
-    !end if
+    if ((progsigma .and. imfdeepcnv/=2) .and. (progsigma .and. imfdeepcnv/=5)) then
+       write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
+       stop
+    end if
     Model%progsigma = progsigma
 
     if (oz_phys .and. oz_phys_2015) then
