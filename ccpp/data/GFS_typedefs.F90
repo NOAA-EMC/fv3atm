@@ -911,6 +911,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: nssl_cccn      !<  CCN concentration (m-3)
     real(kind=kind_phys) :: nssl_alphah    !<  graupel shape parameter
     real(kind=kind_phys) :: nssl_alphahl   !<  hail shape parameter
+    real(kind=kind_phys) :: nssl_alphar  ! shape parameter for rain (imurain=1 only)                         
+    real(kind=kind_phys) :: nssl_ehw0_in ! constant or max assumed graupel-droplet collection efficiency   
+    real(kind=kind_phys) :: nssl_ehlw0_in! constant or max assumed hail-droplet collection efficiency   
     logical              :: nssl_hail_on   !<  NSSL flag to activate the hail category
     logical              :: nssl_ccn_on    !<  NSSL flag to activate the CCN category
     logical              :: nssl_invertccn !<  NSSL flag to treat CCN as activated (true) or unactivated (false)
@@ -3162,6 +3165,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: nssl_cccn       = 0.6e9             !<  CCN concentration (m-3)
     real(kind=kind_phys) :: nssl_alphah     = 0.0               !<  graupel shape parameter
     real(kind=kind_phys) :: nssl_alphahl    = 1.0               !<  hail shape parameter
+    real(kind=kind_phys) :: nssl_alphar     = 0.0               ! shape parameter for rain (imurain=1 only)  
+    real(kind=kind_phys) :: nssl_ehw0_in    = 0.9               ! constant or max assumed graupel-droplet collection efficiency  
+    real(kind=kind_phys) :: nssl_ehlw0_in   = 0.9               ! constant or max assumed hail-droplet collection efficiency  
     logical              :: nssl_hail_on    = .false.           !<  NSSL flag to activate the hail category
     logical              :: nssl_ccn_on     = .true.            !<  NSSL flag to activate the CCN category
     logical              :: nssl_invertccn  = .true.            !<  NSSL flag to treat CCN as activated (true) or unactivated (false)
@@ -3587,6 +3593,7 @@ module GFS_typedefs
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                                sedi_semi, decfl,                                            &
                                nssl_cccn, nssl_alphah, nssl_alphahl,                        &
+                               nssl_alphar, nssl_ehw0_in, nssl_ehlw0_in,                    &
                                nssl_invertccn, nssl_hail_on, nssl_ccn_on,                   &
                           !--- max hourly
                                avg_max_length,                                              &
@@ -4161,6 +4168,9 @@ module GFS_typedefs
     Model%nssl_cccn        = nssl_cccn
     Model%nssl_alphah      = nssl_alphah
     Model%nssl_alphahl     = nssl_alphahl
+    Model%nssl_alphar      = nssl_alphar
+    Model%nssl_ehw0_in     = nssl_ehw0_in
+    Model%nssl_ehlw0_in    = nssl_ehlw0_in
     Model%nssl_hail_on     = nssl_hail_on
     Model%nssl_ccn_on      = nssl_ccn_on
     Model%nssl_invertccn   = nssl_invertccn
@@ -6019,6 +6029,9 @@ module GFS_typedefs
         print *, ' nssl_cccn - CCCN background CCN conc. : ', Model%nssl_cccn
         print *, ' nssl_alphah - graupel shape parameter : ', Model%nssl_alphah
         print *, ' nssl_alphahl - hail shape parameter   : ', Model%nssl_alphahl
+        print *, ' nssl_alphar - rain shape parameter : ', Model%nssl_alphar
+        print *, ' nssl_ehw0_in - graupel-droplet collection effiency : ', Model%nssl_ehw0_in 
+        print *, ' nssl_ehlw0_in - hail-droplet collection effiency : ', Model%nssl_ehlw0_in                              
         print *, ' nssl_hail_on - hail activation flag   : ', Model%nssl_hail_on
         print *, ' lradar - radar refl. flag             : ', Model%lradar
         print *, ' lrefres                : ', Model%lrefres
