@@ -867,12 +867,15 @@ module FV3GFS_io_mod
 
     nvar_o2  = 19
     nvar_oro_ls_ss = 10
-    nvar_s2o = 18
 
     nvar_vegfr  = Model%nvegcat
     nvar_soilfr = Model%nsoilcat
 
-
+    if (Model%nstf_name(1) > 0) then
+      nvar_s2o = 18
+    else
+      nvar_s2o = 0
+    endif
     if(Model%rrfs_smoke) then
       nvar_dust12m = 5
       nvar_gbbepx  = 3
