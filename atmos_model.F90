@@ -122,6 +122,7 @@ public atmos_model_restart
 public get_atmos_model_ungridded_dim
 public atmos_model_get_nth_domain_info
 public addLsmask2grid
+public assign_importdata
 public setup_exportdata
 !-----------------------------------------------------------------------
 
@@ -292,9 +293,11 @@ subroutine update_atmos_radiation_physics (Atmos)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
       endif
 
+#ifndef JEDI_DRIVER
 !--- if coupled, assign coupled fields
       call assign_importdata(jdat(:),rc)
       if (rc/=0)  call mpp_error(FATAL, 'Call to assign_importdata failed')
+#endif
 
       ! Currently for FV3ATM, it is only enabled for parent domain coupling
       ! with other model components. In this case, only the parent domain
@@ -998,10 +1001,12 @@ subroutine update_atmos_model_state (Atmos, rc)
     !--- get bottom layer data from dynamical core for coupling
     call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
 
+#ifndef JEDI_DRIVER
     !--- if in coupled mode, set up coupled fields
     call setup_exportdata(rc=localrc)
     if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+#endif
 
     !--- conditionally update the coordinate arrays for moving domains
     if (Atmos%is_moving_nest) then
@@ -1780,14 +1785,20 @@ subroutine update_atmos_chemistry(state, rc)
 end subroutine update_atmos_chemistry
 ! </SUBROUTINE>
 
+#ifdef JEDI_DRIVER
+  subroutine assign_importdata(rc)
+#else
   subroutine assign_importdata(jdat, rc)
-
+#endif
     use module_cplfields,  only: importFields, nImportFields, queryImportFields, &
                                  importFieldsValid
     use ESMF
 !
     implicit none
+    character(len=*),parameter :: subname='(atmos_model:assign_importdata)'
+#ifndef JEDI_DRIVER
     integer, intent(in)  :: jdat(8)
+#endif
     integer, intent(out) :: rc
 
     !--- local variables
@@ -1819,6 +1830,8 @@ end subroutine update_atmos_chemistry
 !
     rc  = -999
 
+    if(mpp_pe() == mpp_root_pe()) print *, trim(subname) // ' start'
+
 ! set up local dimension
     isc = GFS_control%isc
     iec = GFS_control%isc+GFS_control%nx-1
@@ -1848,7 +1861,7 @@ end subroutine update_atmos_chemistry
         mergeflg = .false.
         call ESMF_FieldGet(importFields(n), dimCount=dimCount ,typekind=datatype, &
                            name=impfield_name, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if ( dimCount == 2) then
           if ( datatype == ESMF_TYPEKIND_R8) then
@@ -1872,6 +1885,7 @@ end subroutine update_atmos_chemistry
         endif
 !
         if (found) then
+         if(mpp_pe() == mpp_root_pe()) print *, trim(subname) // ' / ' // trim(impfield_name)
          if (datar8(isc,jsc) > -99998.0) then
 !
         ! get sea land mask: in order to update the coupling fields over the ocean/ice
@@ -2736,6 +2750,7 @@ end subroutine update_atmos_chemistry
           endif
         endif
 
+#ifndef JEDI_DRIVER
           ! write post merge import data to NetCDF file.
           if (GFS_control%cpl_imp_dbg) then
             call ESMF_FieldGet(importFields(n), grid=grid, rc=rc)
@@ -2753,6 +2768,7 @@ end subroutine update_atmos_chemistry
             call ESMF_FieldDestroy(dbgField, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
+#endif
 
         endif ! if (found) then
       endif   ! if (isFieldCreated) then
@@ -2828,6 +2844,8 @@ end subroutine update_atmos_chemistry
 !
 
     rc=0
+
+    if(mpp_pe() == mpp_root_pe()) print *, trim(subname) // ' end'
 !
   end subroutine assign_importdata
 
@@ -2842,6 +2860,7 @@ end subroutine update_atmos_chemistry
     integer, optional, intent(out) :: rc
 
     !--- local variables
+    character(len=*),parameter :: subname='(atmos_model:setup_exportdata)'
     integer                :: i, j, k, ix
     integer                :: isc, iec, jsc, jec
     integer                :: nb, nk
@@ -2862,6 +2881,8 @@ end subroutine update_atmos_chemistry
 
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
+
+    if(mpp_pe() == mpp_root_pe()) print *, trim(subname) // ' start'
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -2915,6 +2936,7 @@ end subroutine update_atmos_chemistry
       if (isFound .and. GFS_control%cplchm) isFound = .not.any(trim(fieldname) == chemistryFieldNames)
 
       if (isFound) then
+        if(mpp_pe() == mpp_root_pe()) print *, trim(subname) // ' / ' // trim(fieldname)
 !$omp parallel do default(shared) private(nb) reduction(max:localrc)
         do nb = 1, Atm_block%nblks
           select case (trim(fieldname))
@@ -3355,6 +3377,8 @@ end subroutine update_atmos_chemistry
       enddo
       if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
     endif !cplflx or cpllnd
+
+    if(mpp_pe() == mpp_root_pe()) print *, trim(subname) // ' end'
 
   end subroutine setup_exportdata
 
