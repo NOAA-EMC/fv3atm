@@ -4271,6 +4271,30 @@
   units = flag
   dimensions = ()
   type = integer
+[mosaic_lu]
+  standard_name = control_for_fractional_landuse_in_ruc_land_surface_scheme
+  long_name = control for use of fractional landuse info in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[mosaic_soil]
+  standard_name = control_for_fractional_soil_in_ruc_land_surface_scheme
+  long_name = control for use of fractional soil info in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[isncond_opt]
+  standard_name = control_for_soil_thermal_conductivity_option_in_ruc_lsm
+  long_name = control for soil thermal conductivity option in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[isncovr_opt]
+  standard_name = control_for_snow_cover_fraction_option_in_ruc_lsm
+  long_name = control for snow cover fraction option in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
 [kice]
   standard_name = vertical_dimension_of_sea_ice
   long_name = vertical loop extent for ice levels, start at 1

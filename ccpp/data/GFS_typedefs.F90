@@ -989,6 +989,12 @@ module GFS_typedefs
     integer              :: iopt_stc  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb inversed)
 
+    ! -- RUC LSM options
+    integer              :: mosaic_lu=0     !< control for use of fractional landuse in RUC land surface model
+    integer              :: mosaic_soil=0   !< control for use of fractional soil in RUC land surface model
+    integer              :: isncond_opt=1   !< control for soil thermal conductivity option in RUC land surface model
+    integer              :: isncovr_opt=1   !< control for snow cover fraction option in RUC land surface model
+
     logical              :: use_ufo         !< flag for gcycle surface option
 
     ! GFDL Surface Layer options
@@ -3258,6 +3264,11 @@ module GFS_typedefs
     integer              :: iopt_stc       =  1  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs       =  2  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb reversed)
 
+    integer              :: mosaic_lu      =  0  ! 1 - used of fractional landuse in RUC lsm
+    integer              :: mosaic_soil    =  0  ! 1 - used of fractional soil in RUC lsm
+    integer              :: isncond_opt    =  1  ! 2 - Sturm (1997)
+    integer              :: isncovr_opt    =  1  ! 2 - Niu-Yang (2007), 3-updated Niu-Yang similar to Noah MP
+
     logical              :: use_ufo        = .false.                  !< flag for gcycle surface option
 
     logical              :: lcurr_sf       = .false.                  !< flag for taking ocean currents into account in GFDL surface layer
@@ -3640,6 +3651,8 @@ module GFS_typedefs
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
                                iopt_trs,                                                    &
+                          !    RUC lsm options
+                               mosaic_lu, mosaic_soil, isncond_opt, isncovr_opt,            &
                           !    GFDL surface layer options
                                lcurr_sf, pert_cd, ntsflg, sfenth,                           &
                           !--- lake model control
@@ -4364,6 +4377,12 @@ module GFS_typedefs
     Model%iopt_tbot        = iopt_tbot
     Model%iopt_stc         = iopt_stc
     Model%iopt_trs         = iopt_trs
+
+! RUC lsm options
+    Model%mosaic_lu        = mosaic_lu
+    Model%mosaic_soil      = mosaic_soil
+    Model%isncond_opt      = isncond_opt
+    Model%isncovr_opt      = isncovr_opt
 
 !--- tuning parameters for physical parameterizations
     Model%ras              = ras
@@ -5275,6 +5294,11 @@ module GFS_typedefs
         print *,'iopt_trs   =  ', Model%iopt_trs
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
+        print *, 'The Physics options are'
+        print *,' mosaic_lu   =  ',mosaic_lu
+        print *,' mosaic_soil =  ',mosaic_soil
+        print *,' isncond_opt =  ',isncond_opt
+        print *,' isncovr_opt =  ',isncovr_opt
       else
         print *,' Unsupported LSM type - job aborted - lsm=',Model%lsm
         stop
@@ -6152,6 +6176,13 @@ module GFS_typedefs
         print *, ' iopt_tbot         : ', Model%iopt_tbot
         print *, ' iopt_stc          : ', Model%iopt_stc
         print *, ' iopt_trs          : ', Model%iopt_trs
+      elseif (Model%lsm == Model%lsm_ruc) then
+        print *,' RUC Land Surface Model used'
+        print *, 'The Physics options are'
+        print *,' mosaic_lu   =  ',Model%mosaic_lu
+        print *,' mosaic_soil =  ',Model%mosaic_soil
+        print *,' isncond_opt =  ',Model%isncond_opt
+        print *,' isncovr_opt =  ',Model%isncovr_opt
       endif
       print *, ' use_ufo           : ', Model%use_ufo
       print *, ' lcurr_sf          : ', Model%lcurr_sf
