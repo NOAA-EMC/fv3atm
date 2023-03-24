@@ -972,9 +972,9 @@ module FV3GFS_io_mod
 
      !--- register 3D vegetation and soil fractions
       var3_fr => oro_var3v(:,:,:)
-      call register_restart_field(Oro_restart, 'vegetation_type_pct', var3_fr, dimensions=(/'num_veg_cat','lat','lon'/) , is_optional=.true.)
+      call register_restart_field(Oro_restart, 'vegetation_type_pct', var3_fr, dimensions=(/'num_veg_cat','lat        ','lon        '/) , is_optional=.true.)
       var3_fr => oro_var3s(:,:,:)
-      call register_restart_field(Oro_restart, 'soil_type_pct', var3_fr, dimensions=(/'num_soil_cat','lat','lon'/) , is_optional=.true.)
+      call register_restart_field(Oro_restart, 'soil_type_pct', var3_fr, dimensions=(/'num_soil_cat','lat         ','lon         '/) , is_optional=.true.)
       nullify(var3_fr)
 
    endif
