@@ -111,6 +111,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[wgrs]
+  standard_name = unsmoothed_nonhydrostatic_upward_air_velocity
+  long_name = unsmoothed non-hydrostatic upward air velocity
+  units = m s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_lightning_threat_index_calculations)
 [vvl]
   standard_name = lagrangian_tendency_of_air_pressure
   long_name = layer mean vertical velocity
@@ -3971,33 +3979,54 @@
   kind = kind_phys
 [nssl_alphah]
   standard_name = nssl_alpha_graupel
-  long_name = graupel PSD shape parameter in NSSL micro
+  long_name = graupel particle size distribution(PSD) shape parameter in NSSL microphysics scheme
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
 [nssl_alphahl]
   standard_name = nssl_alpha_hail
-  long_name = hail PSD shape parameter in NSSL micro
+  long_name = hail particle size distribution(PSD) shape parameter in NSSL microphysics scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_alphar]
+  standard_name = nssl_alpha_rain
+  long_name = rain particle size distribution(PSD) shape parameter in NSSL microphysics scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_ehw0_in]
+  standard_name = nssl_graupel_collection_efficiency
+  long_name = graupel droplet collection efficiency in NSSL microphysics scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_ehlw0_in]
+  standard_name = nssl_hail_collection_efficiency
+  long_name = hail droplet collection efficiency in NSSL microphysics scheme
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
 [nssl_ccn_on]
   standard_name = nssl_ccn_on
-  long_name = CCN activation flag in NSSL micro
+  long_name = CCN activation flag in NSSL microphysics scheme
   units = flag
   dimensions = ()
   type = logical
 [nssl_hail_on]
   standard_name = nssl_hail_on
-  long_name = hail activation flag in NSSL micro
+  long_name = hail activation flag in NSSL microphysics scheme
   units = flag
   dimensions = ()
   type = logical
 [nssl_invertccn]
   standard_name = nssl_invertccn
-  long_name = flag to invert CCN in NSSL micro
+  long_name = flag to invert CCN in NSSL microphysics scheme
   units = flag
   dimensions = ()
   type = logical
@@ -6143,6 +6172,12 @@
 [print_diff_pgr]
   standard_name = flag_to_print_pgr_differences_every_timestep
   long_name = flag to print pgr differences every timestep
+  units = flag
+  dimensions = ()
+  type = logical
+[lightning_threat]
+  standard_name = do_lightning_threat_index_calculations
+  long_name = enables the lightning threat index calculations
   units = flag
   dimensions = ()
   type = logical
@@ -8975,6 +9010,33 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[ltg1_max]
+  standard_name = lightning_threat_index_1
+  long_name = lightning threat index 1
+  units = flashes 5 min-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+  active = (do_lightning_threat_index_calculations)
+[ltg2_max]
+  standard_name = lightning_threat_index_2
+  long_name = lightning threat index 2
+  units = flashes 5 min-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+  active = (do_lightning_threat_index_calculations)
+[ltg3_max]
+  standard_name = lightning_threat_index_3
+  long_name = lightning threat index 3
+  units = flashes 5 min-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+  active = (do_lightning_threat_index_calculations)
 
 ########################################################################
 [ccpp-table-properties]
