@@ -162,6 +162,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: pgr  (:)     => null()  !< surface pressure (Pa) real
     real (kind=kind_phys), pointer :: ugrs (:,:)   => null()  !< u component of layer wind
     real (kind=kind_phys), pointer :: vgrs (:,:)   => null()  !< v component of layer wind
+    real (kind=kind_phys), pointer :: wgrs (:,:)   => null()  !< w component of layer wind
     real (kind=kind_phys), pointer :: vvl  (:,:)   => null()  !< layer mean vertical velocity in pa/sec
     real (kind=kind_phys), pointer :: tgrs (:,:)   => null()  !< model layer mean temperature in k
     real (kind=kind_phys), pointer :: qgrs (:,:,:) => null()  !< layer mean tracer concentration
@@ -1459,6 +1460,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: rhcmax          ! maximum critical relative humidity, replaces rhc_max in physcons.F90
     real(kind=kind_phys) :: huge            !< huge fill value
 
+!--- lightning threat and diagsnostics
+    logical              :: lightning_threat !< report lightning threat indices
+
     contains
       procedure :: init            => control_initialize
       procedure :: init_chemistry  => control_chemistry_initialize
@@ -1979,6 +1983,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
     real (kind=kind_phys), pointer :: aux3d(:,:,:)=> null()    !< auxiliary 2d arrays in output (for debugging)
 
+    !--- Lightning threat indices
+    real (kind=kind_phys), pointer :: ltg1_max(:)        => null()  !
+    real (kind=kind_phys), pointer :: ltg2_max(:)        => null()  !
+    real (kind=kind_phys), pointer :: ltg3_max(:)        => null()  !
+
     contains
       procedure :: create    => diag_create
       procedure :: rad_zero  => diag_rad_zero
@@ -2057,12 +2066,19 @@ module GFS_typedefs
     allocate (Statein%pgr    (IM))
     allocate (Statein%ugrs   (IM,Model%levs))
     allocate (Statein%vgrs   (IM,Model%levs))
+    if(Model%lightning_threat) then
+      allocate (Statein%wgrs   (IM,Model%levs))
+    endif
     allocate (Statein%qgrs   (IM,Model%levs,Model%ntrac))
 
     Statein%qgrs   = clear_val
     Statein%pgr    = clear_val
     Statein%ugrs   = clear_val
     Statein%vgrs   = clear_val
+
+    if(Model%lightning_threat) then
+      Statein%wgrs = clear_val
+    endif
 
     !--- soil state variables - for soil SPPT - sfc-perts, mgehne
     allocate (Statein%smc  (IM,Model%lsoil))
@@ -3539,6 +3555,9 @@ module GFS_typedefs
     logical :: mix_chem = .false.         ! tracer mixing option by MYNN PBL
     logical :: fire_turb = .false.        ! enh vertmix option by MYNN PBL
 
+!-- Lightning threat index
+    logical :: lightning_threat = .false.
+
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 183
     character(len=40)  :: fscav_aero(max_scav_factors)
@@ -3683,7 +3702,9 @@ module GFS_typedefs
                                addsmoke_flag, fire_turb, mix_chem,                          &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
                           !          and (maybe) convection suppression
-                               fh_dfi_radar, radar_tten_limits, do_cap_suppress
+                               fh_dfi_radar, radar_tten_limits, do_cap_suppress,            &
+                          !--- GSL lightning threat indices
+                               lightning_threat
 
 !--- other parameters
     integer :: nctp    =  0                !< number of cloud types in CS scheme
@@ -3756,6 +3777,8 @@ module GFS_typedefs
     Model%flag_for_pbl_generic_tend = .true.
     Model%flag_for_scnv_generic_tend = .true.
     Model%flag_for_dcnv_generic_tend = .true.
+
+    Model%lightning_threat = lightning_threat
 
     Model%fh_dfi_radar     = fh_dfi_radar
     Model%num_dfi_radar    = 0
@@ -5089,6 +5112,13 @@ module GFS_typedefs
     Model%restart          = restart
     Model%lsm_cold_start   = .not. restart
     Model%hydrostatic      = hydrostatic
+
+    if(Model%hydrostatic .and. Model%lightning_threat) then
+      write(0,*) 'Turning off lightning threat index for hydrostatic run.'
+      Model%lightning_threat = .false.
+      lightning_threat = .false.
+    endif
+
     Model%jdat(1:8)        = jdat(1:8)
     allocate(Model%si(Model%levs+1))
     !--- Define sigma level for radiation initialization
@@ -5862,6 +5892,7 @@ module GFS_typedefs
       print *, ' thermodyn_id      : ', Model%thermodyn_id
       print *, ' sfcpress_id       : ', Model%sfcpress_id
       print *, ' gen_coord_hybrid  : ', Model%gen_coord_hybrid
+      print *, ' hydrostatic       : ', Model%hydrostatic
       print *, ' '
       print *, 'grid extent parameters'
       print *, ' isc               : ', Model%isc
@@ -6367,7 +6398,9 @@ module GFS_typedefs
       print *, ' first_time_step   : ', Model%first_time_step
       print *, ' restart           : ', Model%restart
       print *, ' lsm_cold_start    : ', Model%lsm_cold_start
-      print *, ' hydrostatic       : ', Model%hydrostatic
+      print *, ' '
+      print *, 'lightning threat indexes'
+      print *, ' lightning_threat  : ', Model%lightning_threat
     endif
 
   end subroutine control_print
@@ -6961,6 +6994,15 @@ module GFS_typedefs
       Diag%old_pgr = clear_val
     endif
 
+    if(Model%lightning_threat) then
+       allocate (Diag%ltg1_max(IM))
+       allocate (Diag%ltg2_max(IM))
+       allocate (Diag%ltg3_max(IM))
+       Diag%ltg1_max = zero
+       Diag%ltg2_max = zero
+       Diag%ltg3_max = zero
+    endif
+
     !--- Radiation
     allocate (Diag%fluxr   (IM,Model%nfxr))
     allocate (Diag%topfsw  (IM))
@@ -7523,6 +7565,13 @@ module GFS_typedefs
       Diag%frzr    = zero
       Diag%frozr   = zero
       Diag%tsnowp  = zero
+    endif
+
+! GSL lightning threat indexes
+    if(Model%lightning_threat) then
+       Diag%ltg1_max = zero
+       Diag%ltg2_max = zero
+       Diag%ltg3_max = zero
     endif
 
   end subroutine diag_phys_zero
