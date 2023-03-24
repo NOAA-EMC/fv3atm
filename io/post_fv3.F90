@@ -496,7 +496,8 @@ module post_fv3
       use vrbls3d,     only: t, q, uh, vh, wh, alpint, dpres, zint, zmid, o3,  &
                              qqr, qqs, cwm, qqi, qqw, qqg, omga, cfr, pmid,    &
                              q2, rlwtt, rswtt, tcucn, tcucns, train, el_pbl,   &
-                             pint, exch_h, ref_10cm, qqni, qqnr, qqnwfa, qqnifa
+                             pint, exch_h, ref_10cm, qqni, qqnr, qqnwfa,       &
+                             qqnifa
       use vrbls2d,     only: f, pd, sigt4, fis, pblh, ustar, z0, ths, qs, twbs,&
                              qwbs, avgcprate, cprate, avgprec, prec, lspa, sno,&
                              cldefi, th10, q10, tshltr, pshltr, albase,        &
@@ -528,7 +529,8 @@ module post_fv3
                              refdm10c_max, u10max, v10max, wspd10max, sfcuxi,  &
                              sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
                              albedo, tg, prate_max, pwat, snow_acm, snow_bkt,  &
-                             acgraup, graup_bucket, acfrain, frzrn_bucket 
+                             acgraup, graup_bucket, acfrain, frzrn_bucket,     &
+                             ltg1_max, ltg2_max, ltg3_max
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -732,7 +734,8 @@ module post_fv3
 !                     snow phase change heat flux, snopcx
 ! GFS does not use total momentum flux,sfcuvx
 !$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval,ista,iend), &
-!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rswin,rswinc,rswout,snopcx,sfcuvx)
+!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rswin,rswinc,rswout,snopcx,sfcuvx,&
+!$omp& ltg1_max,ltg2_max,ltg3_max)
       do j=jsta,jend
         do i=ista,iend
           acfrcv(i,j) = spval
@@ -1034,6 +1037,39 @@ module post_fv3
                 do i=ista, iend
                   pblh(i,j)=arrayr42d(i,j)
                   if(abs(arrayr42d(i,j)-fillValue) < small) pblh(i,j)=spval
+                enddo
+              enddo
+            endif
+
+            ! Lightning threat index 1
+            if(trim(fieldname)=='ltg1_max') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ltg1_max,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  ltg1_max(i,j)=arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillValue) < small) ltg1_max(i,j)=spval
+                enddo
+              enddo
+            endif
+
+            ! Lightning threat index 2
+            if(trim(fieldname)=='ltg2_max') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ltg2_max,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  ltg2_max(i,j)=arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillValue) < small) ltg2_max(i,j)=spval
+                enddo
+              enddo
+            endif
+
+            ! Lightning threat index 3
+            if(trim(fieldname)=='ltg3_max') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ltg3_max,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  ltg3_max(i,j)=arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillValue) < small) ltg3_max(i,j)=spval
                 enddo
               enddo
             endif
