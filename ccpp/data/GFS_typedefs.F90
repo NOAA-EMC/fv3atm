@@ -416,7 +416,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fhist       (:)   => null()  !< instantaneous fire coef_bb
     real (kind=kind_phys), pointer :: coef_bb_dc  (:)   => null()  !< instantaneous fire coef_bb
 
-    !--- For smoke and dust optical extinction
+    !--- For smoke and dust auxiliary inputs
     real (kind=kind_phys), pointer :: fire_in   (:,:)   => null()  !< fire auxiliary inputs
 
     contains
@@ -1413,11 +1413,12 @@ module GFS_typedefs
     integer              :: addsmoke_flag
     integer              :: plumerisefire_frq
     integer              :: smoke_forecast
-    logical              :: aero_ind_fdb  ! WFA/IFA indirect
-    logical              :: aero_dir_fdb  ! smoke/dust direct
+    logical              :: aero_ind_fdb    ! WFA/IFA indirect
+    logical              :: aero_dir_fdb    ! smoke/dust direct
     logical              :: rrfs_smoke_debug
     logical              :: mix_chem
     logical              :: enh_mix
+    real(kind=kind_phys) :: smoke_dir_fdb_coef(7) !< smoke & dust direct feedbck coefficents
 
 !--- debug flags
     logical              :: debug
@@ -3557,7 +3558,8 @@ module GFS_typedefs
     logical :: aero_dir_fdb = .false.     ! RRFS-sd smoke/dust radiation feedback
     logical :: rrfs_smoke_debug = .false. ! RRFS-sd plumerise debug
     logical :: mix_chem = .false.         ! tracer mixing option by MYNN PBL
-    logical :: enh_mix  = .false.        ! enh vertmix option by MYNN PBL
+    logical :: enh_mix  = .false.         ! enhance vertmix option by MYNN PBL
+    real(kind=kind_phys) :: smoke_dir_fdb_coef(7) =(/ 0.33, 0.67, 0.02, 0.13, 0.85, 0.05, 0.95 /) !< smoke & dust direct feedbck coefficents
 
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 183
@@ -3696,12 +3698,12 @@ module GFS_typedefs
                                phys_version,                                                &
                           !--- aerosol scavenging factors ('name:value' string array)
                                fscav_aero,                                                  &
-                          !--- RRFS smoke namelist
+                          !--- RRFS-SD namelist
                                dust_alpha, dust_gamma, wetdep_ls_alpha,                     &
                                seas_opt, dust_opt, drydep_opt, coarsepm_settling,           &
                                wetdep_ls_opt, smoke_forecast, aero_ind_fdb, aero_dir_fdb,   &
                                rrfs_smoke_debug, do_plumerise, plumerisefire_frq,           &
-                               addsmoke_flag, enh_mix, mix_chem,                            &
+                               addsmoke_flag, enh_mix, mix_chem, smoke_dir_fdb_coef,        &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
                           !          and (maybe) convection suppression
                                fh_dfi_radar, radar_tten_limits, do_cap_suppress
@@ -3927,6 +3929,7 @@ module GFS_typedefs
     Model%rrfs_smoke_debug  = rrfs_smoke_debug
     Model%mix_chem          = mix_chem
     Model%enh_mix           = enh_mix
+    Model%smoke_dir_fdb_coef  = smoke_dir_fdb_coef
 
     Model%fire_aux_data_levels = 10
 
@@ -5939,6 +5942,7 @@ module GFS_typedefs
         print *, 'rrfs_smoke_debug : ',Model%rrfs_smoke_debug
         print *, 'mix_chem         : ',Model%mix_chem
         print *, 'enh_mix          : ',Model%enh_mix
+        print *, 'smoke_dir_fdb_coef : ',Model%smoke_dir_fdb_coef
       endif
       print *, ' '
       print *, ' lsidea            : ', Model%lsidea
