@@ -1877,16 +1877,16 @@
   kind = kind_phys
   active = (do_smoke_coupling)
 [emseas]
-  standard_name = emission_of_seas_for_smoke
-  long_name = emission of seas for smoke
+  standard_name = emission_of_sea_salt_for_mp_indir_fdb
+  long_name = emission of sea salt for mp indirect feedabck
   units = ug m-2 s-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
 [emanoc]
-  standard_name = emission_of_anoc_for_thompson_mp
-  long_name = emission of anoc for thompson mp
+  standard_name = emission_of_anothropogenic_for_mp_indir_fdb
+  long_name = emission of anothropogenic for mp indirect feedabck
   units = ug m-2 s-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -5683,8 +5683,8 @@
   dimensions = ()
   type = integer
 [ntcoarsepm]
-  standard_name = index_for_coarse_pm_in_tracer_concentration_array
-  long_name = tracer index for coarse pm
+  standard_name = index_for_coarse_particulate_matter_in_tracer_concentration_array
+  long_name = tracer index for coarse particulate matter
   units = index
   dimensions = ()
   type = integer
@@ -5900,6 +5900,14 @@
   units = flag
   dimensions = ()
   type = logical
+  active = (do_smoke_coupling)
+[smoke_dir_fdb_coef]
+  standard_name = smoke_dust_direct_fdb_coef
+  long_name = smoke dust direct feedback coefficents
+  units = none
+  dimensions = (7)
+  type = real
+  kind = kind_phys
   active = (do_smoke_coupling)
 [dust_alpha]
   standard_name = alpha_fengsha_dust_scheme
