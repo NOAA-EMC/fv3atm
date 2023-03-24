@@ -4247,6 +4247,41 @@ module GFS_diagnostics
        enddo
     enddo
 
+    if(Model%lightning_threat) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'ltg1_max'
+      ExtDiag(idx)%desc = 'Max Lightning Threat 1'
+      ExtDiag(idx)%unit = 'flashes/(5 min)'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ltg1_max
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'ltg2_max'
+      ExtDiag(idx)%desc = 'Max Lightning Threat 2'
+      ExtDiag(idx)%unit = 'flashes/(5 min)'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ltg2_max
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'ltg3_max'
+      ExtDiag(idx)%desc = 'Max Lightning Threat 3'
+      ExtDiag(idx)%unit = 'flashes/(5 min)'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ltg3_max
+      enddo
+    endif
+
     ! Cloud effective radii from Microphysics
     if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_fer_hires .or. &
         Model%imp_physics == Model%imp_physics_nssl  ) then
