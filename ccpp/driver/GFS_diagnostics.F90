@@ -1874,20 +1874,6 @@ module GFS_diagnostics
 
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af totgrp,idx=',idx
 
-!--- RRFS Smoke & Dust ---
-    if (Model%rrfs_smoke) then
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'dqdti'
-    ExtDiag(idx)%desc = 'dqdti'
-    ExtDiag(idx)%unit = 'kg kg-1 s-1'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%dqdti(:,:)
-    enddo
-    endif
-
 !--- physics instantaneous diagnostics ---
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -4232,16 +4218,16 @@ module GFS_diagnostics
       enddo
     end if thompson_extended_diagnostics
 
-    if (Model%rrfs_smoke .and. Model%ntsmoke>0) then
+    if (Model%rrfs_sd .and. Model%ntsmoke>0) then
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'emdust'
-      ExtDiag(idx)%desc = 'emission of dust for smoke'
+      ExtDiag(idx)%desc = 'emission of fine dust for smoke'
       ExtDiag(idx)%unit = 'ug m-2 s-1'
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%emdust
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%emdust
       enddo
 
       idx = idx + 1
@@ -4252,7 +4238,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%emseas
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%emseas
       enddo
 
       idx = idx + 1
@@ -4263,7 +4249,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%emanoc
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%emanoc
       enddo
 
       idx = idx + 1
@@ -4274,7 +4260,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%coef_bb_dc
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%coef_bb_dc
       enddo
 
       idx = idx + 1
@@ -4318,7 +4304,18 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ebb_smoke_hr
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ebb_smoke_hr
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'fhist'
+      ExtDiag(idx)%desc = 'coefficient to scale the fire activity depending on the fire duration'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ebb_smoke_hr
       enddo
 
       idx = idx + 1
@@ -4329,7 +4326,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%frp_hr
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%frp_hr
       enddo
 
       idx = idx + 1
@@ -4340,7 +4337,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%frp_std_hr
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%frp_std_hr
       enddo
 
       idx = idx + 1
@@ -4376,6 +4373,16 @@ module GFS_diagnostics
        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%dust_ext(:,:)
       enddo
 
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'ext550'
+      ExtDiag(idx)%desc = '3d total extinction at 550nm'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var3 => Radtend(nb)%ext550(:,:)
+      enddo
     endif
 
     do i=1,Model%num_dfi_radar
