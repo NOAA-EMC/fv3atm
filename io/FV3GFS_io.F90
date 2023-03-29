@@ -1011,7 +1011,7 @@ module FV3GFS_io_mod
 
    !--- copy data into GFS containers
 
-!$omp parallel do default(shared) private(i, j, nb, ix)
+!$omp parallel do default(shared) private(i, j, nb, ix, num)
     do nb = 1, Atm_block%nblks
       !--- 2D variables
       do ix = 1, Atm_block%blksz(nb)
