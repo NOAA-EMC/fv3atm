@@ -13,7 +13,7 @@ module module_write_netcdf
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
                                output_grid,dx,dy,lon1,lat1,lon2,lat2, &
                                time_unlimited
-  use mpi
+  use mpi_f08
 
   implicit none
   private

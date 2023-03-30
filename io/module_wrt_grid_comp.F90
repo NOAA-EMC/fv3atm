@@ -245,7 +245,7 @@
       last_write_task = ntasks -1
       lprnt = lead_write_task == wrt_int_state%mype
 
-      call fms_init(wrt_mpi_comm)
+      call fms_init(wrt_mpi_comm%mpi_val)
       call mpp_init()
 
 !      print *,'in wrt, lead_write_task=', &
@@ -3196,7 +3196,7 @@
     logical                          :: thereAreVerticals
     integer                          :: ch_dimid, timeiso_varid
     character(len=ESMF_MAXSTR)       :: time_iso
-    integer                          :: wrt_mpi_comm
+    type(MPI_Comm)                   :: wrt_mpi_comm
     type(ESMF_VM)                    :: vm
 
     rc = ESMF_SUCCESS
@@ -3249,7 +3249,7 @@
         call ESMF_GridCompGet(comp, localPet=localPet, petCount=petCount, vm=vm, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        call ESMF_VMGet(vm=vm, mpiCommunicator=wrt_mpi_comm, rc=rc)
+        call ESMF_VMGet(vm=vm, mpiCommunicator=wrt_mpi_comm%mpi_val, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if (petCount > 1) then
