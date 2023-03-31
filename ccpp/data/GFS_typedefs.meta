@@ -613,6 +613,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[vegtype_frac]
+  standard_name = fraction_of_vegetation_category
+  long_name = fraction of horizontal grid area occupied by given vegetation category
+  units = frac
+  dimensions = (horizontal_loop_extent,number_of_vegetation_categories)
+  type = real
+  kind = kind_phys
+[soiltype_frac]
+  standard_name = fraction_of_soil_category
+  long_name = fraction of horizontal grid area occupied by given soil category
+  units = frac
+  dimensions = (horizontal_loop_extent,number_of_soil_categories)
+  type = real
+  kind = kind_phys
 [lakefrac]
   standard_name = lake_area_fraction
   long_name = fraction of horizontal grid area occupied by lake
@@ -1635,6 +1649,14 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[rhofr]
+  standard_name = lsm_internal_surface_frozen_precipitation_density
+  long_name = density of frozen precipitation
+  units = kg m-3
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [tsnow_land]
   standard_name = temperature_in_surface_snow_at_surface_adjacent_layer_over_land
   long_name = snow temperature at the bottom of the first snow layer over land
@@ -1652,21 +1674,35 @@
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [snowfallac_land]
-  standard_name = surface_snow_amount_over_land
-  long_name = run-total snow accumulation on the ground
+  standard_name = surface_snow_amount_assuming_variable_snow_density_over_land
+  long_name = run-total snow accumulation on the ground with variable snow density over land
   units = kg m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[acsnow_land]
+  standard_name = surface_snow_lwe_thickness_amount_over_land
+  long_name = run-total snowfall water equivalent over land
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [snowfallac_ice]
-  standard_name = surface_snow_amount_over_ice
-  long_name = run-total snow accumulation on the ice
+  standard_name = surface_snow_amount_assuming_variable_snow_density_over_ice
+  long_name = run-total snow accumulation on the ground with variable snow density over ice
   units = kg m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[acsnow_ice]
+  standard_name = surface_snow_lwe_thickness_amount_over_ice
+  long_name = run-total snowfall water equivalent over ice
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [ustm]
   standard_name = surface_friction_velocity_for_momentum
   long_name = friction velocity isolated for momentum only
@@ -4266,6 +4302,30 @@
   units = flag
   dimensions = ()
   type = integer
+[mosaic_lu]
+  standard_name = control_for_fractional_landuse_in_ruc_land_surface_scheme
+  long_name = control for use of fractional landuse info in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[mosaic_soil]
+  standard_name = control_for_fractional_soil_in_ruc_land_surface_scheme
+  long_name = control for use of fractional soil info in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[isncond_opt]
+  standard_name = control_for_soil_thermal_conductivity_option_in_ruc_lsm
+  long_name = control for soil thermal conductivity option in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[isncovr_opt]
+  standard_name = control_for_snow_cover_fraction_option_in_ruc_lsm
+  long_name = control for snow cover fraction option in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
 [kice]
   standard_name = vertical_dimension_of_sea_ice
   long_name = vertical loop extent for ice levels, start at 1
@@ -4373,10 +4433,22 @@
   units = index
   dimensions = ()
   type = integer
+[nvegcat]
+  standard_name = number_of_vegetation_categories
+  long_name = number of vegetation categories
+  units = count
+  dimensions = ()
+  type = integer
 [isot]
   standard_name = control_for_soil_type_dataset
   long_name = soil type dataset choice
   units = index
+  dimensions = ()
+  type = integer
+[nsoilcat]
+  standard_name = number_of_soil_categories
+  long_name = number of soil categories
+  units = count
   dimensions = ()
   type = integer
 [iopt_thcnd]
@@ -4643,6 +4715,18 @@
 [thsfc_loc]
   standard_name = flag_for_reference_pressure_theta
   long_name = flag for reference pressure in theta calculation
+  units = flag
+  dimensions = ()
+  type = logical
+[diag_flux]
+  standard_name = flag_for_flux_method_in_2m_diagnostics
+  long_name = flag for flux method in 2-m diagnostics
+  units = flag
+  dimensions = ()
+  type = logical
+[diag_log]
+  standard_name = flag_for_log_method_in_2m_diagnostics
+  long_name = flag for log method in 2-m diagnostics
   units = flag
   dimensions = ()
   type = logical
@@ -7595,9 +7679,51 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[sbsno]
+  standard_name = snow_deposition_sublimation_upward_latent_heat_flux
+  long_name = latent heat flux from snow depo/subl
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[evbs]
+  standard_name = soil_upward_latent_heat_flux
+  long_name = soil upward latent heat flux
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[evcw]
+  standard_name = canopy_upward_latent_heat_flux
+  long_name = canopy upward latent heat flux
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[trans]
+  standard_name = transpiration_flux
+  long_name = total plant transpiration rate
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [soilm]
   standard_name = soil_moisture_content
   long_name = soil moisture
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[snowmt_land]
+  standard_name = surface_snow_melt_over_land
+  long_name = snow melt during timestep over land
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[snowmt_ice]
+  standard_name = surface_snow_melt_over_ice
+  long_name = snow melt during timestep over ice
   units = kg m-2
   dimensions = (horizontal_loop_extent)
   type = real
@@ -7745,13 +7871,6 @@
 [rhonewsn1]
   standard_name = surface_frozen_precipitation_density
   long_name = density of precipitation ice
-  units = kg m-3
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[rhosnf]
-  standard_name = lsm_internal_surface_frozen_precipitation_density
-  long_name = density of frozen precipitation
   units = kg m-3
   dimensions = (horizontal_loop_extent)
   type = real

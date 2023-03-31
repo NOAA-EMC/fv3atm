@@ -214,6 +214,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lakefrac(:)  => null()  !< lake  fraction [0:1]
     real (kind=kind_phys), pointer :: lakedepth(:) => null()  !< lake  depth [ m ]
     real (kind=kind_phys), pointer :: tsfc   (:)   => null()  !< surface air temperature in K
+    real (kind=kind_phys), pointer :: vegtype_frac (:,:) => null()  !< fractions [0:1] of veg. categories
+    real (kind=kind_phys), pointer :: soiltype_frac(:,:) => null()  !< fractions [0:1] of soil categories
                                                               !< [tsea in gbphys.f]
     real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in K
     real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in K
@@ -373,10 +375,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: clw_surf_ice(:)    => null()  !< RUC LSM: moist cloud water mixing ratio at surface over ice
     real (kind=kind_phys), pointer :: qwv_surf_land(:)   => null()  !< RUC LSM: water vapor mixing ratio at surface over land
     real (kind=kind_phys), pointer :: qwv_surf_ice(:)    => null()  !< RUC LSM: water vapor mixing ratio at surface over ice
+    real (kind=kind_phys), pointer :: rhofr(:)           => null()  !< RUC LSM: internal density of frozen precipitation
     real (kind=kind_phys), pointer :: tsnow_land(:)      => null()  !< RUC LSM: snow temperature at the bottom of the first snow layer over land
     real (kind=kind_phys), pointer :: tsnow_ice(:)       => null()  !< RUC LSM: snow temperature at the bottom of the first snow layer over ice
     real (kind=kind_phys), pointer :: snowfallac_land(:) => null()  !< ruc lsm diagnostics over land
     real (kind=kind_phys), pointer :: snowfallac_ice(:)  => null()  !< ruc lsm diagnostics over ice
+    real (kind=kind_phys), pointer :: acsnow_land(:)     => null()  !< ruc lsm diagnostics over land
+    real (kind=kind_phys), pointer :: acsnow_ice(:)      => null()  !< ruc lsm diagnostics over ice
 
     !  MYNN surface layer
     real (kind=kind_phys), pointer :: ustm (:)         => null()  !u* including drag
@@ -954,9 +959,11 @@ module GFS_typedefs
                                             !< ivegsrc = 3   => NLCD40 (40 category, NOAH WRFv4 only)
                                             !< ivegsrc = 4   => USGS-RUC (28 category, NOAH WRFv4 only)
                                             !< ivegsrc = 5   => MODI-RUC (21 category, NOAH WRFv4 only)
+    integer              :: nvegcat         !< nvegcat = 20 if ivegsrc = 1
     integer              :: isot            !< isot = 0   => Zobler soil type  ( 9 category)
                                             !< isot = 1   => STATSGO soil type (19 category, AKA 'STAS'(?))
                                             !< isot = 2   => STAS-RUC soil type (19 category, NOAH WRFv4 only)
+    integer              :: nsoilcat        !< nsoilcat = 19 if isot = 1
     integer              :: kice            !< number of layers in sice
     integer              :: lsoil_lsm       !< number of soil layers internal to land surface model
     integer              :: lsnow_lsm       !< maximum number of snow layers internal to land surface model
@@ -990,6 +997,12 @@ module GFS_typedefs
     integer              :: iopt_tbot !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb inversed)
+
+    ! -- RUC LSM options
+    integer              :: mosaic_lu=0     !< control for use of fractional landuse in RUC land surface model
+    integer              :: mosaic_soil=0   !< control for use of fractional soil in RUC land surface model
+    integer              :: isncond_opt=1   !< control for soil thermal conductivity option in RUC land surface model
+    integer              :: isncovr_opt=1   !< control for snow cover fraction option in RUC land surface model
 
     logical              :: use_ufo         !< flag for gcycle surface option
 
@@ -1206,6 +1219,10 @@ module GFS_typedefs
 
 !--- potential temperature definition in surface layer physics
     logical              :: thsfc_loc       !< flag for local vs. standard potential temperature
+!--- flux method in 2-m diagnostics
+    logical              :: diag_flux       !< flag for flux method in 2-m diagnostics
+!--- log method in 2-m diagnostics (for stable conditions)
+    logical              :: diag_log        !< flag for log method in 2-m diagnostics (for stable conditions)
 
 !--- vertical diffusion
     real(kind=kind_phys) :: xkzm_m          !< [in] bkgd_vdif_m  background vertical diffusion for momentum
@@ -1264,6 +1281,10 @@ module GFS_typedefs
                                               ! 2 - scheme from Draper, JHM, 2021.
     real(kind=kind_phys) :: sppt_amp          ! pjp cloud perturbations
     integer              :: n_var_lndp
+    logical              :: lndp_each_step    ! flag to indicate that land perturbations are applied at every time step,
+                                              ! otherwise they are applied only
+                                              ! after gcycle is run
+
     ! next two are duplicated here to support lndp_type=1. If delete that scheme, could remove from GFS defs?
     character(len=3)    , pointer :: lndp_var_list(:)
     real(kind=kind_phys), pointer :: lndp_prt_list(:)
@@ -1724,15 +1745,21 @@ module GFS_typedefs
                                                !        %upfx0    - clear sky upward lw flux at toa (w/m**2)
 
 ! Input/output - used by physics
-    real (kind=kind_phys), pointer :: srunoff(:)     => null()   !< surface water runoff (from lsm)
-    real (kind=kind_phys), pointer :: evbsa  (:)     => null()   !< noah lsm diagnostics
-    real (kind=kind_phys), pointer :: evcwa  (:)     => null()   !< noah lsm diagnostics
-    real (kind=kind_phys), pointer :: snohfa (:)     => null()   !< noah lsm diagnostics
+    real (kind=kind_phys), pointer :: srunoff(:)     => null()   !< accumulated surface storm runoff (from lsm)
+    real (kind=kind_phys), pointer :: evbsa  (:)     => null()   !< accumulated direct evaporation
+    real (kind=kind_phys), pointer :: evcwa  (:)     => null()   !< accumulated canopy evaporation
+    real (kind=kind_phys), pointer :: snohfa (:)     => null()   !< heat flux for phase change of snow (melting)
+    real (kind=kind_phys), pointer :: transa (:)     => null()   !< accumulated transpiration
+    real (kind=kind_phys), pointer :: sbsnoa (:)     => null()   !< accumulated snow sublimation
+    real (kind=kind_phys), pointer :: snowca (:)     => null()   !< snow cover
+    real (kind=kind_phys), pointer :: sbsno  (:)     => null()   !< instantaneous snow sublimation
+    real (kind=kind_phys), pointer :: evbs(:)        => null()   !< instantaneous direct evaporation
+    real (kind=kind_phys), pointer :: trans  (:)     => null()   !< instantaneous transpiration
+    real (kind=kind_phys), pointer :: evcw(:)        => null()   !< instantaneous canopy evaporation
+    real (kind=kind_phys), pointer :: snowmt_land(:) => null()   !< ruc lsm diagnostics over land
+    real (kind=kind_phys), pointer :: snowmt_ice(:)  => null()   !< ruc lsm diagnostics over ice
+    real (kind=kind_phys), pointer :: soilm  (:)     => null()   !< integrated soil moisture
     real (kind=kind_phys), pointer :: paha   (:)     => null()   !< noah lsm diagnostics
-    real (kind=kind_phys), pointer :: transa (:)     => null()   !< noah lsm diagnostics
-    real (kind=kind_phys), pointer :: sbsnoa (:)     => null()   !< noah lsm diagnostics
-    real (kind=kind_phys), pointer :: snowca (:)     => null()   !< noah lsm diagnostics
-    real (kind=kind_phys), pointer :: soilm  (:)     => null()   !< soil moisture
     real (kind=kind_phys), pointer :: tmpmin (:)     => null()   !< min temperature at 2m height (k)
     real (kind=kind_phys), pointer :: tmpmax (:)     => null()   !< max temperature at 2m height (k)
     real (kind=kind_phys), pointer :: dusfc  (:)     => null()   !< u component of surface stress
@@ -1783,7 +1810,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tsnowp (:)     => null()   !< accumulated surface snowfall (m)
     real (kind=kind_phys), pointer :: tsnowpb(:)     => null()   !< accumulated surface snowfall in bucket (m)
     real (kind=kind_phys), pointer :: rhonewsn1(:)   => null()   !< precipitation ice density outside RUC LSM (kg/m3)
-    real (kind=kind_phys), pointer :: rhosnf(:)      => null()   !< precipitation ice density inside RUC LSM (kg/m3)
 
     !--- MYNN variables
     real (kind=kind_phys), pointer :: edmf_a     (:,:)   => null()  !
@@ -2142,6 +2168,8 @@ module GFS_typedefs
     allocate (Sfcprop%slmsk    (IM))
     allocate (Sfcprop%oceanfrac(IM))
     allocate (Sfcprop%landfrac (IM))
+    allocate (Sfcprop%vegtype_frac (IM,Model%nvegcat))
+    allocate (Sfcprop%soiltype_frac(IM,Model%nsoilcat))
     allocate (Sfcprop%lakefrac (IM))
     allocate (Sfcprop%lakedepth(IM))
     allocate (Sfcprop%tsfc     (IM))
@@ -2171,10 +2199,14 @@ module GFS_typedefs
     allocate (Sfcprop%emis_lnd (IM))
     allocate (Sfcprop%emis_ice (IM))
     allocate (Sfcprop%emis_wat (IM))
+    allocate (Sfcprop%acsnow_land (IM))
+    allocate (Sfcprop%acsnow_ice (IM))
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val
     Sfcprop%landfrac  = clear_val
+    Sfcprop%vegtype_frac  = clear_val
+    Sfcprop%soiltype_frac = clear_val
     Sfcprop%lakefrac  = clear_val
     Sfcprop%lakedepth = clear_val
     Sfcprop%tsfc      = clear_val
@@ -2204,6 +2236,9 @@ module GFS_typedefs
     Sfcprop%emis_lnd  = clear_val
     Sfcprop%emis_ice  = clear_val
     Sfcprop%emis_wat  = clear_val
+    Sfcprop%acsnow_land = clear_val
+    Sfcprop%acsnow_ice = clear_val
+
 
 !--- In (radiation only)
     allocate (Sfcprop%snoalb (IM))
@@ -2487,10 +2522,13 @@ module GFS_typedefs
        allocate (Sfcprop%clw_surf_ice    (IM))
        allocate (Sfcprop%qwv_surf_land   (IM))
        allocate (Sfcprop%qwv_surf_ice    (IM))
+       allocate (Sfcprop%rhofr           (IM))
        allocate (Sfcprop%tsnow_land      (IM))
        allocate (Sfcprop%tsnow_ice       (IM))
        allocate (Sfcprop%snowfallac_land (IM))
        allocate (Sfcprop%snowfallac_ice  (IM))
+       allocate (Sfcprop%acsnow_land     (IM))
+       allocate (Sfcprop%acsnow_ice      (IM))
        !
        Sfcprop%wetness         = clear_val
        Sfcprop%sh2o            = clear_val
@@ -2502,10 +2540,13 @@ module GFS_typedefs
        Sfcprop%qwv_surf_land   = clear_val
        Sfcprop%qwv_surf_ice    = clear_val
        Sfcprop%flag_frsoil     = clear_val
+       Sfcprop%rhofr           = -1.e3
        Sfcprop%tsnow_land      = clear_val
        Sfcprop%tsnow_ice       = clear_val
        Sfcprop%snowfallac_land = clear_val
        Sfcprop%snowfallac_ice  = clear_val
+       Sfcprop%acsnow_land     = clear_val
+       Sfcprop%acsnow_ice      = clear_val
        !
        if (Model%rdlai) then
           allocate (Sfcprop%xlaixy (IM))
@@ -3241,8 +3282,10 @@ module GFS_typedefs
     integer              :: ivegsrc        =  2              !< ivegsrc = 0   => USGS,
                                                              !< ivegsrc = 1   => IGBP (20 category)
                                                              !< ivegsrc = 2   => UMD  (13 category)
+    integer              :: nvegcat        =  20             !< number of veg.  categories depending on ivegsrc
     integer              :: isot           =  0              !< isot = 0   => Zobler soil type  ( 9 category)
                                                              !< isot = 1   => STATSGO soil type (19 category)
+    integer              :: nsoilcat       =  16             !< number of soil categories depending on isot
     ! -- to use Noah MP, lsm needs to be set to 2 and both ivegsrc and isot are set
     ! to 1 - MODIS IGBP and STATSGO - the defaults are the same as in the
     ! scripts;change from namelist
@@ -3260,6 +3303,11 @@ module GFS_typedefs
     integer              :: iopt_tbot      =  2  !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc       =  1  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs       =  2  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb reversed)
+
+    integer              :: mosaic_lu      =  0  ! 1 - used of fractional landuse in RUC lsm
+    integer              :: mosaic_soil    =  0  ! 1 - used of fractional soil in RUC lsm
+    integer              :: isncond_opt    =  1  ! 2 - Sturm (1997)
+    integer              :: isncovr_opt    =  1  ! 2 - Niu-Yang (2007), 3-updated Niu-Yang similar to Noah MP
 
     logical              :: use_ufo        = .false.                  !< flag for gcycle surface option
 
@@ -3469,6 +3517,10 @@ module GFS_typedefs
 
 !--- potential temperature definition in surface layer physics
     logical              :: thsfc_loc      = .true.          !< flag for local vs. standard potential temperature
+!--- flux method in 2-m diagnostics
+    logical              :: diag_flux      = .false.         !< flag for flux method in 2-m diagnostics
+!--- flux method in 2-m diagnostics (for stable conditions) 
+    logical              :: diag_log       = .false.         !< flag for log method in 2-m diagnostics (for stable conditions)
                                                              !<.true. means use local (gridpoint) surface pressure to define potential temperature
                                                              !<       this is the current GFS physics approach
                                                              !<.false. means use reference pressure of 1000 hPa to define potential temperature
@@ -3549,6 +3601,7 @@ module GFS_typedefs
     integer :: skeb_npass   = 11
     integer :: lndp_type      = 0
     integer :: n_var_lndp     = 0
+    logical :: lndp_each_step = .false.
     integer :: n_var_spp    =  0
     integer :: spp_pbl      =  0
     integer :: spp_sfc      =  0
@@ -3641,11 +3694,13 @@ module GFS_typedefs
                           !--- land/surface model control
                                lsm, lsoil, lsoil_lsm, lsnow_lsm, kice, rdlai,               &
                                nmtvr, ivegsrc, use_ufo, iopt_thcnd, ua_phys, usemonalb,     &
-                               aoasis, fasdas,exticeden,                                    &
+                               aoasis, fasdas, exticeden, nvegcat, nsoilcat,                &
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
                                iopt_trs,                                                    &
+                          !    RUC lsm options
+                               mosaic_lu, mosaic_soil, isncond_opt, isncovr_opt,            &
                           !    GFDL surface layer options
                                lcurr_sf, pert_cd, ntsflg, sfenth,                           &
                           !--- lake model control
@@ -3677,7 +3732,7 @@ module GFS_typedefs
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
                                do_spp, n_var_spp,                                           &
-                               lndp_type,  n_var_lndp,                                      &
+                               lndp_type,  n_var_lndp, lndp_each_step,                      &
                                pert_mp,pert_clds,pert_radtend,                              &
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
@@ -3697,6 +3752,8 @@ module GFS_typedefs
                                sfc_z0_type,                                                 &
                           !--- switch beteeen local and standard potential temperature
                                thsfc_loc,                                                   &
+                          !--- switches in 2-m diagnostics
+                               diag_flux, diag_log,                                         &
                           !    vertical diffusion
                                xkzm_m, xkzm_h, xkzm_s, xkzminv, moninq_fac, dspfac,         &
                                bl_upfr, bl_dnfr, rlmx, elmx, sfc_rlm, tc_pbl,               &
@@ -4340,7 +4397,9 @@ module GFS_typedefs
     Model%aoasis           = aoasis
     Model%fasdas           = fasdas
     Model%ivegsrc          = ivegsrc
+    Model%nvegcat          = nvegcat
     Model%isot             = isot
+    Model%nsoilcat         = nsoilcat
     Model%use_ufo          = use_ufo
     Model%exticeden        = exticeden
     if (Model%exticeden .and. &
@@ -4379,6 +4438,12 @@ module GFS_typedefs
     Model%iopt_tbot        = iopt_tbot
     Model%iopt_stc         = iopt_stc
     Model%iopt_trs         = iopt_trs
+
+! RUC lsm options
+    Model%mosaic_lu        = mosaic_lu
+    Model%mosaic_soil      = mosaic_soil
+    Model%isncond_opt      = isncond_opt
+    Model%isncovr_opt      = isncovr_opt
 
 !--- tuning parameters for physical parameterizations
     Model%ras              = ras
@@ -4568,6 +4633,10 @@ module GFS_typedefs
 
 !--- potential temperature reference in sfc layer
     Model%thsfc_loc        = thsfc_loc
+!--- flux method in 2-m diagnostics
+    Model%diag_flux        = diag_flux
+!--- flux method in 2-m diagnostics (for stable conditions)
+    Model%diag_log         = diag_log
 
 !--- vertical diffusion
     Model%xkzm_m           = xkzm_m
@@ -4601,6 +4670,7 @@ module GFS_typedefs
     !--- stochastic surface perturbation options
     Model%lndp_type        = lndp_type
     Model%n_var_lndp       = n_var_lndp
+    Model%lndp_each_step   = lndp_each_step
     Model%do_spp           = do_spp
     Model%n_var_spp        = n_var_spp
 
@@ -5295,6 +5365,11 @@ module GFS_typedefs
         print *,'iopt_trs   =  ', Model%iopt_trs
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
+        print *, 'The Physics options are'
+        print *,' mosaic_lu   =  ',mosaic_lu
+        print *,' mosaic_soil =  ',mosaic_soil
+        print *,' isncond_opt =  ',isncond_opt
+        print *,' isncovr_opt =  ',isncovr_opt
       else
         print *,' Unsupported LSM type - job aborted - lsm=',Model%lsm
         stop
@@ -6160,7 +6235,9 @@ module GFS_typedefs
       print *, ' shape(pores)      : ', shape(Model%pores)
       print *, ' shape(resid)      : ', shape(Model%resid)
       print *, ' ivegsrc           : ', Model%ivegsrc
+      print *, ' nvegcat           : ', Model%nvegcat
       print *, ' isot              : ', Model%isot
+      print *, ' nsoilcat          : ', Model%nsoilcat
 
       if (Model%lsm == Model%lsm_noahmp) then
         print *, ' Noah MP LSM is used, the options are'
@@ -6177,6 +6254,13 @@ module GFS_typedefs
         print *, ' iopt_tbot         : ', Model%iopt_tbot
         print *, ' iopt_stc          : ', Model%iopt_stc
         print *, ' iopt_trs          : ', Model%iopt_trs
+      elseif (Model%lsm == Model%lsm_ruc) then
+        print *,' RUC Land Surface Model used'
+        print *, 'The Physics options are'
+        print *,' mosaic_lu   =  ',Model%mosaic_lu
+        print *,' mosaic_soil =  ',Model%mosaic_soil
+        print *,' isncond_opt =  ',Model%isncond_opt
+        print *,' isncovr_opt =  ',Model%isncovr_opt
       endif
       print *, ' use_ufo           : ', Model%use_ufo
       print *, ' lcurr_sf          : ', Model%lcurr_sf
@@ -6246,6 +6330,8 @@ module GFS_typedefs
       print *, ' rbcr              : ', Model%rbcr
       print *, ' do_mynnedmf       : ', Model%do_mynnedmf
       print *, ' do_mynnsfclay     : ', Model%do_mynnsfclay
+      print *, ' diag_flux         : ', Model%diag_flux
+      print *, ' diag_log          : ', Model%diag_log
       print *, ' do_myjsfc         : ', Model%do_myjsfc
       print *, ' do_myjpbl         : ', Model%do_myjpbl
       print *, ' do_ugwp           : ', Model%do_ugwp
@@ -6326,6 +6412,7 @@ module GFS_typedefs
       print *, ' do_skeb           : ', Model%do_skeb
       print *, ' lndp_type         : ', Model%lndp_type
       print *, ' n_var_lndp        : ', Model%n_var_lndp
+      print *, ' lndp_each_step    : ', Model%lndp_each_step
       print *, ' do_spp            : ', Model%do_spp
       print *, ' n_var_spp         : ', Model%n_var_spp
       print *, ' '
@@ -7053,6 +7140,12 @@ module GFS_typedefs
     allocate (Diag%transa  (IM))
     allocate (Diag%sbsnoa  (IM))
     allocate (Diag%snowca  (IM))
+    allocate (Diag%evbs    (IM))
+    allocate (Diag%evcw    (IM))
+    allocate (Diag%sbsno   (IM))
+    allocate (Diag%trans   (IM))
+    allocate (Diag%snowmt_land (IM))
+    allocate (Diag%snowmt_ice  (IM))
     allocate (Diag%soilm   (IM))
     allocate (Diag%tmpmin  (IM))
     allocate (Diag%tmpmax  (IM))
@@ -7122,7 +7215,6 @@ module GFS_typedefs
     allocate (Diag%smcwlt2 (IM))
     allocate (Diag%smcref2 (IM))
     allocate (Diag%rhonewsn1 (IM))
-    allocate (Diag%rhosnf  (IM))
     allocate (Diag%frzr    (IM))
     allocate (Diag%frzrb   (IM))
     allocate (Diag%frozr   (IM))
@@ -7370,8 +7462,14 @@ module GFS_typedefs
     Diag%evcwa      = zero
     Diag%snohfa     = zero
     Diag%transa     = zero
-    Diag%sbsnoa     = zero
     Diag%snowca     = zero
+    Diag%sbsnoa     = zero
+    Diag%sbsno      = zero
+    Diag%evbs       = zero
+    Diag%evcw       = zero
+    Diag%trans      = zero
+    Diag%snowmt_land= zero
+    Diag%snowmt_ice = zero 
     Diag%soilm      = zero
     Diag%tmpmin     = Model%huge
     Diag%tmpmax     = zero
@@ -7589,7 +7687,6 @@ module GFS_typedefs
     Diag%rh02min     = 999.
     Diag%pratemax    = 0.
     Diag%rhonewsn1   = 200.
-    Diag%rhosnf      = -1.e3
     set_totprcp      = .false.
     if (present(linit) ) set_totprcp = linit
     if (present(iauwindow_center) ) set_totprcp = iauwindow_center

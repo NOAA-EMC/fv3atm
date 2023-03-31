@@ -72,7 +72,7 @@ module FV3GFS_io_mod
   character(len=32),    allocatable,         dimension(:)       :: oro_name2, sfc_name2, sfc_name3
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_var2, sfc_var2, phy_var2, sfc_var3ice
   character(len=32),    allocatable,         dimension(:)       :: oro_ls_ss_name
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_ls_var, oro_ss_var
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_ls_var, oro_ss_var, oro_var3v, oro_var3s
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3, phy_var3
   character(len=32),    allocatable,         dimension(:)       :: dust12m_name, emi_name, rrfssd_name
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: rrfssd_var
@@ -758,34 +758,33 @@ module FV3GFS_io_mod
         nt=nt+1 ; sfc_name2(nt) = 'albdifvis_ice'
         nt=nt+1 ; sfc_name2(nt) = 'albdirnir_ice'
         nt=nt+1 ; sfc_name2(nt) = 'albdifnir_ice'
-!        nt=nt+1 ; sfc_name2(nt) = 'sfalb_ice'
       endif
 
       if(Model%cplwav) then
-        sfc_name2(nvar_s2m) = 'zorlwav' !zorl from wave component
+        nt=nt+1 ; sfc_name2(nvar_s2m) = 'zorlwav' !zorl from wave component
       endif
 
-      nt = nvar_s2m ! next variable will be at nvar_s2m
-
+      if (Model%nstf_name(1) > 0) then
       !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
-      nt=nt+1 ; sfc_name2(nt) = 'tref'
-      nt=nt+1 ; sfc_name2(nt) = 'z_c'
-      nt=nt+1 ; sfc_name2(nt) = 'c_0'
-      nt=nt+1 ; sfc_name2(nt) = 'c_d'
-      nt=nt+1 ; sfc_name2(nt) = 'w_0'
-      nt=nt+1 ; sfc_name2(nt) = 'w_d'
-      nt=nt+1 ; sfc_name2(nt) = 'xt'
-      nt=nt+1 ; sfc_name2(nt) = 'xs'
-      nt=nt+1 ; sfc_name2(nt) = 'xu'
-      nt=nt+1 ; sfc_name2(nt) = 'xv'
-      nt=nt+1 ; sfc_name2(nt) = 'xz'
-      nt=nt+1 ; sfc_name2(nt) = 'zm'
-      nt=nt+1 ; sfc_name2(nt) = 'xtts'
-      nt=nt+1 ; sfc_name2(nt) = 'xzts'
-      nt=nt+1 ; sfc_name2(nt) = 'd_conv'
-      nt=nt+1 ; sfc_name2(nt) = 'ifd'
-      nt=nt+1 ; sfc_name2(nt) = 'dt_cool'
-      nt=nt+1 ; sfc_name2(nt) = 'qrain'
+        nt=nt+1 ; sfc_name2(nt) = 'tref'
+        nt=nt+1 ; sfc_name2(nt) = 'z_c'
+        nt=nt+1 ; sfc_name2(nt) = 'c_0'
+        nt=nt+1 ; sfc_name2(nt) = 'c_d'
+        nt=nt+1 ; sfc_name2(nt) = 'w_0'
+        nt=nt+1 ; sfc_name2(nt) = 'w_d'
+        nt=nt+1 ; sfc_name2(nt) = 'xt'
+        nt=nt+1 ; sfc_name2(nt) = 'xs'
+        nt=nt+1 ; sfc_name2(nt) = 'xu'
+        nt=nt+1 ; sfc_name2(nt) = 'xv'
+        nt=nt+1 ; sfc_name2(nt) = 'xz'
+        nt=nt+1 ; sfc_name2(nt) = 'zm'
+        nt=nt+1 ; sfc_name2(nt) = 'xtts'
+        nt=nt+1 ; sfc_name2(nt) = 'xzts'
+        nt=nt+1 ; sfc_name2(nt) = 'd_conv'
+        nt=nt+1 ; sfc_name2(nt) = 'ifd'
+        nt=nt+1 ; sfc_name2(nt) = 'dt_cool'
+        nt=nt+1 ; sfc_name2(nt) = 'qrain'
+      endif
 !
 ! Only needed when Noah MP LSM is used - 29 2D
 !
@@ -862,11 +861,12 @@ module FV3GFS_io_mod
     logical,                   intent(in)    :: warm_start
     logical,                   intent(in)    :: ignore_rst_cksum
     !--- local variables
-    integer :: i, j, k, ix, lsoil, num, nb, i_start, j_start, i_end, j_end, nt
+    integer :: i, j, k, ix, lsoil, num, nb, i_start, j_start, i_end, j_end, nt, n
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
     integer :: nvar_o2, nvar_s2m, nvar_s2o, nvar_s3
     integer :: nvar_oro_ls_ss
+    integer :: nvar_vegfr, nvar_soilfr
     integer :: nvar_s2r, nvar_s2mp, nvar_s3mp, isnow
     integer :: nvar_emi, nvar_dust12m, nvar_rrfssd
     integer, allocatable :: ii1(:), jj1(:)
@@ -875,6 +875,7 @@ module FV3GFS_io_mod
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_fr => NULL()
     !--- local variables for sncovr calculation
     integer :: vegtyp
     logical :: mand
@@ -890,7 +891,15 @@ module FV3GFS_io_mod
 
     nvar_o2  = 19
     nvar_oro_ls_ss = 10
-    nvar_s2o = 18
+
+    nvar_vegfr  = Model%nvegcat
+    nvar_soilfr = Model%nsoilcat
+
+    if (Model%nstf_name(1) > 0) then
+      nvar_s2o = 18
+    else
+      nvar_s2o = 0
+    endif
     if(Model%rrfs_sd) then
       nvar_dust12m = 5
       nvar_rrfssd  = 3
@@ -944,42 +953,54 @@ module FV3GFS_io_mod
     !--- allocate the various containers needed for orography data
       allocate(oro_name2(nvar_o2))
       allocate(oro_var2(nx,ny,nvar_o2))
+
+      allocate(oro_var3v(nx,ny,nvar_vegfr))
+      allocate(oro_var3s(nx,ny,nvar_soilfr))
+
       oro_var2 = -9999._kind_phys
 
-      oro_name2(1)  = 'stddev'     ! hprime(ix,1)
-      oro_name2(2)  = 'convexity'  ! hprime(ix,2)
-      oro_name2(3)  = 'oa1'        ! hprime(ix,3)
-      oro_name2(4)  = 'oa2'        ! hprime(ix,4)
-      oro_name2(5)  = 'oa3'        ! hprime(ix,5)
-      oro_name2(6)  = 'oa4'        ! hprime(ix,6)
-      oro_name2(7)  = 'ol1'        ! hprime(ix,7)
-      oro_name2(8)  = 'ol2'        ! hprime(ix,8)
-      oro_name2(9)  = 'ol3'        ! hprime(ix,9)
-      oro_name2(10) = 'ol4'        ! hprime(ix,10)
-      oro_name2(11) = 'theta'      ! hprime(ix,11)
-      oro_name2(12) = 'gamma'      ! hprime(ix,12)
-      oro_name2(13) = 'sigma'      ! hprime(ix,13)
-      oro_name2(14) = 'elvmax'     ! hprime(ix,14)
-      oro_name2(15) = 'orog_filt'  ! oro
-      oro_name2(16) = 'orog_raw'   ! oro_uf
-      oro_name2(17) = 'land_frac'  ! land fraction [0:1]
+      num = 1       ; oro_name2(num)  = 'stddev'     ! hprime(ix,1)
+      num = num + 1 ; oro_name2(num)  = 'convexity'  ! hprime(ix,2)
+      num = num + 1 ; oro_name2(num)  = 'oa1'        ! hprime(ix,3)
+      num = num + 1 ; oro_name2(num)  = 'oa2'        ! hprime(ix,4)
+      num = num + 1 ; oro_name2(num)  = 'oa3'        ! hprime(ix,5)
+      num = num + 1 ; oro_name2(num)  = 'oa4'        ! hprime(ix,6)
+      num = num + 1 ; oro_name2(num)  = 'ol1'        ! hprime(ix,7)
+      num = num + 1 ; oro_name2(num)  = 'ol2'        ! hprime(ix,8)
+      num = num + 1 ; oro_name2(num)  = 'ol3'        ! hprime(ix,9)
+      num = num + 1 ; oro_name2(num) = 'ol4'        ! hprime(ix,10)
+      num = num + 1 ; oro_name2(num) = 'theta'      ! hprime(ix,11)
+      num = num + 1 ; oro_name2(num) = 'gamma'      ! hprime(ix,12)
+      num = num + 1 ; oro_name2(num) = 'sigma'      ! hprime(ix,13)
+      num = num + 1 ; oro_name2(num) = 'elvmax'     ! hprime(ix,14)
+      num = num + 1 ; oro_name2(num) = 'orog_filt'  ! oro
+      num = num + 1 ; oro_name2(num) = 'orog_raw'   ! oro_uf
+      num = num + 1 ; oro_name2(num) = 'land_frac'  ! land fraction [0:1]
       !--- variables below here are optional
-      oro_name2(18) = 'lake_frac'  ! lake fraction [0:1]
-      oro_name2(19) = 'lake_depth' ! lake depth(m)
+      num = num + 1 ; oro_name2(num) = 'lake_frac'  ! lake fraction [0:1]
+      num = num + 1 ; oro_name2(num) = 'lake_depth' ! lake depth(m)
 
       !--- register axis
       call register_axis( Oro_restart, "lon", 'X' )
       call register_axis( Oro_restart, "lat", 'Y' )
       !--- register the 2D fields
-      do num = 1,nvar_o2
-         var2_p => oro_var2(:,:,num)
-         if (trim(oro_name2(num)) == 'lake_frac' .or. trim(oro_name2(num)) == 'lake_depth') then
-            call register_restart_field(Oro_restart, oro_name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
+      do n = 1,num
+         var2_p => oro_var2(:,:,n)
+         if (trim(oro_name2(n)) == 'lake_frac' .or. trim(oro_name2(n)) == 'lake_depth' ) then
+            call register_restart_field(Oro_restart, oro_name2(n), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
          else
-            call register_restart_field(Oro_restart, oro_name2(num), var2_p, dimensions=(/'lat','lon'/))
+            call register_restart_field(Oro_restart, oro_name2(n), var2_p, dimensions=(/'lat','lon'/))
          endif
       enddo
       nullify(var2_p)
+
+     !--- register 3D vegetation and soil fractions
+      var3_fr => oro_var3v(:,:,:)
+      call register_restart_field(Oro_restart, 'vegetation_type_pct', var3_fr, dimensions=(/'num_veg_cat','lat        ','lon        '/) , is_optional=.true.)
+      var3_fr => oro_var3s(:,:,:)
+      call register_restart_field(Oro_restart, 'soil_type_pct', var3_fr, dimensions=(/'num_soil_cat','lat         ','lon         '/) , is_optional=.true.)
+      nullify(var3_fr)
+
    endif
 
    !--- read the orography restart/data
@@ -990,7 +1011,7 @@ module FV3GFS_io_mod
 
    !--- copy data into GFS containers
 
-!$omp parallel do default(shared) private(i, j, nb, ix)
+!$omp parallel do default(shared) private(i, j, nb, ix, num)
     do nb = 1, Atm_block%nblks
       !--- 2D variables
       do ix = 1, Atm_block%blksz(nb)
@@ -999,32 +1020,43 @@ module FV3GFS_io_mod
         !--- stddev
 !       Sfcprop(nb)%hprim(ix)     = oro_var2(i,j,1)
         !--- hprime(1:14)
-        Sfcprop(nb)%hprime(ix,1)  = oro_var2(i,j,1)
-        Sfcprop(nb)%hprime(ix,2)  = oro_var2(i,j,2)
-        Sfcprop(nb)%hprime(ix,3)  = oro_var2(i,j,3)
-        Sfcprop(nb)%hprime(ix,4)  = oro_var2(i,j,4)
-        Sfcprop(nb)%hprime(ix,5)  = oro_var2(i,j,5)
-        Sfcprop(nb)%hprime(ix,6)  = oro_var2(i,j,6)
-        Sfcprop(nb)%hprime(ix,7)  = oro_var2(i,j,7)
-        Sfcprop(nb)%hprime(ix,8)  = oro_var2(i,j,8)
-        Sfcprop(nb)%hprime(ix,9)  = oro_var2(i,j,9)
-        Sfcprop(nb)%hprime(ix,10) = oro_var2(i,j,10)
-        Sfcprop(nb)%hprime(ix,11) = oro_var2(i,j,11)
-        Sfcprop(nb)%hprime(ix,12) = oro_var2(i,j,12)
-        Sfcprop(nb)%hprime(ix,13) = oro_var2(i,j,13)
-        Sfcprop(nb)%hprime(ix,14) = oro_var2(i,j,14)
+        num = 1       ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
         !--- oro
-        Sfcprop(nb)%oro(ix)       = oro_var2(i,j,15)
-        !--- oro_uf
-        Sfcprop(nb)%oro_uf(ix)    = oro_var2(i,j,16)
+        num = num + 1 ; Sfcprop(nb)%oro(ix)       = oro_var2(i,j,num)
+        num = num + 1 ; Sfcprop(nb)%oro_uf(ix)    = oro_var2(i,j,num)
 
         Sfcprop(nb)%landfrac(ix)  = -9999.0
         Sfcprop(nb)%lakefrac(ix)  = -9999.0
 
-        Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,17) !land frac [0:1]
-        Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,18) !lake frac [0:1]
+        num = num + 1 ; Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,num) !land frac [0:1]
+        num = num + 1 ; Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,num) !lake frac [0:1]
+        num = num + 1 ; Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,num) !lake depth [m]    !YWu
 
-        Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,19) !lake depth [m]    !YWu
+        Sfcprop(nb)%vegtype_frac(ix,:)  =  -9999.0
+        Sfcprop(nb)%soiltype_frac(ix,:) =  -9999.0
+
+        Sfcprop(nb)%vegtype_frac(ix,:)  = oro_var3v(i,j,:) ! vegetation type fractions, [0:1]
+        Sfcprop(nb)%soiltype_frac(ix,:) = oro_var3s(i,j,:) ! soil type fractions, [0:1]
+
+        !do n=1,nvar_vegfr
+        !  if (Sfcprop(nb)%vegtype_frac(ix,n) > 0.) print *,'Sfcprop(nb)%vegtype_frac(ix,n)',Sfcprop(nb)%vegtype_frac(ix,n),n
+        !enddo
+        !do n=1,nvar_soilfr
+        !  if (Sfcprop(nb)%soiltype_frac(ix,n) > 0.) print *,'Sfcprop(nb)%soiltype_frac(ix,n)',Sfcprop(nb)%soiltype_frac(ix,n),n
+        !enddo
 
       enddo
     enddo
@@ -1040,6 +1072,8 @@ module FV3GFS_io_mod
 
     !--- deallocate containers and free restart container
     deallocate(oro_name2, oro_var2)
+    deallocate(oro_var3v)
+    deallocate(oro_var3s)
 
     if_smoke: if(Model%rrfs_sd) then  ! for RRFS-SD
 
@@ -1590,7 +1624,8 @@ module FV3GFS_io_mod
 !         call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_ice)
         endif
         if(Model%cplwav) then
-          nt = nvar_s2m-1 ! Next item will be at nvar_s2m
+          !tgs - the following line is a bug. It should be nt = nt
+          !nt = nvar_s2m-1 ! Next item will be at nvar_s2m
           call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorlwav) !--- (zorl from wave model)
         else
           Sfcprop(nb)%zorlwav  = Sfcprop(nb)%zorlw
@@ -1703,7 +1738,8 @@ module FV3GFS_io_mod
 
         !
         !--- NSSTM variables
-        nt = nvar_s2m
+        !tgs - the following line is a bug that will show if(Model%cplwav) = true
+        !nt = nvar_s2m 
         if (Model%nstf_name(1) > 0) then
           if (Model%nstf_name(2) == 1) then             ! nsst spinup
           !--- nsstm tref
@@ -1746,8 +1782,6 @@ module FV3GFS_io_mod
             call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%dt_cool) !--- nsstm dt_cool
             call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qrain) !--- nsstm qrain
           endif
-        else
-          nt = nt + 18
         endif
 
         if (Model%lsm == Model%lsm_ruc .and. warm_start) then
@@ -2134,7 +2168,11 @@ module FV3GFS_io_mod
 !     nvar2m = nvar2m + 5
     endif
     if (Model%cplwav) nvar2m = nvar2m + 1
-    nvar2o = 18
+    if (Model%nstf_name(1) > 0) then
+      nvar2o = 18
+    else
+      nvar2o = 0
+    endif
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
         nvar2r = 13
@@ -2499,7 +2537,7 @@ module FV3GFS_io_mod
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_ice)
          if (Model%rdlai) then
            call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xlaixy)
-         endif
+         endif 
        else if (Model%lsm == Model%lsm_noahmp) then
          !--- Extra Noah MP variables
          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowxy)
