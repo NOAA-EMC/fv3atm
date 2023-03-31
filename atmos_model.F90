@@ -54,7 +54,7 @@ use fms_mod,            only: clock_flag_default
 use fms_mod,            only: check_nml_error
 use diag_manager_mod,   only: diag_send_complete_instant
 use time_manager_mod,   only: time_type, get_time, get_date, &
-                              operator(+), operator(-),real_to_time_type
+                              operator(+), operator(-), real_to_time_type
 use field_manager_mod,  only: MODEL_ATMOS
 use tracer_manager_mod, only: get_number_tracers, get_tracer_names, &
                               get_tracer_index, NO_TRACER
@@ -94,16 +94,25 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_GFS_checksum,                       &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
                               DIAG_SIZE
+use FV3GFS_restart_io_mod,    only: FV3GFS_restart_register, &
+                                    fv_phy_restart_output, &
+                                    fv_sfc_restart_output
+use fv_ufs_restart_io_mod,    only: fv_dyn_restart_register, &
+                                    fv_dyn_restart_output
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
-                              restart_endfcst, output_fh, fcst_mpi_comm, &
-                              fcst_ntasks
+                              output_fh, fcst_mpi_comm, fcst_ntasks,     &
+                              quilting_restart
 use module_block_data,  only: block_atmos_copy, block_data_copy,         &
                               block_data_copy_or_fill,                   &
                               block_data_combine_fractions
 
 #ifdef MOVING_NEST
-use fv_moving_nest_main_mod, only: update_moving_nest, dump_moving_nest
+use fv_moving_nest_main_mod,  only: update_moving_nest, dump_moving_nest
+use fv_moving_nest_main_mod,  only: nest_tracker_init
+use fv_moving_nest_main_mod,  only: moving_nest_end, nest_tracker_end
+use fv_moving_nest_types_mod, only: fv_moving_nest_init
+use fv_tracker_mod,           only: check_is_moving_nest, execute_tracker
 #endif
 !-----------------------------------------------------------------------
 
@@ -132,6 +141,7 @@ public setup_exportdata
      logical                       :: nested             ! true if there is a nest
      logical                       :: moving_nest_parent ! true if this grid has a moving nest child
      logical                       :: is_moving_nest     ! true if this is a moving nest grid
+     logical                       :: isAtCapTime        ! true if currTime is at the cap driverClock's currTime
      integer                       :: ngrids             !
      integer                       :: mygrid             !
      integer                       :: mlon, mlat
@@ -296,7 +306,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       ! receives coupled fields through the above assign_importdata step. Thus,
       ! an extra step is needed to fill the coupling variables in the nest,
       ! by downscaling the coupling variables from its parent.
-      if (Atmos%ngrids > 1) then
+      if (Atmos%isAtCapTime .and. Atmos%ngrids > 1) then
         if (GFS_control%cplocn2atm .or. GFS_control%cplwav2atm) then
           call atmosphere_fill_nest_cpl(Atm_block, GFS_control, GFS_data)
         endif
@@ -540,6 +550,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
 !---- set the atmospheric model time ------
 
+   Atmos % isAtCapTime = .false.
    Atmos % Time_init = Time_init
    Atmos % Time      = Time
    Atmos % Time_step = Time_step
@@ -552,14 +563,21 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !---------- (need name of CCPP suite definition file from input.nml) ---------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
                          Atmos%grid, Atmos%area)
-
+#ifdef MOVING_NEST
+   call fv_moving_nest_init(Atm, mygrid)
+   call nest_tracker_init()
+#endif
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call atmosphere_domain (Atmos%domain, Atmos%domain_for_read, Atmos%layout, &
                            Atmos%regional, Atmos%nested, &
-                           Atmos%moving_nest_parent, Atmos%is_moving_nest, &
                            Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
+   Atmos%moving_nest_parent = .false.
+   Atmos%is_moving_nest = .false.
+#ifdef MOVING_NEST
+   call check_is_moving_nest(Atm, Atmos%mygrid, Atmos%ngrids, Atmos%is_moving_nest, Atmos%moving_nest_parent)
+#endif
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
 
@@ -722,6 +740,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
+   if (quilting_restart) then
+      call fv_dyn_restart_register (Atm(mygrid))
+      call FV3GFS_restart_register (GFS_data%Sfcprop, GFS_restart_var, Atm_block, GFS_control)
+   endif
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain_for_read, &
                              Atm(mygrid)%flagstruct%warm_start, ignore_rst_cksum)
    if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
@@ -929,6 +951,9 @@ subroutine update_atmos_model_state (Atmos, rc)
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
     call atmosphere_state_update (Atmos%Time, GFS_data, IAU_Data, Atm_block, flip_vc)
+#ifdef MOVING_NEST
+    call execute_tracker(Atm, mygrid, Atmos%Time, Atmos%Time_step)
+#endif
     call mpp_clock_end(updClock)
     call mpp_clock_end(fv3Clock)
 
@@ -1031,21 +1056,18 @@ subroutine atmos_model_end (Atmos)
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
 
-    call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
-
-    if(restart_endfcst) then
-      call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
-                                 GFS_control, Atmos%domain)
-!     call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
+#ifdef MOVING_NEST
+    !  Call this before atmosphere_end(), because that deallocates Atm
+    if (Atmos%is_moving_nest) then
+      call moving_nest_end()
+      call nest_tracker_end()
     endif
+#endif
+
+    call atmosphere_end (Atmos % Time, Atmos%grid, .false.)
+
     if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
         GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
-      if(restart_endfcst) then
-        call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
-        if (GFS_control%do_ca)then
-          call write_ca_restart()
-        endif
-      endif
       call stochastic_physics_wrapper_end(GFS_control)
     endif
 
@@ -1075,9 +1097,15 @@ subroutine atmos_model_restart(Atmos, timestamp)
   type (atmos_data_type),   intent(inout) :: Atmos
   character(len=*),  intent(in)           :: timestamp
 
-    call atmosphere_restart(timestamp)
-    call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
-                               GFS_control, Atmos%domain, timestamp)
+    if (quilting_restart) then
+       call fv_sfc_restart_output(GFS_Data%Sfcprop, Atm_block, GFS_control)
+       call fv_phy_restart_output(GFS_restart_var, Atm_block)
+       call fv_dyn_restart_output(Atm(mygrid), timestamp)
+    else
+       call atmosphere_restart(timestamp)
+       call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
+                                  GFS_control, Atmos%domain, timestamp)
+    endif
     if(GFS_control%do_ca)then
        call write_ca_restart(timestamp)
     endif
@@ -1453,6 +1481,10 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+      call cplFieldGet(state,'inst_pres_interface', farrayPtr3d=prsi, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
       if (GFS_Control%cplaqm) then
 
         call cplFieldGet(state,'canopy_moisture_storage', farrayPtr2d=canopy, rc=localrc)
@@ -1517,10 +1549,6 @@ subroutine update_atmos_chemistry(state, rc)
 
       else
 
-        call cplFieldGet(state,'inst_pres_interface', farrayPtr3d=prsi, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
         call cplFieldGet(state,'inst_liq_nonconv_tendency_levels', &
                          farrayPtr3d=pflls, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -1568,6 +1596,7 @@ subroutine update_atmos_chemistry(state, rc)
             ix = Atm_block%ixp(ib,jb)
             !--- interface values
             phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
+            prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
             !--- layer values
             prsl(i,j,k) = GFS_Data(nb)%Statein%prsl(ix,k)
             phil(i,j,k) = GFS_Data(nb)%Statein%phil(ix,k)
@@ -1576,8 +1605,6 @@ subroutine update_atmos_chemistry(state, rc)
             va  (i,j,k) = GFS_Data(nb)%Stateout%gv0(ix,k)
             cldfra(i,j,k) = GFS_Data(nb)%IntDiag%cldfra(ix,k)
             if (.not.GFS_Control%cplaqm) then
-              !--- interface values
-              prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
               !--- layer values
               pfils (i,j,k) = GFS_Data(nb)%Coupling%pfi_lsan(ix,k)
               pflls (i,j,k) = GFS_Data(nb)%Coupling%pfl_lsan(ix,k)
@@ -1596,8 +1623,7 @@ subroutine update_atmos_chemistry(state, rc)
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
           phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
-          if (.not.GFS_Control%cplaqm) &
-            prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
+          prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
         enddo
       enddo
 
@@ -1704,6 +1730,7 @@ subroutine update_atmos_chemistry(state, rc)
 
       if (GFS_control%debug) then
         ! -- diagnostics
+        write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
         write(6,'("update_atmos: phii   - min/max/avg",3g16.6)') minval(phii),   maxval(phii),   sum(phii)/size(phii)
         write(6,'("update_atmos: prsl   - min/max/avg",3g16.6)') minval(prsl),   maxval(prsl),   sum(prsl)/size(prsl)
         write(6,'("update_atmos: phil   - min/max/avg",3g16.6)') minval(phil),   maxval(phil),   sum(phil)/size(phil)
@@ -1742,7 +1769,6 @@ subroutine update_atmos_chemistry(state, rc)
           write(6,'("update_atmos: xlai   - min/max/avg",3g16.6)') minval(xlai),   maxval(xlai),   sum(xlai)/size(xlai)
           write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
         else
-          write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
           write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
           write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
           write(6,'("update_atmos: shfsfc - min/max/avg",3g16.6)') minval(shfsfc), maxval(shfsfc), sum(shfsfc)/size(shfsfc)

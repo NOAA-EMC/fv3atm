@@ -11,7 +11,8 @@ module module_write_netcdf
   use netcdf
   use module_fv3_io_def,only : ideflate, nbits, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
-                               output_grid,dx,dy,lon1,lat1,lon2,lat2
+                               output_grid,dx,dy,lon1,lat1,lon2,lat2, &
+                               time_unlimited
   use mpi
 
   implicit none
@@ -121,7 +122,7 @@ module module_write_netcdf
        call ESMF_FieldGet(fcstField(i), dimCount=fieldDimCount, array=array, rc=rc); ESMF_ERR_RETURN(rc)
 
        if (fieldDimCount > 3) then
-          write(0,*)"write_netcdf: Only 2D and 3D fields are supported!"
+          if (mype==0) write(0,*)"write_netcdf: Only 2D and 3D fields are supported!"
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
 
@@ -199,11 +200,11 @@ module module_write_netcdf
 
        if (par) then
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+                  cmode=IOR(NF90_CLOBBER,NF90_NETCDF4),&
                   comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
        else
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+                  cmode=IOR(NF90_CLOBBER,NF90_NETCDF4),&
                   ncid=ncid); NC_ERR_STOP(ncerr)
        end if
 
@@ -215,13 +216,13 @@ module module_write_netcdf
        ncerr = nf90_def_dim(ncid, "grid_yt", jm, jm_dimid); NC_ERR_STOP(ncerr)
        ncerr = nf90_def_dim(ncid, "nchars", 20, ch_dimid); NC_ERR_STOP(ncerr)
        if (lm > 1) then
-         call add_dim(ncid, "pfull", pfull_dimid, wrtgrid, rc)
-         call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, rc)
+         call add_dim(ncid, "pfull", pfull_dimid, wrtgrid, mype, rc)
+         call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, mype, rc)
        end if
        if (is_cubed_sphere) then
           ncerr = nf90_def_dim(ncid, "tile", tileCount, tile_dimid); NC_ERR_STOP(ncerr)
        end if
-       call add_dim(ncid, "time", time_dimid, wrtgrid, rc)
+       call add_dim(ncid, "time", time_dimid, wrtgrid, mype, rc)
 
        ! define coordinate variables
        ncerr = nf90_def_var(ncid, "grid_xt", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
@@ -290,7 +291,7 @@ module module_write_netcdf
        end if
 
 
-       call get_global_attr(wrtfb, ncid, rc)
+       call get_global_attr(wrtfb, ncid, mype, rc)
 
 
        ! define variables (fields)
@@ -343,7 +344,7 @@ module module_write_netcdf
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
                                   dimids_2d, varids(i)); NC_ERR_STOP(ncerr)
            else
-             write(0,*)'Unsupported typekind ', typekind
+             if (mype==0) write(0,*)'Unsupported typekind ', typekind
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
            end if
          else if (rank == 3) then
@@ -383,11 +384,11 @@ module module_write_netcdf
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
                                   dimids_3d, varids(i)); NC_ERR_STOP(ncerr)
            else
-             write(0,*)'Unsupported typekind ', typekind
+             if (mype==0) write(0,*)'Unsupported typekind ', typekind
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
            end if
          else
-           write(0,*)'Unsupported rank ', rank
+           if (mype==0) write(0,*)'Unsupported rank ', rank
            call ESMF_Finalize(endflag=ESMF_END_ABORT)
          end if
          if (par) then
@@ -512,7 +513,7 @@ module module_write_netcdf
           end do
           ncerr = nf90_put_var(ncid, im_varid, values=x); NC_ERR_STOP(ncerr)
        else
-          write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
+          if (mype==0) write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
@@ -563,7 +564,7 @@ module module_write_netcdf
           end do
           ncerr = nf90_put_var(ncid, jm_varid, values=y); NC_ERR_STOP(ncerr)
        else
-          write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
+          if (mype==0) write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
@@ -707,7 +708,7 @@ module module_write_netcdf
 
       else
 
-         write(0,*)'Unsupported rank ', rank
+         if (mype==0) write(0,*)'Unsupported rank ', rank
          call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
       end if ! end rank
@@ -754,9 +755,10 @@ module module_write_netcdf
   end subroutine write_netcdf
 
 !----------------------------------------------------------------------------------------
-  subroutine get_global_attr(fldbundle, ncid, rc)
+  subroutine get_global_attr(fldbundle, ncid, mype, rc)
     type(ESMF_FieldBundle), intent(in) :: fldbundle
     integer, intent(in)                :: ncid
+    integer, intent(in)                :: mype
     integer, intent(out)               :: rc
 
 ! local variable
@@ -765,7 +767,8 @@ module module_write_netcdf
     character(len=ESMF_MAXSTR) :: attName
     type(ESMF_TypeKind_Flag)   :: typekind
 
-    integer :: varival
+    integer(ESMF_KIND_I4) :: varival_i4
+    integer(ESMF_KIND_I8) :: varival_i8
     real(ESMF_KIND_R4), dimension(:), allocatable :: varr4list
     real(ESMF_KIND_R8), dimension(:), allocatable :: varr8list
     integer :: itemCount
@@ -783,8 +786,13 @@ module module_write_netcdf
 
       if (typekind==ESMF_TYPEKIND_I4) then
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                name=trim(attName), value=varival, rc=rc); ESMF_ERR_RETURN(rc)
-         ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), varival); NC_ERR_STOP(ncerr)
+                                name=trim(attname), value=varival_i4, rc=rc); ESMF_ERR_RETURN(rc)
+         ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i4); NC_ERR_STOP(ncerr)
+
+      else if (typekind==ESMF_TYPEKIND_I8) then
+         call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                                name=trim(attname), value=varival_i8, rc=rc); ESMF_ERR_RETURN(rc)
+         ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i8); NC_ERR_STOP(ncerr)
 
       else if (typekind==ESMF_TYPEKIND_R4) then
          allocate (varr4list(itemCount))
@@ -805,6 +813,10 @@ module module_write_netcdf
                                 name=trim(attName), value=varcval, rc=rc); ESMF_ERR_RETURN(rc)
          ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), trim(varcval)); NC_ERR_STOP(ncerr)
 
+      else
+
+         if (mype==0) write(0,*)'Unsupported typekind ', typekind
+         call ESMF_Finalize(endflag=ESMF_END_ABORT)
       end if
 
     end do
@@ -876,11 +888,12 @@ module module_write_netcdf
   end subroutine get_grid_attr
 
 !----------------------------------------------------------------------------------------
-  subroutine add_dim(ncid, dim_name, dimid, grid, rc)
+  subroutine add_dim(ncid, dim_name, dimid, grid, mype, rc)
     integer, intent(in)             :: ncid
     character(len=*), intent(in)    :: dim_name
     integer, intent(inout) :: dimid
     type(ESMF_Grid), intent(in)     :: grid
+    integer, intent(in)             :: mype
     integer, intent(out)            :: rc
 
 ! local variable
@@ -896,12 +909,15 @@ module module_write_netcdf
                            typekind=typekind, itemCount=n, rc=rc); ESMF_ERR_RETURN(rc)
 
     if (trim(dim_name) == "time") then
-    ! using an unlimited dim requires collective mode (NF90_COLLECTIVE)
-    ! for parallel writes, which seems to slow things down on hera.
-    !ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
-    ncerr = nf90_def_dim(ncid, trim(dim_name), 1, dimid); NC_ERR_STOP(ncerr)
+      ! using an unlimited dim requires collective mode (NF90_COLLECTIVE)
+      ! for parallel writes, which seems to slow things down on hera.
+      if (time_unlimited) then
+        ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
+      else
+        ncerr = nf90_def_dim(ncid, trim(dim_name), 1, dimid); NC_ERR_STOP(ncerr)
+      end if
     else
-    ncerr = nf90_def_dim(ncid, trim(dim_name), n, dimid); NC_ERR_STOP(ncerr)
+      ncerr = nf90_def_dim(ncid, trim(dim_name), n, dimid); NC_ERR_STOP(ncerr)
     end if
 
     if (typekind==ESMF_TYPEKIND_R8) then
@@ -923,7 +939,7 @@ module module_write_netcdf
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        deallocate(valueListR4)
      else
-        write(0,*)'Error in module_write_netcdf.F90(add_dim) unknown typekind for ',trim(dim_name)
+        if (mype==0) write(0,*)'Error in module_write_netcdf.F90(add_dim) unknown typekind for ',trim(dim_name)
         call ESMF_Finalize(endflag=ESMF_END_ABORT)
     end if
     if (par) then

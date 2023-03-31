@@ -226,6 +226,7 @@
                              lsmdef,ALSL,me,d3d_on,gocart_on,hyb_sigp,&
                              pthresh,novegtype,ivegsrc,icu_physics,   &
                              isf_surface_physics,modelname,submodelname
+      use upp_ifi_mod, only: write_ifi_debug_files
 !
 !    revision history:
 !    Jul 2019 Jun Wang: read post namelist
@@ -241,7 +242,7 @@
       integer l,k
 
       namelist/nampgb/kpo,po,kth,th,kpv,pv,popascal,d3d_on,gocart_on,  &
-                      hyb_sigp
+                      hyb_sigp,write_ifi_debug_files
       namelist/model_inputs/modelname,submodelname
 !---------------------------------------------------------------------
 !
