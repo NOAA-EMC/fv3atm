@@ -992,6 +992,8 @@ module GFS_typedefs
     integer              :: iopt_tbot !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb inversed)
+    integer              :: iopt_diag !2m t/q diagnostic approach (1->external GFS sfc_diag 2->original NoahMP 2-title 3->NoahMP 
+                                      !2-title + internal GFS sfc_diag  )
 
     logical              :: use_ufo         !< flag for gcycle surface option
 
@@ -3266,6 +3268,8 @@ module GFS_typedefs
     integer              :: iopt_tbot      =  2  !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc       =  1  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs       =  2  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb reversed)
+    integer              :: iopt_diag      =  2  !2m t/q diagnostic approach (1->external GFS sfc_diag 2->original NoahMP 2-title
+                                                 !3->NoahMP 2-title + internal GFS sfc_diag  )
 
     logical              :: use_ufo        = .false.                  !< flag for gcycle surface option
 
@@ -3651,7 +3655,7 @@ module GFS_typedefs
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
-                               iopt_trs,                                                    &
+                               iopt_trs, iopt_diag,                                         &
                           !    GFDL surface layer options
                                lcurr_sf, pert_cd, ntsflg, sfenth,                           &
                           !--- lake model control
@@ -4385,6 +4389,7 @@ module GFS_typedefs
     Model%iopt_tbot        = iopt_tbot
     Model%iopt_stc         = iopt_stc
     Model%iopt_trs         = iopt_trs
+    Model%iopt_diag        = iopt_diag
 
 !--- tuning parameters for physical parameterizations
     Model%ras              = ras
@@ -5299,6 +5304,7 @@ module GFS_typedefs
         print *,'iopt_tbot   =  ',Model%iopt_tbot
         print *,'iopt_stc   =  ', Model%iopt_stc
         print *,'iopt_trs   =  ', Model%iopt_trs
+        print *,'iopt_diag  =  ', Model%iopt_diag
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
       else
@@ -6183,6 +6189,7 @@ module GFS_typedefs
         print *, ' iopt_tbot         : ', Model%iopt_tbot
         print *, ' iopt_stc          : ', Model%iopt_stc
         print *, ' iopt_trs          : ', Model%iopt_trs
+        print *, ' iopt_diag         : ', Model%iopt_diag
       endif
       print *, ' use_ufo           : ', Model%use_ufo
       print *, ' lcurr_sf          : ', Model%lcurr_sf
