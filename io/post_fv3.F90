@@ -247,11 +247,17 @@ module post_fv3
       real(4), dimension(:), allocatable :: ak4,bk4
       real(8), dimension(:), allocatable :: ak8,bk8
       type(ESMF_FieldBundle)             :: fldbundle
+      character(128)                     :: wrtFBName
 !
       spval = 9.99e20
 ! field bundle
       do nfb=1, wrt_int_state%FBcount
         fldbundle = wrt_int_state%wrtFB(nfb)
+
+        call ESMF_FieldBundleGet(fldbundle, name=wrtFBName, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
+
+        if (wrtFBName(1:8) == 'restart_') cycle
 
 ! set grid spec:
 !      if(mype==0) print*,'in post_getattr_lam,output_grid=',trim(output_grid(grid_id)),'nfb=',nfb
@@ -861,6 +867,12 @@ module post_fv3
 
      get_lsmsk: do ibdl=1, wrt_int_state%FBCount
 
+       call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl), name=wrtFBName, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
+
+       if (wrtFBName(1:8) == 'restart_') cycle
+
+
        call ESMF_AttributeGet(wrt_int_state%wrtFB(ibdl), convention="NetCDF", purpose="FV3", &
                               name="grid_id", value=bundle_grid_id, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -944,6 +956,13 @@ module post_fv3
 !       if(mype==0) print *,'in setvar, read field, ibdl=',ibdl,'idim=',   &
 !         ista,iend,'jdim=',jsta,jend
 
+       call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl), grid=wrtGrid,  &
+         fieldCount=ncount_field, name=wrtFBName,rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
+       if (wrtFBName(1:8) == 'restart_') cycle
+
        call ESMF_AttributeGet(wrt_int_state%wrtFB(ibdl), convention="NetCDF", purpose="FV3", &
                               name="grid_id", value=bundle_grid_id, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -951,10 +970,6 @@ module post_fv3
 
        if (grid_id /= bundle_grid_id) cycle
 
-       call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl), grid=wrtGrid,  &
-         fieldCount=ncount_field, name=wrtFBName,rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
        call ESMF_GridGet(wrtgrid, dimCount=gridDimCount, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
