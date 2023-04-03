@@ -739,20 +739,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[evbs]
-  standard_name = soil_upward_latent_heat_flux
-  long_name = soil upward latent heat flux
-  units = W m-2
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[evcw]
-  standard_name = canopy_upward_latent_heat_flux
-  long_name = canopy upward latent heat flux
-  units = W m-2
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [pah]
   standard_name = total_precipitation_advected_heat
   long_name = precipitation advected heat - total
@@ -1693,9 +1679,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[radar_reset]
-  standard_name = flag_for_resetting_radar_reflectivity_calculation
-  long_name = flag for resetting radar reflectivity calculation
+[fullradar_diag]
+  standard_name = do_full_radar_reflectivity
+  long_name = flag for computing full radar reflectivity
   units = flag
   dimensions = ()
   type = logical
@@ -1892,13 +1878,6 @@
   long_name = y-wind before entering a physics scheme
   units = m s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[sbsno]
-  standard_name = snow_deposition_sublimation_upward_latent_heat_flux
-  long_name = latent heat flux from snow depo/subl
-  units = W m-2
-  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [scmpsw]
@@ -2101,13 +2080,6 @@
   units = flag
   dimensions = ()
   type = logical
-[trans]
-  standard_name = transpiration_flux
-  long_name = total plant transpiration rate
-  units = W m-2
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [tseal]
   standard_name = surface_skin_temperature_for_nsst
   long_name = ocean surface skin temperature
@@ -2318,7 +2290,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_ugwp_version_1 .or. control_for_drag_suite_gravity_wave_drag==33 .or. control_for_drag_suite_gravity_wave_drag==22 .or. control_for_drag_suite_gravity_wave_drag==3 .or. control_for_drag_suite_gravity_wave_drag==2)
+  active = (flag_for_unified_gravity_wave_physics_diagnostics .or. flag_for_ugwp_version_0 .or. flag_for_ugwp_version_0_nonorographic_gwd .or. flag_for_ugwp_version_1)
 [dvdt_ngw]
   standard_name = tendency_of_y_wind_due_to_nonorographic_gravity_wave_drag
   long_name = meridional wind tendency due to non-stationary GWs
@@ -2326,7 +2298,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_ugwp_version_1 .or. control_for_drag_suite_gravity_wave_drag==33 .or. control_for_drag_suite_gravity_wave_drag==22 .or. control_for_drag_suite_gravity_wave_drag==3 .or. control_for_drag_suite_gravity_wave_drag==2)
+  active = (flag_for_unified_gravity_wave_physics_diagnostics .or. flag_for_ugwp_version_0 .or. flag_for_ugwp_version_0_nonorographic_gwd .or. flag_for_ugwp_version_1)
 [dtdt_ngw]
   standard_name = tendency_of_air_temperature_due_to_nonorographic_gravity_wave_drag
   long_name = air temperature tendency due to non-stationary GWs
@@ -2334,7 +2306,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_ugwp_version_1 .or. control_for_drag_suite_gravity_wave_drag==33 .or. control_for_drag_suite_gravity_wave_drag==22 .or. control_for_drag_suite_gravity_wave_drag==3 .or. control_for_drag_suite_gravity_wave_drag==2)
+  active = (flag_for_unified_gravity_wave_physics_diagnostics .or. flag_for_ugwp_version_0 .or. flag_for_ugwp_version_0_nonorographic_gwd .or. flag_for_ugwp_version_1)
 [kdis_ngw]
   standard_name = atmosphere_momentum_diffusivity_due_to_nonorographic_gravity_wave_drag
   long_name = eddy mixing due to non-stationary GWs
@@ -2342,7 +2314,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_ugwp_version_1 .or. control_for_drag_suite_gravity_wave_drag==33 .or. control_for_drag_suite_gravity_wave_drag==22 .or. control_for_drag_suite_gravity_wave_drag==3 .or. control_for_drag_suite_gravity_wave_drag==2)
+  active = (flag_for_unified_gravity_wave_physics_diagnostics .or. flag_for_ugwp_version_0 .or. flag_for_ugwp_version_0_nonorographic_gwd .or. flag_for_ugwp_version_1)
 [zlwb]
   standard_name = height_of_low_level_wave_breaking
   long_name = height of low level wave breaking
@@ -2749,145 +2721,53 @@
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
-[sw_optical_props_clrsky]
-  standard_name = shortwave_optical_properties_for_clear_sky
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
+[vmr_o2]
+  standard_name = volume_mixing_ratio_for_o2
+  long_name = molar mixing ratio of o2 in with respect to dry air
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
-[sw_optical_props_cloudsByBand]
-  standard_name = shortwave_optical_properties_for_cloudy_atmosphere_by_band
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
+[vmr_h2o]
+  standard_name = volume_mixing_ratio_for_h2o
+  long_name = molar mixing ratio of h2o in with respect to dry air
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
-[sw_optical_props_cnvcloudsByBand]
-  standard_name = shortwave_optical_properties_for_convective_cloudy_atmosphere_by_band
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-[sw_optical_props_MYNNcloudsByBand]
-  standard_name = shortwave_optical_properties_for_MYNN_EDMF_PBL_cloudy_atmosphere_by_band
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
+[vmr_o3]
+  standard_name = volume_mixing_ratio_for_o3
+  long_name = molar mixing ratio of o3 in with respect to dry air
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
-[sw_optical_props_cnvclouds]
-  standard_name = shortwave_optical_properties_for_convective_cloudy_atmosphere
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
+[vmr_ch4]
+  standard_name = volume_mixing_ratio_for_ch4
+  long_name = molar mixing ratio of ch4 in with respect to dry air
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
+[vmr_n2o]
+  standard_name = volume_mixing_ratio_for_n2o
+  long_name = molar mixing ratio of n2o in with respect to dry air
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
-[sw_optical_props_precipByBand]
-  standard_name = shortwave_optical_properties_for_precipitation_by_band
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[sw_optical_props_precip]
-  standard_name = shortwave_optical_properties_for_precipitation
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[sw_optical_props_clouds]
-  standard_name = shortwave_optical_properties_for_cloudy_atmosphere
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[sw_optical_props_aerosol]
-  standard_name = shortwave_optical_properties_for_aerosols
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[gas_concentrations]
-  standard_name = Gas_concentrations_for_RRTMGP_suite
-  long_name = DDT containing gas concentrations for RRTMGP radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_gas_concs
-  active = (flag_for_rrtmgp_radiation_scheme)
-[sources]
-  standard_name = longwave_source_function
-  long_name = Fortran DDT containing RRTMGP source functions
-  units = DDT
-  dimensions = ()
-  type = ty_source_func_lw
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_clrsky]
-  standard_name = longwave_optical_properties_for_clear_sky
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_1scl
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_clouds]
-  standard_name = longwave_optical_properties_for_cloudy_atmosphere
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_precip]
-  standard_name = longwave_optical_properties_for_precipitation
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_cloudsByBand]
-  standard_name = longwave_optical_properties_for_cloudy_atmosphere_by_band
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_cnvcloudsByBand]
-  standard_name = longwave_optical_properties_for_convective_cloudy_atmosphere_by_band
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_MYNNcloudsByBand]
-  standard_name = longwave_optical_properties_for_MYNN_EDMF_PBL_cloudy_atmosphere_by_band
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_cnvclouds]
-  standard_name = longwave_optical_properties_for_convective_cloudy_atmosphere
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_precipByBand]
-  standard_name = longwave_optical_properties_for_precipitation_by_band
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_2str
-  active = (flag_for_rrtmgp_radiation_scheme)
-[lw_optical_props_aerosol]
-  standard_name = longwave_optical_properties_for_aerosols
-  long_name = Fortran DDT containing RRTMGP optical properties
-  units = DDT
-  dimensions = ()
-  type = ty_optical_props_1scl
+[vmr_co2]
+  standard_name = volume_mixing_ratio_for_co2
+  long_name = molar mixing ratio of co2 in with respect to dry air
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
 [sfc_emiss_byband]
   standard_name = surface_emissivity_in_each_RRTMGP_LW_band

@@ -3,7 +3,7 @@
 *.pyc
 
 *.sw[a-p]
-~
+*~
 
 build/
 install/
