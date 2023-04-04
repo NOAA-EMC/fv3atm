@@ -3503,7 +3503,7 @@ module GFS_typedefs
 
 !--- flake model parameters
     integer              :: lkm            =  0                       !< =1 run lake, =2 run lake&nsst =0 no lake
-    integer              :: iopt_lake      =  2                       !< =1 flake, =2 clm lake
+    integer              :: iopt_lake      =  2                       !< =1 flake, =2 clm lake (default)
     real(kind_phys)      :: lakedepth_threshold = 1.0                 !< lakedepth must be GREATER than this value to enable a lake model
     real(kind_phys)      :: lakefrac_threshold  = 0.0                 !< lakefrac must be GREATER than this value to enable a lake model
     logical              :: use_lake2m     = .false.                  !< use 2m T & Q from clm lake model

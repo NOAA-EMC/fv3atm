@@ -899,7 +899,7 @@ module FV3GFS_io_mod
     integer :: nvar_oro_ls_ss
     integer :: nvar_vegfr, nvar_soilfr
     integer :: nvar_s2r, nvar_s2mp, nvar_s3mp, isnow
-    integer :: nvar_emi, nvar_dust12m, nvar_rrfssd, nvar_s2l
+    integer :: nvar_emi, nvar_dust12m, nvar_gbbepx, nvar_before_lake, nvar_s2l
     integer, allocatable :: ii1(:), jj1(:)
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
@@ -1119,6 +1119,8 @@ module FV3GFS_io_mod
     else
        nvar_s2l = 0
     endif
+
+    nvar_before_lake=nvar_s2m+nvar_s2o+nvar_s2r+nvar_s2mp
 
     !--- deallocate containers and free restart container
     deallocate(oro_name2, oro_var2)
@@ -1444,7 +1446,7 @@ module FV3GFS_io_mod
       ! Tell CLM Lake to allocate data, and register its axes and fields
       if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
         call clm_lake%allocate_data(Model)
-        call clm_lake%fill_with_zero(Model, Sfcprop, Atm_block)
+        call clm_lake%copy_to_temporaries(Model,Sfcprop,Atm_block)
         call clm_lake%register_axes(Model, Sfc_restart)
         call clm_lake%register_fields(Sfc_restart)
       endif
@@ -1916,6 +1918,18 @@ module FV3GFS_io_mod
           call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%deeprechxy)
           call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%rechxy)
         endif
+        if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%T_snow)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%T_ice)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%h_ML)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%t_ML)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%t_mnw)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%h_talb)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%t_talb)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%t_bot1)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%t_bot2)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%c_t)
+        endif
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
           !--- 3D variables
           nt=0
@@ -2217,7 +2231,7 @@ module FV3GFS_io_mod
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
     integer :: nvar2m, nvar2o, nvar3
-    integer :: nvar2r, nvar2mp, nvar3mp, nvar2me, nvar2l
+    integer :: nvar2r, nvar2mp, nvar3mp, nvar_before_lake, nvar2l
     logical :: mand
     integer, allocatable :: ii1(:), jj1(:)
     character(len=32) :: fn_srf = 'sfc_data.nc'
@@ -2283,6 +2297,8 @@ module FV3GFS_io_mod
     npz = Atm_block%npz
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
+
+    nvar_before_lake=nvar2m+nvar2o+nvar2r+nvar2mp
 
     if (Model%lsm == Model%lsm_ruc) then
       if (allocated(sfc_name2)) then
@@ -2370,7 +2386,7 @@ module FV3GFS_io_mod
     else
       call mpp_error(FATAL, 'Error in opening file'//trim(infile) )
     end if if_amiopen
-
+    
     ! Tell clm_lake to allocate data, register its axes, and call write_data for each axis's variable
     if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
       call clm_lake%allocate_data(Model)
