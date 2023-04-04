@@ -1528,7 +1528,7 @@ module FV3GFS_io_mod
 ! Flake
       if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
          mand = .false.
-         do num = nvar_s2me+1,nvar_s2me+nvar_s2l
+         do num = nvar_before_lake+1,nvar_before_lake+nvar_s2l
             var2_p => sfc_var2(:,:,num)
             if(is_lsoil) then
                call register_restart_field(Sfc_restart, sfc_name2(num),var2_p,dimensions=(/'lat','lon'/), is_optional=.not.mand) 
@@ -2233,7 +2233,7 @@ module FV3GFS_io_mod
     !--- fms2_io file open logic
     logical :: amiopen
     !--- variables used for fms2_io register axis
-    integer :: is, ie
+    integer :: is, ie, nvar_before_lake
     integer, allocatable, dimension(:) :: buffer
     type(clm_lake_data_type), target :: clm_lake
     !--- temporary variables for storing rrfs_sd fields

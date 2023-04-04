@@ -2217,6 +2217,13 @@
   dimensions = (horizontal_loop_extent)
   type = integer
   active = (control_for_lake_model_selection == 2)
+[lake_cannot_freeze]
+  standard_name = clm_lake_cannot_freeze
+  long_name = lake at this point is so salty it cannot freeze
+  units = 1
+  dimensions = (horizontal_loop_extent)
+  type = integer
+  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
 [emdust]
   standard_name = emission_of_dust_for_smoke
   long_name = emission of dust for smoke

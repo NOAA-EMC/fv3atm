@@ -454,6 +454,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lake_clay3d(:,:) => null()
     real (kind=kind_phys), pointer :: lake_sand3d(:,:) => null()
     integer, pointer :: lake_is_salty(:) => null()
+    integer, pointer :: lake_cannot_freeze(:) => null()
     real (kind=kind_phys), pointer :: clm_lake_initialized(:) => null() !< lakeini was called
     !--- aerosol surface emissions for Thompson microphysics & smoke dust
     real (kind=kind_phys), pointer :: emdust  (:)     => null()  !< instantaneous dust emission
@@ -2721,6 +2722,7 @@ module GFS_typedefs
        allocate(Sfcprop%lake_clay3d(IM,Model%nlevsoil_clm_lake))
        allocate(Sfcprop%lake_sand3d(IM,Model%nlevsoil_clm_lake))
        allocate(Sfcprop%lake_is_salty(IM))
+       allocate(Sfcprop%lake_cannot_freeze(IM))
        allocate(Sfcprop%clm_lake_initialized(IM))
 
        Sfcprop%lake_t2m = clear_val
@@ -2752,6 +2754,7 @@ module GFS_typedefs
        Sfcprop%lake_clay3d = clear_val
        Sfcprop%lake_sand3d = clear_val
        Sfcprop%lake_is_salty = zero
+       Sfcprop%lake_cannot_freeze = zero
        Sfcprop%clm_lake_initialized = zero
     endif
 
@@ -3500,7 +3503,7 @@ module GFS_typedefs
 
 !--- flake model parameters
     integer              :: lkm            =  0                       !< =1 run lake, =2 run lake&nsst =0 no lake
-    integer              :: iopt_lake      =  1                       !< =1 flake, =2 clm lake
+    integer              :: iopt_lake      =  2                       !< =1 flake, =2 clm lake
     real(kind_phys)      :: lakedepth_threshold = 1.0                 !< lakedepth must be GREATER than this value to enable a lake model
     real(kind_phys)      :: lakefrac_threshold  = 0.0                 !< lakefrac must be GREATER than this value to enable a lake model
     logical              :: use_lake2m     = .false.                  !< use 2m T & Q from clm lake model
