@@ -899,7 +899,7 @@ module FV3GFS_io_mod
     integer :: nvar_oro_ls_ss
     integer :: nvar_vegfr, nvar_soilfr
     integer :: nvar_s2r, nvar_s2mp, nvar_s3mp, isnow
-    integer :: nvar_emi, nvar_dust12m, nvar_gbbepx, nvar_before_lake, nvar_s2l
+    integer :: nvar_emi, nvar_dust12m, nvar_gbbepx, nvar_before_lake, nvar_s2l, nvar_rrfssd
     integer, allocatable :: ii1(:), jj1(:)
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
@@ -2247,7 +2247,7 @@ module FV3GFS_io_mod
     !--- fms2_io file open logic
     logical :: amiopen
     !--- variables used for fms2_io register axis
-    integer :: is, ie, nvar_before_lake
+    integer :: is, ie
     integer, allocatable, dimension(:) :: buffer
     type(clm_lake_data_type), target :: clm_lake
     !--- temporary variables for storing rrfs_sd fields

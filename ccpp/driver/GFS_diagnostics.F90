@@ -1874,19 +1874,6 @@ module GFS_diagnostics
 
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af totgrp,idx=',idx
 
-    if(associated(Coupling(1)%dqdti)) then
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'tsflw'
-    ExtDiag(idx)%desc = 'tsflw'
-    ExtDiag(idx)%unit = 'K'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%dqdti(:,:)
-    enddo
-    endif
-
     if(associated(Coupling(1)%sfcdlw)) then
     idx = idx + 1
     ExtDiag(idx)%axes = 2
