@@ -188,9 +188,8 @@ SCHEME_FILES = [
     # HAFS FER_HIRES
     'physics/physics/mp_fer_hires.F90',
     # SMOKE
-    'physics/smoke/rrfs_smoke_wrapper.F90',
-    'physics/smoke/rrfs_smoke_postpbl.F90',
-    'physics/smoke/rrfs_smoke_lsdep_wrapper.F90',
+    'physics/physics/smoke_dust/rrfs_smoke_wrapper.F90',
+    'physics/physics/smoke_dust/rrfs_smoke_postpbl.F90',
     # RRTMGP
     'physics/physics/rrtmgp_aerosol_optics.F90',
     'physics/physics/rrtmgp_lw_main.F90',
