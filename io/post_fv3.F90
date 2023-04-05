@@ -494,7 +494,7 @@ module post_fv3
 !     Jul 2019    J. Wang      Initial code
 !     Apr 2022    W. Meng      Unify set_postvars_gfs and
 !                               set_postvars_regional to set_postvars_fv3
-!     Apr 2023    W. Meng      Sync RRFS changes from off-line post
+!     Apr 2023    W. Meng      Sync RRFS and GFS changes from off-line post
 !
 !-----------------------------------------------------------------------
 !*** set up post fields from nmint_state
@@ -539,7 +539,9 @@ module post_fv3
                              sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
                              albedo, tg, prate_max, pwat, snow_acm, snow_bkt,  &
                              acgraup, graup_bucket, acfrain, frzrn_bucket,     &
-                             ltg1_max, ltg2_max, ltg3_max, aodtot, ebb, hwp
+                             ltg1_max, ltg2_max, ltg3_max, aodtot, ebb, hwp,   &
+                             aod550,du_aod550,ss_aod550,su_aod550,oc_aod550,   &
+                             bc_aod550
       use soil,        only: sldpth, sh2o, smc, stc, sllevel
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -548,7 +550,7 @@ module post_fv3
                              tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat, &
                              ardlw, ardsw, asrfc, avrain, avcnvc, iSF_SURFACE_PHYSICS,&
                              td3d, idat, sdat, ifhr, ifmin, dt, nphs, dtq2, pt_tbl, &
-                             alsl, spl, ihrst, modelname, nsoil
+                             alsl, spl, ihrst, modelname, nsoil, rdaod
       use params_mod,  only: erad, dtr, capa, p1000, small
       use gridspec_mod,only: latstart, latlast, lonstart, lonlast, cenlon, cenlat, &
                              dxval, dyval, truelat2, truelat1, psmapf, cenlat,     &
@@ -2393,6 +2395,70 @@ module post_fv3
                 endif
               enddo
             enddo
+
+            if(rdaod) then
+              ! MERRA2 aerosols 
+              if(trim(fieldname)=='aod550') then
+                !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,aod550,arrayr42d,fillValue)
+                do j=jsta,jend
+                  do i=ista, iend
+                    aod550(i,j) = arrayr42d(i,j)
+                    if(abs(arrayr42d(i,j)-fillvalue)<small) aod550(i,j) = spval
+                  enddo
+                enddo
+              endif
+
+              if(trim(fieldname)=='du_aod550') then
+                !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,du_aod550,arrayr42d,fillValue)
+                do j=jsta,jend
+                  do i=ista, iend
+                    du_aod550(i,j) = arrayr42d(i,j)
+                    if(abs(arrayr42d(i,j)-fillvalue)<small) du_aod550(i,j) = spval
+                  enddo
+                enddo
+              endif
+
+              if(trim(fieldname)=='ss_aod550') then
+                !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ss_aod550,arrayr42d,fillValue)
+                do j=jsta,jend
+                  do i=ista, iend
+                    ss_aod550(i,j) = arrayr42d(i,j)
+                    if(abs(arrayr42d(i,j)-fillvalue)<small) ss_aod550(i,j) = spval
+                  enddo
+                enddo
+              endif
+ 
+              if(trim(fieldname)=='su_aod550') then
+                !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,su_aod550,arrayr42d,fillValue)
+                do j=jsta,jend
+                  do i=ista, iend
+                    su_aod550(i,j) = arrayr42d(i,j)
+                    if(abs(arrayr42d(i,j)-fillvalue)<small) su_aod550(i,j) = spval
+                  enddo
+                enddo
+              endif
+
+              if(trim(fieldname)=='oc_aod550') then
+                !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,oc_aod550,arrayr42d,fillValue)
+                do j=jsta,jend
+                  do i=ista, iend
+                    oc_aod550(i,j) = arrayr42d(i,j)
+                    if(abs(arrayr42d(i,j)-fillvalue)<small) oc_aod550(i,j) = spval
+                  enddo
+                enddo
+              endif
+
+              if(trim(fieldname)=='bc_aod550') then
+                !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,bc_aod550,arrayr42d,fillValue)
+                do j=jsta,jend
+                  do i=ista, iend
+                    bc_aod550(i,j) = arrayr42d(i,j)
+                    if(abs(arrayr42d(i,j)-fillvalue)<small) bc_aod550(i,j) = spval
+                  enddo
+                enddo
+              endif
+
+            endif !end rdaod
 
             ! inst  cloud top pressure
             if(trim(fieldname)=='prescnvclt') then
