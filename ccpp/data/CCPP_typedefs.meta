@@ -739,20 +739,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[evbs]
-  standard_name = soil_upward_latent_heat_flux
-  long_name = soil upward latent heat flux
-  units = W m-2
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[evcw]
-  standard_name = canopy_upward_latent_heat_flux
-  long_name = canopy upward latent heat flux
-  units = W m-2
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [pah]
   standard_name = total_precipitation_advected_heat
   long_name = precipitation advected heat - total
@@ -1699,9 +1685,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[radar_reset]
-  standard_name = flag_for_resetting_radar_reflectivity_calculation
-  long_name = flag for resetting radar reflectivity calculation
+[fullradar_diag]
+  standard_name = do_full_radar_reflectivity
+  long_name = flag for computing full radar reflectivity
   units = flag
   dimensions = ()
   type = logical
@@ -1898,13 +1884,6 @@
   long_name = y-wind before entering a physics scheme
   units = m s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[sbsno]
-  standard_name = snow_deposition_sublimation_upward_latent_heat_flux
-  long_name = latent heat flux from snow depo/subl
-  units = W m-2
-  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [scmpsw]
@@ -2107,13 +2086,6 @@
   units = flag
   dimensions = ()
   type = logical
-[trans]
-  standard_name = transpiration_flux
-  long_name = total plant transpiration rate
-  units = W m-2
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [tseal]
   standard_name = surface_skin_temperature_for_nsst
   long_name = ocean surface skin temperature

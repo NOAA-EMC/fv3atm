@@ -111,6 +111,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[wgrs]
+  standard_name = unsmoothed_nonhydrostatic_upward_air_velocity
+  long_name = unsmoothed non-hydrostatic upward air velocity
+  units = m s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_lightning_threat_index_calculations)
 [vvl]
   standard_name = lagrangian_tendency_of_air_pressure
   long_name = layer mean vertical velocity
@@ -605,6 +613,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[vegtype_frac]
+  standard_name = fraction_of_vegetation_category
+  long_name = fraction of horizontal grid area occupied by given vegetation category
+  units = frac
+  dimensions = (horizontal_loop_extent,number_of_vegetation_categories)
+  type = real
+  kind = kind_phys
+[soiltype_frac]
+  standard_name = fraction_of_soil_category
+  long_name = fraction of horizontal grid area occupied by given soil category
+  units = frac
+  dimensions = (horizontal_loop_extent,number_of_soil_categories)
+  type = real
+  kind = kind_phys
 [lakefrac]
   standard_name = lake_area_fraction
   long_name = fraction of horizontal grid area occupied by lake
@@ -761,9 +783,9 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
-[smoke_GBBEPx]
-  standard_name = emission_smoke_GBBEPx
-  long_name = emission fire GBBEPx
+[smoke_RRFS]
+  standard_name = emission_smoke_RRFS
+  long_name = emission fire RRFS
   units = various
   dimensions = (horizontal_dimension,24,3)
   type = real
@@ -1628,7 +1650,7 @@
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [rhofr]
-  standard_name = frozen_precipitation_density
+  standard_name = lsm_internal_surface_frozen_precipitation_density
   long_name = density of frozen precipitation
   units = kg m-3
   dimensions = (horizontal_loop_extent)
@@ -1652,21 +1674,35 @@
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [snowfallac_land]
-  standard_name = surface_snow_amount_over_land
-  long_name = run-total snow accumulation on the ground
+  standard_name = surface_snow_amount_assuming_variable_snow_density_over_land
+  long_name = run-total snow accumulation on the ground with variable snow density over land
   units = kg m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[acsnow_land]
+  standard_name = surface_snow_lwe_thickness_amount_over_land
+  long_name = run-total snowfall water equivalent over land
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [snowfallac_ice]
-  standard_name = surface_snow_amount_over_ice
-  long_name = run-total snow accumulation on the ice
+  standard_name = surface_snow_amount_assuming_variable_snow_density_over_ice
+  long_name = run-total snow accumulation on the ground with variable snow density over ice
   units = kg m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[acsnow_ice]
+  standard_name = surface_snow_lwe_thickness_amount_over_ice
+  long_name = run-total snowfall water equivalent over ice
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [ustm]
   standard_name = surface_friction_velocity_for_momentum
   long_name = friction velocity isolated for momentum only
@@ -1868,6 +1904,78 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[emdust]
+  standard_name = emission_of_dust_for_smoke
+  long_name = emission of dust for smoke
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[emseas]
+  standard_name = emission_of_sea_salt_for_mp_indir_fdb
+  long_name = emission of sea salt for mp indirect feedabck
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[emanoc]
+  standard_name = emission_of_anothropogenic_for_mp_indir_fdb
+  long_name = emission of anothropogenic for mp indirect feedabck
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[ebb_smoke_hr]
+  standard_name = surface_smoke_emission
+  long_name = emission of surface smoke
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[frp_hr]
+  standard_name = frp_hourly
+  long_name = hourly fire radiative power
+  units = MW
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[frp_std_hr]
+  standard_name = frp_std_hourly
+  long_name = hourly stdandard deviation of fire radiative power
+  units = MW
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[fhist]
+  standard_name = fire_hist
+  long_name = coefficient to scale the fire activity depending on the fire duration
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[coef_bb_dc]
+  standard_name = coef_bb_dc
+  long_name = coef to estimate the fire emission
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[fire_in]
+  standard_name = smoke_fire_auxiliary_input
+  long_name = smoke fire auxiliary input variables
+  units = various
+  dimensions = (horizontal_loop_extent,fire_auxiliary_data_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 
 ########################################################################
 [ccpp-table-properties]
@@ -2608,14 +2716,6 @@
   type = real
   kind = kind_phys
   active = (control_for_stochastic_land_surface_perturbation /= 0)
-[dqdti]
-  standard_name = instantaneous_water_vapor_specific_humidity_tendency_due_to_convection
-  long_name = instantaneous moisture tendency due to convection
-  units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
 [nwfa2d]
   standard_name = tendency_of_hygroscopic_aerosols_at_surface_adjacent_layer
   long_name = instantaneous water-friendly sfc aerosol source
@@ -2632,70 +2732,6 @@
   type = real
   kind = kind_phys
   active = (control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .and. flag_for_aerosol_physics)
-[emdust]
-  standard_name = emission_of_dust_for_smoke
-  long_name = emission of dust for smoke
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[emseas]
-  standard_name = emission_of_seas_for_smoke
-  long_name = emission of seas for smoke
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[emanoc]
-  standard_name = emission_of_anoc_for_thompson_mp
-  long_name = emission of anoc for thompson mp
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[ebb_smoke_hr]
-  standard_name = surface_smoke_emission
-  long_name = emission of surface smoke
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[frp_hr]
-  standard_name = frp_hourly
-  long_name = hourly fire radiative power
-  units = MW
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[frp_std_hr]
-  standard_name = frp_std_hourly
-  long_name = hourly stdandard deviation of fire radiative power
-  units = MW
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[fhist]
-  standard_name = fire_hist
-  long_name = coefficient to scale the fire activity depending on the fire duration
-  units = none
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
-[coef_bb_dc]
-  standard_name = coef_bb_dc
-  long_name = coef to estimate the fire emission
-  units = none
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (do_smoke_coupling)
 [ebu_smoke]
   standard_name = ebu_smoke
   long_name = buffer of vertical fire emission
@@ -2724,7 +2760,15 @@
   standard_name = chem3d_mynn_pbl_transport
   long_name = mynn pbl transport of smoke and dust
   units = various
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,2)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_chemical_species_vertically_mixed)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[ddvel]
+  standard_name = dry_deposition_velocity_mynn_pbl_transport
+  long_name = dry deposition velocity by mynn pbl transport
+  units = m s-1
+  dimensions = (horizontal_loop_extent,number_of_chemical_species_deposited)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3120,18 +3164,12 @@
   units = flag
   dimensions = ()
   type = logical
-[rrfs_smoke]
+[rrfs_sd]
   standard_name = do_smoke_coupling
-  long_name = flag controlling rrfs_smoke collection (default off)
+  long_name = flag controlling rrfs_sd collection (default off)
   units = flag
   dimensions = ()
   type = logical
-[dust_smoke_rrtmg_band_number]
-  standard_name = index_of_shortwave_band_affected_by_smoke
-  long_name = rrtmg band number that smoke and dust should affect
-  units = count
-  dimensions = ()
-  type = integer
 [cpl_imp_mrg]
   standard_name = flag_for_merging_imported_data
   long_name = flag controlling cpl_imp_mrg for imported data (default off)
@@ -3311,6 +3349,73 @@
   units = flag
   dimensions = ()
   type = integer
+[iaermdl]
+  standard_name = control_for_aerosol_radiation_scheme
+  long_name = control of aerosol scheme in radiation
+  units = 1
+  dimensions = ()
+  type = integer
+[iaerflg]
+  standard_name = control_for_aerosol_effects_in_radiation
+  long_name = control of aerosol effects in radiation
+  units = 1
+  dimensions = ()
+  type = integer
+[lalw1bd]
+  standard_name = do_longwave_aerosol_band_properties
+  long_name = control of band or multiband longwave aerosol properties
+  units = 1
+  dimensions = ()
+  type = logical
+[aeros_file]
+  standard_name = aerosol_data_file
+  long_name = aerosol data file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[solar_file]
+  standard_name = solar_constant_file
+  long_name = external solar constant data table file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[semis_file]
+  standard_name = surface_emissivity_data_file
+  long_name = surface emissivity data file for radiation
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[co2dat_file]
+  standard_name = co2_monthly_obs_data_table_file
+  long_name = co2 monthly observation data table
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[co2gbl_file]
+  standard_name = co2_global_annual_mean_data_table_file
+  long_name = co2 global annual mean data file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[co2usr_file]
+  standard_name = co2_user_data_table_file
+  long_name =  co2 user defined data table file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
+[co2cyc_file]
+  standard_name = co2_clim_monthly_cycle_data_table_file
+  long_name = co2 climotological monthly cycle data table file
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=26
 [icliq_sw]
   standard_name = control_for_shortwave_radiation_liquid_clouds
   long_name = sw optical property for liquid clouds
@@ -3365,24 +3470,54 @@
   units = flag
   dimensions = ()
   type = integer
-[crick_proof]
+[iswmode]
+  standard_name = control_for_sw_scattering_choice
+  long_name = control of rrtmg shortwave scattering choice
+  units = 1
+  dimensions = ()
+  type = integer
+[lcrick]
   standard_name = flag_for_CRICK_proof_cloud_water
   long_name = flag for CRICK-Proof cloud water
   units = flag
   dimensions = ()
   type = logical
-[ccnorm]
+[lcnorm]
   standard_name = flag_for_in_cloud_condensate
   long_name = flag for cloud condensate normalized by cloud cover
   units = flag
   dimensions = ()
   type = logical
-[norad_precip]
+[lnoprec]
   standard_name = flag_for_turning_off_precipitation_radiative_effect
   long_name = radiation precip flag for Ferrier/Moorthi
   units = flag
   dimensions = ()
   type = logical
+[rad_hr_units]
+  standard_name = control_for_radiation_heating_rate_units
+  long_name = control of heating rate units
+  units = 1
+  dimensions =  ()
+  type = integer
+[inc_minor_gas]
+  standard_name = flag_to_include_minor_gases_in_rrtmg
+  long_name = flag to include minor trace gases in rrtmg 
+  units = flag
+  dimensions = ()
+  type = logical
+[ipsd0]
+  standard_name = initial_seed_for_mcica
+  long_name = initial permutaion seed for mcica radiation
+  units = 1
+  dimensions =  ()
+  type = integer
+[ipsdlim]
+  standard_name = limit_for_initial_seed_for_mcica
+  long_name = limit for initial permutaion seed for mcica radiation
+  units = 1
+  dimensions =  ()
+  type = integer
 [lwhtr]
   standard_name = flag_for_output_of_tendency_of_air_temperature_due_to_longwave_heating_on_radiation_timestep_assuming_clear_sky
   long_name = flag to output lw heating rate (Radtend%lwhc)
@@ -3632,8 +3767,8 @@
   type = real
   kind = kind_phys
 [top_at_1]
-  standard_name = flag_for_vertical_ordering_in_RRTMGP
-  long_name = flag for vertical ordering in RRTMGP
+  standard_name = flag_for_vertical_ordering_in_radiation
+  long_name = flag for vertical ordering in radiation
   units = flag
   dimensions = ()
   type = logical
@@ -3956,33 +4091,54 @@
   kind = kind_phys
 [nssl_alphah]
   standard_name = nssl_alpha_graupel
-  long_name = graupel PSD shape parameter in NSSL micro
+  long_name = graupel particle size distribution(PSD) shape parameter in NSSL microphysics scheme
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
 [nssl_alphahl]
   standard_name = nssl_alpha_hail
-  long_name = hail PSD shape parameter in NSSL micro
+  long_name = hail particle size distribution(PSD) shape parameter in NSSL microphysics scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_alphar]
+  standard_name = nssl_alpha_rain
+  long_name = rain particle size distribution(PSD) shape parameter in NSSL microphysics scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_ehw0_in]
+  standard_name = nssl_graupel_collection_efficiency
+  long_name = graupel droplet collection efficiency in NSSL microphysics scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_ehlw0_in]
+  standard_name = nssl_hail_collection_efficiency
+  long_name = hail droplet collection efficiency in NSSL microphysics scheme
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
 [nssl_ccn_on]
   standard_name = nssl_ccn_on
-  long_name = CCN activation flag in NSSL micro
+  long_name = CCN activation flag in NSSL microphysics scheme
   units = flag
   dimensions = ()
   type = logical
 [nssl_hail_on]
   standard_name = nssl_hail_on
-  long_name = hail activation flag in NSSL micro
+  long_name = hail activation flag in NSSL microphysics scheme
   units = flag
   dimensions = ()
   type = logical
 [nssl_invertccn]
   standard_name = nssl_invertccn
-  long_name = flag to invert CCN in NSSL micro
+  long_name = flag to invert CCN in NSSL microphysics scheme
   units = flag
   dimensions = ()
   type = logical
@@ -4256,6 +4412,30 @@
   units = flag
   dimensions = ()
   type = integer
+[mosaic_lu]
+  standard_name = control_for_fractional_landuse_in_ruc_land_surface_scheme
+  long_name = control for use of fractional landuse info in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[mosaic_soil]
+  standard_name = control_for_fractional_soil_in_ruc_land_surface_scheme
+  long_name = control for use of fractional soil info in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[isncond_opt]
+  standard_name = control_for_soil_thermal_conductivity_option_in_ruc_lsm
+  long_name = control for soil thermal conductivity option in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
+[isncovr_opt]
+  standard_name = control_for_snow_cover_fraction_option_in_ruc_lsm
+  long_name = control for snow cover fraction option in RUC land surface model
+  units = flag
+  dimensions = ()
+  type = integer
 [kice]
   standard_name = vertical_dimension_of_sea_ice
   long_name = vertical loop extent for ice levels, start at 1
@@ -4292,6 +4472,12 @@
   units = count
   dimensions = ()
   type = integer
+[exticeden]
+  standard_name = do_external_surface_frozen_precipitation_density
+  long_name = flag for calculating frozen precip ice density outside of the LSM
+  units = flag
+  dimensions = ()
+  type = logical
 [zs]
   standard_name = depth_of_soil_layers
   long_name = depth of soil levels for land surface model
@@ -4357,10 +4543,22 @@
   units = index
   dimensions = ()
   type = integer
+[nvegcat]
+  standard_name = number_of_vegetation_categories
+  long_name = number of vegetation categories
+  units = count
+  dimensions = ()
+  type = integer
 [isot]
   standard_name = control_for_soil_type_dataset
   long_name = soil type dataset choice
   units = index
+  dimensions = ()
+  type = integer
+[nsoilcat]
+  standard_name = number_of_soil_categories
+  long_name = number of soil categories
+  units = count
   dimensions = ()
   type = integer
 [iopt_thcnd]
@@ -4627,6 +4825,18 @@
 [thsfc_loc]
   standard_name = flag_for_reference_pressure_theta
   long_name = flag for reference pressure in theta calculation
+  units = flag
+  dimensions = ()
+  type = logical
+[diag_flux]
+  standard_name = flag_for_flux_method_in_2m_diagnostics
+  long_name = flag for flux method in 2-m diagnostics
+  units = flag
+  dimensions = ()
+  type = logical
+[diag_log]
+  standard_name = flag_for_log_method_in_2m_diagnostics
+  long_name = flag for log method in 2-m diagnostics
   units = flag
   dimensions = ()
   type = logical
@@ -5666,6 +5876,12 @@
   units = index
   dimensions = ()
   type = integer
+[ntcoarsepm]
+  standard_name = index_for_coarse_particulate_matter_in_tracer_concentration_array
+  long_name = tracer index for coarse particulate matter
+  units = index
+  dimensions = ()
+  type = integer
 [nchem]
   standard_name = number_of_chemical_species_vertically_mixed
   long_name = number of chemical vertically mixed
@@ -5872,12 +6088,44 @@
   dimensions = ()
   type = logical
   active = (do_smoke_coupling)
-[fire_turb]
+[enh_mix]
   standard_name = do_planetary_boundary_layer_fire_enhancement
   long_name = flag for rrfs smoke mynn enh vermix
   units = flag
   dimensions = ()
   type = logical
+  active = (do_smoke_coupling)
+[smoke_dir_fdb_coef]
+  standard_name = smoke_dust_direct_fdb_coef
+  long_name = smoke dust direct feedback coefficents
+  units = none
+  dimensions = (7)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[dust_alpha]
+  standard_name = alpha_fengsha_dust_scheme
+  long_name = alpha paramter for fengsha dust scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[dust_gamma]
+  standard_name = gamma_fengsha_dust_scheme
+  long_name = gamma paramter for fengsha dust scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[wetdep_ls_alpha]
+  standard_name = alpha_for_ls_wet_depoistion
+  long_name = alpha paramter for ls wet deposition
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
   active = (do_smoke_coupling)
 [seas_opt]
   standard_name = control_for_smoke_sea_salt
@@ -5893,16 +6141,16 @@
   dimensions = ()
   type = integer
   active = (do_smoke_coupling)
-[biomass_burn_opt]
-  standard_name = control_for_smoke_biomass_burn
-  long_name = rrfs smoke biomass burning option
+[drydep_opt]
+  standard_name = control_for_smoke_dry_deposition
+  long_name = rrfs smoke dry deposition option
   units = index
   dimensions = ()
   type = integer
   active = (do_smoke_coupling)
-[drydep_opt]
-  standard_name = control_for_smoke_dry_deposition
-  long_name = rrfs smoke dry deposition option
+[coarsepm_settling]
+  standard_name = control_for_smoke_coarsepm_settling
+  long_name = rrfs smoke coarsepm settling option
   units = index
   dimensions = ()
   type = integer
@@ -5937,10 +6185,10 @@
   active = (do_smoke_coupling)
 [smoke_forecast]
   standard_name = do_smoke_forecast
-  long_name = flag for rrfs smoke forecast
-  units = flag
+  long_name = index for rrfs smoke forecast
+  units = index
   dimensions = ()
-  type = logical
+  type = integer
   active = (do_smoke_coupling)
 [aero_ind_fdb]
   standard_name = do_smoke_aerosol_indirect_feedback
@@ -6074,6 +6322,12 @@
 [print_diff_pgr]
   standard_name = flag_to_print_pgr_differences_every_timestep
   long_name = flag to print pgr differences every timestep
+  units = flag
+  dimensions = ()
+  type = logical
+[lightning_threat]
+  standard_name = do_lightning_threat_index_calculations
+  long_name = enables the lightning threat index calculations
   units = flag
   dimensions = ()
   type = logical
@@ -6310,12 +6564,12 @@
   units = flag
   dimensions = ()
   type = logical
-[bl_mynn_tkebudget]
+[tke_budget]
   standard_name = control_for_tke_budget_output
   long_name = flag for activating TKE budget
   units = flag
   dimensions = ()
-  type = logical
+  type = integer
 [bl_mynn_tkeadvect]
   standard_name = flag_for_tke_advection
   long_name = flag for activating TKE advection
@@ -6535,6 +6789,12 @@
   units = flag
   dimensions = ()
   type = logical
+[fire_aux_data_levels]
+  standard_name = fire_auxiliary_data_extent
+  long_name = number of levels of fire auxiliary data
+  units = count
+  dimensions = ()
+  type = integer
 
 ########################################################################
 [ccpp-table-properties]
@@ -7415,6 +7675,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[ext550]
+  standard_name = aerosol_optical_depth_at_550nm
+  long_name = 3d optical extinction for total aerosol species
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [swhc]
   standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_timestep
   long_name = clear sky sw heating rates
@@ -7522,9 +7789,51 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[sbsno]
+  standard_name = snow_deposition_sublimation_upward_latent_heat_flux
+  long_name = latent heat flux from snow depo/subl
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[evbs]
+  standard_name = soil_upward_latent_heat_flux
+  long_name = soil upward latent heat flux
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[evcw]
+  standard_name = canopy_upward_latent_heat_flux
+  long_name = canopy upward latent heat flux
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[trans]
+  standard_name = transpiration_flux
+  long_name = total plant transpiration rate
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [soilm]
   standard_name = soil_moisture_content
   long_name = soil moisture
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[snowmt_land]
+  standard_name = surface_snow_melt_over_land
+  long_name = snow melt during timestep over land
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[snowmt_ice]
+  standard_name = surface_snow_melt_over_ice
+  long_name = snow melt during timestep over ice
   units = kg m-2
   dimensions = (horizontal_loop_extent)
   type = real
@@ -7624,6 +7933,55 @@
   standard_name = accumulated_lwe_thickness_of_graupel_amount_in_bucket
   long_name = accumulated graupel precipitation in bucket
   units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[frzr]
+  standard_name = cumulative_lwe_thickness_of_surface_freezing_rain_amount
+  long_name = accumulated surface freezing rain
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[frzrb]
+  standard_name = cumulative_lwe_thickness_of_surface_freezing_rain_amount_in_bucket
+  long_name = accumulated surface freezing rain in bucket
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[frozr]
+  standard_name = cumulative_lwe_thickness_of_surface_graupel_amount
+  long_name = accumulated surface graupel
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[frozrb]
+  standard_name = cumulative_lwe_thickness_of_surface_graupel_amount_in_bucket
+  long_name = accumulated surface graupel in bucket
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[tsnowp]
+  standard_name = cumulative_lwe_thickness_of_surface_snow_amount
+  long_name = accumulated surface snow
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[tsnowpb]
+  standard_name = cumulative_lwe_thickness_of_surface_snow_amount_in_bucket
+  long_name = accumulated surface snow in bucket
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[rhonewsn1]
+  standard_name = surface_frozen_precipitation_density
+  long_name = density of precipitation ice
+  units = kg m-3
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -8310,7 +8668,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
 [qwt]
   standard_name = tke_tendency_due_to_vertical_transport
   long_name = tke tendency due to vertical transport and diffusion
@@ -8318,7 +8676,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
 [qshear]
   standard_name = tke_tendency_due_to_shear
   long_name = tke tendency due to shear
@@ -8326,7 +8684,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
 [qbuoy]
   standard_name = tke_tendency_due_to_buoyancy
   long_name = tke tendency due to buoyancy production or consumption
@@ -8334,7 +8692,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
 [qdiss]
   standard_name = tke_tendency_due_to_dissipation
   long_name = tke tendency due to the dissipation of tke
@@ -8342,7 +8700,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
 [nupdraft]
   standard_name = number_of_plumes
   long_name = number of plumes per grid column
@@ -8815,6 +9173,33 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[ltg1_max]
+  standard_name = lightning_threat_index_1
+  long_name = lightning threat index 1
+  units = flashes 5 min-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+  active = (do_lightning_threat_index_calculations)
+[ltg2_max]
+  standard_name = lightning_threat_index_2
+  long_name = lightning threat index 2
+  units = flashes 5 min-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+  active = (do_lightning_threat_index_calculations)
+[ltg3_max]
+  standard_name = lightning_threat_index_3
+  long_name = lightning threat index 3
+  units = flashes 5 min-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+  active = (do_lightning_threat_index_calculations)
 
 ########################################################################
 [ccpp-table-properties]
@@ -9184,6 +9569,48 @@
   standard_name = lwe_thickness_of_minimum_rain_amount
   long_name = liquid water equivalent thickness of minimum rain amount
   units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_c]
+  standard_name = speed_of_light_in_vacuum
+  long_name = speed of light in vacuum
+  units = m s-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_plnk]
+  standard_name = planck_constant
+  long_name = Planck constant
+  units = J s-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_boltz]
+  standard_name = boltzmann_constant
+  long_name = Boltzmann constant
+  units = J K-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_solr_2008]
+  standard_name = solar_constant_2008
+  long_name = solar constant Tim 2008
+  units = W m-2
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_solr_2002]
+  standard_name = solar_constant_2002
+  long_name= solar constant Liu 2002
+  units = W m-2
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_thgni]
+  standard_name = temperature_ice_nucleation_starts
+  long_name = temperature the H.G.Nuc. ice starts
+  units = K
   dimensions = ()
   type = real
   kind = kind_phys
