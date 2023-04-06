@@ -2493,14 +2493,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
-[tmf]
-  standard_name = instantaneous_tendency_of_specific_humidity_due_to_PBL
-  long_name = instantaneous_tendency_of_specific_humidity_due_to_PBL
-  units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  active = (do_prognostic_updraft_area_fraction)
 [dqdt_qmicro]
   standard_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
   long_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
