@@ -604,7 +604,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: pfl_lsan(:,:)   => null()  !< instantaneous 3D flux of liquid nonconvective precipitation (kg m-2 s-1)
 
     !-- prognostic updraft area fraction coupling in convection
-    real (kind=kind_phys), pointer :: tmf (:,:) => null()         !< tmf to be passed from turublence scheme to convection
     real (kind=kind_phys), pointer :: dqdt_qmicro(:,:) => null()  !< instantanious microphysics tendency to be passed from MP to convection
 
     contains
@@ -2935,8 +2934,6 @@ module GFS_typedefs
     !--prognostic closure - moisture coupling
     if(Model%progsigma)then
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
-       allocate(Coupling%tmf (IM,Model%levs))
-       Coupling%tmf = clear_val
        Coupling%dqdt_qmicro = clear_val
     endif
 
