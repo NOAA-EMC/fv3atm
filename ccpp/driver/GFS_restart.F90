@@ -134,7 +134,6 @@ module GFS_restart
     ! MYNN SFC
     if (Model%do_mynnsfclay) then
       Restart%num2d = Restart%num2d + 13
-      surface_layer_saves_rainprev = .false.
     endif
     ! Save rain prev for lake if surface layer doesn't.
     if (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm .and. &
