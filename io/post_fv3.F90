@@ -86,7 +86,6 @@ module post_fv3
 
       grib      = "grib2"
       gridtype  = "A"
-      !nsoil     = 4
       nsoil     = wrt_int_state%nsoil
       nwtpg     = wrt_int_state%petcount
       jts       = wrt_int_state%out_grid_info(grid_id)%j_start     !<-- Starting J of this write task's subsection
@@ -818,12 +817,10 @@ module post_fv3
 !                   shelter rh max, maxrhshltr
 !                   shelter rh min, minrhshltr
 !$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,spval,ista_2l,iend_2u), &
-!$omp& shared(smstav,sfcevp,acsnow,acsnom,qz0,uz0,vz0,maxrhshltr,minrhshltr)
+!$omp& shared(sfcevp,acsnom,qz0,uz0,vz0,maxrhshltr,minrhshltr)
       do j=jsta_2l,jend_2u
         do i=ista_2l,iend_2u
-          !smstav(i,j) = spval
           sfcevp(i,j) = spval
-          !acsnow(i,j) = spval
           acsnom(i,j) = spval
           qz0(i,j)    = spval
           uz0(i,j)    = spval
@@ -2472,11 +2469,7 @@ module post_fv3
 
             if ((gocart_on .or. gccpp_on) .and. d2d_chem) then
               do K = 1, nbin_du
-                if ( K == 1) VarName='duem001'
-                if ( K == 2) VarName='duem002'
-                if ( K == 3) VarName='duem003'
-                if ( K == 4) VarName='duem004'
-                if ( K == 5) VarName='duem005'
+                write(VarName, '(A,I3.3)') 'duem', k
 
                 if(trim(fieldname)==VarName) then
                   !$omp parallel do default(none) private(i,j,K) shared(jsta,jend,ista,iend,spval,duem,arrayr42d,fillvalue)
