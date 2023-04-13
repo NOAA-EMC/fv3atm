@@ -1,7 +1,7 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
   url = https://github.com/LarissaReames-NOAA/GFDL_atmos_cubed_sphere
-  branch = feature/ideal-new-tm
+  branch = feature/ideal_fix_grid
 [submodule "ccpp/framework"]
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
