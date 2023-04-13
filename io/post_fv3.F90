@@ -603,7 +603,8 @@ module post_fv3
       real,dimension(:),    allocatable :: slat,qstl
       real,external::FPVSNEW
       real,dimension(:,:),allocatable :: dummy, p2d, t2d, q2d,  qs2d,  &
-                             cw2d, cfr2d, buf, buf2
+                             cw2d, cfr2d, accswe_ice, accswe_land, &
+                             snacc_land, snacc_ice
       real,dimension(:,:,:),allocatable :: extsmoke, extdust
       character(len=80)              :: fieldname, wrtFBName, flatlon, &
                                         VarName
@@ -699,8 +700,10 @@ module post_fv3
       if(modelname=='FV3R') then
         allocate(extsmoke(ista:iend,jsta:jend,lm))
         allocate(extdust(ista:iend,jsta:jend,lm))
-        allocate(buf(ista:iend,jsta:jend))
-        allocate(buf2(ista:iend,jsta:jend))
+        allocate(accswe_ice(ista:iend,jsta:jend))
+        allocate(accswe_land(ista:iend,jsta:jend))
+        allocate(snacc_ice(ista:iend,jsta:jend))
+        allocate(snacc_land(ista:iend,jsta:jend))
       endif
 
 !
@@ -2349,64 +2352,45 @@ module post_fv3
             if(modelname=='FV3R')then
             !acsnow
             if(trim(fieldname)=='accswe_land') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,buf,arrayr42d,fillvalue,spval)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,accswe_land,arrayr42d,fillvalue,spval)
               do j=jsta,jend
                 do i=ista, iend
-                  buf(i,j) = arrayr42d(i,j)
-                  if(abs(arrayr42d(i,j)-fillvalue)<small) buf(i,j) = spval
+                  accswe_land(i,j) = arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillvalue)<small) accswe_land(i,j) = spval
                 enddo
               enddo
             endif
             if(trim(fieldname)=='accswe_ice') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,buf2,arrayr42d,fillvalue,spval)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,accswe_ice,arrayr42d,fillvalue,spval)
               do j=jsta,jend
                 do i=ista, iend
-                  buf2(i,j) = arrayr42d(i,j)
-                  if(abs(arrayr42d(i,j)-fillvalue)<small) buf2(i,j) = spval
+                  accswe_ice(i,j) = arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillvalue)<small) accswe_ice(i,j) = spval
                 enddo
               enddo
             endif
-            ! !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,buf,buf2,acsnow)
-             do j=jsta,jend
-               do i=ista, iend
-                 if(buf(i,j)<spval .and. buf2(i,j)<spval) then
-                   acsnow(i,j) = buf(i,j) + buf2(i,j)
-                 else
-                   acsnow(i,j) = spval
-                 endif
-               enddo
-             enddo
-             endif !FV3R
 
             !sndepac
             if(trim(fieldname)=='snacc_land') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,buf,arrayr42d,fillvalue,spval)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,snacc_land,arrayr42d,fillvalue,spval)
               do j=jsta,jend
                 do i=ista, iend
-                  buf(i,j) = arrayr42d(i,j)
-                  if(abs(arrayr42d(i,j)-fillvalue)<small) buf(i,j) = spval
+                  snacc_land(i,j) = arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillvalue)<small) snacc_land(i,j) = spval
                 enddo
               enddo
             endif
             if(trim(fieldname)=='snacc_ice') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,buf2,arrayr42d,fillvalue,spval)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,snacc_ice,arrayr42d,fillvalue,spval)
               do j=jsta,jend
                 do i=ista, iend
-                  buf2(i,j) = arrayr42d(i,j)
-                  if(abs(arrayr42d(i,j)-fillvalue)<small) buf2(i,j) = spval
+                  snacc_ice(i,j) = arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillvalue)<small) snacc_ice(i,j) = spval
                 enddo
               enddo
             endif
-            !!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,buf,buf2,sndepac)
-            do j=jsta,jend
-              do i=ista, iend
-                if(buf(i,j)<spval .and. buf2(i,j)<spval) then
-                  sndepac(i,j) = buf(i,j) + buf2(i,j)
-                else
-                  sndepac(i,j) = spval
-                endif
-              enddo
-            enddo
+
+            endif !FV3R
 
             if(rdaod) then
               ! MERRA2 aerosols 
@@ -4642,23 +4626,47 @@ module post_fv3
       end do
 
       if(modelname=='FV3R') then
-            ! smoke and dust extinction
-            !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,zint,taod5503d,aextc55,extsmoke,extdust,spval)
-            do l=1,lm
-               do j=jsta,jend
-                 do i=ista, iend
-                   if(taod5503d(i,j,l)<spval.and.aextc55(i,j,l)<spval) then
-                     taod5503d(i,j,l)=extsmoke(i,j,l)+extdust(i,j,l)
-                     aextc55(i,j,l)=taod5503d(i,j,l)/(zint(i,j,l)-zint(i,j,l+1))
-                   endif
-                 enddo
+        ! smoke and dust extinction
+        !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,zint,taod5503d,aextc55,extsmoke,extdust,spval)
+          do l=1,lm
+            do j=jsta,jend
+              do i=ista, iend
+                if(taod5503d(i,j,l)<spval.and.aextc55(i,j,l)<spval) then
+                  taod5503d(i,j,l)=extsmoke(i,j,l)+extdust(i,j,l)
+                  aextc55(i,j,l)=taod5503d(i,j,l)/(zint(i,j,l)-zint(i,j,l+1))
+                endif
+              enddo
+            enddo
+          enddo
+
+             !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,accswe_ice,accswe_land,acsnow)
+             do j=jsta,jend
+               do i=ista, iend
+                 if(accswe_ice(i,j)<spval .and. accswe_land(i,j)<spval) then
+                   acsnow(i,j) = accswe_ice(i,j) + accswe_land(i,j)
+                 else
+                   acsnow(i,j) = spval
+                 endif
                enddo
              enddo
+
+            !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snacc_ice,snacc_land,sndepac)
+            do j=jsta,jend
+              do i=ista, iend
+                if(snacc_ice(i,j)<spval .and. snacc_land(i,j)<spval) then
+                  sndepac(i,j) = snacc_ice(i,j) + snacc_land(i,j)
+                else
+                  sndepac(i,j) = spval
+                endif
+              enddo
+            enddo
 
       deallocate(extsmoke)
       deallocate(extdust)
       deallocate(buf)
       deallocate(buf2)
+      deallocate(buf3)
+      deallocate(buf4)
 
       endif !end FV3R
 
