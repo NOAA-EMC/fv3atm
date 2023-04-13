@@ -4353,8 +4353,8 @@ module post_fv3
         do j=jsta,jend
           do i=ista,iend
 
-              TV = T(I,J,L) * (H1+D608*MAX(Q(I,J,L),QMIN))
-              RHOMID(I,J,L) = PMID(I,J,L) / (RD*TV)
+            TV = T(I,J,L) * (H1+D608*MAX(Q(I,J,L),QMIN))
+            RHOMID(I,J,L) = PMID(I,J,L) / (RD*TV)
 
             dustcb(i,j) = MAX(dustcb(i,j), 0.0)
             dustallcb(i,j) = MAX(dustallcb(i,j), 0.0)
@@ -4378,42 +4378,42 @@ module post_fv3
             0.83*salt(i,j,l,3))*RHOMID(i,j,l)  !ug/m3 
 
            if (gocart_on .or. gccpp_on) then
-!      Surface PM10 concentration
-           dusmass(i,j)=(dust(i,j,l,1)+dust(i,j,l,2)+dust(i,j,l,3)+ &
-            0.74*dust(i,j,l,4)+salt(i,j,l,1)+salt(i,j,l,2)+salt(i,j,l,3)+ &
-            salt(i,j,l,4) + soot(i,j,l,1)+soot(i,j,l,2)+waso(i,j,l,1)+ &
-            waso(i,j,l,2) +suso(i,j,l,1)+pp25(i,j,l,1)+pp10(i,j,l,1)) &
-            *RHOMID(i,j,l)  !ug/m3
-!      Surface PM25 concentration       
-           dusmass25(i,j)=(dust(i,j,l,1)+0.38*dust(i,j,l,2)+ &
-           salt(i,j,l,1)+salt(i,j,l,2)+0.83*salt(i,j,l,3) + &
-           soot(i,j,l,1)+soot(i,j,l,2)+waso(i,j,l,1)+ &
-           waso(i,j,l,2) +suso(i,j,l,1)+pp25(i,j,l,1))*RHOMID(i,j,l)  !ug/m3
+             !Surface PM10 concentration
+             dusmass(i,j)=(dust(i,j,l,1)+dust(i,j,l,2)+dust(i,j,l,3)+ &
+              0.74*dust(i,j,l,4)+salt(i,j,l,1)+salt(i,j,l,2)+salt(i,j,l,3)+ &
+              salt(i,j,l,4) + soot(i,j,l,1)+soot(i,j,l,2)+waso(i,j,l,1)+ &
+              waso(i,j,l,2) +suso(i,j,l,1)+pp25(i,j,l,1)+pp10(i,j,l,1)) &
+              *RHOMID(i,j,l)  !ug/m3
+             !Surface PM25 concentration       
+             dusmass25(i,j)=(dust(i,j,l,1)+0.38*dust(i,j,l,2)+ &
+             salt(i,j,l,1)+salt(i,j,l,2)+0.83*salt(i,j,l,3) + &
+             soot(i,j,l,1)+soot(i,j,l,2)+waso(i,j,l,1)+ &
+             waso(i,j,l,2) +suso(i,j,l,1)+pp25(i,j,l,1))*RHOMID(i,j,l)  !ug/m3
 
-!      PM10 column
-           ducmass(i,j)=dustallcb(i,j)+ssallcb(i,j)+bccb(i,j)+ &
-           occb(i,j)+sulfcb(i,j)+pp25cb(i,j)+pp10cb(i,j)
-!      PM25 column
-           ducmass25(i,j)=dustcb(i,j)+sscb(i,j)+bccb(i,j)+occb(i,j) &
-            +sulfcb(i,j)+pp25cb(i,j)
-           endif !gocart_on or gccpp_on
+             !PM10 column
+             ducmass(i,j)=dustallcb(i,j)+ssallcb(i,j)+bccb(i,j)+ &
+             occb(i,j)+sulfcb(i,j)+pp25cb(i,j)+pp10cb(i,j)
+             !PM25 column
+             ducmass25(i,j)=dustcb(i,j)+sscb(i,j)+bccb(i,j)+occb(i,j) &
+             +sulfcb(i,j)+pp25cb(i,j)
 
-           if (nasa_on) then
-!      Surface PM10 concentration
-           dusmass(i,j)=pp10(i,j,l,1)*RHOMID(i,j,l)  !ug/m3
-!      Surface PM25 concentration       
-           dusmass25(i,j)=pp25(i,j,l,1)*RHOMID(i,j,l)  !ug/m3
+           elseif (nasa_on) then
+             !Surface PM10 concentration
+             dusmass(i,j)=pp10(i,j,l,1)*RHOMID(i,j,l)  !ug/m3
+             !Surface PM25 concentration       
+             dusmass25(i,j)=pp25(i,j,l,1)*RHOMID(i,j,l)  !ug/m3
 
-!      PM10 column
-           ducmass(i,j)=pp10cb(i,j)
-!      PM25 column
-           ducmass25(i,j)=pp25cb(i,j)
+             !PM10 column
+             ducmass(i,j)=pp10cb(i,j)
+             !PM25 column
+             ducmass25(i,j)=pp25cb(i,j)
            endif !nasa_on
 
           end do
         end do
 
         endif !end gocart_on, nasa_on
+
 
 !3d fields
           endif
@@ -4642,8 +4642,10 @@ module post_fv3
              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,accswe_ice,accswe_land,acsnow)
              do j=jsta,jend
                do i=ista, iend
-                 if(accswe_ice(i,j)<spval .and. accswe_land(i,j)<spval) then
-                   acsnow(i,j) = accswe_ice(i,j) + accswe_land(i,j)
+                 if(accswe_ice(i,j)<spval) then
+                   acsnow(i,j) = accswe_ice(i,j) 
+                 elseif(accswe_land(i,j)<spval) then
+                   acsnow(i,j) = accswe_land(i,j)
                  else
                    acsnow(i,j) = spval
                  endif
@@ -4653,8 +4655,10 @@ module post_fv3
             !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snacc_ice,snacc_land,sndepac)
             do j=jsta,jend
               do i=ista, iend
-                if(snacc_ice(i,j)<spval .and. snacc_land(i,j)<spval) then
-                  sndepac(i,j) = snacc_ice(i,j) + snacc_land(i,j)
+                if(snacc_ice(i,j)<spval) then
+                  sndepac(i,j) = snacc_ice(i,j) 
+                elseif(snacc_land(i,j)<spval) then
+                  sndepac(i,j) = snacc_land(i,j)
                 else
                   sndepac(i,j) = spval
                 endif
