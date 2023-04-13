@@ -4663,10 +4663,10 @@ module post_fv3
 
       deallocate(extsmoke)
       deallocate(extdust)
-      deallocate(buf)
-      deallocate(buf2)
-      deallocate(buf3)
-      deallocate(buf4)
+      deallocate(accswe_ice)
+      deallocate(accswe_land)
+      deallocate(snacc_ice)
+      deallocate(snacc_land)
 
       endif !end FV3R
 
