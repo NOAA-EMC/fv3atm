@@ -77,6 +77,7 @@
       type(ESMF_FieldBundle)           :: gridFB
       integer                          :: FBCount
       character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)
+      logical                                   :: top_parent_is_global
 !
 !-----------------------------------------------------------------------
       REAL(KIND=8)             :: btim,btim0
@@ -207,7 +208,6 @@
 
       type(ESMF_DistGrid)                     :: acceptorDG, newAcceptorDG
       integer                                 :: grid_id
-      logical                                 :: top_parent_is_global
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -811,7 +811,6 @@
       ! if (lprnt) write(0,*)'wrt_initialize_p1: FBCount=',FBCount, ' from imp_state_write'
 
       allocate(fcstItemNameList(FBCount), fcstItemTypeList(FBCount))
-      allocate(wrt_int_state%wrtFB_names(FBCount))       ! this array should be allocated as wrt_int_state%FBCount long not FBCount
       allocate(outfilename(2000,FBCount))
       outfilename = ''
 
@@ -1003,10 +1002,22 @@
 !
 !loop over all items in the imp_state_write and count output FieldBundles
 
-      ! if (lprnt) write(0,*)'wrt_initialize_p1: before get_outfile FBCount =', FBCount
+      ! if (lprnt) then
+      !   write(*,*)'wrt_initialize_p1: FBCount ', FBCount
+      !   do n=1, FBCount
+      !     write(*,*)'wrt_initialize_p1: ', n, trim(fcstItemNameList(n))
+      !   enddo
+      ! endif
+
       call get_outfile(FBCount, outfilename, FBlist_outfilename, noutfile)
       wrt_int_state%FBCount = noutfile
-      ! if (lprnt) write(0,*)'wrt_initialize_p1: wrt_int_state%FBCount = noutfile ', wrt_int_state%FBCount, noutfile
+
+      ! if (lprnt) then
+      !   write(*,*)'wrt_initialize_p1: wrt_int_state%FBCount ', wrt_int_state%FBCount
+      !   do i=1, wrt_int_state%FBCount
+      !     write(*,*)'wrt_initialize_p1: ', i, trim(FBlist_outfilename(i))
+      !   enddo
+      ! endif
 
 !
 !create output field bundles
@@ -1015,8 +1026,7 @@
 
       do i=1, wrt_int_state%FBCount
 
-        wrt_int_state%wrtFB_names(i) = trim(FBlist_outfilename(i))
-        wrt_int_state%wrtFB(i) = ESMF_FieldBundleCreate(name=trim(wrt_int_state%wrtFB_names(i)), rc=rc)
+        wrt_int_state%wrtFB(i) = ESMF_FieldBundleCreate(name=trim(FBlist_outfilename(i)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         ! if (lprnt) write(0,*)'wrt_initialize_p1: created wrtFB ',i, ' with name ', trim(wrt_int_state%wrtFB_names(i))
 
@@ -1030,7 +1040,7 @@
           ! if (lprnt) write(0,*)'wrt_initialize_p1: got forecast bundle ', "output_"//trim(fcstItemNameList(n))
           ! if (lprnt) write(0,*)'wrt_initialize_p1: is ', trim(fcstItemNameList(n)), ' == ', trim(FBlist_outfilename(i))
 
-          if( index(trim(fcstItemNameList(n)),trim(FBlist_outfilename(i))) == 1 ) then
+          if (trim_regridmethod_suffix(fcstItemNameList(n)) == trim_regridmethod_suffix(FBlist_outfilename(i))) then
 !
 ! copy the fcstfield bundle Attributes to the output field bundle
             ! if (lprnt) write(0,*)'wrt_initialize_p1: copy atts/fields from ', "output_"//trim(fcstItemNameList(n)), ' to ', trim(wrt_int_state%wrtFB_names(i))
@@ -1071,10 +1081,12 @@
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               endif
 
-            enddo
+            enddo ! fieldCount
             deallocate(fcstField, fieldnamelist)
 
           endif ! index(trim(fcstItemNameList(n)),trim(FBlist_outfilename(i)))
+
+        enddo ! end FBCount
 
 ! add output grid related attributes
 
@@ -1145,7 +1157,7 @@
                                      name="dlon", value=dlon(grid_id), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="dlat", value=dlat(grid_id), rc=rc)
-              if (trim(output_grid(grid_id)) /= 'rotated_latlon_moving') then 
+              if (trim(output_grid(grid_id)) /= 'rotated_latlon_moving') then
                 call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                        name="lon1", value=lon1(grid_id), rc=rc)
                 call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
@@ -1193,7 +1205,6 @@
 
             end if
 
-        enddo ! end FBCount
       enddo ! end wrt_int_state%FBCount
 !
 ! add time Attribute
@@ -1674,6 +1685,7 @@
       character(40)                         :: cfhour, cform
       character(20)                         :: time_iso
       character(15)                         :: time_restart
+      character(15)                         :: tile_id
 !
       type(ESMF_Grid)                       :: grid
       type(ESMF_Info)                       :: info
@@ -2033,10 +2045,11 @@
         ! if (lprnt) write(0,*)'wrt_run: loop over wrt_int_state%FBCount ',wrt_int_state%FBCount, ' nfhour ',  nfhour, ' cdate ', cdate(1:6)
         file_loop_all: do nbdl=1, wrt_int_state%FBCount
 
-          ! if (lprnt) write(0,*)'wrt_run: nbdl = ',nbdl, ' fb name ',trim(wrt_int_state%wrtFB_names(nbdl))
+          call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), name=wrtFBName, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
 
           is_restart_bundle = .false.
-          if (wrt_int_state%wrtFB_names(nbdl)(1:8) == 'restart_') then
+          if (wrtFBName(1:8) == 'restart_') then
             is_restart_bundle = .true.
             if (.not.(ANY(frestart(:) == fcst_seconds))) cycle
           else
@@ -2137,7 +2150,7 @@
             write(time_restart,'(I4,I2.2,I2.2,".",I2.2,I2.2,I2.2)') cdate(1:6)
 
             ! strip leading 'restart_' from a bundle name and replace it with a directory name 'RESTART/' to create actual file name
-            filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.nc'
+            filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.nc'
 
             ! I hate this kind of inconsistencies
             ! If it's a restart bundle and the output grid is not cubed sphere and the output restart file is
@@ -2145,19 +2158,23 @@
             ! As opposed to physics restart files (phy_data, sfc_data) which do not have 'tile1' appended.
             ! Why can't we have consistent naming?
 
-            call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=grid, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_GridGet(grid, tileCount=tileCount, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-            if (tileCount == 1) then ! non cubed sphere restart bundles
-              if (wrt_int_state%wrtFB_names(nbdl)(9:11) == 'fv_') then ! 'dynamics' restart bundles, append 'tile1'
-                filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrt_int_state%wrtFB_names(nbdl)(9:))//'.tile1'//'.nc'
+            if (grid_id > 1) then
+              if (top_parent_is_global) then
+                write(tile_id,'(I0)') 6 + grid_id - 1
+              else
+                write(tile_id,'(I0)') grid_id
+              endif
+              filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.tile'//trim(tile_id)//'.nc'
+            else
+              if (.not. top_parent_is_global) then ! non cubed sphere restart bundles
+                if (wrtFBName(9:11) == 'fv_') then ! 'dynamics' restart bundles, append 'tile1'
+                  filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.tile1'//'.nc'
+                endif
               endif
             endif
 
           else ! history bundle
-            filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nc'
+            filename = trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
           endif
           if(mype == lead_write_task) print *,'in wrt run,filename= ',nbdl,trim(filename)
 
@@ -4388,6 +4405,38 @@
        enddo
 
      end subroutine get_outfile
+
+     pure function trim_regridmethod_suffix(string) result(trimmed_string)
+       character(len=*), intent(in) :: string
+       character(len=:), allocatable :: trimmed_string
+
+       trimmed_string = trim_suffix(trim(string),  '_bilinear')
+       trimmed_string = trim_suffix(trimmed_string,'_patch')
+       trimmed_string = trim_suffix(trimmed_string,'_nearest_stod')
+       trimmed_string = trim_suffix(trimmed_string,'_nearest_dtos')
+       trimmed_string = trim_suffix(trimmed_string,'_conserve')
+
+     end function trim_regridmethod_suffix
+
+     pure function trim_suffix(string, suffix) result(trimmed_string)
+       character(len=*), intent(in) :: string, suffix
+       character(len=:), allocatable :: trimmed_string
+       integer :: suffix_length, string_length
+
+       suffix_length = len(suffix)
+       string_length = len(string)
+
+       if (string_length >= suffix_length) then
+         if (string(string_length-suffix_length+1:string_length) == suffix) then
+           trimmed_string = string(1:string_length-suffix_length)
+         else
+           trimmed_string = string
+         endif
+       else
+         trimmed_string = string
+       endif
+
+     end function trim_suffix
 !
 !-----------------------------------------------------------------------
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
