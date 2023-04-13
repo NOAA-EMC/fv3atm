@@ -4642,10 +4642,10 @@ module post_fv3
              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,accswe_ice,accswe_land,acsnow)
              do j=jsta,jend
                do i=ista, iend
-                 if(accswe_ice(i,j)<spval) then
-                   acsnow(i,j) = accswe_ice(i,j) 
-                 elseif(accswe_land(i,j)<spval) then
-                   acsnow(i,j) = accswe_land(i,j)
+                 if(accswe_land(i,j)<spval) then
+                   acsnow(i,j) = accswe_land(i,j) 
+                 elseif(accswe_ice(i,j)<spval) then
+                   acsnow(i,j) = accswe_ice(i,j)
                  else
                    acsnow(i,j) = spval
                  endif
@@ -4655,10 +4655,10 @@ module post_fv3
             !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snacc_ice,snacc_land,sndepac)
             do j=jsta,jend
               do i=ista, iend
-                if(snacc_ice(i,j)<spval) then
-                  sndepac(i,j) = snacc_ice(i,j) 
-                elseif(snacc_land(i,j)<spval) then
-                  sndepac(i,j) = snacc_land(i,j)
+                if(snacc_land(i,j)<spval) then
+                  sndepac(i,j) = snacc_land(i,j) 
+                elseif(snacc_ice(i,j)<spval) then
+                  sndepac(i,j) = snacc_ice(i,j)
                 else
                   sndepac(i,j) = spval
                 endif
