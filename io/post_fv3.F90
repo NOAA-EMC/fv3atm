@@ -695,10 +695,13 @@ module post_fv3
       nphs = 2.
       dt   = dtq2/nphs
 
-      allocate(extsmoke(ista:iend,jsta:jend,lm))
-      allocate(extdust(ista:iend,jsta:jend,lm))
-      allocate(buf(ista:iend,jsta:jend))
-      allocate(buf2(ista:iend,jsta:jend))
+      !Allocate for regional models only
+      if(modelname=='FV3R') then
+        allocate(extsmoke(ista:iend,jsta:jend,lm))
+        allocate(extdust(ista:iend,jsta:jend,lm))
+        allocate(buf(ista:iend,jsta:jend))
+        allocate(buf2(ista:iend,jsta:jend))
+      endif
 
 !
 ! GFS does not have convective cloud efficiency
@@ -2343,6 +2346,7 @@ module post_fv3
               enddo
             endif
 
+            if(modelname=='FV3R')then
             !acsnow
             if(trim(fieldname)=='accswe_land') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,buf,arrayr42d,fillvalue,spval)
@@ -2372,6 +2376,7 @@ module post_fv3
                  endif
                enddo
              enddo
+             endif !FV3R
 
             !sndepac
             if(trim(fieldname)=='snacc_land') then
@@ -3881,6 +3886,8 @@ module post_fv3
               enddo
             endif
 
+            if(modelname=='FV3R') then
+
             ! model level smoke_ext
             if(trim(fieldname)=='smoke_ext') then
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,extsmoke,arrayr43d,spval,fillvalue)
@@ -3906,6 +3913,8 @@ module post_fv3
                 enddo
               enddo
             endif
+
+            endif !end FV3R
 
             ! model level coarse dust
             if(trim(fieldname)=='coarsepm') then
@@ -4632,6 +4641,7 @@ module post_fv3
         end do
       end do
 
+      if(modelname=='FV3R') then
             ! smoke and dust extinction
             !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,zint,taod5503d,aextc55,extsmoke,extdust,spval)
             do l=1,lm
@@ -4644,10 +4654,13 @@ module post_fv3
                  enddo
                enddo
              enddo
+
       deallocate(extsmoke)
       deallocate(extdust)
       deallocate(buf)
       deallocate(buf2)
+
+      endif !end FV3R
 
 ! generate look up table for lifted parcel calculations
       thl    = 210.
