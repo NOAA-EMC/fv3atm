@@ -2906,6 +2906,21 @@ end subroutine update_atmos_chemistry
         do nb = 1, Atm_block%nblks
           select case (trim(fieldname))
             !--- Instantaneous quantities
+            ! Instantaneous mean layer pressure (Pa)
+            case ('inst_pres_levels')
+              call block_data_copy_or_fill(datar83d, GFS_data(nb)%Statein%prsl, zeror8, Atm_block, nb, rc=localrc)
+            ! Instantaneous geopotential at model layer centers (m2 s-2)
+            case ('inst_geop_levels')
+              call block_data_copy_or_fill(datar83d, GFS_data(nb)%Statein%phil, zeror8, Atm_block, nb, rc=localrc)
+            ! Instantaneous zonal wind (m s-1)
+            case ('inst_zonal_wind_levels')
+              call block_data_copy_or_fill(datar83d, GFS_data(nb)%Statein%ugrs, zeror8, Atm_block, nb, rc=localrc)
+            ! Instantaneous meridional wind (m s-1)
+            case ('inst_merid_wind_levels')
+              call block_data_copy_or_fill(datar83d, GFS_data(nb)%Statein%vgrs, zeror8, Atm_block, nb, rc=localrc)
+            ! Instantaneous surface roughness length (cm)
+            case ('inst_surface_roughness')
+              call block_data_copy(datar82d, GFS_data(nb)%sfcprop%zorl, Atm_block, nb, rc=localrc)
             ! Instantaneous u wind (m/s) 10 m above ground
             case ('inst_zonal_wind_height10m')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, rc=localrc)
@@ -2932,16 +2947,16 @@ end subroutine update_atmos_chemistry
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dswsfci_cpl, Atm_block, nb, rc=localrc)
             ! Instantaneous Temperature (K) 2 m above ground
             case ('inst_temp_height2m')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%t2mi_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%sfcprop%t2m, Atm_block, nb, rc=localrc)
             ! Instantaneous Specific humidity (kg/kg) 2 m above ground
             case ('inst_spec_humid_height2m')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%q2mi_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%sfcprop%q2m, Atm_block, nb, rc=localrc)
             ! Instantaneous Temperature (K) at surface
             case ('inst_temp_height_surface')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%tsfci_cpl, Atm_block, nb, rc=localrc)
             ! Instantaneous Pressure (Pa) land and sea surface
             case ('inst_pres_height_surface')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%psurfi_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%Statein%pgr, Atm_block, nb, rc=localrc)
             ! Instantaneous Surface height (m)
             case ('inst_surface_height')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%oro_cpl, Atm_block, nb, rc=localrc)
@@ -3029,7 +3044,7 @@ end subroutine update_atmos_chemistry
               call block_data_copy(datar82d, GFS_data(nb)%coupling%nvisdf_cpl, Atm_block, nb, scale_factor=rtime, rc=localrc)
             ! MEAN precipitation rate (kg/m2/s)
             case ('mean_prec_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%rain_cpl, Atm_block, nb, scale_factor=rtimek, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%sfcprop%tprcp, Atm_block, nb, scale_factor=rtimek, rc=localrc)
             ! MEAN convective precipitation rate (kg/m2/s)
             case ('mean_prec_rate_conv')
               call block_data_copy(datar82d, GFS_Data(nb)%Coupling%rainc_cpl, Atm_block, nb, scale_factor=rtimek, rc=localrc)
