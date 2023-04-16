@@ -1059,7 +1059,8 @@ contains
              n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
              n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc   .and. &
              n /= Model%nthl  .and. n /= Model%nthnc .and. n /= Model%ntgv    .and. &
-             n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna .and.  &
+             n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna  .and.  &
+             n /= Model%ntrz  .and. n /= Model%ntgz  .and. n /= Model%nthz    .and. &
              n /= Model%ntsigma)
         Interstitial%otsptflag(n) = ltest
         if ( ltest ) then

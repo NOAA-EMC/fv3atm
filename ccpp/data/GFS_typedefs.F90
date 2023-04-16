@@ -6490,6 +6490,9 @@ module GFS_typedefs
       print *, ' ntccna            : ', Model%ntccna
       print *, ' ntgv              : ', Model%ntgv
       print *, ' nthv              : ', Model%nthv
+      print *, ' ntrz              : ', Model%ntrz
+      print *, ' ntgz              : ', Model%ntgz
+      print *, ' nthz              : ', Model%nthz
       print *, ' ntke              : ', Model%ntke
       print *, ' ntsigma           : ', Model%ntsigma
       print *, ' nto               : ', Model%nto
