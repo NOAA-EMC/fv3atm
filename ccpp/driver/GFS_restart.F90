@@ -110,6 +110,10 @@ module GFS_restart
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       Restart%num2d = Restart%num2d + 3
     endif
+    ! Unified convection
+    if (Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+      Restart%num2d = Restart%num2d + 3
+    endif
     ! CA
     if (Model%imfdeepcnv == 2 .and. Model%do_ca) then
       Restart%num2d = Restart%num2d + 1
@@ -151,6 +155,10 @@ module GFS_restart
     ! GF
     if (Model%imfdeepcnv == 3) then
       Restart%num3d = Restart%num3d + 3
+    endif
+    ! Unified convection
+    if (Model%imfdeepcnv == 5) then
+      Restart%num3d = Restart%num3d + 4
     endif
     ! MYNN PBL
     if (Model%do_mynnedmf) then
@@ -233,6 +241,24 @@ module GFS_restart
       Restart%name2d(num) = 'ca_condition'
       do nb = 1,nblks
         Restart%data(nb,num)%var2p => Coupling(nb)%condition(:)
+      enddo
+    endif
+    ! Unified convection
+    if (Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+      num = num + 1
+      Restart%name2d(num) = 'gf_2d_conv_act'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'gf_2d_conv_act_m'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act_m(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'aod_gf'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%aod_gf(:)
       enddo
     endif
     !--- RAP/HRRR-specific variables, 2D
@@ -501,11 +527,30 @@ module GFS_restart
 
     !--Convection variable used in CB cloud fraction. Presently this
     !--is only needed in sgscloud_radpre for imfdeepcnv == imfdeepcnv_gf.
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified) then
       num = num + 1
       Restart%name3d(num) = 'cnv_3d_ud_mf'
       do nb = 1,nblks
         Restart%data(nb,num)%var3p => Tbd(nb)%ud_mf(:,:)
+      enddo
+    endif
+
+    !Unified convection scheme                                                                                                                                                                    
+    if (Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_prevst'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%prevst(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_prevsq'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_qci_conv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%qci_conv(:,:)
       enddo
     endif
 
