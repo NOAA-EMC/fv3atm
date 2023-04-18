@@ -2295,7 +2295,7 @@
 !** write out log file
 !
     if (mype == lead_write_task) then
-      open(newunit=nolog,file='logf'//trim(cfhour),form='FORMATTED')
+      open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED') 
         write(nolog,100)nfhour,idate(1:6)
 100     format(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))
       close(nolog)
