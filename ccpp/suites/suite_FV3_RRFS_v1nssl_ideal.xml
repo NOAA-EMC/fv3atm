@@ -18,6 +18,7 @@
     <subcycle loop="1">
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
+      <scheme>get_prs_fv3</scheme>
       <scheme>get_phi_fv3</scheme>
       <!-- <scheme>GFS_suite_interstitial_3</scheme> -->
       <!-- <scheme>GFS_suite_interstitial_4</scheme> -->
