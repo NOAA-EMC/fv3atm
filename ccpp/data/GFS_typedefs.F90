@@ -293,6 +293,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: qss    (:)   => null()  !<
 
 !-- In/Out
+    real (kind=kind_phys), pointer :: maxupmf(:)   => null()  !< maximum up draft mass flux for Grell-Freitas
     real (kind=kind_phys), pointer :: conv_act(:)  => null()  !< convective activity counter for Grell-Freitas
     real (kind=kind_phys), pointer :: conv_act_m(:)=> null()  !< midlevel convective activity counter for Grell-Freitas
     real (kind=kind_phys), pointer :: hice   (:)   => null()  !< sea ice thickness
@@ -2686,8 +2687,10 @@ module GFS_typedefs
        Sfcprop%lh          = clear_val
     end if
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+        allocate (Sfcprop%maxupmf(IM))
         allocate (Sfcprop%conv_act(IM))
         allocate (Sfcprop%conv_act_m(IM))
+        Sfcprop%maxupmf = zero
         Sfcprop%conv_act = zero
         Sfcprop%conv_act_m = zero
     end if
