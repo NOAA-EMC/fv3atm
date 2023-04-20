@@ -972,6 +972,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[maxupmf]
+  standard_name = maximum_convective_updraft_mass_flux
+  long_name = maximum convective updraft mass flux within a column
+  units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection)
 [conv_act]
   standard_name = consecutive_calls_for_grell_freitas_convection
   long_name = Memory counter for GF
