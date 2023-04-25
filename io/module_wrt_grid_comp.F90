@@ -2013,6 +2013,12 @@
           endif
         enddo
         wend = MPI_Wtime()
+        if (mype == lead_write_task) then
+          !** write out inline post log file
+          open(newunit=nolog,file='log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
+          write(nolog,"(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))") nfhour, idate(1:6)
+          close(nolog)
+        endif
         if (lprnt) then
           write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    inline post Time is ',wend-wbeg &
                      ,' at Fcst ',nf_hours,':',nf_minutes
@@ -2312,7 +2318,7 @@
 !** write out log file
 !
     if (mype == lead_write_task) then
-      open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED') 
+      open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED')
         write(nolog,100)nfhour,idate(1:6)
 100     format(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))
       close(nolog)
