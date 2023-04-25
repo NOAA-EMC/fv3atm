@@ -1677,6 +1677,7 @@
 !
       integer                               :: nbdl, cdate(6), ndig, nnnn
       integer                               :: step=1
+      integer                               :: out_phase
 !
       logical                               :: opened
       logical                               :: lmask_fields
@@ -2020,7 +2021,7 @@
           close(nolog)
         endif
         if (lprnt) then
-          write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    inline post Time is ',wend-wbeg &
+          write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    inline post time is ',wend-wbeg &
                      ,' at Fcst ',nf_hours,':',nf_minutes
         endif
 #else
@@ -2049,290 +2050,289 @@
       if ( (wrt_int_state%output_history .and. ANY(nint(output_fh(:)*3600.0) == fcst_seconds)) .or. ANY(frestart(:) == fcst_seconds) ) then
 
         ! if (lprnt) write(0,*)'wrt_run: loop over wrt_int_state%FBCount ',wrt_int_state%FBCount, ' nfhour ',  nfhour, ' cdate ', cdate(1:6)
-        file_loop_all: do nbdl=1, wrt_int_state%FBCount
+        two_phase_loop: do out_phase = 1, 2
+          file_loop_all: do nbdl=1, wrt_int_state%FBCount
 
-          call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), name=wrtFBName, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
+            call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), name=wrtFBName, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
 
-          is_restart_bundle = .false.
-          if (wrtFBName(1:8) == 'restart_') then
-            is_restart_bundle = .true.
-            if (.not.(ANY(frestart(:) == fcst_seconds))) cycle
-          else
-            if (.not.(wrt_int_state%output_history .and. ANY(nint(output_fh(:)*3600.0) == fcst_seconds))) cycle
-          endif
+            is_restart_bundle = .false.
+            if (wrtFBName(1:8) == 'restart_') then
+              is_restart_bundle = .true.
+              if (.not.(ANY(frestart(:) == fcst_seconds))) cycle
+            else
+              if (.not.(wrt_int_state%output_history .and. ANY(nint(output_fh(:)*3600.0) == fcst_seconds))) cycle
+            endif
 
-          ! get grid_id
-          call ESMF_AttributeGet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                 name="grid_id", value=grid_id, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            if (out_phase == 1 .and. is_restart_bundle) cycle
+            if (out_phase == 2 .and. .not.is_restart_bundle) cycle
 
-          ! update lon1/2 and lat1/2 for regional_latlon_moving
-          if (trim(output_grid(grid_id)) == 'regional_latlon_moving') then
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="lon1", value=lon1(grid_id), rc=rc)
+            ! get grid_id
+            call ESMF_AttributeGet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="grid_id", value=grid_id, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="lat1", value=lat1(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="lon2", value=lon2(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="lat2", value=lat2(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          endif
 
-          ! update cen_lon/cen_lat, lon1/2 and lat1/2  for rotated_latlon_moving
-          if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="cen_lon", value=cen_lon(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="cen_lat", value=cen_lat(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="lon1", value=lon1(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="lat1", value=lat1(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="lon2", value=lon2(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                   name="lat2", value=lat2(grid_id), rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          endif
+            ! update lon1/2 and lat1/2 for regional_latlon_moving
+            if (trim(output_grid(grid_id)) == 'regional_latlon_moving') then
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lon1", value=lon1(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lat1", value=lat1(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lon2", value=lon2(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lat2", value=lat2(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            endif
 
-          if(step == 1) then
-            file_bundle = wrt_int_state%wrtFB(nbdl)
-          endif
+            ! update cen_lon/cen_lat, lon1/2 and lat1/2  for rotated_latlon_moving
+            if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="cen_lon", value=cen_lon(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="cen_lat", value=cen_lat(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lon1", value=lon1(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lat1", value=lat1(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lon2", value=lon2(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lat2", value=lat2(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            endif
 
-          ! FIXME  map nbdl to [1:num_files], only used for output_file
-          nnnn = mod(nbdl-1, num_files) + 1
+            if(step == 1) then
+              file_bundle = wrt_int_state%wrtFB(nbdl)
+            endif
 
-          ! set default chunksizes for netcdf output
-          ! (use MPI decomposition size).
-          ! if chunksize parameter set to negative value,
-          ! netcdf library default is used.
-          if (output_file(nnnn)(1:6) == 'netcdf') then
-             if (ichunk2d(grid_id) == 0) then
-                if( wrt_int_state%mype == 0 ) &
-                  ichunk2d(grid_id) = wrt_int_state%out_grid_info(grid_id)%i_end - wrt_int_state%out_grid_info(grid_id)%i_start + 1
-                call mpi_bcast(ichunk2d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
-             endif
-             if (jchunk2d(grid_id) == 0) then
-                if( wrt_int_state%mype == 0 ) &
-                  jchunk2d(grid_id) = wrt_int_state%out_grid_info(grid_id)%j_end - wrt_int_state%out_grid_info(grid_id)%j_start + 1
-                call mpi_bcast(jchunk2d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
-             endif
-             if (ichunk3d(grid_id) == 0) then
-                if( wrt_int_state%mype == 0 ) &
-                  ichunk3d(grid_id) = wrt_int_state%out_grid_info(grid_id)%i_end - wrt_int_state%out_grid_info(grid_id)%i_start + 1
-                call mpi_bcast(ichunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
-             endif
-             if (jchunk3d(grid_id) == 0) then
-                if( wrt_int_state%mype == 0 ) &
-                  jchunk3d(grid_id) = wrt_int_state%out_grid_info(grid_id)%j_end - wrt_int_state%out_grid_info(grid_id)%j_start + 1
-                call mpi_bcast(jchunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
-             endif
-             if (kchunk3d(grid_id) == 0 .and. nbdl == 1) then
-                if( wrt_int_state%mype == 0 )  then
-                  call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=wrtGrid)
-                  call ESMF_AttributeGet(wrtGrid, convention="NetCDF", purpose="FV3", &
-                          attnestflag=ESMF_ATTNEST_OFF, name='pfull', &
-                          itemCount=kchunk3d(grid_id), rc=rc)
+            ! FIXME  map nbdl to [1:num_files], only used for output_file
+            nnnn = mod(nbdl-1, num_files) + 1
+
+            ! set default chunksizes for netcdf output
+            ! (use MPI decomposition size).
+            ! if chunksize parameter set to negative value,
+            ! netcdf library default is used.
+            if (output_file(nnnn)(1:6) == 'netcdf') then
+               if (ichunk2d(grid_id) == 0) then
+                  if( wrt_int_state%mype == 0 ) &
+                    ichunk2d(grid_id) = wrt_int_state%out_grid_info(grid_id)%i_end - wrt_int_state%out_grid_info(grid_id)%i_start + 1
+                  call mpi_bcast(ichunk2d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
+               endif
+               if (jchunk2d(grid_id) == 0) then
+                  if( wrt_int_state%mype == 0 ) &
+                    jchunk2d(grid_id) = wrt_int_state%out_grid_info(grid_id)%j_end - wrt_int_state%out_grid_info(grid_id)%j_start + 1
+                  call mpi_bcast(jchunk2d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
+               endif
+               if (ichunk3d(grid_id) == 0) then
+                  if( wrt_int_state%mype == 0 ) &
+                    ichunk3d(grid_id) = wrt_int_state%out_grid_info(grid_id)%i_end - wrt_int_state%out_grid_info(grid_id)%i_start + 1
+                  call mpi_bcast(ichunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
+               endif
+               if (jchunk3d(grid_id) == 0) then
+                  if( wrt_int_state%mype == 0 ) &
+                    jchunk3d(grid_id) = wrt_int_state%out_grid_info(grid_id)%j_end - wrt_int_state%out_grid_info(grid_id)%j_start + 1
+                  call mpi_bcast(jchunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
+               endif
+               if (kchunk3d(grid_id) == 0 .and. nbdl == 1) then
+                  if( wrt_int_state%mype == 0 )  then
+                    call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=wrtGrid)
+                    call ESMF_AttributeGet(wrtGrid, convention="NetCDF", purpose="FV3", &
+                            attnestflag=ESMF_ATTNEST_OFF, name='pfull', &
+                            itemCount=kchunk3d(grid_id), rc=rc)
+                  endif
+                  call mpi_bcast(kchunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
+               endif
+               if (wrt_int_state%mype == 0) then
+                  print *,'ichunk2d,jchunk2d',ichunk2d(grid_id),jchunk2d(grid_id)
+                  print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id)
+               endif
+            endif
+
+            if (is_restart_bundle) then
+              write(time_restart,'(I4,I2.2,I2.2,".",I2.2,I2.2,I2.2)') cdate(1:6)
+
+              ! strip leading 'restart_' from a bundle name and replace it with a directory name 'RESTART/' to create actual file name
+              filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.nc'
+
+              ! I hate this kind of inconsistencies
+              ! If it's a restart bundle and the output grid is not cubed sphere and the output restart file is
+              ! from dycore (ie. fv_core, fv_srf_wnd, fv_tracer) append 'tile1' to the end of the file name.
+              ! As opposed to physics restart files (phy_data, sfc_data) which do not have 'tile1' appended.
+              ! Why can't we have consistent naming?
+
+              if (grid_id > 1) then
+                if (top_parent_is_global) then
+                  write(tile_id,'(I0)') 6 + grid_id - 1
+                else
+                  write(tile_id,'(I0)') grid_id
                 endif
-                call mpi_bcast(kchunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
-             endif
-             if (wrt_int_state%mype == 0) then
-                print *,'ichunk2d,jchunk2d',ichunk2d(grid_id),jchunk2d(grid_id)
-                print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id)
-             endif
-          endif
-
-          if (is_restart_bundle) then
-            write(time_restart,'(I4,I2.2,I2.2,".",I2.2,I2.2,I2.2)') cdate(1:6)
-
-            ! strip leading 'restart_' from a bundle name and replace it with a directory name 'RESTART/' to create actual file name
-            filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.nc'
-
-            ! I hate this kind of inconsistencies
-            ! If it's a restart bundle and the output grid is not cubed sphere and the output restart file is
-            ! from dycore (ie. fv_core, fv_srf_wnd, fv_tracer) append 'tile1' to the end of the file name.
-            ! As opposed to physics restart files (phy_data, sfc_data) which do not have 'tile1' appended.
-            ! Why can't we have consistent naming?
-
-            if (grid_id > 1) then
-              if (top_parent_is_global) then
-                write(tile_id,'(I0)') 6 + grid_id - 1
+                filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.tile'//trim(tile_id)//'.nc'
               else
-                write(tile_id,'(I0)') grid_id
-              endif
-              filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.tile'//trim(tile_id)//'.nc'
-            else
-              if (.not. top_parent_is_global) then ! non cubed sphere restart bundles
-                if (wrtFBName(9:11) == 'fv_') then ! 'dynamics' restart bundles, append 'tile1'
-                  filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.tile1'//'.nc'
+                if (.not. top_parent_is_global) then ! non cubed sphere restart bundles
+                  if (wrtFBName(9:11) == 'fv_') then ! 'dynamics' restart bundles, append 'tile1'
+                    filename = 'RESTART/'//trim(time_restart)//'.'//trim(wrtFBName(9:))//'.tile1'//'.nc'
+                  endif
                 endif
               endif
+
+            else ! history bundle
+              filename = trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
             endif
+            if(mype == lead_write_task) print *,'in wrt run,filename= ',nbdl,trim(filename)
 
-          else ! history bundle
-            filename = trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
-          endif
-          if(mype == lead_write_task) print *,'in wrt run,filename= ',nbdl,trim(filename)
+  !
+  ! set the time Attribute on the grid to carry it into the lower levels
+            call ESMF_FieldBundleGet(file_bundle, grid=fbgrid, rc=rc)
 
-!
-! set the time Attribute on the grid to carry it into the lower levels
-          call ESMF_FieldBundleGet(file_bundle, grid=fbgrid, rc=rc)
-
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
-                               name="time", value=nfhour, rc=rc)
-
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
-                               name="time_iso", value=trim(time_iso), rc=rc)
-
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-!*** write out grid bundle:
-! Provide log message indicating which wrtComp is active
-          call ESMF_LogWrite("before Write component before gridFB ", ESMF_LOGMSG_INFO, rc=rc)
-
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          if (trim(output_file(nnnn)) == 'netcdf') then
-            use_parallel_netcdf = .false.
-          else if (trim(output_file(nnnn)) == 'netcdf_parallel') then
-            use_parallel_netcdf = .true.
-          else
-            call ESMF_LogWrite("wrt_run: Unknown output_file",ESMF_LOGMSG_ERROR,rc=RC)
-            call ESMF_Finalize(endflag=ESMF_END_ABORT)
-          endif
-
-          wbeg = MPI_Wtime()
-
-          if (is_restart_bundle) then ! restart bundle
-            ! restart bundles are always on forecast grid, either cubed sphere or regional/nest
-
-            call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=grid, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            call ESMF_GridGet(grid, tileCount=tileCount, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            if (tileCount == 6) then ! restart bundle is on cubed sphere
-              call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),               &
-                                              convention="NetCDF", purpose="FV3",            &
-                                              status=ESMF_FILESTATUS_REPLACE,                &
-                                              state=stateGridFB, comps=compsGridFB,rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
+                                 name="time", value=nfhour, rc=rc)
 
-              call ESMFproto_FieldBundleWrite(wrt_int_state%wrtFB(nbdl),                     &
-                                              filename=trim(filename), convention="NetCDF",  &
-                                              purpose="FV3", status=ESMF_FILESTATUS_OLD,     &
-                                              timeslice=step, state=optimize(nbdl)%state,    &
-                                              comps=optimize(nbdl)%comps, rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
+                                 name="time_iso", value=trim(time_iso), rc=rc)
+
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+  !*** write out grid bundle:
+  ! Provide log message indicating which wrtComp is active
+            call ESMF_LogWrite("before Write component before gridFB ", ESMF_LOGMSG_INFO, rc=rc)
+
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            if (trim(output_file(nnnn)) == 'netcdf') then
+              use_parallel_netcdf = .false.
+            else if (trim(output_file(nnnn)) == 'netcdf_parallel') then
+              use_parallel_netcdf = .true.
             else
-              call  write_restart_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                  .true., wrt_mpi_comm, wrt_int_state%mype, &
-                                  rc)
-            endif ! cubed sphere vs. regional/nest write grid
-
-          else ! history bundle
-          if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
-
-            if (trim(output_file(nnnn)) == 'netcdf_parallel') then
-              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               .true., wrt_mpi_comm,wrt_int_state%mype, &
-                               grid_id,rc)
-            else
-              call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),               &
-                                              convention="NetCDF", purpose="FV3",            &
-                                              status=ESMF_FILESTATUS_REPLACE,                &
-                                              state=stateGridFB, comps=compsGridFB,rc=rc)
-
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-              call ESMFproto_FieldBundleWrite(wrt_int_state%wrtFB(nbdl),                     &
-                                              filename=trim(filename), convention="NetCDF",  &
-                                              purpose="FV3", status=ESMF_FILESTATUS_OLD,     &
-                                              timeslice=step, state=optimize(nbdl)%state,    &
-                                              comps=optimize(nbdl)%comps, rc=rc)
-
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-            end if
-
-          else if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
-                   trim(output_grid(grid_id)) == 'global_latlon') then
-
-            call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
-                             use_parallel_netcdf, wrt_mpi_comm,wrt_int_state%mype, &
-                             grid_id,rc)
-
-          else if (trim(output_grid(grid_id)) == 'regional_latlon' .or.        &
-                   trim(output_grid(grid_id)) == 'regional_latlon_moving' .or. &
-                   trim(output_grid(grid_id)) == 'rotated_latlon'  .or.        &
-                   trim(output_grid(grid_id)) == 'rotated_latlon_moving' .or.  &
-                   trim(output_grid(grid_id)) == 'lambert_conformal') then
-
-            !mask fields according to sfc pressure
-            if( .not. lmask_fields ) then
-              call mask_fields(file_bundle,rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            endif
-
-            if (nbits(grid_id) /= 0) then
-              call ESMF_LogWrite("wrt_run: lossy compression is not supported for regional grids",ESMF_LOGMSG_ERROR,rc=RC)
+              call ESMF_LogWrite("wrt_run: Unknown output_file",ESMF_LOGMSG_ERROR,rc=RC)
               call ESMF_Finalize(endflag=ESMF_END_ABORT)
-            end if
+            endif
 
-            call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
-                              use_parallel_netcdf, wrt_mpi_comm,wrt_int_state%mype, &
-                              grid_id,rc)
+            wbeg = MPI_Wtime()
 
-          else ! unknown output_grid
+            if (is_restart_bundle) then ! restart bundle
+              ! restart bundles are always on forecast grid, either cubed sphere or regional/nest
 
-            call ESMF_LogWrite("wrt_run: Unknown output_grid",ESMF_LOGMSG_ERROR,rc=RC)
-            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+              call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=grid, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_GridGet(grid, tileCount=tileCount, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+              if (tileCount == 6) then ! restart bundle is on cubed sphere
+                call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),               &
+                                                convention="NetCDF", purpose="FV3",            &
+                                                status=ESMF_FILESTATUS_REPLACE,                &
+                                                state=stateGridFB, comps=compsGridFB,rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+                call ESMFproto_FieldBundleWrite(wrt_int_state%wrtFB(nbdl),                     &
+                                                filename=trim(filename), convention="NetCDF",  &
+                                                purpose="FV3", status=ESMF_FILESTATUS_OLD,     &
+                                                timeslice=step, state=optimize(nbdl)%state,    &
+                                                comps=optimize(nbdl)%comps, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              else
+                call  write_restart_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                                    .true., wrt_mpi_comm, wrt_int_state%mype, &
+                                    rc)
+              endif ! cubed sphere vs. regional/nest write grid
+
+            else ! history bundle
+            if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
+
+              if (trim(output_file(nnnn)) == 'netcdf_parallel') then
+                call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                                 .true., wrt_mpi_comm,wrt_int_state%mype, &
+                                 grid_id,rc)
+              else
+                call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),               &
+                                                convention="NetCDF", purpose="FV3",            &
+                                                status=ESMF_FILESTATUS_REPLACE,                &
+                                                state=stateGridFB, comps=compsGridFB,rc=rc)
+
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+                call ESMFproto_FieldBundleWrite(wrt_int_state%wrtFB(nbdl),                     &
+                                                filename=trim(filename), convention="NetCDF",  &
+                                                purpose="FV3", status=ESMF_FILESTATUS_OLD,     &
+                                                timeslice=step, state=optimize(nbdl)%state,    &
+                                                comps=optimize(nbdl)%comps, rc=rc)
+
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+              end if
+
+            else if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
+                     trim(output_grid(grid_id)) == 'global_latlon') then
+
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               use_parallel_netcdf, wrt_mpi_comm,wrt_int_state%mype, &
+                               grid_id,rc)
+
+            else if (trim(output_grid(grid_id)) == 'regional_latlon' .or.        &
+                     trim(output_grid(grid_id)) == 'regional_latlon_moving' .or. &
+                     trim(output_grid(grid_id)) == 'rotated_latlon'  .or.        &
+                     trim(output_grid(grid_id)) == 'rotated_latlon_moving' .or.  &
+                     trim(output_grid(grid_id)) == 'lambert_conformal') then
+
+              !mask fields according to sfc pressure
+              if( .not. lmask_fields ) then
+                call mask_fields(file_bundle,rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              endif
+
+              if (nbits(grid_id) /= 0) then
+                call ESMF_LogWrite("wrt_run: lossy compression is not supported for regional grids",ESMF_LOGMSG_ERROR,rc=RC)
+                call ESMF_Finalize(endflag=ESMF_END_ABORT)
+              end if
+
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                                use_parallel_netcdf, wrt_mpi_comm,wrt_int_state%mype, &
+                                grid_id,rc)
+
+            else ! unknown output_grid
+
+              call ESMF_LogWrite("wrt_run: Unknown output_grid",ESMF_LOGMSG_ERROR,rc=RC)
+              call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+            endif
+            endif  ! restart or history bundle
+            wend = MPI_Wtime()
+            if (lprnt) then
+              write(*,'(A56,A,F10.5,A,I4.2,A,I2.2,1X,A)') trim(filename),' write time is ',wend-wbeg  &
+                     ,' at fcst ',NF_HOURS,':',NF_MINUTES
+            endif
+
+          enddo file_loop_all
+
+          if (out_phase == 1 .and. mype == lead_write_task) then
+            !** write out log file
+            open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED')
+            write(nolog,"(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))") nfhour, idate(1:6)
+            close(nolog)
           endif
-          endif  ! restart or history bundle
-          wend = MPI_Wtime()
-          if (lprnt) then
-            write(*,'(A48,A,F10.5,A,I4.2,A,I2.2,1X,A)')trim(filename),' Write Time is ',wend-wbeg  &
-                   ,' at Fcst ',NF_HOURS,':',NF_MINUTES
-          endif
-
-        enddo file_loop_all
-
-! end output history
+        enddo two_phase_loop
       endif ! if ( wrt_int_state%output_history )
-!
-!** write out log file
-!
-    if (mype == lead_write_task) then
-      open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED')
-        write(nolog,100)nfhour,idate(1:6)
-100     format(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))
-      close(nolog)
-    endif
-!
-!-----------------------------------------------------------------------
-!
+
       call ESMF_VMBarrier(VM, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
+
       write_run_tim = MPI_Wtime() - tbeg
-!
+
       IF (lprnt) THEN
-        write(*,'(A48,A,F10.5,A,I4.2,A,I2.2,1X,A)')'------- total',' Write Time is ',write_run_tim &
+        write(*,'(A56,A,F10.5,A,I4.2,A,I2.2,1X,A)')'------- total',' write time is ',write_run_tim &
                  ,' at Fcst ',NF_HOURS,':',NF_MINUTES
       ENDIF
 !
