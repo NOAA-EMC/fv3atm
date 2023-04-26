@@ -1874,6 +1874,45 @@ module GFS_diagnostics
 
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af totgrp,idx=',idx
 
+    if(associated(Coupling(1)%sfcdlw)) then
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'sfcdlw'
+    ExtDiag(idx)%desc = 'sfcdlw'
+    ExtDiag(idx)%unit = 'W m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%sfcdlw(:)
+    enddo
+    endif
+
+    if(associated(Coupling(1)%htrlw)) then
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'htrlw'
+    ExtDiag(idx)%desc = 'htrlw'
+    ExtDiag(idx)%unit = 'W m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%htrlw(:,:)
+    enddo
+    endif
+
+    if(associated(Radtend(1)%lwhc)) then
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'lwhc'
+    ExtDiag(idx)%desc = 'lwhc'
+    ExtDiag(idx)%unit = 'K s-1'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => Radtend(nb)%lwhc(:,:)
+    enddo
+    endif
+
 !--- physics instantaneous diagnostics ---
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -2552,6 +2591,207 @@ module GFS_diagnostics
         ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_micro(:)
       enddo
     endif
+
+  if (Model%lkm/=0) then
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'lakefrac'
+      ExtDiag(idx)%desc = 'Lake Fraction'
+      ExtDiag(idx)%unit = 'fraction'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ExtDiag(idx)%intpl_method = 'nearest_stod'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lakefrac(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'lakedepth'
+      ExtDiag(idx)%desc = 'Lake Depth'
+      ExtDiag(idx)%unit = 'm'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ExtDiag(idx)%intpl_method = 'nearest_stod'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lakedepth(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'T_snow'
+      ExtDiag(idx)%desc = 'Temperature of snow on a lake'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ExtDiag(idx)%intpl_method = 'nearest_stod'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%T_snow(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'T_ice'
+      ExtDiag(idx)%desc = 'Temperature of ice on a lake'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ExtDiag(idx)%intpl_method = 'nearest_stod'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%T_ice(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'use_lake_model'
+      ExtDiag(idx)%desc = 'Lake Model Flag'
+      ExtDiag(idx)%unit = 'flag'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ExtDiag(idx)%intpl_method = 'nearest_stod'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%use_lake_model(:)
+      enddo
+    
+      if(Model%iopt_lake==Model%iopt_lake_clm) then
+
+        ! Populate the 3D arrays separately since the code is complicated:
+        call clm_lake_externaldiag_populate(ExtDiag, Model, Sfcprop, idx, cn_one, nblks)
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_is_salty'
+        ExtDiag(idx)%desc = 'lake point is considered salty by clm lake model'
+        ExtDiag(idx)%unit = '1'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+           ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%lake_is_salty(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_cannot_freeze'
+        ExtDiag(idx)%desc = 'clm lake model considers the point to be so salty it cannot freeze'
+        ExtDiag(idx)%unit = '1'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+           ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%lake_cannot_freeze(:)
+        enddo
+        
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_t2m'
+        ExtDiag(idx)%desc = 'Temperature at 2 m from Lake Model'
+        ExtDiag(idx)%unit = 'K'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_t2m(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_q2m'
+        ExtDiag(idx)%desc = 'Humidity at 2 m from Lake Model'
+        ExtDiag(idx)%unit = '%'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_q2m(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_albedo'
+        ExtDiag(idx)%desc = 'mid day surface albedo over lake'
+        ExtDiag(idx)%unit = 'fraction'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_albedo(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_h2osno2d'
+        ExtDiag(idx)%desc = 'water equiv of acc snow depth over lake'
+        ExtDiag(idx)%unit = 'mm'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_h2osno2d(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_sndpth2d'
+        ExtDiag(idx)%desc = 'actual acc snow depth over lake in clm lake model'
+        ExtDiag(idx)%unit = 'm'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_sndpth2d(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_snl2d'
+        ExtDiag(idx)%desc = 'snow layers in clm lake model (treated as integer)'
+        ExtDiag(idx)%unit = 'count'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_snl2d(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_tsfc'
+        ExtDiag(idx)%desc = 'skin temperature from clm lake model'
+        ExtDiag(idx)%unit = 'K'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_tsfc(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_savedtke12d'
+        ExtDiag(idx)%desc = 'top level eddy conductivity from previous timestep in clm lake model'
+        ExtDiag(idx)%unit = 'kg m-3'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_savedtke12d(:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_ht'
+        ExtDiag(idx)%desc = 'lake_ht'
+        ExtDiag(idx)%unit = 'unitless'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        ExtDiag(idx)%intpl_method = 'nearest_stod'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_ht(:)
+        enddo
+        
+      endif
+
+  endif
 
   if (Model%ldiag_ugwp) THEN
 !
@@ -3717,6 +3957,28 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'weasdi'
+    ExtDiag(idx)%desc = 'surface snow water equivalent over ice'
+    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%weasdi(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'snodi'
+    ExtDiag(idx)%desc = 'water equivalent snow depth over ice'
+    ExtDiag(idx)%unit = 'mm'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%weasdi(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'hgtsfc'
     ExtDiag(idx)%desc = 'surface geopotential height'
     ExtDiag(idx)%unit = 'gpm'
@@ -4786,6 +5048,131 @@ module GFS_diagnostics
   enddo
 
   end subroutine GFS_externaldiag_populate
+
+  subroutine clm_lake_externaldiag_populate(ExtDiag, Model, Sfcprop, idx, cn_one, nblks)
+    implicit none
+    type(GFS_externaldiag_type),  intent(inout) :: ExtDiag(:)
+    type(GFS_control_type),       intent(in)    :: Model
+    type(GFS_sfcprop_type),           intent(in)    :: Sfcprop(:)
+    integer,                      intent(inout) :: idx
+    integer,                      intent(in)    :: nblks
+    real(kind=kind_phys),         intent(in)    :: cn_one
+    character(:), allocatable :: fullname
+
+    integer :: nk, idx0, iblk
+    
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_z3d, 'lake_z3d', 'lake_depth_on_interface_levels', 'm')
+    enddo
+    
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_clay3d, 'lake_clay3d', 'percent clay on soil levels in clm lake model', '%')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_sand3d, 'lake_sand3d', 'percent sand on soil levels in clm lake model', '%')
+    enddo
+    
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_dz3d, 'lake_dz3d', 'lake level thickness', 'm')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_soil_watsat3d, 'lake_soil_watsat3d', 'saturated volumetric soil water', 'm3 m-3')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_csol3d, 'lake_csol3d', 'soil heat capacity', 'J m-3 K-1')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_soil_tkmg3d, 'lake_soil_tkmg3d', 'soil thermal conductivity, minerals', 'W m-1 K-1')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_soil_tkdry3d, 'lake_soil_tkdry3d', 'soil thermal conductivity, dry soil', 'W m-1 K-1')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_soil_tksatu3d, 'lake_soil_tksatu3d', 'soil thermal conductivity, saturated soil', 'W m-1 K-1')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_snow_z3d, 'lake_snow_z3d', 'lake snow level depth', 'm')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_snow_dz3d, 'lake_snow_dz3d', 'lake snow level thickness', 'm')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_snow_zi3d, 'lake_snow_zi3d', 'lake snow interface depth', 'm')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_h2osoi_vol3d, 'lake_h2osoi_vol3d', 'volumetric soil water', 'm3 m-3')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_h2osoi_liq3d, 'lake_h2osoi_liq3d', 'soil liquid water content', 'kg m-2')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_h2osoi_ice3d, 'lake_h2osoi_ice3d', 'soil ice water content', 'kg m-2')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_t_soisno3d, 'lake_t_soisno3d', 'snow or soil level temperature', 'K')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_t_lake3d, 'lake_t_lake3d', 'lake layer temperature', 'K')
+    enddo
+
+    do iblk=1,nblks
+      call link_all_levels(Sfcprop(iblk)%lake_icefrac3d, 'lake_icefrac3d', 'lake fractional ice cover', 'fraction')
+    enddo
+
+  contains
+
+    subroutine link_all_levels(var3d, varname, levelname, unit)
+      implicit none
+      real(kind=kind_phys), target :: var3d(:,:)
+      character(len=*), intent(in) :: varname, levelname, unit
+      integer k, b, namelen
+
+      if(iblk==1) then
+        namelen = 30+max(len(varname),len(levelname))
+        allocate(character(namelen) :: fullname)
+        idx0 = idx
+      endif
+
+      var_z_loop: do k=1,size(var3d,2)
+        idx = idx0 + k
+        if(iblk==1) then
+          ExtDiag(idx)%axes = 2
+          write(fullname,"(A,'_',I0)") trim(varname),k
+          ExtDiag(idx)%name = trim(fullname)
+          write(fullname,"(A,' level ',I0,' of ',I0)") trim(levelname),k,size(var3d,2)
+          ExtDiag(idx)%desc = trim(fullname)
+          ExtDiag(idx)%unit = trim(unit)
+          ExtDiag(idx)%mod_name = 'gfs_sfc'
+          ExtDiag(idx)%intpl_method = 'nearest_stod'
+
+          allocate (ExtDiag(idx)%data(nblks))
+          do b=1,nblks
+            nullify(ExtDiag(idx)%data(b)%var2)
+          enddo
+        endif
+
+        ExtDiag(idx)%data(iblk)%var2 => var3d(:,k)
+      enddo var_z_loop
+
+      if(iblk==nblks) then
+        deallocate(fullname)
+      endif
+    end subroutine link_all_levels
+  end subroutine clm_lake_externaldiag_populate
 
   function soil_layer_depth(lsm, lsm_ruc, lsm_noah, layer) result(layer_depth)
      character(len=30)   :: layer_depth
