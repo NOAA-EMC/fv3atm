@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 # CCPP prebuild config for GFDL Finite-Volume Cubed-Sphere Model (FV3)
