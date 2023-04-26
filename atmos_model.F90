@@ -100,8 +100,8 @@ use FV3GFS_restart_io_mod,    only: FV3GFS_restart_register, &
 use fv_ufs_restart_io_mod,    only: fv_dyn_restart_register, &
                                     fv_dyn_restart_output
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
-use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
-                              output_fh, fcst_mpi_comm, fcst_ntasks,     &
+use module_fv3_config,  only: first_kdt, nsout, output_fh,               &
+                              fcst_mpi_comm, fcst_ntasks,                &
                               quilting_restart
 use module_block_data,  only: block_atmos_copy, block_data_copy,         &
                               block_data_copy_or_fill,                   &
@@ -782,8 +782,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    !--- set the initial diagnostic timestamp
    diag_time = Time
-   if (output_1st_tstep_rst) then
-     diag_time = Time - real_to_time_type(mod(int((first_kdt - 1)*dt_phys/3600.),6)*3600.0)
+   call get_time (Atmos%Time - Atmos%Time_init, sec)
+   !--- Model should restart at the forecast hours that are multiples of fhzero.
+   !--- WARNING: For special cases that model needs to restart at non-multiple of fhzero
+   !--- the fields in first output files are not accumulated from the beginning of
+   !--- the bucket, but the restart time.   
+   if (mod(sec,int(GFS_Control%fhzero*3600.)) /= 0) then
+     diag_time = Time - real_to_time_type(mod(int((GFS_Control%kdt - 1)*dt_phys/3600.),int(GFS_Control%fhzero))*3600.0)
+     if (mpp_pe() == mpp_root_pe()) print *,'Warning: in atmos_init,start at non multiple of fhzero'
    endif
    if (Atmos%iau_offset > zero) then
      call get_time (Atmos%Time - Atmos%Time_init, sec)

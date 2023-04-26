@@ -30,8 +30,7 @@ module fv3gfs_cap_mod
   use module_fv3_config,      only: quilting, quilting_restart, output_fh,   &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
                                     calendar, cpl_grid_id,                   &
-                                    cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt
+                                    cplprint_flag, first_kdt
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
@@ -284,10 +283,6 @@ module fv3gfs_cap_mod
 
     if (.not.quilting) quilting_restart = .false.
 
-    call ESMF_ConfigGetAttribute(config=CF,value=output_1st_tstep_rst, &
-                                 default=.false., label ='output_1st_tstep_rst:',rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
     call ESMF_ConfigGetAttribute(config=CF,value=iau_offset,default=0,label ='iau_offset:',rc=rc)
     if (iau_offset < 0) iau_offset=0
 
@@ -350,11 +345,6 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     first_kdt = 1
-    if( output_1st_tstep_rst) then
-      rsthour   = currTime - StartTime
-      first_kdt = nint(rsthour/timeStep) + 1
-    endif
-
 !
 !#######################################################################
 ! set up fcst grid component
