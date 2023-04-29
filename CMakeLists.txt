@@ -85,6 +85,7 @@ add_library(fv3atm
   cpl/module_block_data.F90
   cpl/module_cplfields.F90
   cpl/module_cap_cpl.F90
+  io/clm_lake_io.F90
   io/FV3GFS_io.F90
   io/FV3GFS_restart_io.F90
   io/module_write_netcdf.F90
