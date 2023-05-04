@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/ufs-community/ccpp-physics
-  branch = BugFix_prv_rev 
+  branch = small_fixes_GT
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
