@@ -564,11 +564,11 @@ module FV3GFS_io_mod
     integer :: i, j, k, ix, lsoil, num, nb, i_start, j_start, i_end, j_end, nt, n
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
-    integer :: nvar_o2, nvar_s2m, nvar_s2o, nvar_s3
+    integer :: nvar_o2
     integer :: nvar_oro_ls_ss
     integer :: nvar_vegfr, nvar_soilfr
-    integer :: nvar_s2r, nvar_s2mp, nvar_s3mp, isnow
-    integer :: nvar_emi, nvar_dust12m, nvar_gbbepx, nvar_before_lake, nvar_s2l, nvar_rrfssd
+    integer :: isnow
+    integer :: nvar_emi, nvar_dust12m, nvar_gbbepx, nvar_rrfssd
     integer, allocatable :: ii1(:), jj1(:)
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
@@ -587,8 +587,12 @@ module FV3GFS_io_mod
     logical :: amiopen
     logical :: is_lsoil
 
+    logical :: indexes_changed
+
     type(clm_lake_data_type) :: clm_lake
     type(rrfs_sd_state_type) :: rrfs_sd_data
+
+    indexes_changed = sfc%calculate_indices(Model, .false., warm_start)
 
     nvar_o2  = 19
     nvar_oro_ls_ss = 10
@@ -596,11 +600,6 @@ module FV3GFS_io_mod
     nvar_vegfr  = Model%nvegcat
     nvar_soilfr = Model%nsoilcat
 
-    if (Model%nstf_name(1) > 0) then
-      nvar_s2o = 18
-    else
-      nvar_s2o = 0
-    endif
     if(Model%rrfs_sd) then
       nvar_dust12m = 5
       nvar_rrfssd  = 3
@@ -609,30 +608,6 @@ module FV3GFS_io_mod
       nvar_dust12m = 0
       nvar_rrfssd  = 0
       nvar_emi     = 0
-    endif
-
-    if (Model%lsm == Model%lsm_ruc .and. warm_start) then
-      if(Model%rdlai) then
-        nvar_s2r = 13
-      else
-        nvar_s2r = 12
-      end if
-      nvar_s3  = 5
-    else
-      if(Model%rdlai) then
-       nvar_s2r = 1
-      else
-       nvar_s2r = 0
-      endif
-      nvar_s3  = 3
-    endif
-
-    if (Model%lsm == Model%lsm_noahmp) then
-      nvar_s2mp = 29       !mp 2D
-      nvar_s3mp = 5        !mp 3D
-    else
-      nvar_s2mp = 0        !mp 2D
-      nvar_s3mp = 0        !mp 3D
     endif
 
     isc = Atm_block%isc
@@ -773,23 +748,6 @@ module FV3GFS_io_mod
 
       enddo
     enddo
-
-    nvar_s2m = 48
-    if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-      nvar_s2m = nvar_s2m + 4
-!     nvar_s2m = nvar_s2m + 5
-    endif
-    if (Model%cplwav) then
-      nvar_s2m = nvar_s2m + 1
-    endif
-! CLM Lake and Flake
-    if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake  ) then  
-       nvar_s2l = 10
-    else
-       nvar_s2l = 0
-    endif
-
-    nvar_before_lake=nvar_s2m+nvar_s2o+nvar_s2r+nvar_s2mp
 
     !--- deallocate containers and free restart container
     deallocate(oro_name2, oro_var2)
@@ -1053,18 +1011,18 @@ module FV3GFS_io_mod
 
     if (.not. associated(sfc%name2)) then
       !--- allocate the various containers needed for restarts
-      allocate(sfc%name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r+nvar_s2l))
-      allocate(sfc%name3(0:nvar_s3+nvar_s3mp))
-      allocate(sfc%var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r+nvar_s2l))
+      allocate(sfc%name2(sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
+      allocate(sfc%name3(0:sfc%nvar3+sfc%nvar3mp))
+      allocate(sfc%var2(nx,ny,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
       ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
       ! if the initial conditions do contain this variable, because Model%kice is 9 for
       ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
       allocate(sfc%var3ice(nx,ny,Model%kice))
 
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
-        allocate(sfc%var3(nx,ny,Model%lsoil,nvar_s3))
+        allocate(sfc%var3(nx,ny,Model%lsoil,sfc%nvar3))
       else if (Model%lsm == Model%lsm_ruc) then
-        allocate(sfc%var3(nx,ny,Model%lsoil_lsm,nvar_s3))
+        allocate(sfc%var3(nx,ny,Model%lsoil_lsm,sfc%nvar3))
       end if
 
       sfc%var2   = -9999.0_r8
@@ -1080,7 +1038,7 @@ module FV3GFS_io_mod
         sfc%var3zn = -9999.0_r8
       end if
 
-      call fill_Sfcprop_names(Model,nvar_s2m,warm_start)
+      call fill_Sfcprop_names(Model,sfc%nvar2m,warm_start)
 
       is_lsoil=.false.
       if ( .not. warm_start ) then
@@ -1128,7 +1086,7 @@ module FV3GFS_io_mod
       endif
 
       !--- register the 2D fields
-      do num = 1,nvar_s2m
+      do num = 1,sfc%nvar2m
         var2_p => sfc%var2(:,:,num)
         if (trim(sfc%name2(num)) == 'sncovr'.or. trim(sfc%name2(num)) == 'tsfcl' .or. trim(sfc%name2(num)) == 'zorll'   &
                                             .or. trim(sfc%name2(num)) == 'zorli' .or. trim(sfc%name2(num)) == 'zorlwav' &
@@ -1159,7 +1117,7 @@ module FV3GFS_io_mod
       if (Model%nstf_name(1) > 0) then
          mand = .false.
          if (Model%nstf_name(2) == 0) mand = .true.
-         do num = nvar_s2m+1,nvar_s2m+nvar_s2o
+         do num = sfc%nvar2m+1,sfc%nvar2m+sfc%nvar2o
             var2_p => sfc%var2(:,:,num)
             if(is_lsoil) then
                call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
@@ -1170,8 +1128,8 @@ module FV3GFS_io_mod
          enddo
       endif
 
-      if (Model%lsm == Model%lsm_ruc) then ! nvar_s2mp = 0
-         do num = nvar_s2m+nvar_s2o+1, nvar_s2m+nvar_s2o+nvar_s2r
+      if (Model%lsm == Model%lsm_ruc) then ! sfc%nvar2mp = 0
+         do num = sfc%nvar2m+sfc%nvar2o+1, sfc%nvar2m+sfc%nvar2o+sfc%nvar2r
             var2_p => sfc%var2(:,:,num)
             if(is_lsoil) then
                call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/) )
@@ -1183,9 +1141,9 @@ module FV3GFS_io_mod
 
 
 ! Noah MP register only necessary only lsm = 2, not necessary has values
-      if (nvar_s2mp > 0) then
+      if (sfc%nvar2mp > 0) then
          mand = .false.
-         do num = nvar_s2m+nvar_s2o+1,nvar_s2m+nvar_s2o+nvar_s2mp
+         do num = sfc%nvar2m+sfc%nvar2o+1,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp
             var2_p => sfc%var2(:,:,num)
             if(is_lsoil) then
                call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
@@ -1199,7 +1157,7 @@ module FV3GFS_io_mod
 ! Flake
       if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
          mand = .false.
-         do num = nvar_before_lake+1,nvar_before_lake+nvar_s2l
+         do num = sfc%nvar_before_lake+1,sfc%nvar_before_lake+sfc%nvar2l
             var2_p => sfc%var2(:,:,num)
             if(is_lsoil) then
                call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'lat','lon'/), is_optional=.not.mand) 
@@ -1219,7 +1177,7 @@ module FV3GFS_io_mod
     call register_restart_field(Sfc_restart, sfc%name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/),&
                               &is_optional=.true.)
 
-    do num = 1,nvar_s3
+    do num = 1,sfc%nvar3
        var3_p => sfc%var3(:,:,:,num)
        if ( warm_start ) then
           call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'lsoil  ', 'Time   '/),&
@@ -1236,7 +1194,7 @@ module FV3GFS_io_mod
 
     if (Model%lsm == Model%lsm_noahmp) then
        mand = .false.
-       do num = nvar_s3+1,nvar_s3+3
+       do num = sfc%nvar3+1,sfc%nvar3+3
           var3_p1 => sfc%var3sn(:,:,:,num)
           call register_restart_field(Sfc_restart, sfc%name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1','zaxis_2', 'Time   '/),&
                                      &is_optional=.not.mand)
@@ -1261,7 +1219,7 @@ module FV3GFS_io_mod
 !coldstart(sfcfile doesn't include noah mp fields) or not
 
     if (Model%lsm == Model%lsm_noahmp) then
-      sfc%var2(1,1,nvar_s2m+19) = -66666.0_r8
+      sfc%var2(1,1,sfc%nvar2m+19) = -66666.0_r8
     endif
 
     !--- read the surface restart/data
@@ -1352,7 +1310,7 @@ module FV3GFS_io_mod
         endif
         if(Model%cplwav) then
           !tgs - the following line is a bug. It should be nt = nt
-          !nt = nvar_s2m-1 ! Next item will be at nvar_s2m
+          !nt = sfc%nvar2m-1 ! Next item will be at sfc%nvar2m
           call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop(nb)%zorlwav) !--- (zorl from wave model)
         else
           Sfcprop(nb)%zorlwav  = Sfcprop(nb)%zorlw
@@ -1466,7 +1424,7 @@ module FV3GFS_io_mod
         !
         !--- NSSTM variables
         !tgs - the following line is a bug that will show if(Model%cplwav) = true
-        !nt = nvar_s2m 
+        !nt = sfc%nvar2m 
         if (Model%nstf_name(1) > 0) then
           if (Model%nstf_name(2) == 1) then             ! nsst spinup
           !--- nsstm tref
@@ -1832,7 +1790,7 @@ module FV3GFS_io_mod
       endif
     endif compute_tsfc_for_colstart
 
-    if (sfc%var2(i,j,nvar_s2m) < -9990.0_r8) then
+    if (sfc%var2(i,j,sfc%nvar2m) < -9990.0_r8) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlwav')
 !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
@@ -1880,8 +1838,6 @@ module FV3GFS_io_mod
     integer :: i, j, k, nb, ix, lsoil, num, nt
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
-    integer :: nvar2m, nvar2o, nvar3
-    integer :: nvar2r, nvar2mp, nvar3mp, nvar_before_lake, nvar2l
     logical :: mand
     integer, allocatable :: ii1(:), jj1(:)
     character(len=32) :: fn_srf = 'sfc_data.nc'
@@ -1903,42 +1859,11 @@ module FV3GFS_io_mod
     !--- temporary variables for storing rrfs_sd fields
     type(rrfs_sd_state_type) :: rrfs_sd_data
 
-    nvar2m = 48
-    if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-      nvar2m = nvar2m + 4
-!     nvar2m = nvar2m + 5
-    endif
-    if (Model%cplwav) nvar2m = nvar2m + 1
-    if (Model%nstf_name(1) > 0) then
-      nvar2o = 18
-    else
-      nvar2o = 0
-    endif
-    if (Model%lsm == Model%lsm_ruc) then
-      if (Model%rdlai) then
-        nvar2r = 13
-      else
-        nvar2r = 12
-      endif
-      nvar3  = 5
-    else
-      nvar2r = 0
-      nvar3  = 3
-    endif
-    nvar2mp = 0
-    nvar3mp = 0
-    if (Model%lsm == Model%lsm_noahmp) then
-      nvar2mp = 29
-      nvar3mp = 5
-    endif
-!CLM Lake and Flake
-    if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
-       nvar2l = 10
-    else
-       nvar2l = 0
-    endif
+    logical :: indexes_changed
 
-    nvar_before_lake=nvar2m+nvar2o+nvar2r+nvar2mp
+    print *,sfc%nvar_before_lake
+
+    indexes_changed = sfc%calculate_indices(Model, .true., .true.)
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -1948,13 +1873,11 @@ module FV3GFS_io_mod
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
 
-    nvar_before_lake=nvar2m+nvar2o+nvar2r+nvar2mp
-
     if (Model%lsm == Model%lsm_ruc) then
       if (associated(sfc%name2)) then
         ! Re-allocate if one or more of the dimensions don't match
-        if (size(sfc%name2).ne.nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l .or. &
-            size(sfc%name3).ne.nvar3+nvar3mp .or.                       &
+        if (size(sfc%name2).ne.sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l .or. &
+            size(sfc%name3).ne.sfc%nvar3+sfc%nvar3mp .or.                       &
             size(sfc%var3,dim=3).ne.Model%lsoil_lsm) then
           !--- deallocate containers and free restart container
           deallocate(sfc%name2)
@@ -2052,13 +1975,13 @@ module FV3GFS_io_mod
 
     if (.not. associated(sfc%name2)) then
       !--- allocate the various containers needed for restarts
-      allocate(sfc%name2(nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l))
-      allocate(sfc%name3(0:nvar3+nvar3mp))
-      allocate(sfc%var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l))
+      allocate(sfc%name2(sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
+      allocate(sfc%name3(0:sfc%nvar3+sfc%nvar3mp))
+      allocate(sfc%var2(nx,ny,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-        allocate(sfc%var3(nx,ny,Model%lsoil,nvar3))
+        allocate(sfc%var3(nx,ny,Model%lsoil,sfc%nvar3))
       elseif (Model%lsm == Model%lsm_ruc) then
-        allocate(sfc%var3(nx,ny,Model%lsoil_lsm,nvar3))
+        allocate(sfc%var3(nx,ny,Model%lsoil_lsm,sfc%nvar3))
       endif
       sfc%var2   = -9999.0_r8
       sfc%var3   = -9999.0_r8
@@ -2071,15 +1994,15 @@ module FV3GFS_io_mod
         sfc%var3eq = -9999.0_r8
         sfc%var3zn = -9999.0_r8
       endif
-      call fill_Sfcprop_names(Model,nvar2m,.true.)
+      call fill_Sfcprop_names(Model,sfc%nvar2m,.true.)
    end if
 
    if(Model%lkm>0) then
      if(Model%iopt_lake==Model%iopt_lake_flake  ) then
        if(Model%me==0) then
-         if(size(sfc%name2)/=nvar_before_lake+10) then
-3814       format("ERROR: size mismatch size(sfc%name2)=",I0," /= nvar_before_lake+10=",I0)
-           write(0,3814) size(sfc%name2),nvar_before_lake+10
+         if(size(sfc%name2)/=sfc%nvar_before_lake+10) then
+3814       format("ERROR: size mismatch size(sfc%name2)=",I0," /= sfc%nvar_before_lake+10=",I0)
+           write(0,3814) size(sfc%name2),sfc%nvar_before_lake+10
          endif
        endif
      else if(Model%iopt_lake==Model%iopt_lake_clm) then
@@ -2093,7 +2016,7 @@ module FV3GFS_io_mod
    endif
 
    !--- register the 2D fields
-   do num = 1,nvar2m
+   do num = 1,sfc%nvar2m
       var2_p => sfc%var2(:,:,num)
       if (trim(sfc%name2(num)) == 'sncovr' .or. trim(sfc%name2(num)) == 'tsfcl' .or.trim(sfc%name2(num))  == 'zorll'   &
            .or. trim(sfc%name2(num)) == 'zorli' .or.trim(sfc%name2(num))  == 'zorlwav' &
@@ -2114,21 +2037,21 @@ module FV3GFS_io_mod
    if (Model%nstf_name(1) > 0) then
       mand = .false.
       if (Model%nstf_name(2) ==0) mand = .true.
-      do num = nvar2m+1,nvar2m+nvar2o
+      do num = sfc%nvar2m+1,sfc%nvar2m+sfc%nvar2o
          var2_p => sfc%var2(:,:,num)
          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
                                     &is_optional=.not.mand)
       enddo
    endif
 
-   if (Model%lsm == Model%lsm_ruc) then ! nvar2mp =0
-      do num = nvar2m+nvar2o+1, nvar2m+nvar2o+nvar2r
+   if (Model%lsm == Model%lsm_ruc) then ! sfc%nvar2mp =0
+      do num = sfc%nvar2m+sfc%nvar2o+1, sfc%nvar2m+sfc%nvar2o+sfc%nvar2r
          var2_p => sfc%var2(:,:,num)
          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/))
       enddo
-   else if (Model%lsm == Model%lsm_noahmp) then ! nvar2r =0
+   else if (Model%lsm == Model%lsm_noahmp) then ! sfc%nvar2r =0
       mand = .true.                  ! actually should be true since it is after cold start
-      do num = nvar2m+nvar2o+1,nvar2m+nvar2o+nvar2mp
+      do num = sfc%nvar2m+sfc%nvar2o+1,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp
          var2_p => sfc%var2(:,:,num)
          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
                                     &is_optional=.not.mand)
@@ -2145,13 +2068,13 @@ module FV3GFS_io_mod
    !     endif
 
    if(Model%lsm == Model%lsm_ruc) then
-      do num = 1,nvar3
+      do num = 1,sfc%nvar3
          var3_p => sfc%var3(:,:,:,num)
          call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/))
       enddo
       nullify(var3_p)
    else
-      do num = 1,nvar3
+      do num = 1,sfc%nvar3
          var3_p => sfc%var3(:,:,:,num)
          call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/))
       enddo
@@ -2160,7 +2083,7 @@ module FV3GFS_io_mod
 
    if (Model%lsm == Model%lsm_noahmp) then
       mand = .true.
-      do num = nvar3+1,nvar3+3
+      do num = sfc%nvar3+1,sfc%nvar3+3
          var3_p1 => sfc%var3sn(:,:,:,num)
          call register_restart_field(Sfc_restart, sfc%name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/),&
                                     &is_optional=.not.mand)
@@ -2182,7 +2105,7 @@ module FV3GFS_io_mod
     !Flake
     if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
       mand = .false.
-      do num = nvar_before_lake+1,nvar_before_lake+nvar2l
+      do num = sfc%nvar_before_lake+1,sfc%nvar_before_lake+sfc%nvar2l
         var2_p => sfc%var2(:,:,num)
         call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
              &is_optional=.not.mand)

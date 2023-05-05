@@ -17,6 +17,7 @@ module FV3GFS_sfc_io
   private
 
   public :: Sfc_io_data_type
+  public :: Sfc_io_fill_2d_names, Sfc_io_fill_3d_names, Sfc_io_calculate_indices, Sfc_io_final
 
   type Sfc_io_data_type
     integer, public :: nvar2o = 0
@@ -48,17 +49,94 @@ module FV3GFS_sfc_io
     real(kind=kind_phys), pointer, dimension(:,:,:,:), public :: var3eq => null()
     real(kind=kind_phys), pointer, dimension(:,:,:,:), public :: var3zn => null()
 
-    ! FIXME: Move the sanity check code to this file so the name2 can be private:
     character(len=32), pointer, dimension(:), public :: name2 => null()
 
     character(len=32), pointer, dimension(:), public :: name3 => null()
   contains
     procedure, public :: fill_2d_names => Sfc_io_fill_2d_names
     procedure, public :: fill_3d_names => Sfc_io_fill_3d_names
+    procedure, public :: calculate_indices => Sfc_io_calculate_indices
     final :: Sfc_io_final
   end type Sfc_io_data_type
 
 contains
+
+  function Sfc_io_calculate_indices(sfc, Model, for_write, warm_start)
+    implicit none
+    class(Sfc_io_data_type)             :: sfc
+    type(GFS_control_type),      intent(in) :: Model
+    logical :: Sfc_io_calculate_indices
+    logical, intent(in) :: for_write, warm_start
+
+    integer :: nvar2m, nvar2o, nvar3, nvar2r, nvar2mp, nvar3mp, nvar2l
+    integer :: nvar_before_lake
+
+    nvar2m = 48
+    if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
+      nvar2m = nvar2m + 4
+      !nvar2m = nvar2m + 5
+    endif
+    if (Model%cplwav) then
+      nvar2m = nvar2m + 1
+    endif
+    if (Model%nstf_name(1) > 0) then
+      nvar2o = 18
+    else
+      nvar2o = 0
+    endif
+    if (Model%lsm == Model%lsm_ruc .and. warm_start) then
+      if (Model%rdlai) then
+        nvar2r = 13
+      else
+        nvar2r = 12
+      endif
+      nvar3  = 5
+    else
+      if(for_write .and. Model%rdlai) then
+        nvar2r = 1
+      else
+        nvar2r = 0
+      endif
+      nvar3  = 3
+    endif
+    if (Model%lsm == Model%lsm_noahmp) then
+      nvar2mp = 29
+      nvar3mp = 5
+    else
+      nvar2mp = 0
+      nvar3mp = 0
+    endif
+    !CLM Lake and Flake
+    if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
+      nvar2l = 10
+    else
+      nvar2l = 0
+    endif
+
+    nvar_before_lake=nvar2m+nvar2o+nvar2r+nvar2mp
+
+    Sfc_io_calculate_indices = &
+         nvar2m /= sfc%nvar2m .or. &
+         nvar2o /= sfc%nvar2o .or. &
+         nvar3 /= sfc%nvar3 .or. &
+         nvar2r /= sfc%nvar2r .or. &
+         nvar2mp /= sfc%nvar2mp .or. &
+         nvar3mp /= sfc%nvar3mp .or. &
+         nvar2l /= sfc%nvar2l .or. &
+         nvar2m /= sfc%nvar2m .or. &
+         nvar_before_lake /= sfc%nvar_before_lake
+
+    sfc%nvar2m = nvar2m
+    sfc%nvar2o = nvar2o
+    sfc%nvar3 = nvar3
+    sfc%nvar2r = nvar2r
+    sfc%nvar2mp = nvar2mp
+    sfc%nvar3mp = nvar3mp
+    sfc%nvar2l = nvar2l
+    sfc%nvar2m = nvar2m
+    sfc%nvar_before_lake = nvar_before_lake
+
+  end function Sfc_io_calculate_indices
 
   subroutine Sfc_io_fill_3d_names(sfc,Model,warm_start)
     implicit none
@@ -253,6 +331,17 @@ contains
   subroutine Sfc_io_final(sfc)
     implicit none
     type(Sfc_io_data_type)             :: sfc
+
+    sfc%nvar2m=0
+    sfc%nvar2o=0
+    sfc%nvar2l=0
+    sfc%nvar3=0
+    sfc%nvar2r=0
+    sfc%nvar2mp=0
+    sfc%nvar3mp=0
+    sfc%nvar2m=0
+    sfc%nvar_before_lake=0
+    sfc%is_lsoil=.false.
 
     ! This #define reduces code length by a lot
 #define IF_ASSOC_DEALLOC_NULL(var) \
