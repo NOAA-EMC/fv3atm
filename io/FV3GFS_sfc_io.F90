@@ -17,7 +17,8 @@ module FV3GFS_sfc_io
   private
 
   public :: Sfc_io_data_type
-  public :: Sfc_io_fill_2d_names, Sfc_io_fill_3d_names, Sfc_io_allocate_arrays, Sfc_io_final
+  public :: Sfc_io_fill_2d_names, Sfc_io_fill_3d_names, Sfc_io_allocate_arrays, &
+       Sfc_io_register_axes, Sfc_io_write_axes, Sfc_io_final
 
   type Sfc_io_data_type
     integer, public :: nvar2o = 0
@@ -55,6 +56,8 @@ module FV3GFS_sfc_io
   contains
 
     procedure, public :: allocate_arrays => Sfc_io_allocate_arrays
+    procedure, public :: register_axes => Sfc_io_register_axes
+    procedure, public :: write_axes => Sfc_io_write_axes
     procedure, public :: fill_2d_names => Sfc_io_fill_2d_names
     procedure, public :: fill_3d_names => Sfc_io_fill_3d_names
 
@@ -202,6 +205,115 @@ contains
       endif
     endif
   end function Sfc_io_allocate_arrays
+
+  subroutine Sfc_io_register_axes(sfc, Model, Sfc_restart, for_write, warm_start)
+    implicit none
+    class(Sfc_io_data_type)             :: sfc
+    type(GFS_control_type),      intent(in) :: Model
+    type(FmsNetcdfDomainFile_t) :: Sfc_restart
+    logical, intent(in) :: for_write, warm_start
+
+    if(.not.for_write) then
+      sfc%is_lsoil = .false.
+    endif
+
+    if(.not.warm_start .and. .not.for_write) then
+      if( variable_exists(Sfc_restart,"lsoil") ) then
+        if(.not.for_write) then
+          sfc%is_lsoil=.true.
+        endif
+        call register_axis(Sfc_restart, 'lon', 'X')
+        call register_axis(Sfc_restart, 'lat', 'Y')
+        call register_axis(Sfc_restart, 'lsoil', dimension_length=Model%lsoil)
+      else
+        call register_axis(Sfc_restart, 'xaxis_1', 'X')
+        call register_axis(Sfc_restart, 'yaxis_1', 'Y')
+        call register_axis(Sfc_restart, 'zaxis_1', dimension_length=4)
+        call register_axis(Sfc_restart, 'Time', 1)
+      end if
+    else
+      call register_axis(Sfc_restart, 'xaxis_1', 'X')
+      call register_axis(Sfc_restart, 'yaxis_1', 'Y')
+      call register_axis(Sfc_restart, 'zaxis_1', dimension_length=Model%kice)
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
+        call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
+      else if(Model%lsm == Model%lsm_ruc .and. .not.for_write) then
+        ! Possible bug. The lsm_ruc only reads zaxis_2, never writes it.
+        call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil_lsm)
+      endif
+      if(Model%lsm == Model%lsm_noahmp) then
+        call register_axis(Sfc_restart, 'zaxis_3', dimension_length=3)
+        call register_axis(Sfc_restart, 'zaxis_4', dimension_length=7)
+      end if
+      call register_axis(Sfc_restart, 'Time', unlimited)
+    endif
+  end subroutine Sfc_io_register_axes
+
+  subroutine Sfc_io_write_axes(sfc, Model, Sfc_restart)
+    implicit none
+    class(Sfc_io_data_type)             :: sfc
+    type(GFS_control_type),      intent(in) :: Model
+    type(FmsNetcdfDomainFile_t) :: Sfc_restart
+
+    integer, allocatable :: buffer(:)
+    integer :: i, is, ie
+    logical :: mand
+
+    call register_field(Sfc_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
+    call register_variable_attribute(Sfc_restart, 'xaxis_1', 'cartesian_axis', 'X', str_len=1)
+    call get_global_io_domain_indices(Sfc_restart, 'xaxis_1', is, ie, indices=buffer)
+    call write_data(Sfc_restart, "xaxis_1", buffer)
+    deallocate(buffer)
+
+    call register_field(Sfc_restart, 'yaxis_1', 'double', (/'yaxis_1'/))
+    call register_variable_attribute(Sfc_restart, 'yaxis_1', 'cartesian_axis', 'Y', str_len=1)
+    call get_global_io_domain_indices(Sfc_restart, 'yaxis_1', is, ie, indices=buffer)
+    call write_data(Sfc_restart, "yaxis_1", buffer)
+    deallocate(buffer)
+
+    call register_field(Sfc_restart, 'zaxis_1', 'double', (/'zaxis_1'/))
+    call register_variable_attribute(Sfc_restart, 'zaxis_1', 'cartesian_axis', 'Z', str_len=1)
+    allocate( buffer(Model%kice) )
+    do i=1, Model%kice
+      buffer(i) = i
+    end do
+    call write_data(Sfc_restart, 'zaxis_1', buffer)
+    deallocate(buffer)
+
+    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
+      call register_field(Sfc_restart, 'zaxis_2', 'double', (/'zaxis_2'/))
+      call register_variable_attribute(Sfc_restart, 'zaxis_2', 'cartesian_axis', 'Z', str_len=1)
+      allocate( buffer(Model%lsoil) )
+      do i=1, Model%lsoil
+        buffer(i)=i
+      end do
+      call write_data(Sfc_restart, 'zaxis_2', buffer)
+      deallocate(buffer)
+    endif
+
+    if(Model%lsm == Model%lsm_noahmp) then
+      call register_field(Sfc_restart, 'zaxis_3', 'double', (/'zaxis_3'/))
+      call register_variable_attribute(Sfc_restart, 'zaxis_3', 'cartesian_axis', 'Z', str_len=1)
+      allocate(buffer(3))
+      do i=1, 3
+        buffer(i) = i
+      end do
+      call write_data(Sfc_restart, 'zaxis_3', buffer)
+      deallocate(buffer)
+
+      call register_field(Sfc_restart, 'zaxis_4', 'double', (/'zaxis_4'/))
+      call register_variable_attribute(Sfc_restart, 'zaxis_4', 'cartesian_axis' ,'Z', str_len=1)
+      allocate(buffer(7))
+      do i=1, 7
+        buffer(i)=i
+      end do
+      call write_data(Sfc_restart, 'zaxis_4', buffer)
+      deallocate(buffer)
+    end if
+    call register_field(Sfc_restart, 'Time', 'double', (/'Time'/))
+    call register_variable_attribute(Sfc_restart, 'Time', 'cartesian_axis', 'T', str_len=1)
+    call write_data( Sfc_restart, 'Time', 1)
+  end subroutine Sfc_io_write_axes
 
   subroutine Sfc_io_fill_3d_names(sfc,Model,warm_start)
     implicit none

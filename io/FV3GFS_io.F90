@@ -889,36 +889,8 @@ module FV3GFS_io_mod
 
    if(sfc%allocate_arrays(Model, Atm_block, .false., warm_start)) then
       call sfc%fill_2d_names(Model, warm_start)
-
-      is_lsoil=.false.
-      if ( .not. warm_start ) then
-        if( variable_exists(Sfc_restart,"lsoil") ) then
-          is_lsoil=.true.
-          call register_axis(Sfc_restart, 'lon', 'X')
-          call register_axis(Sfc_restart, 'lat', 'Y')
-          call register_axis(Sfc_restart, 'lsoil', dimension_length=Model%lsoil)
-       else
-          call register_axis(Sfc_restart, 'xaxis_1', 'X')
-          call register_axis(Sfc_restart, 'yaxis_1', 'Y')
-          call register_axis(Sfc_restart, 'zaxis_1', dimension_length=4)
-          call register_axis(Sfc_restart, 'Time', 1)
-        end if
-      else
-        call register_axis(Sfc_restart, 'xaxis_1', 'X')
-        call register_axis(Sfc_restart, 'yaxis_1', 'Y')
-        call register_axis(Sfc_restart, 'zaxis_1', dimension_length=Model%kice)
-
-        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-          call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
-        else if(Model%lsm == Model%lsm_ruc) then
-          call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil_lsm)
-        end if
-        if(Model%lsm == Model%lsm_noahmp) then
-          call register_axis(Sfc_restart, 'zaxis_3', dimension_length=3)
-          call register_axis(Sfc_restart, 'zaxis_4', dimension_length=7)
-        end if
-        call register_axis(Sfc_restart, 'Time', unlimited)
-      end if
+      call sfc%register_axes(Model, Sfc_restart, .false., warm_start)
+      is_lsoil = sfc%is_lsoil
 
       ! Tell CLM Lake to allocate data, and register its axes and fields
       if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
@@ -1726,67 +1698,8 @@ module FV3GFS_io_mod
     !--- register axis
     amiopen=open_file(Sfc_restart, trim(infile), 'overwrite', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
     if_amiopen: if( amiopen ) then
-      call register_axis(Sfc_restart, 'xaxis_1', 'X')
-      call register_field(Sfc_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
-      call register_variable_attribute(Sfc_restart, 'xaxis_1', 'cartesian_axis', 'X', str_len=1)
-      call get_global_io_domain_indices(Sfc_restart, 'xaxis_1', is, ie, indices=buffer)
-      call write_data(Sfc_restart, "xaxis_1", buffer)
-      deallocate(buffer)
-
-      call register_axis(Sfc_restart, 'yaxis_1', 'Y')
-      call register_field(Sfc_restart, 'yaxis_1', 'double', (/'yaxis_1'/))
-      call register_variable_attribute(Sfc_restart, 'yaxis_1', 'cartesian_axis', 'Y', str_len=1)
-      call get_global_io_domain_indices(Sfc_restart, 'yaxis_1', is, ie, indices=buffer)
-      call write_data(Sfc_restart, "yaxis_1", buffer)
-      deallocate(buffer)
-
-      call register_axis(Sfc_restart, 'zaxis_1', dimension_length=Model%kice)
-      call register_field(Sfc_restart, 'zaxis_1', 'double', (/'zaxis_1'/))
-      call register_variable_attribute(Sfc_restart, 'zaxis_1', 'cartesian_axis', 'Z', str_len=1)
-      allocate( buffer(Model%kice) )
-      do i=1, Model%kice
-         buffer(i) = i
-      end do
-      call write_data(Sfc_restart, 'zaxis_1', buffer)
-      deallocate(buffer)
-
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-        call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
-        call register_field(Sfc_restart, 'zaxis_2', 'double', (/'zaxis_2'/))
-        call register_variable_attribute(Sfc_restart, 'zaxis_2', 'cartesian_axis', 'Z', str_len=1)
-        allocate( buffer(Model%lsoil) )
-        do i=1, Model%lsoil
-          buffer(i)=i
-        end do
-        call write_data(Sfc_restart, 'zaxis_2', buffer)
-        deallocate(buffer)
-      endif
-
-      if(Model%lsm == Model%lsm_noahmp) then
-        call register_axis(Sfc_restart, 'zaxis_3', dimension_length=3)
-        call register_field(Sfc_restart, 'zaxis_3', 'double', (/'zaxis_3'/))
-        call register_variable_attribute(Sfc_restart, 'zaxis_3', 'cartesian_axis', 'Z', str_len=1)
-        allocate(buffer(3))
-        do i=1, 3
-           buffer(i) = i
-        end do
-        call write_data(Sfc_restart, 'zaxis_3', buffer)
-        deallocate(buffer)
-
-        call register_axis(Sfc_restart, 'zaxis_4', dimension_length=7)
-        call register_field(Sfc_restart, 'zaxis_4', 'double', (/'zaxis_4'/))
-        call register_variable_attribute(Sfc_restart, 'zaxis_4', 'cartesian_axis' ,'Z', str_len=1)
-        allocate(buffer(7))
-        do i=1, 7
-           buffer(i)=i
-        end do
-        call write_data(Sfc_restart, 'zaxis_4', buffer)
-        deallocate(buffer)
-      end if
-      call register_axis(Sfc_restart, 'Time', unlimited)
-      call register_field(Sfc_restart, 'Time', 'double', (/'Time'/))
-      call register_variable_attribute(Sfc_restart, 'Time', 'cartesian_axis', 'T', str_len=1)
-      call write_data( Sfc_restart, 'Time', 1)
+      call sfc%register_axes(Model, Sfc_restart, .true., .true.)
+      call sfc%write_axes(Model, Sfc_restart)
     else
       call mpp_error(FATAL, 'Error in opening file'//trim(infile) )
     end if if_amiopen
