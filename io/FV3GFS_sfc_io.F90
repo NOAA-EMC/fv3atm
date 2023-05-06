@@ -17,7 +17,7 @@ module FV3GFS_sfc_io
   private
 
   public :: Sfc_io_data_type
-  public :: Sfc_io_fill_2d_names, Sfc_io_fill_3d_names, Sfc_io_calculate_indices, Sfc_io_final
+  public :: Sfc_io_fill_2d_names, Sfc_io_fill_3d_names, Sfc_io_allocate_arrays, Sfc_io_final
 
   type Sfc_io_data_type
     integer, public :: nvar2o = 0
@@ -53,9 +53,13 @@ module FV3GFS_sfc_io
 
     character(len=32), pointer, dimension(:), public :: name3 => null()
   contains
+
+    procedure, public :: allocate_arrays => Sfc_io_allocate_arrays
     procedure, public :: fill_2d_names => Sfc_io_fill_2d_names
     procedure, public :: fill_3d_names => Sfc_io_fill_3d_names
-    procedure, public :: calculate_indices => Sfc_io_calculate_indices
+
+    procedure, private :: calculate_indices => Sfc_io_calculate_indices
+
     final :: Sfc_io_final
   end type Sfc_io_data_type
 
@@ -137,6 +141,67 @@ contains
     sfc%nvar_before_lake = nvar_before_lake
 
   end function Sfc_io_calculate_indices
+
+  function Sfc_io_allocate_arrays(sfc, Model, Atm_block, for_write, warm_start)
+    implicit none
+    class(Sfc_io_data_type)             :: sfc
+    type(block_control_type),    intent(in) :: Atm_block
+    type(GFS_control_type),      intent(in) :: Model
+    logical :: Sfc_io_allocate_arrays
+    logical, intent(in) :: for_write, warm_start
+
+    integer :: isc, iec, jsc, jec, npz, nx, ny
+
+    isc = Atm_block%isc
+    iec = Atm_block%iec
+    jsc = Atm_block%jsc
+    jec = Atm_block%jec
+    npz = Atm_block%npz
+    nx  = (iec - isc + 1)
+    ny  = (jec - jsc + 1)
+
+    Sfc_io_allocate_arrays = sfc%calculate_indices(Model, for_write, warm_start)
+    Sfc_io_allocate_arrays = Sfc_io_allocate_arrays .or. .not. associated(sfc%name2)
+
+    if(Sfc_io_allocate_arrays) then
+      !--- allocate the various containers needed for restarts
+      allocate(sfc%name2(sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
+      allocate(sfc%name3(0:sfc%nvar3+sfc%nvar3mp))
+      allocate(sfc%var2(nx,ny,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
+
+      ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
+      ! if the initial conditions do contain this variable, because Model%kice is 9 for
+      ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
+      allocate(sfc%var3ice(nx,ny,Model%kice))
+
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
+        allocate(sfc%var3(nx,ny,Model%lsoil,sfc%nvar3))
+      elseif (Model%lsm == Model%lsm_ruc) then
+        allocate(sfc%var3(nx,ny,Model%lsoil_lsm,sfc%nvar3))
+      endif
+
+      sfc%var2   = -9999.0_kind_phys
+      sfc%var3   = -9999.0_kind_phys
+      sfc%var3ice= -9999.0_kind_phys
+
+      if (Model%lsm == Model%lsm_noahmp) then
+        allocate(sfc%var3sn(nx,ny,-2:0,4:6))
+        allocate(sfc%var3eq(nx,ny,1:4,7:7))
+        allocate(sfc%var3zn(nx,ny,-2:4,8:8))
+
+        sfc%var3sn = -9999.0_kind_phys
+        sfc%var3eq = -9999.0_kind_phys
+        sfc%var3zn = -9999.0_kind_phys
+      endif
+    endif
+
+    if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_flake .and. Model%me==0) then
+      if(size(sfc%name2)/=sfc%nvar_before_lake+10) then
+3814    format("ERROR: size mismatch size(sfc%name2)=",I0," /= nvar_before_lake+10=",I0)
+        write(0,3814) size(sfc%name2),sfc%nvar_before_lake+10
+      endif
+    endif
+  end function Sfc_io_allocate_arrays
 
   subroutine Sfc_io_fill_3d_names(sfc,Model,warm_start)
     implicit none

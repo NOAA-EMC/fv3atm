@@ -522,17 +522,6 @@ module FV3GFS_io_mod
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-   subroutine fill_Sfcprop_names(Model,nvar_s2m,warm_start)
-     implicit none
-     type(GFS_control_type),    intent(in) :: Model
-     integer, intent(in) :: nvar_s2m
-     logical, intent(in) :: warm_start
-     integer :: nt
-
-     sfc%nvar2m = nvar_s2m
-     call sfc%fill_2d_names(Model,warm_start)
-   end subroutine fill_Sfcprop_names
-
 !----------------------------------------------------------------------
 ! sfc_prop_restart_read
 !----------------------------------------------------------------------
@@ -582,13 +571,9 @@ module FV3GFS_io_mod
     logical :: amiopen
     logical :: is_lsoil
 
-    logical :: indexes_changed
-
     type(clm_lake_data_type) :: clm_lake
     type(rrfs_sd_state_type) :: rrfs_sd_state
     type(rrfs_sd_emissions_type) :: rrfs_sd_emis
-
-    indexes_changed = sfc%calculate_indices(Model, .false., warm_start)
 
     nvar_o2  = 19
     nvar_oro_ls_ss = 10
@@ -902,36 +887,8 @@ module FV3GFS_io_mod
    amiopen=open_file(Sfc_restart, trim(infile), "read", domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
    if( .not.amiopen ) call mpp_error(FATAL, 'Error opening file'//trim(infile))
 
-    if (.not. associated(sfc%name2)) then
-      !--- allocate the various containers needed for restarts
-      allocate(sfc%name2(sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
-      allocate(sfc%name3(0:sfc%nvar3+sfc%nvar3mp))
-      allocate(sfc%var2(nx,ny,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
-      ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
-      ! if the initial conditions do contain this variable, because Model%kice is 9 for
-      ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
-      allocate(sfc%var3ice(nx,ny,Model%kice))
-
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
-        allocate(sfc%var3(nx,ny,Model%lsoil,sfc%nvar3))
-      else if (Model%lsm == Model%lsm_ruc) then
-        allocate(sfc%var3(nx,ny,Model%lsoil_lsm,sfc%nvar3))
-      end if
-
-      sfc%var2   = -9999.0_r8
-      sfc%var3   = -9999.0_r8
-      sfc%var3ice= -9999.0_r8
-!
-      if (Model%lsm == Model%lsm_noahmp) then
-        allocate(sfc%var3sn(nx,ny,-2:0,4:6))
-        allocate(sfc%var3eq(nx,ny,1:4,7:7))
-        allocate(sfc%var3zn(nx,ny,-2:4,8:8))
-        sfc%var3sn = -9999.0_r8
-        sfc%var3eq = -9999.0_r8
-        sfc%var3zn = -9999.0_r8
-      end if
-
-      call fill_Sfcprop_names(Model,sfc%nvar2m,warm_start)
+   if(sfc%allocate_arrays(Model, Atm_block, .false., warm_start)) then
+      call sfc%fill_2d_names(Model, warm_start)
 
       is_lsoil=.false.
       if ( .not. warm_start ) then
@@ -1752,11 +1709,7 @@ module FV3GFS_io_mod
     !--- temporary variables for storing rrfs_sd fields
     type(rrfs_sd_state_type) :: rrfs_sd_state
 
-    logical :: indexes_changed
-
     print *,sfc%nvar_before_lake
-
-    indexes_changed = sfc%calculate_indices(Model, .true., .true.)
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -1765,21 +1718,6 @@ module FV3GFS_io_mod
     npz = Atm_block%npz
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
-
-    if (Model%lsm == Model%lsm_ruc) then
-      if (associated(sfc%name2)) then
-        ! Re-allocate if one or more of the dimensions don't match
-        if (size(sfc%name2).ne.sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l .or. &
-            size(sfc%name3).ne.sfc%nvar3+sfc%nvar3mp .or.                       &
-            size(sfc%var3,dim=3).ne.Model%lsoil_lsm) then
-          !--- deallocate containers and free restart container
-          deallocate(sfc%name2)
-          deallocate(sfc%name3)
-          deallocate(sfc%var2)
-          deallocate(sfc%var3)
-       end if
-      end if
-    end if
 
     !--- set filename
     infile=trim(indir)//'/'//trim(fn_srf)
@@ -1866,29 +1804,9 @@ module FV3GFS_io_mod
       call rrfs_sd_state%write_axis(Model,Sfc_restart)
     end if
 
-    if (.not. associated(sfc%name2)) then
-      !--- allocate the various containers needed for restarts
-      allocate(sfc%name2(sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
-      allocate(sfc%name3(0:sfc%nvar3+sfc%nvar3mp))
-      allocate(sfc%var2(nx,ny,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp+sfc%nvar2r+sfc%nvar2l))
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-        allocate(sfc%var3(nx,ny,Model%lsoil,sfc%nvar3))
-      elseif (Model%lsm == Model%lsm_ruc) then
-        allocate(sfc%var3(nx,ny,Model%lsoil_lsm,sfc%nvar3))
-      endif
-      sfc%var2   = -9999.0_r8
-      sfc%var3   = -9999.0_r8
-      if (Model%lsm == Model%lsm_noahmp) then
-        allocate(sfc%var3sn(nx,ny,-2:0,4:6))
-        allocate(sfc%var3eq(nx,ny,1:4,7:7))
-        allocate(sfc%var3zn(nx,ny,-2:4,8:8))
-
-        sfc%var3sn = -9999.0_r8
-        sfc%var3eq = -9999.0_r8
-        sfc%var3zn = -9999.0_r8
-      endif
-      call fill_Sfcprop_names(Model,sfc%nvar2m,.true.)
-   end if
+    if (sfc%allocate_arrays(Model, Atm_block, .true., .true.)) then
+      call sfc%fill_2d_names(Model,.true.)
+    end if
 
    if(Model%lkm>0) then
      if(Model%iopt_lake==Model%iopt_lake_flake  ) then
