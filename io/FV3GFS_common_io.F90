@@ -1,5 +1,6 @@
 module FV3GFS_common_io
   use GFS_typedefs, only: kind_phys
+  use block_control_mod,  only: block_control_type
 
   implicit none
   private
@@ -31,7 +32,26 @@ module FV3GFS_common_io
          copy_to_GFS_Data_3d_slice_phys2phys
   end interface copy_to_GFS_Data
 
+  public :: get_nx_ny_from_atm
+
 contains
+
+  pure subroutine get_nx_ny_from_atm(Atm_block, nx, ny)
+    implicit none
+    type(block_control_type), intent(in) :: Atm_block
+    integer, intent(out), optional :: nx, ny
+    integer :: isc, iec, jsc, jec
+    if(present(nx)) then
+      isc = Atm_block%isc
+      iec = Atm_block%iec
+      nx  = (iec - isc + 1)
+    end if
+    if(present(ny)) then
+      jsc = Atm_block%jsc
+      jec = Atm_block%jec
+      ny  = (jec - jsc + 1)
+    endif
+  end subroutine get_nx_ny_from_atm
 
    pure subroutine copy_from_GFS_Data_2d_phys2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
      implicit none

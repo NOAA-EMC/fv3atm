@@ -77,10 +77,6 @@ module FV3GFS_io_mod
   character(len=32),    allocatable,         dimension(:)       :: oro_ls_ss_name
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_ls_var, oro_ss_var, oro_var3v, oro_var3s
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: phy_var3
-  character(len=32),    allocatable,         dimension(:)       :: dust12m_name, emi_name, rrfssd_name
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: rrfssd_var
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: dust12m_var
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: emi_var
   !--- Noah MP restart containers
   real(kind=kind_phys) :: zhour
 !
@@ -568,7 +564,6 @@ module FV3GFS_io_mod
     integer :: nvar_oro_ls_ss
     integer :: nvar_vegfr, nvar_soilfr
     integer :: isnow
-    integer :: nvar_emi, nvar_dust12m, nvar_gbbepx, nvar_rrfssd
     integer, allocatable :: ii1(:), jj1(:)
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
@@ -590,7 +585,8 @@ module FV3GFS_io_mod
     logical :: indexes_changed
 
     type(clm_lake_data_type) :: clm_lake
-    type(rrfs_sd_state_type) :: rrfs_sd_data
+    type(rrfs_sd_state_type) :: rrfs_sd_state
+    type(rrfs_sd_emissions_type) :: rrfs_sd_emis
 
     indexes_changed = sfc%calculate_indices(Model, .false., warm_start)
 
@@ -599,16 +595,6 @@ module FV3GFS_io_mod
 
     nvar_vegfr  = Model%nvegcat
     nvar_soilfr = Model%nsoilcat
-
-    if(Model%rrfs_sd) then
-      nvar_dust12m = 5
-      nvar_rrfssd  = 3
-      nvar_emi     = 1
-    else
-      nvar_dust12m = 0
-      nvar_rrfssd  = 0
-      nvar_emi     = 0
-    endif
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -756,153 +742,60 @@ module FV3GFS_io_mod
 
     if_smoke: if(Model%rrfs_sd) then  ! for RRFS-SD
 
-    !--- Dust input FILE
-    !--- open file
-    infile=trim(indir)//'/'//trim(fn_dust12m)
-    amiopen=open_file(dust12m_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
-    if (.not.amiopen) call mpp_error( FATAL, 'Error with opening file'//trim(infile) )
+      !--- Dust input FILE
+      !--- open file
+      infile=trim(indir)//'/'//trim(fn_dust12m)
+      amiopen=open_file(dust12m_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
+      if (.not.amiopen) call mpp_error( FATAL, 'Error with opening file'//trim(infile) )
+      
+      !--- Register axes and variables, allocate memory:
+      call rrfs_sd_emis%register_dust12m(dust12m_restart, Atm_block)
+      
+      !--- read new GSL created dust12m restart/data
+      call mpp_error(NOTE,'reading dust12m information from INPUT/dust12m_data.tile*.nc')
+      call read_restart(dust12m_restart)
+      call close_file(dust12m_restart)
+      
+      !--- Copy to Sfcprop and free temporary arrays:
+      call rrfs_sd_emis%copy_dust12m(Sfcprop, Atm_block)
 
-    if (.not. allocated(dust12m_name)) then
-    !--- allocate the various containers needed for fengsha dust12m data
-      allocate(dust12m_name(nvar_dust12m))
-      allocate(dust12m_var(nx,ny,12,nvar_dust12m))
+      !----------------------------------------------
 
-      dust12m_name(1)  = 'clay'
-      dust12m_name(2)  = 'rdrag'
-      dust12m_name(3)  = 'sand'
-      dust12m_name(4)  = 'ssm'
-      dust12m_name(5)  = 'uthr'
+      !--- open anthropogenic emission file
+      infile=trim(indir)//'/'//trim(fn_emi)
+      amiopen=open_file(emi_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
+      if (.not.amiopen) call mpp_error( FATAL, 'Error with opening file'//trim(infile) )
 
-      !--- register axis
-      call register_axis(dust12m_restart, 'lon', 'X')
-      call register_axis(dust12m_restart, 'lat', 'Y')
-      call register_axis(dust12m_restart, 'time', 12)
-      !--- register the 3D fields
-      do num = 1,nvar_dust12m
-        var3_p2 => dust12m_var(:,:,:,num)
-        call register_restart_field(dust12m_restart, dust12m_name(num), var3_p2, dimensions=(/'time', 'lat ', 'lon '/),&
-                                  &is_optional=.not.mand)
-      enddo
-      nullify(var3_p2)
-    endif
+      ! Register axes and variables, allocate memory
+      call rrfs_sd_emis%register_emi(emi_restart, Atm_block)
+      
+      !--- read anthropogenic emi restart/data
+      call mpp_error(NOTE,'reading emi information from INPUT/emi_data.tile*.nc')
+      call read_restart(emi_restart)
+      call close_file(emi_restart)
+      
+      !--- Copy to Sfcprop and free temporary arrays:
+      call rrfs_sd_emis%copy_emi(Sfcprop, Atm_block)
 
-    !--- read new GSL created dust12m restart/data
-    call mpp_error(NOTE,'reading dust12m information from INPUT/dust12m_data.tile*.nc')
-    call read_restart(dust12m_restart)
-    call close_file(dust12m_restart)
+      !----------------------------------------------
+    
+      !--- Dust input FILE
+      !--- open file
+      infile=trim(indir)//'/'//trim(fn_rrfssd)
+      amiopen=open_file(rrfssd_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
+      if (.not.amiopen) call mpp_error( FATAL, 'Error with opening file'//trim(infile) )
 
-    do nb = 1, Atm_block%nblks
-      !--- 3D variables
-      do ix = 1, Atm_block%blksz(nb)
-        i = Atm_block%index(nb)%ii(ix) - isc + 1
-        j = Atm_block%index(nb)%jj(ix) - jsc + 1
-        do k = 1, 12
-          Sfcprop(nb)%dust12m_in(ix,k,1)  = dust12m_var(i,j,k,1)
-          Sfcprop(nb)%dust12m_in(ix,k,2)  = dust12m_var(i,j,k,2)
-          Sfcprop(nb)%dust12m_in(ix,k,3)  = dust12m_var(i,j,k,3)
-          Sfcprop(nb)%dust12m_in(ix,k,4)  = dust12m_var(i,j,k,4)
-          Sfcprop(nb)%dust12m_in(ix,k,5)  = dust12m_var(i,j,k,5)
-        enddo
-      enddo
-    enddo
+      ! Register axes and variables, allocate memory
+      call rrfs_sd_emis%register_fire(rrfssd_restart, Atm_block)
 
-    deallocate(dust12m_name,dust12m_var)
+      !--- read new GSL created rrfssd restart/data
+      call mpp_error(NOTE,'reading rrfssd information from INPUT/SMOKE_RRFS_data.nc')
+      call read_restart(rrfssd_restart)
+      call close_file(rrfssd_restart)
 
-    read_emi: if(nvar_emi>0) then
-    !--- open anthropogenic emission file
-    infile=trim(indir)//'/'//trim(fn_emi)
-    amiopen=open_file(emi_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
-    if (.not.amiopen) call mpp_error( FATAL, 'Error with opening file'//trim(infile) )
+      !--- Copy to Sfcprop and free temporary arrays:
+      call rrfs_sd_emis%copy_fire(Sfcprop, Atm_block)
 
-    !if (.not. allocated(emi_name)) then
-     !--- allocate the various containers needed for anthropogenic emission data
-      if(allocated(emi_name)) deallocate(emi_name)
-      if(allocated(emi_var)) deallocate(emi_var)
-      allocate(emi_name(nvar_emi))
-      allocate(emi_var(nx,ny,1,nvar_emi))
-
-      emi_name(1)  = 'e_oc'
-      !--- register axis
-      call register_axis( emi_restart, 'time', 1) ! only read first time level, even if multiple are present
-      call register_axis( emi_restart, "grid_xt", 'X' )
-      call register_axis( emi_restart, "grid_yt", 'Y' )
-      !--- register the 2D fields
-      do num = 1,nvar_emi
-        var3_p2 => emi_var(:,:,:,num)
-        call register_restart_field(emi_restart, emi_name(num), var3_p2, dimensions=(/'time   ','grid_yt','grid_xt'/))
-      enddo
-      nullify(var3_p2)
-    !endif
-
-    !--- read anthropogenic emi restart/data
-    call mpp_error(NOTE,'reading emi information from INPUT/emi_data.tile*.nc')
-    call read_restart(emi_restart)
-    call close_file(emi_restart)
-
-    do num=1,nvar_emi
-    do nb = 1, Atm_block%nblks
-      !--- 2D variables
-      do ix = 1, Atm_block%blksz(nb)
-        i = Atm_block%index(nb)%ii(ix) - isc + 1
-        j = Atm_block%index(nb)%jj(ix) - jsc + 1
-        Sfcprop(nb)%emi_in(ix,num)  = emi_var(i,j,1,num)
-      enddo
-    enddo
-    enddo
-
-    !--- deallocate containers and free restart container
-    deallocate(emi_name, emi_var)
-    endif read_emi
-
-    !--- Dust input FILE
-    !--- open file
-    infile=trim(indir)//'/'//trim(fn_rrfssd)
-    amiopen=open_file(rrfssd_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
-    if (.not.amiopen) call mpp_error( FATAL, 'Error with opening file'//trim(infile) )
-
-    if (.not. allocated(rrfssd_name)) then
-      !--- allocate the various containers needed for rrfssd fire data
-      allocate(rrfssd_name(nvar_rrfssd))
-      allocate(rrfssd_var(nx,ny,24,nvar_rrfssd))
-
-      rrfssd_name(1)  = 'ebb_smoke_hr'
-      rrfssd_name(2)  = 'frp_avg_hr'
-      rrfssd_name(3)  = 'frp_std_hr'
-
-      !--- register axis
-      call register_axis(rrfssd_restart, 'lon', 'X')
-      call register_axis(rrfssd_restart, 'lat', 'Y')
-      call register_axis(rrfssd_restart, 't', 24)
-      !--- register the 3D fields
-      mand = .false.
-      do num = 1,nvar_rrfssd
-       var3_p2 => rrfssd_var(:,:,:,num)
-       call register_restart_field(rrfssd_restart, rrfssd_name(num), var3_p2, dimensions=(/'t  ', 'lat', 'lon'/),&
-                                  &is_optional=.not.mand)
-      enddo
-      nullify(var3_p2)
-    endif
-
-    !--- read new GSL created rrfssd restart/data
-    call mpp_error(NOTE,'reading rrfssd information from INPUT/SMOKE_RRFS_data.nc')
-    call read_restart(rrfssd_restart)
-    call close_file(rrfssd_restart)
-
-    do nb = 1, Atm_block%nblks
-      !--- 3D variables
-      do ix = 1, Atm_block%blksz(nb)
-        i = Atm_block%index(nb)%ii(ix) - isc + 1
-        j = Atm_block%index(nb)%jj(ix) - jsc + 1
-        !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
-        do k = 1, 24
-          Sfcprop(nb)%smoke_RRFS(ix,k,1)  = rrfssd_var(i,j,k,1)
-          Sfcprop(nb)%smoke_RRFS(ix,k,2)  = rrfssd_var(i,j,k,2)
-          Sfcprop(nb)%smoke_RRFS(ix,k,3)  = rrfssd_var(i,j,k,3)
-        enddo
-      enddo
-    enddo
-
-    deallocate(rrfssd_name, rrfssd_var)
     endif if_smoke  ! RRFS_SD
 
     !--- Modify/read-in additional orographic static fields for GSL drag suite
@@ -1079,10 +972,10 @@ module FV3GFS_io_mod
       endif
 
       if(Model%rrfs_sd) then
-        call rrfs_sd_data%allocate_data(Model)
-        call rrfs_sd_data%fill_data(Model, Sfcprop, Atm_block)
-        call rrfs_sd_data%register_axis(Model, Sfc_restart)
-        call rrfs_sd_data%register_fields(Sfc_restart)
+        call rrfs_sd_state%allocate_data(Model)
+        call rrfs_sd_state%fill_data(Model, Sfcprop, Atm_block)
+        call rrfs_sd_state%register_axis(Model, Sfc_restart)
+        call rrfs_sd_state%register_fields(Sfc_restart)
       endif
 
       !--- register the 2D fields
@@ -1233,7 +1126,7 @@ module FV3GFS_io_mod
     endif
 
     if(Model%rrfs_sd) then
-      call rrfs_sd_data%copy_from_temporaries(Model,Sfcprop,Atm_block)
+      call rrfs_sd_state%copy_from_temporaries(Model,Sfcprop,Atm_block)
     end if
 
 !   write(0,*)' stype read in min,max=',minval(sfc%var2(:,:,35)),maxval(sfc%var2(:,:,35)),' sfc%name2=',sfc%name2(35)
@@ -1857,7 +1750,7 @@ module FV3GFS_io_mod
     integer, allocatable, dimension(:) :: buffer
     type(clm_lake_data_type), target :: clm_lake
     !--- temporary variables for storing rrfs_sd fields
-    type(rrfs_sd_state_type) :: rrfs_sd_data
+    type(rrfs_sd_state_type) :: rrfs_sd_state
 
     logical :: indexes_changed
 
@@ -1968,9 +1861,9 @@ module FV3GFS_io_mod
     endif
 
     if(Model%rrfs_sd) then
-      call rrfs_sd_data%allocate_data(Model)
-      call rrfs_sd_data%register_axis(Model,Sfc_restart)
-      call rrfs_sd_data%write_axis(Model,Sfc_restart)
+      call rrfs_sd_state%allocate_data(Model)
+      call rrfs_sd_state%register_axis(Model,Sfc_restart)
+      call rrfs_sd_state%write_axis(Model,Sfc_restart)
     end if
 
     if (.not. associated(sfc%name2)) then
@@ -2012,7 +1905,7 @@ module FV3GFS_io_mod
    endif
 
    if(Model%rrfs_sd) then
-     call rrfs_sd_data%register_fields(Sfc_restart)
+     call rrfs_sd_state%register_fields(Sfc_restart)
    endif
 
    !--- register the 2D fields
@@ -2118,7 +2011,7 @@ module FV3GFS_io_mod
     endif
 
     if(Model%rrfs_sd) then
-     call rrfs_sd_data%copy_to_temporaries(Model,Sfcprop,Atm_block)
+     call rrfs_sd_state%copy_to_temporaries(Model,Sfcprop,Atm_block)
     endif
 
 !$omp parallel do default(shared) private(i, j, nb, ix, nt, ii1, jj1, lsoil, k, ice)
