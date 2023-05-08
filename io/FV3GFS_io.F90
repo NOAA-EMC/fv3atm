@@ -907,142 +907,12 @@ module FV3GFS_io_mod
         call rrfs_sd_state%register_fields(Sfc_restart)
       endif
 
-      !--- register the 2D fields
-      do num = 1,sfc%nvar2m
-        var2_p => sfc%var2(:,:,num)
-        if (trim(sfc%name2(num)) == 'sncovr'.or. trim(sfc%name2(num)) == 'tsfcl' .or. trim(sfc%name2(num)) == 'zorll'   &
-                                            .or. trim(sfc%name2(num)) == 'zorli' .or. trim(sfc%name2(num)) == 'zorlwav' &
-                                            .or. trim(sfc%name2(num)) == 'snodl' .or. trim(sfc%name2(num)) == 'weasdl'  &
-                                            .or. trim(sfc%name2(num)) == 'snodi' .or. trim(sfc%name2(num)) == 'weasdi'  &
-                                            .or. trim(sfc%name2(num)) == 'tsfc'  .or. trim(sfc%name2(num)) ==  'zorlw'  &
-                                            .or. trim(sfc%name2(num)) == 'albdirvis_lnd' .or. trim(sfc%name2(num)) == 'albdirnir_lnd' &
-                                            .or. trim(sfc%name2(num)) == 'albdifvis_lnd' .or. trim(sfc%name2(num)) == 'albdifnir_lnd' &
-                                            .or. trim(sfc%name2(num)) == 'albdirvis_ice' .or. trim(sfc%name2(num)) == 'albdirnir_ice' &
-                                            .or. trim(sfc%name2(num)) == 'albdifvis_ice' .or. trim(sfc%name2(num)) == 'albdifnir_ice' &
-                                            .or. trim(sfc%name2(num)) == 'emis_lnd'      .or. trim(sfc%name2(num)) == 'emis_ice'      &
-                                            .or. trim(sfc%name2(num)) == 'sncovr_ice') then
-           if(is_lsoil) then
-              call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
-           else
-              call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/),&
-                                         &is_optional=.true.)
-           end if
-        else
-           if(is_lsoil) then
-              call register_restart_field(Sfc_restart,sfc%name2(num),var2_p, dimensions=(/'lat','lon'/))
-           else
-              call register_restart_field(Sfc_restart,sfc%name2(num),var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/))
-           end if
-        endif
-     enddo
-
-      if (Model%nstf_name(1) > 0) then
-         mand = .false.
-         if (Model%nstf_name(2) == 0) mand = .true.
-         do num = sfc%nvar2m+1,sfc%nvar2m+sfc%nvar2o
-            var2_p => sfc%var2(:,:,num)
-            if(is_lsoil) then
-               call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
-            else
-               call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/), &
-                                          &is_optional=.not.mand)
-            endif
-         enddo
-      endif
-
-      if (Model%lsm == Model%lsm_ruc) then ! sfc%nvar2mp = 0
-         do num = sfc%nvar2m+sfc%nvar2o+1, sfc%nvar2m+sfc%nvar2o+sfc%nvar2r
-            var2_p => sfc%var2(:,:,num)
-            if(is_lsoil) then
-               call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/) )
-            else
-               call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/) )
-            end if
-         enddo
-      endif ! mp/ruc
-
-
-! Noah MP register only necessary only lsm = 2, not necessary has values
-      if (sfc%nvar2mp > 0) then
-         mand = .false.
-         do num = sfc%nvar2m+sfc%nvar2o+1,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp
-            var2_p => sfc%var2(:,:,num)
-            if(is_lsoil) then
-               call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
-            else
-               call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/), &
-                                          &is_optional=.not.mand)
-            end if
-         enddo
-      endif ! noahmp
-
-! Flake
-      if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
-         mand = .false.
-         do num = sfc%nvar_before_lake+1,sfc%nvar_before_lake+sfc%nvar2l
-            var2_p => sfc%var2(:,:,num)
-            if(is_lsoil) then
-               call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'lat','lon'/), is_optional=.not.mand) 
-            else
-               call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'Time   ','yaxis_1','xaxis_1'/), is_optional=.not.mand)
-            endif
-         enddo
-      endif
-
-      nullify(var2_p)
+      call sfc%register_2d_fields(Model,Sfc_restart,.false.,warm_start)
    endif  ! if not allocated
 
    call sfc%fill_3d_names(Model,warm_start)
-
-      !--- register the 3D fields
-    var3_p => sfc%var3ice(:,:,:)
-    call register_restart_field(Sfc_restart, sfc%name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/),&
-                              &is_optional=.true.)
-
-    do num = 1,sfc%nvar3
-       var3_p => sfc%var3(:,:,:,num)
-       if ( warm_start ) then
-          call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'lsoil  ', 'Time   '/),&
-                                     &is_optional=.true.)
-       else
-          if(is_lsoil) then
-             call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'lat  ', 'lon  ', 'lsoil'/), is_optional=.true.)
-          else
-             call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis_1','Time   '/),&
-                                        &is_optional=.true.)
-          end if
-       end if
-    enddo
-
-    if (Model%lsm == Model%lsm_noahmp) then
-       mand = .false.
-       do num = sfc%nvar3+1,sfc%nvar3+3
-          var3_p1 => sfc%var3sn(:,:,:,num)
-          call register_restart_field(Sfc_restart, sfc%name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1','zaxis_2', 'Time   '/),&
-                                     &is_optional=.not.mand)
-       enddo
-
-       var3_p2 => sfc%var3eq(:,:,:,7)
-       call register_restart_field(Sfc_restart, sfc%name3(7), var3_p2, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/),&
-                                  &is_optional=.not.mand)
-
-       var3_p3 => sfc%var3zn(:,:,:,8)
-       call register_restart_field(Sfc_restart, sfc%name3(8), var3_p3, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/),&
-                                  &is_optional=.not.mand)
-
-       nullify(var3_p1)
-       nullify(var3_p2)
-       nullify(var3_p3)
-    endif   !mp
-
-    nullify(var3_p)
-
-!--- Noah MP define arbitrary value (number layers of snow) to indicate
-!coldstart(sfcfile doesn't include noah mp fields) or not
-
-    if (Model%lsm == Model%lsm_noahmp) then
-      sfc%var2(1,1,sfc%nvar2m+19) = -66666.0_r8
-    endif
+   call sfc%register_3d_fields(Model,Sfc_restart,.false.,warm_start)
+   call sfc%init_fields(Model)
 
     !--- read the surface restart/data
     call mpp_error(NOTE,'reading surface properties data from INPUT/sfc_data.tile*.nc')
@@ -1739,102 +1609,14 @@ module FV3GFS_io_mod
      call rrfs_sd_state%register_fields(Sfc_restart)
    endif
 
-   !--- register the 2D fields
-   do num = 1,sfc%nvar2m
-      var2_p => sfc%var2(:,:,num)
-      if (trim(sfc%name2(num)) == 'sncovr' .or. trim(sfc%name2(num)) == 'tsfcl' .or.trim(sfc%name2(num))  == 'zorll'   &
-           .or. trim(sfc%name2(num)) == 'zorli' .or.trim(sfc%name2(num))  == 'zorlwav' &
-           .or. trim(sfc%name2(num)) == 'snodl' .or. trim(sfc%name2(num)) == 'weasdl'  &
-           .or. trim(sfc%name2(num)) == 'snodi' .or. trim(sfc%name2(num)) == 'weasdi'  &
-           .or. trim(sfc%name2(num)) == 'tsfc'  .or. trim(sfc%name2(num)) ==  'zorlw'  &
-           .or. trim(sfc%name2(num)) == 'albdirvis_lnd' .or. trim(sfc%name2(num)) == 'albdirnir_lnd' &
-           .or. trim(sfc%name2(num)) == 'albdifvis_lnd' .or. trim(sfc%name2(num)) == 'albdifnir_lnd' &
-           .or. trim(sfc%name2(num)) == 'albdirvis_ice' .or. trim(sfc%name2(num)) == 'albdirnir_ice' &
-           .or. trim(sfc%name2(num)) == 'albdifvis_ice' .or. trim(sfc%name2(num)) == 'albdifnir_ice' &
-           .or. trim(sfc%name2(num)) == 'emis_lnd'      .or. trim(sfc%name2(num)) == 'emis_ice'      &
-           .or. trim(sfc%name2(num)) == 'sncovr_ice' ) then
-         call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/), is_optional=.true.)
-      else
-         call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/) )
-      endif
-   enddo
-   if (Model%nstf_name(1) > 0) then
-      mand = .false.
-      if (Model%nstf_name(2) ==0) mand = .true.
-      do num = sfc%nvar2m+1,sfc%nvar2m+sfc%nvar2o
-         var2_p => sfc%var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
-                                    &is_optional=.not.mand)
-      enddo
-   endif
+   ! Register 2D surface property fields (except lake, smoke, and dust)
+   call sfc%register_2d_fields(Model, Sfc_restart, .true., .true.)
 
-   if (Model%lsm == Model%lsm_ruc) then ! sfc%nvar2mp =0
-      do num = sfc%nvar2m+sfc%nvar2o+1, sfc%nvar2m+sfc%nvar2o+sfc%nvar2r
-         var2_p => sfc%var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/))
-      enddo
-   else if (Model%lsm == Model%lsm_noahmp) then ! sfc%nvar2r =0
-      mand = .true.                  ! actually should be true since it is after cold start
-      do num = sfc%nvar2m+sfc%nvar2o+1,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp
-         var2_p => sfc%var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
-                                    &is_optional=.not.mand)
-      enddo
-   endif
-   nullify(var2_p)
+   ! Determine list of 3D surface property fields names:
+   call sfc%fill_3d_names(Model, .true.)
 
-   call sfc%fill_3d_names(Model,.true.)
-
-   !--- register the 3D fields
-   !     if (Model%frac_grid) then
-   var3_p => sfc%var3ice(:,:,:)
-   call register_restart_field(Sfc_restart, sfc%name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/))
-   !     endif
-
-   if(Model%lsm == Model%lsm_ruc) then
-      do num = 1,sfc%nvar3
-         var3_p => sfc%var3(:,:,:,num)
-         call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/))
-      enddo
-      nullify(var3_p)
-   else
-      do num = 1,sfc%nvar3
-         var3_p => sfc%var3(:,:,:,num)
-         call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/))
-      enddo
-      nullify(var3_p)
-   endif
-
-   if (Model%lsm == Model%lsm_noahmp) then
-      mand = .true.
-      do num = sfc%nvar3+1,sfc%nvar3+3
-         var3_p1 => sfc%var3sn(:,:,:,num)
-         call register_restart_field(Sfc_restart, sfc%name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/),&
-                                    &is_optional=.not.mand)
-      enddo
-
-      var3_p2 => sfc%var3eq(:,:,:,7)
-      call register_restart_field(Sfc_restart, sfc%name3(7), var3_p2, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/),&
-                                    &is_optional=.not.mand)
-
-      var3_p3 => sfc%var3zn(:,:,:,8)
-      call register_restart_field(Sfc_restart, sfc%name3(8), var3_p3, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/),&
-                                 &is_optional=.not.mand)
-
-      nullify(var3_p1)
-      nullify(var3_p2)
-      nullify(var3_p3)
-   endif ! lsm = lsm_noahmp
-
-    !Flake
-    if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
-      mand = .false.
-      do num = sfc%nvar_before_lake+1,sfc%nvar_before_lake+sfc%nvar2l
-        var2_p => sfc%var2(:,:,num)
-        call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
-             &is_optional=.not.mand)
-      enddo
-    endif
+   ! Register 3D surface property fields (except lake, smoke, and dust)
+   call sfc%register_3d_fields(Model, Sfc_restart, .true., .true.)
 
     ! Tell clm_lake to copy Sfcprop data to its internal temporary arrays.
     if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then

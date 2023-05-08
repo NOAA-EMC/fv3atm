@@ -18,7 +18,9 @@ module FV3GFS_sfc_io
 
   public :: Sfc_io_data_type
   public :: Sfc_io_fill_2d_names, Sfc_io_fill_3d_names, Sfc_io_allocate_arrays, &
-       Sfc_io_register_axes, Sfc_io_write_axes, Sfc_io_final
+       Sfc_io_register_axes, Sfc_io_write_axes, &
+       Sfc_io_register_2d_fields, Sfc_io_register_3d_fields, &
+       Sfc_io_final
 
   type Sfc_io_data_type
     integer, public :: nvar2o = 0
@@ -58,8 +60,11 @@ module FV3GFS_sfc_io
     procedure, public :: allocate_arrays => Sfc_io_allocate_arrays
     procedure, public :: register_axes => Sfc_io_register_axes
     procedure, public :: write_axes => Sfc_io_write_axes
+    procedure, public :: register_2d_fields => Sfc_io_register_2d_fields
+    procedure, public :: register_3d_fields => Sfc_io_register_3d_fields
     procedure, public :: fill_2d_names => Sfc_io_fill_2d_names
     procedure, public :: fill_3d_names => Sfc_io_fill_3d_names
+    procedure, public :: init_fields => Sfc_io_init_fields
 
     procedure, private :: calculate_indices => Sfc_io_calculate_indices
 
@@ -238,7 +243,7 @@ contains
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
       else if(Model%lsm == Model%lsm_ruc .and. .not.for_write) then
-        ! Possible bug. The lsm_ruc only reads zaxis_2, never writes it.
+        ! Possible bug. This is only defined on read, not write.
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil_lsm)
       endif
       if(Model%lsm == Model%lsm_noahmp) then
@@ -504,6 +509,193 @@ contains
       nt=nt+1 ; sfc%name2(nt) = 'c_t'
     endif
   end subroutine Sfc_io_fill_2d_names
+
+  subroutine Sfc_io_register_2d_fields(sfc,Model,Sfc_restart,for_write,warm_start)
+    implicit none
+    class(Sfc_io_data_type)             :: sfc
+    type(GFS_control_type),      intent(in) :: Model
+    type(FmsNetcdfDomainFile_t) :: Sfc_restart
+    logical, intent(in) :: for_write, warm_start
+
+    real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
+    integer :: num
+    logical :: mand
+
+    character(len=7) :: time2d(3)
+
+    if(for_write) then
+      time2d=(/'xaxis_1','yaxis_1','Time   '/)
+    else
+      time2d=(/'Time   ','yaxis_1','xaxis_1'/)
+    endif
+
+    !--- register the 2D fields
+    do num = 1,sfc%nvar2m
+      var2_p => sfc%var2(:,:,num)
+      if (trim(sfc%name2(num)) == 'sncovr' .or. trim(sfc%name2(num)) == 'tsfcl' .or. trim(sfc%name2(num)) == 'zorll' &
+           .or. trim(sfc%name2(num)) == 'zorli' .or. trim(sfc%name2(num)) == 'zorlwav' &
+           .or. trim(sfc%name2(num)) == 'snodl' .or. trim(sfc%name2(num)) == 'weasdl'  &
+           .or. trim(sfc%name2(num)) == 'snodi' .or. trim(sfc%name2(num)) == 'weasdi'  &
+           .or. trim(sfc%name2(num)) == 'tsfc'  .or. trim(sfc%name2(num)) ==  'zorlw'  &
+           .or. trim(sfc%name2(num)) == 'albdirvis_lnd' .or. trim(sfc%name2(num)) == 'albdirnir_lnd' &
+           .or. trim(sfc%name2(num)) == 'albdifvis_lnd' .or. trim(sfc%name2(num)) == 'albdifnir_lnd' &
+           .or. trim(sfc%name2(num)) == 'albdirvis_ice' .or. trim(sfc%name2(num)) == 'albdirnir_ice' &
+           .or. trim(sfc%name2(num)) == 'albdifvis_ice' .or. trim(sfc%name2(num)) == 'albdifnir_ice' &
+           .or. trim(sfc%name2(num)) == 'emis_lnd'      .or. trim(sfc%name2(num)) == 'emis_ice'      &
+           .or. trim(sfc%name2(num)) == 'sncovr_ice') then
+        if(.not.for_write .and. sfc%is_lsoil) then
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
+        else
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d,&
+               &is_optional=.true.)
+        end if
+      else
+        if(.not.for_write .and. sfc%is_lsoil) then
+          call register_restart_field(Sfc_restart,sfc%name2(num),var2_p, dimensions=(/'lat','lon'/))
+        else
+          call register_restart_field(Sfc_restart,sfc%name2(num),var2_p, dimensions=time2d)
+        end if
+      endif
+    enddo
+
+    if (Model%nstf_name(1) > 0) then
+      mand = .false.
+      if (Model%nstf_name(2) == 0) mand = .true.
+      do num = sfc%nvar2m+1,sfc%nvar2m+sfc%nvar2o
+        var2_p => sfc%var2(:,:,num)
+        if(sfc%is_lsoil) then
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
+        else
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d, is_optional=.not.mand)
+        endif
+      enddo
+    endif
+
+    if (Model%lsm == Model%lsm_ruc) then ! sfc%nvar2mp = 0
+      do num = sfc%nvar2m+sfc%nvar2o+1, sfc%nvar2m+sfc%nvar2o+sfc%nvar2r
+        var2_p => sfc%var2(:,:,num)
+        if(sfc%is_lsoil) then
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/) )
+        else
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d)
+        end if
+      enddo
+    endif ! mp/ruc
+
+    ! Noah MP register only necessary only lsm = 2, not necessary has values
+    if ( (for_write .and. Model%lsm == Model%lsm_noahmp) &
+         .or. (.not. for_write .and. sfc%nvar2mp > 0) ) then
+      mand = for_write
+      do num = sfc%nvar2m+sfc%nvar2o+1,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp
+        var2_p => sfc%var2(:,:,num)
+        if(sfc%is_lsoil) then
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
+        else
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d, is_optional=.not.mand)
+        end if
+      enddo
+    endif ! noahmp
+
+    ! Flake
+    if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
+      mand = for_write
+      do num = sfc%nvar_before_lake+1,sfc%nvar_before_lake+sfc%nvar2l
+        var2_p => sfc%var2(:,:,num)
+        if(sfc%is_lsoil) then
+          call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'lat','lon'/), is_optional=.not.mand) 
+        else
+          call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=time2d, is_optional=.not.mand)
+        endif
+      enddo
+    endif
+
+  end subroutine Sfc_io_register_2d_fields
+
+  subroutine Sfc_io_register_3d_fields(sfc,Model,Sfc_restart,for_write,warm_start)
+    implicit none
+    class(Sfc_io_data_type)             :: sfc
+    type(GFS_control_type),      intent(in) :: Model
+    type(FmsNetcdfDomainFile_t) :: Sfc_restart
+    logical, intent(in) :: for_write, warm_start
+
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_fr => NULL()
+    integer :: num
+    logical :: mand
+
+    character(len=7), parameter :: xyz1_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/)
+    character(len=7), parameter :: xyz2_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/)
+    character(len=7), parameter :: xyz3_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/)
+    character(len=7), parameter :: xyz4_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/)
+
+    !--- register the 3D fields
+    var3_p => sfc%var3ice(:,:,:)
+    call register_restart_field(Sfc_restart, sfc%name3(0), var3_p, dimensions=xyz1_time, is_optional=.true.)
+
+    if(.not. for_write) then
+      do num = 1,sfc%nvar3
+        var3_p => sfc%var3(:,:,:,num)
+        if ( warm_start ) then
+          call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'lsoil  ', 'Time   '/),&
+               &is_optional=.true.)
+        else
+          if(sfc%is_lsoil) then
+            call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'lat  ', 'lon  ', 'lsoil'/), is_optional=.true.)
+          else
+            call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=xyz2_time,&
+                 &is_optional=.true.)
+          end if
+        end if
+      enddo
+    elseif(Model%lsm == Model%lsm_ruc) then
+      do num = 1,sfc%nvar3
+        var3_p => sfc%var3(:,:,:,num)
+        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=xyz1_time)
+      enddo
+      nullify(var3_p)
+    else ! writing something other than ruc
+      do num = 1,sfc%nvar3
+        var3_p => sfc%var3(:,:,:,num)
+        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=xyz2_time)
+      enddo
+      nullify(var3_p)
+    endif
+
+    if (Model%lsm == Model%lsm_noahmp) then
+      mand = for_write
+      do num = sfc%nvar3+1,sfc%nvar3+3
+        var3_p1 => sfc%var3sn(:,:,:,num)
+        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p1, dimensions=xyz3_time, is_optional=.not.mand)
+      enddo
+
+      var3_p2 => sfc%var3eq(:,:,:,7)
+      call register_restart_field(Sfc_restart, sfc%name3(7), var3_p2, dimensions=xyz2_time, is_optional=.not.mand)
+
+      var3_p3 => sfc%var3zn(:,:,:,8)
+      call register_restart_field(Sfc_restart, sfc%name3(8), var3_p3, dimensions=xyz4_time, is_optional=.not.mand)
+    endif   !mp
+
+  end subroutine Sfc_io_register_3d_fields
+
+  subroutine Sfc_io_init_fields(sfc,Model)
+    implicit none
+    class(Sfc_io_data_type)           :: sfc
+    type(GFS_control_type),    intent(in) :: Model
+
+    !--- Noah MP define arbitrary value (number layers of snow) to indicate
+    !coldstart(sfcfile doesn't include noah mp fields) or not
+
+    if (Model%lsm == Model%lsm_noahmp) then
+      sfc%var2(1,1,sfc%nvar2m+19) = -66666.0_kind_phys
+    endif
+  end subroutine Sfc_io_init_fields
 
   subroutine Sfc_io_final(sfc)
     implicit none
