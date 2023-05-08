@@ -225,7 +225,8 @@
       use ctlblk_mod, only : komax,fileNameD3D,lsm,lsmp1,spl,spldef,  &
                              lsmdef,ALSL,me,d3d_on,gocart_on,hyb_sigp,&
                              pthresh,novegtype,ivegsrc,icu_physics,   &
-                             isf_surface_physics,modelname,submodelname
+                             isf_surface_physics,modelname,submodelname,&
+                             rdaod,d2d_chem,nasa_on,gccpp_on
       use upp_ifi_mod, only: write_ifi_debug_files
 !
 !    revision history:
@@ -242,7 +243,8 @@
       integer l,k
 
       namelist/nampgb/kpo,po,kth,th,kpv,pv,popascal,d3d_on,gocart_on,  &
-                      hyb_sigp,write_ifi_debug_files
+                      hyb_sigp,write_ifi_debug_files,rdaod,nasa_on,gccpp_on, &
+                      d2d_chem
       namelist/model_inputs/modelname,submodelname
 !---------------------------------------------------------------------
 !
@@ -259,6 +261,10 @@
       d3d_on      = .false.
       gocart_on   = .false.
       popascal    = .false.
+      rdaod       = .false.
+      nasa_on     = .false.
+      gccpp_on    = .false.
+      d2d_chem    = .false.
 !
       if (me == 0) print *,'post_namelist=',post_namelist
 !jw post namelist is using the same file itag as standalone post
@@ -268,7 +274,8 @@
       close (nlunit)
       if (me == 0) then
         print*,'komax,kpo,kth,th,kpv,pv,popascal= ',komax,kpo            &
-     &  ,kth,th(1:kth),kpv,pv(1:kpv),popascal,' gocart_on=',gocart_on
+     &  ,kth,th(1:kth),kpv,pv(1:kpv),popascal,' gocart_on=',gocart_on    &
+     &  ,' rdaod=',rdaod
        endif
 !
 ! set up pressure level from POSTGPVARS or DEFAULT
