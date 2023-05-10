@@ -20,8 +20,9 @@ module FV3GFS_sfc_io
   public :: Sfc_io_fill_2d_names, Sfc_io_fill_3d_names, Sfc_io_allocate_arrays, &
        Sfc_io_register_axes, Sfc_io_write_axes, &
        Sfc_io_register_2d_fields, Sfc_io_register_3d_fields, &
-       Sfc_io_copy_to_grid, Sfc_io_final
+       Sfc_io_copy_to_grid, Sfc_io_apply_safeguards, Sfc_io_final
 
+  real(kind=kind_phys), parameter :: timin = 173.0_kind_phys  ! minimum temperature allowed for snow/ice
   real(kind_phys), parameter:: min_lake_orog = 200.0_kind_phys
   real(kind_phys), parameter:: zero = 0, one = 1
 
@@ -69,6 +70,7 @@ module FV3GFS_sfc_io
     procedure, public :: fill_3d_names => Sfc_io_fill_3d_names
     procedure, public :: init_fields => Sfc_io_init_fields
     procedure, public :: copy_to_grid => Sfc_io_copy_to_grid
+    procedure, public :: apply_safeguards => Sfc_io_apply_safeguards
 
     procedure, private :: calculate_indices => Sfc_io_calculate_indices
 
@@ -725,9 +727,9 @@ contains
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
 
-!   write(0,*)' stype read in min,max=',minval(sfc_var2(:,:,35)),maxval(sfc_var2(:,:,35)),' sfc_name2=',sfc_name2(35)
-!   write(0,*)' stype read in min,max=',minval(sfc_var2(:,:,18)),maxval(sfc_var2(:,:,18))
-!   write(0,*)' sfc_var2=',sfc_var2(:,:,12)
+    !   write(0,*)' stype read in min,max=',minval(sfc_var2(:,:,35)),maxval(sfc_var2(:,:,35)),' sfc_name2=',sfc_name2(35)
+    !   write(0,*)' stype read in min,max=',minval(sfc_var2(:,:,18)),maxval(sfc_var2(:,:,18))
+    !   write(0,*)' sfc_var2=',sfc_var2(:,:,12)
 
     !$omp parallel do default(shared) private(i, j, nb, ix, nt, ii1, jj1, lsoil)
     block_loop: do nb = 1, Atm_block%nblks
@@ -1094,6 +1096,237 @@ contains
 
     end do block_loop
   end subroutine Sfc_io_copy_to_grid
+
+  subroutine Sfc_io_apply_safeguards(sfc, Model, Atm_block, Sfcprop)
+    !--- interface variable definitions
+    implicit none
+
+    class(Sfc_io_data_type)             :: sfc
+    type(GFS_sfcprop_type),      intent(in) :: Sfcprop(:)
+    type(block_control_type),    intent(in) :: Atm_block
+    type(GFS_control_type),      intent(in) :: Model
+
+    integer :: i, j, k, nb, ix, lsoil, num, nt
+    integer :: isc, iec, jsc, jec, npz, nx, ny
+    real(kind_phys) :: ice, tem, tem1
+
+    isc = Atm_block%isc
+    iec = Atm_block%iec
+    jsc = Atm_block%jsc
+    jec = Atm_block%jec
+    npz = Atm_block%npz
+    nx  = (iec - isc + 1)
+    ny  = (jec - jsc + 1)
+
+    ! so far: At cold start everything is 9999.0, warm start snowxy has values
+    !         but the 3D of snow fields are not available because not allocated yet.
+    !         ix,nb loops may be consolidate with the Noah MP isnowxy init
+    !         restore traditional vars first,we need some of them to init snow fields
+    !         snow depth to actual snow layers; so we can allocate and register
+    !         note zsnsoxy is from -2:4 - isnowxy is from 0:-2, but we need
+    !         exact snow layers to pass 3D fields correctly, snow layers are
+    !         different fro grid to grid, we have to init point by point/grid.
+    !         It has to be done after the weasd is available
+    !         sfc%var2(1,1,32) is the first; we need this to allocate snow related fields
+
+    i = Atm_block%index(1)%ii(1) - isc + 1
+    j = Atm_block%index(1)%jj(1) - jsc + 1
+
+    if (sfc%var2(i,j,33) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snodl')
+      !$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%landfrac(ix) > zero) then
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
+            Sfcprop(nb)%snodl(ix)  = Sfcprop(nb)%snowd(ix) * tem
+          else
+            Sfcprop(nb)%snodl(ix)  = zero
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,34) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing weasdl')
+      !$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%landfrac(ix) > zero) then
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
+            Sfcprop(nb)%weasdl(ix) = Sfcprop(nb)%weasd(ix) * tem
+          else
+            Sfcprop(nb)%weasdl(ix) = zero
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,36) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
+      !$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,37) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlw')
+      !$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%landfrac(ix) < one .and. Sfcprop(nb)%fice(ix) < one) then
+            Sfcprop(nb)%zorlw(ix) = min(Sfcprop(nb)%zorl(ix), 0.317)
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,38) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
+      !$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorll from existing variables
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,39) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorli')
+      !$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix)) > zero) then
+            Sfcprop(nb)%zorli(ix) = one
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,45) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing emis_ice')
+      !$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%emis_ice(ix) = 0.96
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,46) < -9990.0_kind_phys .and. Model%lsm /= Model%lsm_ruc) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr_ice')
+      !$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          !         Sfcprop(nb)%sncovr_ice(ix) = Sfcprop(nb)%sncovr(ix)
+          Sfcprop(nb)%sncovr_ice(ix) = zero
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,47) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snodi')
+      !$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
+            Sfcprop(nb)%snodi(ix)  = min(Sfcprop(nb)%snowd(ix) * tem, 3.0)
+          else
+            Sfcprop(nb)%snodi(ix)  = zero
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc%var2(i,j,48) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing weasdi')
+      !$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
+            Sfcprop(nb)%weasdi(ix)  = Sfcprop(nb)%weasd(ix)*tem
+          else
+            Sfcprop(nb)%weasdi(ix)  = zero
+          endif
+        enddo
+      enddo
+    endif
+
+    if (Model%use_cice_alb) then
+      if (sfc%var2(i,j,49) < -9990.0_kind_phys) then
+        !$omp parallel do default(shared) private(nb, ix)
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            if (Sfcprop(nb)%oceanfrac(ix) > zero .and. &
+                 Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
+              Sfcprop(nb)%albdirvis_ice(ix) = 0.6_kind_phys
+              Sfcprop(nb)%albdifvis_ice(ix) = 0.6_kind_phys
+              Sfcprop(nb)%albdirnir_ice(ix) = 0.6_kind_phys
+              Sfcprop(nb)%albdifnir_ice(ix) = 0.6_kind_phys
+            endif
+          enddo
+        enddo
+      endif
+
+    endif
+
+    ! Fill in composite tsfc for coldstart runs - must happen after tsfcl is computed
+    compute_tsfc_for_colstart: if (sfc%var2(i,j,35) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing composite tsfc')
+      if(Model%frac_grid) then ! 3-way composite
+        !$omp parallel do default(shared) private(nb, ix, tem, tem1)
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix)) ! this may break restart reproducibility
+            tem1 = one - Sfcprop(nb)%landfrac(ix)
+            tem  = tem1 * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
+            Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
+                 + Sfcprop(nb)%tisfc(ix) * tem                      &
+                 + Sfcprop(nb)%tsfco(ix) * (tem1-tem)
+          enddo
+        enddo
+      else
+        !$omp parallel do default(shared) private(nb, ix, tem)
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            if (Sfcprop(nb)%slmsk(ix) == 1) then
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
+            else
+              tem = one - Sfcprop(nb)%fice(ix)
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix) &
+                   + Sfcprop(nb)%tsfco(ix) * tem
+            endif
+          enddo
+        enddo
+      endif
+    endif compute_tsfc_for_colstart
+
+    if (sfc%var2(i,j,sfc%nvar2m) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlwav')
+      !$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%zorlwav(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorlwav from existing variables
+        enddo
+      enddo
+    endif
+
+    if (nint(sfc%var3ice(1,1,1)) == -9999) then    !--- initialize internal ice temp from layer 1 and 2 soil temp
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tiice')
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%tiice(ix,1) = max(timin, min(con_tice, Sfcprop(nb)%stc(ix,1)))
+          Sfcprop(nb)%tiice(ix,2) = max(timin, min(con_tice, Sfcprop(nb)%stc(ix,2)))
+        enddo
+      enddo
+    endif
+
+  end subroutine Sfc_io_apply_safeguards
 
   subroutine Sfc_io_final(sfc)
     implicit none
