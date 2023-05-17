@@ -885,9 +885,9 @@ module FV3GFS_io_mod
    amiopen=open_file(Sfc_restart, trim(infile), "read", domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
    if( .not.amiopen ) call mpp_error(FATAL, 'Error opening file'//trim(infile))
 
-   if(sfc%allocate_arrays(Model, Atm_block, .false., warm_start)) then
+   if(sfc%allocate_arrays(Model, Atm_block, .true., warm_start)) then
       call sfc%fill_2d_names(Model, warm_start)
-      call sfc%register_axes(Model, Sfc_restart, .false., warm_start)
+      call sfc%register_axes(Model, Sfc_restart, .true., warm_start)
 
       ! Tell CLM Lake to allocate data, and register its axes and fields
       if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
@@ -904,11 +904,11 @@ module FV3GFS_io_mod
         call rrfs_sd_state%register_fields(Sfc_restart)
       endif
 
-      call sfc%register_2d_fields(Model,Sfc_restart,.false.,warm_start)
+      call sfc%register_2d_fields(Model,Sfc_restart,.true.,warm_start)
    endif  ! if not allocated
 
    call sfc%fill_3d_names(Model,warm_start)
-   call sfc%register_3d_fields(Model,Sfc_restart,.false.,warm_start)
+   call sfc%register_3d_fields(Model,Sfc_restart,.true.,warm_start)
    call sfc%init_fields(Model)
 
     !--- read the surface restart/data
@@ -1002,7 +1002,7 @@ module FV3GFS_io_mod
     !--- register axis
     amiopen=open_file(Sfc_restart, trim(infile), 'overwrite', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
     if_amiopen: if( amiopen ) then
-      call sfc%register_axes(Model, Sfc_restart, .true., .true.)
+      call sfc%register_axes(Model, Sfc_restart, .false., .true.)
       call sfc%write_axes(Model, Sfc_restart)
     else
       call mpp_error(FATAL, 'Error in opening file'//trim(infile) )
@@ -1021,7 +1021,7 @@ module FV3GFS_io_mod
       call rrfs_sd_state%write_axis(Model,Sfc_restart)
     end if
 
-    if (sfc%allocate_arrays(Model, Atm_block, .true., .true.)) then
+    if (sfc%allocate_arrays(Model, Atm_block, .false., .true.)) then
       call sfc%fill_2d_names(Model,.true.)
     end if
 
@@ -1035,13 +1035,13 @@ module FV3GFS_io_mod
    endif
 
    ! Register 2D surface property fields (except lake, smoke, and dust)
-   call sfc%register_2d_fields(Model, Sfc_restart, .true., .true.)
+   call sfc%register_2d_fields(Model, Sfc_restart, .false., .true.)
 
    ! Determine list of 3D surface property fields names:
    call sfc%fill_3d_names(Model, .true.)
 
    ! Register 3D surface property fields (except lake, smoke, and dust)
-   call sfc%register_3d_fields(Model, Sfc_restart, .true., .true.)
+   call sfc%register_3d_fields(Model, Sfc_restart, .false., .true.)
 
     ! Tell clm_lake to copy Sfcprop data to its internal temporary arrays.
     if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then

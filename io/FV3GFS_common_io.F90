@@ -12,6 +12,14 @@ module FV3GFS_common_io
        copy_to_GFS_Data_2d_phys2phys, copy_to_GFS_Data_3d_phys2phys, &
        copy_to_GFS_Data_2d_int2phys, copy_to_GFS_Data_3d_int2phys
 
+  public :: GFS_data_transfer
+  public :: GFS_data_transfer_2d_phys2phys, &
+         GFS_data_transfer_3d_phys2phys, &
+         GFS_data_transfer_2d_int2phys, &
+         GFS_data_transfer_3d_int2phys, &
+         GFS_data_transfer_3d_slice_phys2phys, &
+         GFS_data_transfer_2d_stack_phys2phys
+
   public :: create_2d_field_and_add_to_bundle
   public :: create_3d_field_and_add_to_bundle
   public :: add_zaxis_to_field
@@ -21,6 +29,7 @@ module FV3GFS_common_io
          copy_from_GFS_Data_3d_phys2phys, &
          copy_from_GFS_Data_2d_int2phys, &
          copy_from_GFS_Data_3d_int2phys, &
+         copy_from_GFS_Data_3d_slice_phys2phys, &
          copy_from_GFS_Data_2d_stack_phys2phys
   end interface
 
@@ -29,8 +38,18 @@ module FV3GFS_common_io
          copy_to_GFS_Data_3d_phys2phys, &
          copy_to_GFS_Data_2d_int2phys, &
          copy_to_GFS_Data_3d_int2phys, &
-         copy_to_GFS_Data_3d_slice_phys2phys
+         copy_to_GFS_Data_3d_slice_phys2phys, &
+         copy_to_GFS_Data_2d_stack_phys2phys
   end interface copy_to_GFS_Data
+
+  interface GFS_data_transfer
+    module procedure GFS_data_transfer_2d_phys2phys, &
+         GFS_data_transfer_3d_phys2phys, &
+         GFS_data_transfer_2d_int2phys, &
+         GFS_data_transfer_3d_int2phys, &
+         GFS_data_transfer_3d_slice_phys2phys, &
+         GFS_data_transfer_2d_stack_phys2phys
+  end interface GFS_data_transfer
 
   public :: get_nx_ny_from_atm
 
@@ -128,6 +147,22 @@ contains
      enddo
    end subroutine copy_from_GFS_Data_3d_int2phys
 
+   pure subroutine copy_from_GFS_Data_3d_slice_phys2phys(ii1,jj1,isc,jsc,nt,k1,k2,var3d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc, k1, k2
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(in) :: var_block(:,:)
+     real(kind=kind_phys), intent(out) :: var3d(:,:,:,:)
+     integer ix, k
+
+     nt=nt+1
+     do k=k1,k2
+       do ix=1,size(var_block,1)
+         var3d(ii1(ix),jj1(ix),k,nt) = var_block(ix,k)
+       enddo
+     enddo
+   end subroutine copy_from_GFS_Data_3d_slice_phys2phys
+
    pure subroutine copy_to_GFS_Data_2d_phys2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
      implicit none
      integer, intent(in) :: ii1(:), jj1(:), isc, jsc
@@ -157,6 +192,23 @@ contains
        enddo
      enddo
    end subroutine copy_to_GFS_Data_3d_phys2phys
+
+   pure subroutine copy_to_GFS_Data_2d_stack_phys2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     ! For copying phy_f2d and phy_fctd
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(out) :: var_block(:,:)
+     real(kind=kind_phys), intent(in) :: var3d(:,:,:)
+     integer ix, k
+
+     nt=nt+1
+     do k=lbound(var_block,2),ubound(var_block,2)
+       do ix=1,size(var_block,1)
+         var_block(ix,k) = var3d(ii1(ix),jj1(ix),nt)
+       enddo
+     enddo
+   end subroutine copy_to_GFS_Data_2d_stack_phys2phys
 
    pure subroutine copy_to_GFS_Data_3d_slice_phys2phys(ii1,jj1,isc,jsc,nt,k1,k2,var3d,var_block)
      implicit none
@@ -201,6 +253,98 @@ contains
        var_block(ix,:) = int(var3d(ii1(ix),jj1(ix),:,nt))
      enddo
    end subroutine copy_to_GFS_Data_3d_int2phys
+
+   pure subroutine GFS_data_transfer_2d_phys2phys(to,ii1,jj1,isc,jsc,nt,var2d,var_block)
+     implicit none
+     logical, intent(in) :: to
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(inout) :: var_block(:)
+     real(kind=kind_phys), intent(inout) :: var2d(:,:,:)
+
+     if(to) then
+       call copy_to_GFS_Data_2d_phys2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
+     else
+       call copy_from_GFS_Data_2d_phys2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
+     end if
+   end subroutine GFS_data_transfer_2d_phys2phys
+
+   pure subroutine GFS_data_transfer_3d_phys2phys(to,ii1,jj1,isc,jsc,nt,var3d,var_block)
+     implicit none
+     logical, intent(in) :: to
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(inout) :: var_block(:,:)
+     real(kind=kind_phys), intent(inout) :: var3d(:,:,:,:)
+
+     if(to) then
+       call copy_to_GFS_Data_3d_phys2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     else
+       call copy_from_GFS_Data_3d_phys2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     endif
+   end subroutine GFS_data_transfer_3d_phys2phys
+
+   pure subroutine GFS_data_transfer_3d_slice_phys2phys(to,ii1,jj1,isc,jsc,nt,k1,k2,var3d,var_block)
+     implicit none
+     logical, intent(in) :: to
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc, k1, k2
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(inout) :: var_block(:,:)
+     real(kind=kind_phys), intent(inout) :: var3d(:,:,:,:)
+
+     if(to) then
+       call copy_to_GFS_Data_3d_slice_phys2phys(ii1,jj1,isc,jsc,nt,k1,k2,var3d,var_block)
+     else
+       call copy_from_GFS_Data_3d_slice_phys2phys(ii1,jj1,isc,jsc,nt,k1,k2,var3d,var_block)
+     endif
+   end subroutine GFS_data_transfer_3d_slice_phys2phys
+
+   pure subroutine GFS_data_transfer_2d_int2phys(to,ii1,jj1,isc,jsc,nt,var2d,var_block)
+     implicit none
+     logical, intent(in) :: to
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     integer, intent(inout) :: var_block(:)
+     real(kind=kind_phys), intent(inout) :: var2d(:,:,:)
+
+     if(to) then
+       call copy_to_GFS_Data_2d_int2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
+     else
+       call copy_from_GFS_Data_2d_int2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
+     endif
+   end subroutine GFS_data_transfer_2d_int2phys
+
+   pure subroutine GFS_data_transfer_3d_int2phys(to,ii1,jj1,isc,jsc,nt,var3d,var_block)
+     implicit none
+     logical, intent(in) :: to
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     integer, intent(inout) :: var_block(:,:)
+     real(kind=kind_phys), intent(inout) :: var3d(:,:,:,:)
+
+     if(to) then
+       call copy_to_GFS_Data_3d_int2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     else
+       call copy_from_GFS_Data_3d_int2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     endif
+   end subroutine GFS_data_transfer_3d_int2phys
+
+   pure subroutine GFS_Data_transfer_2d_stack_phys2phys(to,ii1,jj1,isc,jsc,nt,var3d,var_block)
+     ! For copying phy_f2d and phy_fctd
+     implicit none
+     logical, intent(in) :: to
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(inout) :: var_block(:,:)
+     real(kind=kind_phys), intent(inout) :: var3d(:,:,:)
+     integer ix, k
+
+     if(to) then
+       call copy_to_GFS_data_2d_stack_phys2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     else
+       call copy_from_GFS_data_2d_stack_phys2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     end if
+   end subroutine GFS_Data_transfer_2d_stack_phys2phys
 
  subroutine create_2d_field_and_add_to_bundle(temp_r2d, field_name, outputfile, grid, bundle)
 
