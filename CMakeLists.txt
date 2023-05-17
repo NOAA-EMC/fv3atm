@@ -89,6 +89,7 @@ add_library(fv3atm
   io/FV3GFS_clm_lake_io.F90
   io/FV3GFS_rrfs_sd_io.F90
   io/FV3GFS_sfc_io.F90
+  io/FV3GFS_oro_io.F90
   io/FV3GFS_io.F90
   io/FV3GFS_restart_io.F90
   io/module_write_netcdf.F90

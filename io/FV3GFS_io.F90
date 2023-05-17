@@ -43,6 +43,7 @@ module FV3GFS_io_mod
 
   use FV3GFS_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data
   use FV3GFS_sfc_io
+  use FV3GFS_oro_io
 
 !
 !-----------------------------------------------------------------------
@@ -72,11 +73,11 @@ module FV3GFS_io_mod
   type(FmsNetcdfDomainFile_t) :: Oro_ls_restart, Oro_ss_restart
 
   !--- GFDL FMS restart containers
-  character(len=32),    allocatable,         dimension(:)       :: oro_name2
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_var2, phy_var2
-  character(len=32),    allocatable,         dimension(:)       :: oro_ls_ss_name
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_ls_var, oro_ss_var, oro_var3v, oro_var3s
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: phy_var3
+  character(len=32),    allocatable,         dimension(:)       :: oro_ls_ss_name
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_ls_var, oro_ss_var
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: phy_var2
+
   !--- Noah MP restart containers
   real(kind=kind_phys) :: zhour
 !
@@ -103,6 +104,7 @@ module FV3GFS_io_mod
   real, parameter:: drythresh = 1.e-4_r8, zero = 0.0_r8, one = 1.0_r8
 
   type(Sfc_io_data_type) :: sfc
+  type(Oro_io_data_type) :: oro
 
 !--- miscellaneous other variables
   logical :: use_wrtgridcomp_output = .FALSE.
@@ -573,7 +575,6 @@ module FV3GFS_io_mod
     type(rrfs_sd_state_type) :: rrfs_sd_state
     type(rrfs_sd_emissions_type) :: rrfs_sd_emis
 
-    nvar_o2  = 19
     nvar_oro_ls_ss = 10
 
     nvar_vegfr  = Model%nvegcat
@@ -594,134 +595,15 @@ module FV3GFS_io_mod
     amiopen=open_file(Oro_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
     if (.not.amiopen) call mpp_error( FATAL, 'Error with opening file '//trim(infile) )
 
-    if (.not. allocated(oro_name2)) then
-    !--- allocate the various containers needed for orography data
-      allocate(oro_name2(nvar_o2))
-      allocate(oro_var2(nx,ny,nvar_o2))
-
-      allocate(oro_var3v(nx,ny,nvar_vegfr))
-      allocate(oro_var3s(nx,ny,nvar_soilfr))
-
-      oro_var2 = -9999._kind_phys
-
-      num = 1       ; oro_name2(num)  = 'stddev'     ! hprime(ix,1)
-      num = num + 1 ; oro_name2(num)  = 'convexity'  ! hprime(ix,2)
-      num = num + 1 ; oro_name2(num)  = 'oa1'        ! hprime(ix,3)
-      num = num + 1 ; oro_name2(num)  = 'oa2'        ! hprime(ix,4)
-      num = num + 1 ; oro_name2(num)  = 'oa3'        ! hprime(ix,5)
-      num = num + 1 ; oro_name2(num)  = 'oa4'        ! hprime(ix,6)
-      num = num + 1 ; oro_name2(num)  = 'ol1'        ! hprime(ix,7)
-      num = num + 1 ; oro_name2(num)  = 'ol2'        ! hprime(ix,8)
-      num = num + 1 ; oro_name2(num)  = 'ol3'        ! hprime(ix,9)
-      num = num + 1 ; oro_name2(num) = 'ol4'        ! hprime(ix,10)
-      num = num + 1 ; oro_name2(num) = 'theta'      ! hprime(ix,11)
-      num = num + 1 ; oro_name2(num) = 'gamma'      ! hprime(ix,12)
-      num = num + 1 ; oro_name2(num) = 'sigma'      ! hprime(ix,13)
-      num = num + 1 ; oro_name2(num) = 'elvmax'     ! hprime(ix,14)
-      num = num + 1 ; oro_name2(num) = 'orog_filt'  ! oro
-      num = num + 1 ; oro_name2(num) = 'orog_raw'   ! oro_uf
-      num = num + 1 ; oro_name2(num) = 'land_frac'  ! land fraction [0:1]
-      !--- variables below here are optional
-      num = num + 1 ; oro_name2(num) = 'lake_frac'  ! lake fraction [0:1]
-      num = num + 1 ; oro_name2(num) = 'lake_depth' ! lake depth(m)
-
-      !--- register axis
-      call register_axis( Oro_restart, "lon", 'X' )
-      call register_axis( Oro_restart, "lat", 'Y' )
-      !--- register the 2D fields
-      do n = 1,num
-         var2_p => oro_var2(:,:,n)
-         if (trim(oro_name2(n)) == 'lake_frac' .or. trim(oro_name2(n)) == 'lake_depth' ) then
-            call register_restart_field(Oro_restart, oro_name2(n), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
-         else
-            call register_restart_field(Oro_restart, oro_name2(n), var2_p, dimensions=(/'lat','lon'/))
-         endif
-      enddo
-      nullify(var2_p)
-
-     !--- register 3D vegetation and soil fractions
-      var3_fr => oro_var3v(:,:,:)
-      call register_restart_field(Oro_restart, 'vegetation_type_pct', var3_fr, dimensions=(/'num_veg_cat','lat        ','lon        '/) , is_optional=.true.)
-      var3_fr => oro_var3s(:,:,:)
-      call register_restart_field(Oro_restart, 'soil_type_pct', var3_fr, dimensions=(/'num_soil_cat','lat         ','lon         '/) , is_optional=.true.)
-      nullify(var3_fr)
-
-   endif
+    call oro%register(Model,Oro_restart,Atm_block)
 
    !--- read the orography restart/data
    call mpp_error(NOTE,'reading topographic/orographic information from INPUT/oro_data.tile*.nc')
    call read_restart(Oro_restart, ignore_checksum=ignore_rst_cksum)
    call close_file(Oro_restart)
 
-
    !--- copy data into GFS containers
-
-!$omp parallel do default(shared) private(i, j, nb, ix, num)
-    do nb = 1, Atm_block%nblks
-      !--- 2D variables
-      do ix = 1, Atm_block%blksz(nb)
-        i = Atm_block%index(nb)%ii(ix) - isc + 1
-        j = Atm_block%index(nb)%jj(ix) - jsc + 1
-        !--- stddev
-!       Sfcprop(nb)%hprim(ix)     = oro_var2(i,j,1)
-        !--- hprime(1:14)
-        num = 1       ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num)  = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%hprime(ix,num) = oro_var2(i,j,num)
-        !--- oro
-        num = num + 1 ; Sfcprop(nb)%oro(ix)       = oro_var2(i,j,num)
-        num = num + 1 ; Sfcprop(nb)%oro_uf(ix)    = oro_var2(i,j,num)
-
-        Sfcprop(nb)%landfrac(ix)  = -9999.0
-        Sfcprop(nb)%lakefrac(ix)  = -9999.0
-
-        num = num + 1 ; Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,num) !land frac [0:1]
-        if (Model%lkm > 0  ) then
-          if(oro_var2(i,j,num+1)>Model%lakefrac_threshold .and. &
-             oro_var2(i,j,num+2)>Model%lakedepth_threshold) then
-           Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,num+1) !lake frac [0:1]
-           Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,num+2) !lake depth [m]    !YWu
-          else
-           Sfcprop(nb)%lakefrac(ix)  = 0
-           Sfcprop(nb)%lakedepth(ix) = -9999
-          endif
-        else
-          Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,num+1) !lake frac [0:1]
-          Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,num+2) !lake depth [m]    !YWu
-        endif
-        num = num + 2 ! To account for lakefrac and lakedepth
-
-        Sfcprop(nb)%vegtype_frac(ix,:)  =  -9999.0
-        Sfcprop(nb)%soiltype_frac(ix,:) =  -9999.0
-
-        Sfcprop(nb)%vegtype_frac(ix,:)  = oro_var3v(i,j,:) ! vegetation type fractions, [0:1]
-        Sfcprop(nb)%soiltype_frac(ix,:) = oro_var3s(i,j,:) ! soil type fractions, [0:1]
-
-        !do n=1,nvar_vegfr
-        !  if (Sfcprop(nb)%vegtype_frac(ix,n) > 0.) print *,'Sfcprop(nb)%vegtype_frac(ix,n)',Sfcprop(nb)%vegtype_frac(ix,n),n
-        !enddo
-        !do n=1,nvar_soilfr
-        !  if (Sfcprop(nb)%soiltype_frac(ix,n) > 0.) print *,'Sfcprop(nb)%soiltype_frac(ix,n)',Sfcprop(nb)%soiltype_frac(ix,n),n
-        !enddo
-
-      enddo
-    enddo
-
-    !--- deallocate containers and free restart container
-    deallocate(oro_name2, oro_var2)
-    deallocate(oro_var3v)
-    deallocate(oro_var3s)
+   call oro%copy(Model, Sfcprop, Atm_block)
 
     if_smoke: if(Model%rrfs_sd) then  ! for RRFS-SD
 
