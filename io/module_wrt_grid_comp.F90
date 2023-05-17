@@ -1004,23 +1004,8 @@
       enddo
 !
 !loop over all items in the imp_state_write and count output FieldBundles
-
-      ! if (lprnt) then
-      !   write(*,*)'wrt_initialize_p1: FBCount ', FBCount
-      !   do n=1, FBCount
-      !     write(*,*)'wrt_initialize_p1: ', n, trim(fcstItemNameList(n))
-      !   enddo
-      ! endif
-
       call get_outfile(FBCount, outfilename, FBlist_outfilename, noutfile)
       wrt_int_state%FBCount = noutfile
-
-      ! if (lprnt) then
-      !   write(*,*)'wrt_initialize_p1: wrt_int_state%FBCount ', wrt_int_state%FBCount
-      !   do i=1, wrt_int_state%FBCount
-      !     write(*,*)'wrt_initialize_p1: ', i, trim(FBlist_outfilename(i))
-      !   enddo
-      ! endif
 
 !
 !create output field bundles
