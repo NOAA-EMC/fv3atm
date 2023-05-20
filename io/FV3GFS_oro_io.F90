@@ -17,6 +17,7 @@ module FV3GFS_oro_io
   private
 
   public :: Oro_io_data_type, Oro_io_register, Oro_io_copy, Oro_io_final
+  public :: Oro_scale_io_data_type, Oro_scale_io_register, Oro_scale_io_copy, Oro_scale_io_final
 
   type Oro_io_data_type
     character(len=32),    pointer, private, dimension(:)       :: name2 => null()
@@ -28,6 +29,18 @@ module FV3GFS_oro_io
     procedure, public :: copy => Oro_io_copy
     final :: Oro_io_final
   end type Oro_io_data_type
+
+  type Oro_scale_io_data_type
+    character(len=32),    pointer, private, dimension(:)       :: name => null()
+    real(kind=kind_phys), pointer, private, dimension(:,:,:)   :: var  => null()
+  contains
+    procedure, public :: register => Oro_scale_io_register
+    procedure, public :: copy => Oro_scale_io_copy
+    final :: Oro_scale_io_final
+  end type Oro_scale_io_data_type
+
+  integer, parameter :: nvar_oro_scale = 10
+  integer, parameter :: nvar_o2  = 19
 
 contains
 
@@ -42,17 +55,17 @@ contains
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_fr => NULL()
     integer :: nx, ny
 
-    integer :: nvar_o2, nvar_vegfr, nvar_soilfr, n, num
+    integer :: nvar_vegfr, nvar_soilfr, n, num
+
+    call get_nx_ny_from_atm(Atm_block, nx, ny)
 
     ! This #define reduces code length by a lot
 #define WARN_DISASSOCIATE(name) \
     if(associated(name)) then ; \
-      write(0,*) 'Internal error. Called oro%copy twice. Will try to keep going anyway.' ; \
+      write(0,*) 'Internal error. Called oro%register twice. Will try to keep going anyway.' ; \
       deallocate(name); \
       nullify(name) ; \
     endif
-
-    call get_nx_ny_from_atm(Atm_block, nx, ny)
 
     WARN_DISASSOCIATE(oro%name2)
     WARN_DISASSOCIATE(oro%var2)
@@ -60,7 +73,6 @@ contains
     WARN_DISASSOCIATE(oro%var3s)
 #undef WARN_DISASSOCIATE
 
-    nvar_o2  = 19
     nvar_vegfr  = Model%nvegcat
     nvar_soilfr = Model%nsoilcat
 
@@ -195,7 +207,7 @@ contains
   subroutine Oro_io_final(oro)
     implicit none
     type(Oro_io_data_type) :: oro
-    
+
     ! This #define reduces code length by a lot
 #define IF_ASSOC_DEALLOC_NULL(var) \
     if(associated(oro%var)) then ; \
@@ -211,4 +223,88 @@ contains
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine Oro_io_final
 
+  subroutine Oro_scale_io_register(oro_scale, Model, Oro_scale_restart, Atm_block)
+    implicit none
+    class(Oro_scale_io_data_type) :: oro_scale
+    type(GFS_control_type),      intent(in) :: Model
+    type(FmsNetcdfDomainFile_t) :: Oro_scale_restart
+    type(block_control_type), intent(in) :: Atm_block
+
+    real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
+    integer :: num, nx, ny
+
+#define WARN_DISASSOCIATE(name) \
+    if(associated(name)) then ; \
+      write(0,*) 'Internal error. Called oro_scale%register twice. Will try to keep going anyway.' ; \
+      deallocate(name); \
+      nullify(name) ; \
+    endif
+
+    WARN_DISASSOCIATE(oro_scale%name)
+    WARN_DISASSOCIATE(oro_scale%var)
+#undef WARN_DISASSOCIATE
+
+    call get_nx_ny_from_atm(Atm_block, nx, ny)
+
+    !--- allocate the various containers needed for orography data
+    allocate(oro_scale%name(nvar_oro_scale))
+    allocate(oro_scale%var(nx,ny,nvar_oro_scale))
+
+    oro_scale%name(1)  = 'stddev'
+    oro_scale%name(2)  = 'convexity'
+    oro_scale%name(3)  = 'oa1'
+    oro_scale%name(4)  = 'oa2'
+    oro_scale%name(5)  = 'oa3'
+    oro_scale%name(6)  = 'oa4'
+    oro_scale%name(7)  = 'ol1'
+    oro_scale%name(8)  = 'ol2'
+    oro_scale%name(9)  = 'ol3'
+    oro_scale%name(10) = 'ol4'
+
+    call register_axis(Oro_scale_restart, "lon", 'X')
+    call register_axis(Oro_scale_restart, "lat", 'Y')
+
+    do num = 1,nvar_oro_scale
+      var2_p => oro_scale%var(:,:,num)
+      call register_restart_field(Oro_scale_restart, oro_scale%name(num), var2_p, dimensions=(/'lon','lat'/))
+    enddo
+  end subroutine Oro_scale_io_register
+
+  subroutine Oro_scale_io_copy(oro_scale, Sfcprop, Atm_block, first_index)
+    implicit none
+    class(Oro_scale_io_data_type) :: oro_scale
+    type(GFS_sfcprop_type)                  :: Sfcprop(:)
+    type(block_control_type), intent(in) :: Atm_block
+    integer, intent(in) :: first_index
+
+    integer :: i,j,nb,ix,num,v
+
+    !$OMP PARALLEL DO PRIVATE(nb,ix,i,j,v)
+    do nb = 1, Atm_block%nblks
+      !--- 2D variables
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - Atm_block%isc + 1
+        j = Atm_block%index(nb)%jj(ix) - Atm_block%jsc + 1
+        do v=1,nvar_oro_scale
+          Sfcprop(nb)%hprime(ix,first_index-1+v)  = oro_scale%var(i,j,v)
+        enddo
+      enddo
+    enddo
+  end subroutine Oro_scale_io_copy
+
+  subroutine Oro_scale_io_final(oro_scale)
+    implicit none
+    type(Oro_scale_io_data_type) :: oro_scale
+
+#define IF_ASSOC_DEALLOC_NULL(vvarr) \
+    if(associated(oro_scale%vvarr)) then ; \
+      deallocate(oro_scale%vvarr) ; \
+      nullify(oro_scale%vvarr) ; \
+    endif
+
+    IF_ASSOC_DEALLOC_NULL(name)
+    IF_ASSOC_DEALLOC_NULL(var)
+
+#undef IF_ASSOC_DEALLOC_NULL
+  end subroutine Oro_scale_io_final
 end module FV3GFS_oro_io

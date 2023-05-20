@@ -574,8 +574,8 @@ module FV3GFS_io_mod
     type(clm_lake_data_type) :: clm_lake
     type(rrfs_sd_state_type) :: rrfs_sd_state
     type(rrfs_sd_emissions_type) :: rrfs_sd_emis
-
-    nvar_oro_ls_ss = 10
+    type(Oro_scale_io_data_type) :: oro_ss
+    type(Oro_scale_io_data_type) :: oro_ls
 
     nvar_vegfr  = Model%nvegcat
     nvar_soilfr = Model%nsoilcat
@@ -667,98 +667,33 @@ module FV3GFS_io_mod
     if (Model%gwd_opt==3 .or. Model%gwd_opt==33 .or. &
         Model%gwd_opt==2 .or. Model%gwd_opt==22 ) then
 
-      !--- open restart file
-      infile=trim(indir)//'/'//trim(fn_oro_ls)
-      amiopen=open_file(Oro_ls_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
-      if( .not.amiopen ) call mpp_error( FATAL, 'Error with opening file '//trim(infile) )
+      if ( (Model%gwd_opt==3 .or. Model%gwd_opt==33) .or.    &
+           ( (Model%gwd_opt==2 .or. Model%gwd_opt==22) .and. &
+              Model%do_gsl_drag_ls_bl ) ) then
+        !--- open restart file
+        infile=trim(indir)//'/'//trim(fn_oro_ls)
+        amiopen=open_file(Oro_ls_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
+        if( .not.amiopen ) call mpp_error( FATAL, 'Error with opening file '//trim(infile) )
+        call oro_ls%register(Model,Oro_ls_restart,Atm_block)
+        !--- read new GSL created orography restart/data
+        call mpp_error(NOTE,'reading topographic/orographic information from &
+             &INPUT/oro_data_ls.tile*.nc')
+        call read_restart(Oro_ls_restart, ignore_checksum=ignore_rst_cksum)
+        call close_file(Oro_ls_restart)
+        call oro_ls%copy(Sfcprop,Atm_block,1)
+      endif
 
       !--- open restart file
       infile=trim(indir)//'/'//trim(fn_oro_ss)
       amiopen=open_file(Oro_ss_restart, trim(infile), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
       if( .not.amiopen ) call mpp_error( FATAL, 'Error with opening file '//trim(infile) )
-
-      if (.not. allocated(oro_ls_ss_name)) then
-      !--- allocate the various containers needed for orography data
-        allocate(oro_ls_ss_name(nvar_oro_ls_ss))
-        allocate(oro_ls_var(nx,ny,nvar_oro_ls_ss))
-        allocate(oro_ss_var(nx,ny,nvar_oro_ls_ss))
-
-        oro_ls_ss_name(1)  = 'stddev'
-        oro_ls_ss_name(2)  = 'convexity'
-        oro_ls_ss_name(3)  = 'oa1'
-        oro_ls_ss_name(4)  = 'oa2'
-        oro_ls_ss_name(5)  = 'oa3'
-        oro_ls_ss_name(6)  = 'oa4'
-        oro_ls_ss_name(7)  = 'ol1'
-        oro_ls_ss_name(8)  = 'ol2'
-        oro_ls_ss_name(9)  = 'ol3'
-        oro_ls_ss_name(10) = 'ol4'
-
-        call register_axis(Oro_ls_restart, "lon", 'X')
-        call register_axis(Oro_ls_restart, "lat", 'Y')
-        call register_axis(Oro_ss_restart, "lon", 'X')
-        call register_axis(Oro_ss_restart, "lat", 'Y')
-
-        do num = 1,nvar_oro_ls_ss
-          var2_p => oro_ls_var(:,:,num)
-          call register_restart_field(Oro_ls_restart, oro_ls_ss_name(num), var2_p, dimensions=(/'lon','lat'/))
-        enddo
-        nullify(var2_p)
-        do num = 1,nvar_oro_ls_ss
-          var2_p => oro_ss_var(:,:,num)
-          call register_restart_field(Oro_ss_restart, oro_ls_ss_name(num), var2_p, dimensions=(/'lon','lat'/))
-        enddo
-        nullify(var2_p)
-      end if
-
-      !--- read new GSL created orography restart/data
-      call mpp_error(NOTE,'reading topographic/orographic information from &
-           &INPUT/oro_data_ls.tile*.nc')
-      call read_restart(Oro_ls_restart, ignore_checksum=ignore_rst_cksum)
-      call close_file(Oro_ls_restart)
+      call oro_ss%register(Model,Oro_ss_restart,Atm_block)
       call mpp_error(NOTE,'reading topographic/orographic information from &
            &INPUT/oro_data_ss.tile*.nc')
       call read_restart(Oro_ss_restart, ignore_checksum=ignore_rst_cksum)
       call close_file(Oro_ss_restart)
-
-
-      do nb = 1, Atm_block%nblks
-        !--- 2D variables
-        do ix = 1, Atm_block%blksz(nb)
-          i = Atm_block%index(nb)%ii(ix) - isc + 1
-          j = Atm_block%index(nb)%jj(ix) - jsc + 1
-          ! Replace hprime(1:10) with GSL oro stat data only when using GSL
-          ! drag suite with large scale GWD and blocking as part of unified drag
-          ! suite. Otherwise, original oro stat data is used.
-          if ( (Model%gwd_opt==3 .or. Model%gwd_opt==33) .or.    &
-               ( (Model%gwd_opt==2 .or. Model%gwd_opt==22) .and. &
-                  Model%do_gsl_drag_ls_bl ) ) then
-            !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
-            Sfcprop(nb)%hprime(ix,1)  = oro_ls_var(i,j,1)
-            Sfcprop(nb)%hprime(ix,2)  = oro_ls_var(i,j,2)
-            Sfcprop(nb)%hprime(ix,3)  = oro_ls_var(i,j,3)
-            Sfcprop(nb)%hprime(ix,4)  = oro_ls_var(i,j,4)
-            Sfcprop(nb)%hprime(ix,5)  = oro_ls_var(i,j,5)
-            Sfcprop(nb)%hprime(ix,6)  = oro_ls_var(i,j,6)
-            Sfcprop(nb)%hprime(ix,7)  = oro_ls_var(i,j,7)
-            Sfcprop(nb)%hprime(ix,8)  = oro_ls_var(i,j,8)
-            Sfcprop(nb)%hprime(ix,9)  = oro_ls_var(i,j,9)
-            Sfcprop(nb)%hprime(ix,10)  = oro_ls_var(i,j,10)
-          endif
-          Sfcprop(nb)%hprime(ix,15)  = oro_ss_var(i,j,1)
-          Sfcprop(nb)%hprime(ix,16)  = oro_ss_var(i,j,2)
-          Sfcprop(nb)%hprime(ix,17)  = oro_ss_var(i,j,3)
-          Sfcprop(nb)%hprime(ix,18)  = oro_ss_var(i,j,4)
-          Sfcprop(nb)%hprime(ix,19)  = oro_ss_var(i,j,5)
-          Sfcprop(nb)%hprime(ix,20)  = oro_ss_var(i,j,6)
-          Sfcprop(nb)%hprime(ix,21)  = oro_ss_var(i,j,7)
-          Sfcprop(nb)%hprime(ix,22)  = oro_ss_var(i,j,8)
-          Sfcprop(nb)%hprime(ix,23)  = oro_ss_var(i,j,9)
-          Sfcprop(nb)%hprime(ix,24)  = oro_ss_var(i,j,10)
-        enddo
-      enddo
-
-   end if
+      call oro_ss%copy(Sfcprop,Atm_block,15)
+    end if
 
    !--- SURFACE FILE
 
