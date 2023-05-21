@@ -27,17 +27,17 @@ module FV3GFS_sfc_io
   real(kind_phys), parameter:: zero = 0, one = 1
 
   type Sfc_io_data_type
-    integer, private :: nvar2o = 0
-    integer, private :: nvar3 = 0
-    integer, private :: nvar2r = 0
-    integer, private :: nvar2mp = 0
-    integer, private :: nvar3mp = 0
-    integer, private :: nvar2l = 0
-    integer, private :: nvar2m = 0
-    integer, private :: nvar_before_lake = 0
+    integer, public :: nvar2o = 0
+    integer, public :: nvar3 = 0
+    integer, public :: nvar2r = 0
+    integer, public :: nvar2mp = 0
+    integer, public :: nvar3mp = 0
+    integer, public :: nvar2l = 0
+    integer, public :: nvar2m = 0
+    integer, public :: nvar_before_lake = 0
 
     ! The lsoil flag is only meaningful when reading:;
-    logical, private :: is_lsoil = .false.
+    logical, public :: is_lsoil = .false.
 
     ! SYNONYMS: Some nvar variables had two names in FV3GFS_io.F90. They have
     ! only one name here. The "_s" is redundant because this file only has
@@ -49,15 +49,15 @@ module FV3GFS_sfc_io
     !  - nvar2mp = nvar_s2mp
     !  - nvar3mp = nvar_s3mp
 
-    real(kind=kind_phys), pointer, dimension(:,:,:), private :: var2 => null()
-    real(kind=kind_phys), pointer, dimension(:,:,:), private :: var3ice => null()
-    real(kind=kind_phys), pointer, dimension(:,:,:,:), private :: var3 => null()
-    real(kind=kind_phys), pointer, dimension(:,:,:,:), private :: var3sn => null()
-    real(kind=kind_phys), pointer, dimension(:,:,:,:), private :: var3eq => null()
-    real(kind=kind_phys), pointer, dimension(:,:,:,:), private :: var3zn => null()
+    real(kind=kind_phys), pointer, dimension(:,:,:), public :: var2 => null()
+    real(kind=kind_phys), pointer, dimension(:,:,:), public :: var3ice => null()
+    real(kind=kind_phys), pointer, dimension(:,:,:,:), public :: var3 => null()
+    real(kind=kind_phys), pointer, dimension(:,:,:,:), public :: var3sn => null()
+    real(kind=kind_phys), pointer, dimension(:,:,:,:), public :: var3eq => null()
+    real(kind=kind_phys), pointer, dimension(:,:,:,:), public :: var3zn => null()
 
-    character(len=32), pointer, dimension(:), private :: name2 => null()
-    character(len=32), pointer, dimension(:), private :: name3 => null()
+    character(len=32), pointer, dimension(:), public :: name2 => null()
+    character(len=32), pointer, dimension(:), public :: name3 => null()
 
   contains
 
