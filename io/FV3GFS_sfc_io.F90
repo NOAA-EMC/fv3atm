@@ -6,7 +6,9 @@ module FV3GFS_sfc_io
        register_variable_attribute, register_field, &
        read_restart, write_restart, write_data,     &
        get_global_io_domain_indices, variable_exists
-  use FV3GFS_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data, GFS_Data_transfer
+  use FV3GFS_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data, GFS_Data_transfer, &
+       create_2d_field_and_add_to_bundle, create_3d_field_and_add_to_bundle, &
+       add_zaxis_to_field
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
   use mpp_mod,            only: mpp_error,  mpp_pe, mpp_root_pe, &
@@ -66,6 +68,8 @@ module FV3GFS_sfc_io
     procedure, public :: write_axes => Sfc_io_write_axes
     procedure, public :: register_2d_fields => Sfc_io_register_2d_fields
     procedure, public :: register_3d_fields => Sfc_io_register_3d_fields
+    procedure, public :: bundle_2d_fields => Sfc_io_bundle_2d_fields
+    procedure, public :: bundle_3d_fields => Sfc_io_bundle_3d_fields
     procedure, public :: fill_2d_names => Sfc_io_fill_2d_names
     procedure, public :: fill_3d_names => Sfc_io_fill_3d_names
     procedure, public :: init_fields => Sfc_io_init_fields
@@ -1059,7 +1063,7 @@ contains
         call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,1,Model%lsoil,sfc%var3,Sfcprop(nb)%stc)
         call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,1,Model%lsoil,sfc%var3,Sfcprop(nb)%smc)
         call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,1,Model%lsoil,sfc%var3,Sfcprop(nb)%slc)
-        
+
         if (Model%lsm == Model%lsm_noahmp) then
 
           ! These use weird indexing which is lost during a Fortran
@@ -1455,4 +1459,94 @@ contains
 #undef IF_ASSOC_DEALLOC_NULL
 
   end subroutine Sfc_io_final
+
+  subroutine Sfc_io_bundle_2d_fields(sfc, bundle, grid, Model, outputfile)
+    use esmf
+    use GFS_typedefs, only: GFS_control_type
+    implicit none
+    class(Sfc_io_data_type)             :: sfc
+    type(ESMF_FieldBundle),intent(inout)        :: bundle
+    type(ESMF_Grid),intent(inout)               :: grid
+    type(GFS_control_type),          intent(in) :: Model
+    character(*), intent(in)                    :: outputfile
+
+    real(kind_phys),dimension(:,:),pointer :: temp_r2d
+    integer :: num
+
+    if (.not. associated(sfc%var2)) then
+      write(0,*)'ERROR sfc%var2, NOT associated'
+      return
+    endif
+    if (.not. associated(sfc%name2)) then
+      write(0,*)'ERROR sfc%name2 NOT associated'
+      return
+    endif
+
+    do num = 1,sfc%nvar2m
+      temp_r2d => sfc%var2(:,:,num)
+      call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc%name2(num)), outputfile, grid, bundle)
+    enddo
+
+    if (Model%nstf_name(1) > 0) then
+      do num = sfc%nvar2m+1,sfc%nvar2m+sfc%nvar2o
+        temp_r2d => sfc%var2(:,:,num)
+        call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc%name2(num)), outputfile, grid, bundle)
+      enddo
+    endif
+
+    if (Model%lsm == Model%lsm_ruc) then ! sfc%nvar2mp =0
+      do num = sfc%nvar2m+sfc%nvar2o+1, sfc%nvar2m+sfc%nvar2o+sfc%nvar2r
+        temp_r2d => sfc%var2(:,:,num)
+        call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc%name2(num)), outputfile, grid, bundle)
+      enddo
+    else if (Model%lsm == Model%lsm_noahmp) then ! sfc%nvar2r =0
+      do num = sfc%nvar2m+sfc%nvar2o+1,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp
+        temp_r2d => sfc%var2(:,:,num)
+        call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc%name2(num)), outputfile, grid, bundle)
+      enddo
+    endif
+  end subroutine Sfc_io_bundle_2d_fields
+
+  subroutine Sfc_io_bundle_3d_fields(sfc, bundle, grid, Model, outputfile)
+    use esmf
+    use GFS_typedefs, only: GFS_control_type
+    implicit none
+    class(Sfc_io_data_type)             :: sfc
+    type(ESMF_FieldBundle),intent(inout)        :: bundle
+    type(ESMF_Grid),intent(inout)               :: grid
+    type(GFS_control_type),          intent(in) :: Model
+    character(*), intent(in)                    :: outputfile
+
+    real(kind_phys),dimension(:,:,:),pointer :: temp_r3d
+    integer :: num
+
+    temp_r3d => sfc%var3ice(:,:,:)
+    call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(0)), "zaxis_1", Model%kice, trim(outputfile), grid, bundle)
+
+    if(Model%lsm == Model%lsm_ruc) then
+      do num = 1,sfc%nvar3
+        temp_r3d => sfc%var3(:,:,:,num)
+        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_1", Model%kice, trim(outputfile), grid, bundle)
+      enddo
+    else
+      do num = 1,sfc%nvar3
+        temp_r3d => sfc%var3(:,:,:,num)
+        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_2", Model%lsoil, trim(outputfile), grid, bundle)
+      enddo
+    endif
+
+    if (Model%lsm == Model%lsm_noahmp) then
+      do num = sfc%nvar3+1,sfc%nvar3+3
+        temp_r3d => sfc%var3sn(:,:,:,num)
+        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_3", 3, trim(outputfile), grid, bundle)
+      enddo
+
+      temp_r3d => sfc%var3eq(:,:,:,7)
+      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(7)), "zaxis_2", Model%lsoil, trim(outputfile), grid, bundle)
+
+      temp_r3d => sfc%var3zn(:,:,:,8)
+      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(8)), "zaxis_4", 7, trim(outputfile), grid, bundle)
+    endif ! lsm = lsm_noahmp
+
+  end subroutine Sfc_io_bundle_3d_fields
 end module FV3GFS_sfc_io

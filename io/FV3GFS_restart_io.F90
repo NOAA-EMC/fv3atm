@@ -5,7 +5,8 @@ module FV3GFS_restart_io_mod
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
   use FV3GFS_sfc_io
-  use FV3GFS_common_io,   only: copy_from_GFS_Data
+  use FV3GFS_common_io,   only: create_2d_field_and_add_to_bundle, &
+       create_3d_field_and_add_to_bundle, add_zaxis_to_field
 
   implicit none
   private
@@ -220,13 +221,6 @@ module FV3GFS_restart_io_mod
 
    integer :: num
 
-   if (.not. associated(sfc%var2)) then
-     write(0,*)'ERROR sfc%var2, NOT associated'
-   endif
-   if (.not. associated(sfc%var3)) then
-     write(0,*)'ERROR sfc%var3 NOT associated'
-   endif
-
    sfc_bundle = bundle
 
    call ESMF_FieldBundleGet(bundle, name=sfcbdl_name,rc=rc)
@@ -236,152 +230,9 @@ module FV3GFS_restart_io_mod
 
 !*** add esmf fields
 
-   do num = 1,sfc%nvar2m
-      temp_r2d => sfc%var2(:,:,num)
-      call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc%name2(num)), outputfile, grid, bundle)
-   enddo
-
-   if (Model%nstf_name(1) > 0) then
-      do num = sfc%nvar2m+1,sfc%nvar2m+sfc%nvar2o
-         temp_r2d => sfc%var2(:,:,num)
-         call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc%name2(num)), outputfile, grid, bundle)
-      enddo
-   endif
-
-   if (Model%lsm == Model%lsm_ruc) then ! sfc%nvar2mp =0
-      do num = sfc%nvar2m+sfc%nvar2o+1, sfc%nvar2m+sfc%nvar2o+sfc%nvar2r
-         temp_r2d => sfc%var2(:,:,num)
-         call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc%name2(num)), outputfile, grid, bundle)
-      enddo
-   else if (Model%lsm == Model%lsm_noahmp) then ! sfc%nvar2r =0
-      do num = sfc%nvar2m+sfc%nvar2o+1,sfc%nvar2m+sfc%nvar2o+sfc%nvar2mp
-         temp_r2d => sfc%var2(:,:,num)
-         call create_2d_field_and_add_to_bundle(temp_r2d, trim(sfc%name2(num)), outputfile, grid, bundle)
-      enddo
-   endif
-
-   temp_r3d => sfc%var3ice(:,:,:)
-   call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(0)), "zaxis_1", Model%kice, trim(outputfile), grid, bundle)
-
-   if(Model%lsm == Model%lsm_ruc) then
-      do num = 1,sfc%nvar3
-         temp_r3d => sfc%var3(:,:,:,num)
-         call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_1", Model%kice, trim(outputfile), grid, bundle)
-      enddo
-   else
-      do num = 1,sfc%nvar3
-         temp_r3d => sfc%var3(:,:,:,num)
-         call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_2", Model%lsoil, trim(outputfile), grid, bundle)
-      enddo
-   endif
-
-   if (Model%lsm == Model%lsm_noahmp) then
-      do num = sfc%nvar3+1,sfc%nvar3+3
-         temp_r3d => sfc%var3sn(:,:,:,num)
-         call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_3", 3, trim(outputfile), grid, bundle)
-      enddo
-
-      temp_r3d => sfc%var3eq(:,:,:,7)
-      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(7)), "zaxis_2", Model%lsoil, trim(outputfile), grid, bundle)
-
-      temp_r3d => sfc%var3zn(:,:,:,8)
-      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(8)), "zaxis_4", 7, trim(outputfile), grid, bundle)
-   endif ! lsm = lsm_noahmp
+   call sfc%bundle_2d_fields(bundle, grid, Model, outputfile)
+   call sfc%bundle_3d_fields(bundle, grid, Model, outputfile)
 
  end subroutine fv_sfc_restart_bundle_setup
-
- subroutine create_2d_field_and_add_to_bundle(temp_r2d, field_name, outputfile, grid, bundle)
-
-   use esmf
-
-   implicit none
-
-   real(kind_phys), dimension(:,:),   pointer, intent(in)    :: temp_r2d
-   character(len=*),                           intent(in)    :: field_name
-   character(len=*),                           intent(in)    :: outputfile
-   type(ESMF_Grid),                            intent(in)    :: grid
-   type(ESMF_FieldBundle),                     intent(inout) :: bundle
-
-   type(ESMF_Field) :: field
-
-   integer :: rc, i
-
-   field = ESMF_FieldCreate(grid, temp_r2d, datacopyflag=ESMF_DATACOPY_REFERENCE, &
-                            name=trim(field_name), indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__, file=__FILE__)) &
-   call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name='output_file', value=trim(outputfile), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-   call ESMF_FieldBundleAdd(bundle, (/field/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-  end subroutine create_2d_field_and_add_to_bundle
-
- subroutine create_3d_field_and_add_to_bundle(temp_r3d, field_name, axis_name, num_levels, outputfile, grid, bundle)
-
-   use esmf
-
-   implicit none
-
-   real(kind_phys), dimension(:,:,:), pointer, intent(in)    :: temp_r3d
-   character(len=*),                           intent(in)    :: field_name
-   character(len=*),                           intent(in)    :: axis_name
-   integer,                                    intent(in)    :: num_levels
-   character(len=*),                           intent(in)    :: outputfile
-   type(ESMF_Grid),                            intent(in)    :: grid
-   type(ESMF_FieldBundle),                     intent(inout) :: bundle
-
-   type(ESMF_Field) :: field
-
-   integer :: rc, i
-
-   field = ESMF_FieldCreate(grid, temp_r3d, datacopyflag=ESMF_DATACOPY_REFERENCE, &
-                            name=trim(field_name), indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__, file=__FILE__)) &
-   call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name='output_file', value=trim(outputfile), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-   call add_zaxis_to_field(field, axis_name, num_levels)
-
-   call ESMF_FieldBundleAdd(bundle, (/field/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-  end subroutine create_3d_field_and_add_to_bundle
-
- subroutine add_zaxis_to_field(field, axis_name, num_levels)
-
-   use esmf
-
-   implicit none
-
-   type(ESMF_Field), intent(inout) :: field
-   character(len=*), intent(in)    :: axis_name
-   integer,          intent(in)    :: num_levels
-
-   real(kind_phys), allocatable, dimension(:) :: buffer
-   integer :: rc, i
-
-   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-                          name="ESMF:ungridded_dim_labels", valueList=(/trim(axis_name)/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-   allocate( buffer(num_levels) )
-   do i=1, num_levels
-      buffer(i)=i
-   end do
-   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3-dim", &
-                          name=trim(axis_name), valueList=buffer, rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-   deallocate(buffer)
-
-   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3-dim", &
-                          name=trim(axis_name)//"cartesian_axis", value="Z", rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
- end subroutine add_zaxis_to_field
 
 end module FV3GFS_restart_io_mod
