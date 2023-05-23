@@ -1,4 +1,4 @@
-module rrfs_sd_io
+module FV3GFS_rrfs_sd_io
   use block_control_mod,  only: block_control_type
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited,      &
        open_file, close_file,                 &
@@ -10,7 +10,8 @@ module rrfs_sd_io
        GFS_data_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
   use GFS_diagnostics,    only: GFS_externaldiag_type
-  use FV3GFS_common_io,   only: get_nx_ny_from_atm
+  use FV3GFS_common_io,   only: get_nx_ny_from_atm, create_2d_field_and_add_to_bundle, &
+       create_3d_field_and_add_to_bundle, add_zaxis_to_field
 
   implicit none
 
@@ -47,6 +48,7 @@ module rrfs_sd_io
     procedure, public :: deallocate_data => rrfs_sd_state_deallocate_data ! deallocate pointers
     procedure, public :: copy_from_grid => rrfs_sd_state_copy_from_grid ! Copy Sfcprop to arrays
     procedure, public :: copy_to_grid => rrfs_sd_state_copy_to_grid ! Copy arrays to Sfcprop
+    procedure, public :: bundle_fields => rrfs_sd_bundle_fields ! Point esmf bundles to arrays
     final :: rrfs_sd_state_final ! Destructor; calls deallocate_data
   end type rrfs_sd_state_type
 
@@ -203,6 +205,33 @@ contains
          'fire_aux_data_levels', 'Time                '/), &
          is_optional=.true.)
   end subroutine rrfs_sd_state_register_fields
+
+  ! --------------------------------------------------------------------
+
+  subroutine rrfs_sd_bundle_fields(data, bundle, grid, Model, outputfile)
+    use esmf
+    use GFS_typedefs, only: GFS_control_type
+    ! Registers all restart fields needed by the RRFS-SD
+    ! Terrible things will happen if you don't call data%allocate_data
+    ! and data%register_axes first.
+    implicit none
+    class(rrfs_sd_state_type) :: data
+    type(ESMF_FieldBundle),intent(inout)        :: bundle
+    type(ESMF_Grid),intent(inout)               :: grid
+    type(GFS_control_type),          intent(in) :: Model
+    character(*), intent(in)                    :: outputfile
+
+    ! Register 2D fields
+    call create_2d_field_and_add_to_bundle(data%emdust, "emdust", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(data%emseas, "emseas", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(data%emanoc, "emanoc", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(data%fhist, "fhist", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(data%coef_bb_dc, "coef_bb_dc", trim(outputfile), grid, bundle)
+
+    ! Register 3D field
+    call create_3d_field_and_add_to_bundle(data%fire_in, 'fire_in', 'fire_aux_data_levels', &
+         Model%fire_aux_data_levels, trim(outputfile), grid, bundle)
+  end subroutine rrfs_sd_bundle_fields
 
   ! --------------------------------------------------------------------
 
@@ -542,4 +571,4 @@ contains
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine rrfs_sd_emissions_final
 
-end module rrfs_sd_io
+end module FV3GFS_rrfs_sd_io

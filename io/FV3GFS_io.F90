@@ -536,7 +536,7 @@ module FV3GFS_io_mod
 !
 !----------------------------------------------------------------------
   subroutine sfc_prop_restart_read (Sfcprop, Atm_block, Model, fv_domain, warm_start, ignore_rst_cksum)
-    use rrfs_sd_io
+    use FV3GFS_rrfs_sd_io
     implicit none
     !--- interface variable definitions
     type(GFS_sfcprop_type),    intent(inout) :: Sfcprop(:)
@@ -771,7 +771,7 @@ module FV3GFS_io_mod
 !    calls:  register_restart_field, save_restart
 !----------------------------------------------------------------------
   subroutine sfc_prop_restart_write (Sfcprop, Atm_block, Model, fv_domain, timestamp)
-    use rrfs_sd_io
+    use FV3GFS_rrfs_sd_io
     implicit none
     !--- interface variable definitions
     type(GFS_sfcprop_type),      intent(in) :: Sfcprop(:)
