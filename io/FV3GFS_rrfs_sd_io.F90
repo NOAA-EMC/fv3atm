@@ -18,7 +18,7 @@ module rrfs_sd_io
 
   public :: rrfs_sd_state_type, rrfs_sd_state_register_axis, rrfs_sd_state_write_axis, &
        rrfs_sd_state_fill_data, rrfs_sd_state_register_fields, rrfs_sd_state_deallocate_data, &
-       rrfs_sd_state_copy_to_temporaries, rrfs_sd_state_copy_from_temporaries, &
+       rrfs_sd_state_copy_from_grid, rrfs_sd_state_copy_to_grid, &
        rrfs_sd_state_final
 
   public :: rrfs_sd_emissions_type, rrfs_sd_emissions_final, &
@@ -45,8 +45,8 @@ module rrfs_sd_io
     procedure, public :: fill_data => rrfs_sd_state_fill_data ! fill data with default values
     procedure, public :: register_fields => rrfs_sd_state_register_fields ! register rrfs_sd fields
     procedure, public :: deallocate_data => rrfs_sd_state_deallocate_data ! deallocate pointers
-    procedure, public :: copy_to_temporaries => rrfs_sd_state_copy_to_temporaries ! Copy Sfcprop to arrays
-    procedure, public :: copy_from_temporaries => rrfs_sd_state_copy_from_temporaries ! Copy arrays to Sfcprop
+    procedure, public :: copy_from_grid => rrfs_sd_state_copy_from_grid ! Copy Sfcprop to arrays
+    procedure, public :: copy_to_grid => rrfs_sd_state_copy_to_grid ! Copy arrays to Sfcprop
     final :: rrfs_sd_state_final ! Destructor; calls deallocate_data
   end type rrfs_sd_state_type
 
@@ -142,7 +142,7 @@ contains
 
   ! --------------------------------------------------------------------
 
-  subroutine rrfs_sd_state_fill_data(data, Model, Sfcprop, Atm_block)
+  subroutine rrfs_sd_state_fill_data(data, Model, Atm_block, Sfcprop)
     ! Fills all temporary variables with default values.
     ! Terrible things will happen if you don't call data%allocate_data first.
     ! IMPORTANT: This must match the corresponding code in sfcprop_create in
@@ -246,7 +246,7 @@ contains
 
   ! --------------------------------------------------------------------
 
-  subroutine rrfs_sd_state_copy_from_temporaries(data, Model, Sfcprop, Atm_block)
+  subroutine rrfs_sd_state_copy_to_grid(data, Model, Atm_block, Sfcprop)
     implicit none
     class(rrfs_sd_state_type) :: data
     type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
@@ -270,11 +270,11 @@ contains
         Sfcprop(nb)%fire_in(ix,:) = data%fire_in(i,j,:)
       enddo
     enddo
-  end subroutine rrfs_sd_state_copy_from_temporaries
+  end subroutine rrfs_sd_state_copy_to_grid
 
   ! --------------------------------------------------------------------
 
-  subroutine rrfs_sd_state_copy_to_temporaries(data, Model, Sfcprop, Atm_block)
+  subroutine rrfs_sd_state_copy_from_grid(data, Model, Atm_block, Sfcprop)
     implicit none
     class(rrfs_sd_state_type) :: data
     type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
@@ -298,7 +298,7 @@ contains
         data%fire_in(i,j,:) = Sfcprop(nb)%fire_in(ix,:)
       enddo
     enddo
-  end subroutine rrfs_sd_state_copy_to_temporaries
+  end subroutine rrfs_sd_state_copy_from_grid
 
   ! --------------------------------------------------------------------
   ! -- RRFS_SD_EMISSIONS IMPLEMENTATION --------------------------------

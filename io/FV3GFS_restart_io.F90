@@ -7,6 +7,7 @@ module FV3GFS_restart_io_mod
   use FV3GFS_sfc_io
   use FV3GFS_common_io,   only: create_2d_field_and_add_to_bundle, &
        create_3d_field_and_add_to_bundle, add_zaxis_to_field
+  use FV3GFS_clm_lake_io
 
   implicit none
   private
@@ -19,6 +20,7 @@ module FV3GFS_restart_io_mod
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: phy_var3
   character(len=32),dimension(:),allocatable :: phy_var2_names, phy_var3_names
 
+  type(clm_lake_data_type) :: clm_lake
   type(Sfc_io_data_type) :: sfc
   type(ESMF_FieldBundle) :: phy_bundle, sfc_bundle
 
@@ -75,6 +77,10 @@ module FV3GFS_restart_io_mod
    was_changed = sfc%allocate_arrays(Model, Atm_block, .false., .true.)
    call sfc%fill_2d_names(Model, .true.)
    call sfc%fill_3d_names(Model, .true.)
+
+   if(Model%iopt_lake == 2 .and. Model%lkm > 0) then
+     call clm_lake%allocate_data(Model)
+   endif
 
  end subroutine FV3GFS_restart_register
 
@@ -142,6 +148,9 @@ module FV3GFS_restart_io_mod
     type(GFS_control_type),      intent(in) :: Model
 
     call sfc%copy_from_grid(Model, Atm_block, Sfcprop)
+    if(Model%iopt_lake == 2 .and. Model%lkm > 0) then
+      call clm_lake%copy_from_grid(Model, Atm_block, Sfcprop)
+    endif
 
  end subroutine fv_sfc_restart_output
 
@@ -232,6 +241,10 @@ module FV3GFS_restart_io_mod
 
    call sfc%bundle_2d_fields(bundle, grid, Model, outputfile)
    call sfc%bundle_3d_fields(bundle, grid, Model, outputfile)
+
+   if(Model%iopt_lake == 2 .and. Model%lkm > 0) then
+     call clm_lake%bundle_fields(bundle, grid, Model, outputfile)
+   endif
 
  end subroutine fv_sfc_restart_bundle_setup
 

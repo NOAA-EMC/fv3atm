@@ -33,7 +33,7 @@ module FV3GFS_io_mod
   use diag_util_mod,      only: find_input_field
   use constants_mod,      only: grav, rdgas
   use physcons,           only: con_tice          !saltwater freezing temp (K)
-  use clm_lake_io,        only: clm_lake_data_type
+  use FV3GFS_clm_lake_io,        only: clm_lake_data_type
 !
 !--- GFS_typedefs
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, &
@@ -709,14 +709,14 @@ module FV3GFS_io_mod
       ! Tell CLM Lake to allocate data, and register its axes and fields
       if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
         call clm_lake%allocate_data(Model)
-        call clm_lake%copy_to_temporaries(Model,Sfcprop,Atm_block)
+        call clm_lake%copy_from_grid(Model,Atm_block,Sfcprop)
         call clm_lake%register_axes(Model, Sfc_restart)
         call clm_lake%register_fields(Sfc_restart)
       endif
 
       if(Model%rrfs_sd) then
         call rrfs_sd_state%allocate_data(Model)
-        call rrfs_sd_state%fill_data(Model, Sfcprop, Atm_block)
+        call rrfs_sd_state%fill_data(Model, Atm_block, Sfcprop)
         call rrfs_sd_state%register_axis(Model, Sfc_restart)
         call rrfs_sd_state%register_fields(Sfc_restart)
       endif
@@ -735,11 +735,11 @@ module FV3GFS_io_mod
 
     ! Tell clm_lake to copy data to temporary arrays
     if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
-      call clm_lake%copy_from_temporaries(Model,Sfcprop,Atm_block)
+      call clm_lake%copy_to_grid(Model,Atm_block,Sfcprop)
     endif
 
     if(Model%rrfs_sd) then
-      call rrfs_sd_state%copy_from_temporaries(Model,Sfcprop,Atm_block)
+      call rrfs_sd_state%copy_to_grid(Model,Atm_block,Sfcprop)
     end if
 
 !   write(0,*)' stype read in min,max=',minval(sfc%var2(:,:,35)),maxval(sfc%var2(:,:,35)),' sfc%name2=',sfc%name2(35)
@@ -862,11 +862,11 @@ module FV3GFS_io_mod
 
     ! Tell clm_lake to copy Sfcprop data to its internal temporary arrays.
     if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
-      call clm_lake%copy_to_temporaries(Model,Sfcprop,Atm_block)
+      call clm_lake%copy_from_grid(Model,Atm_block,Sfcprop)
     endif
 
     if(Model%rrfs_sd) then
-     call rrfs_sd_state%copy_to_temporaries(Model,Sfcprop,Atm_block)
+     call rrfs_sd_state%copy_from_grid(Model,Atm_block,Sfcprop)
     endif
 
     call sfc%copy_from_grid(Model, Atm_block, Sfcprop)

@@ -1,4 +1,4 @@
-module clm_lake_io
+module FV3GFS_clm_lake_io
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, &
                                 GFS_data_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
@@ -10,6 +10,7 @@ module clm_lake_io
                                 register_variable_attribute, register_field, &
                                 read_restart, write_restart, write_data,     &
                                 get_global_io_domain_indices, variable_exists
+  use FV3GFS_common_io
 
   implicit none
 
@@ -56,11 +57,14 @@ module clm_lake_io
     ! each axis, containing the appropriate information
     procedure, public :: write_axes => clm_lake_write_axes
 
-    ! copy_to_temporaries copies from Sfcprop to internal pointers (declared above)
-    procedure, public :: copy_to_temporaries => clm_lake_copy_to_temporaries
+    ! copy_from_grid copies from Sfcprop to internal pointers (declared above)
+    procedure, public :: copy_from_grid => clm_lake_copy_from_grid
 
-    ! copy_to_temporaries copies from internal pointers (declared above) to Sfcprop
-    procedure, public :: copy_from_temporaries => clm_lake_copy_from_temporaries
+    ! copy_from_grid copies from internal pointers (declared above) to Sfcprop
+    procedure, public :: copy_to_grid => clm_lake_copy_to_grid
+
+    ! send field bundles in restart quilt server
+    procedure, public :: bundle_fields => clm_lake_bundle_fields
 
     ! A fortran 2003 compliant compiler will call clm_lake_final
     ! automatically when an object of this type goes out of
@@ -181,7 +185,7 @@ module clm_lake_io
     call write_data(Sfc_restart, 'levsnowsoil1_clm_lake', levsnowsoil1_clm_lake)
   end subroutine clm_lake_write_axes
 
-  subroutine clm_lake_copy_to_temporaries(data, Model, Sfcprop, Atm_block)
+  subroutine clm_lake_copy_from_grid(data, Model, Atm_block, Sfcprop)
     ! Copies from Sfcprop variables to the corresponding data temporary variables.
     ! Terrible things will happen if you don't call data%allocate_data first.
     implicit none
@@ -232,9 +236,9 @@ module clm_lake_io
         data%lake_sand3d(i,j,:) = Sfcprop(nb)%lake_sand3d(ix,:)
       enddo
     enddo
-  end subroutine clm_lake_copy_to_temporaries
+  end subroutine clm_lake_copy_from_grid
 
-  subroutine clm_lake_copy_from_temporaries(data, Model, Sfcprop, Atm_block)
+  subroutine clm_lake_copy_to_grid(data, Model, Atm_block, Sfcprop)
     ! Copies from data temporary variables to the corresponding Sfcprop variables.
     ! Terrible things will happen if you don't call data%allocate_data first.
     implicit none
@@ -285,7 +289,7 @@ module clm_lake_io
         Sfcprop(nb)%lake_sand3d(ix,:) = data%lake_sand3d(i,j,:)
       enddo
     enddo
-  end subroutine clm_lake_copy_from_temporaries
+  end subroutine clm_lake_copy_to_grid
 
   subroutine clm_lake_register_fields(data, Sfc_restart)
     ! Registers all restart fields needed by the CLM Lake Model.
@@ -372,6 +376,54 @@ module clm_lake_io
                       'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
   end subroutine clm_lake_register_fields
 
+
+  subroutine clm_lake_bundle_fields(clm_lake, bundle, grid, Model, outputfile)
+    use esmf
+    use GFS_typedefs, only: GFS_control_type
+    implicit none
+    class(Clm_lake_data_type)             :: clm_lake
+    type(ESMF_FieldBundle),intent(inout)        :: bundle
+    type(ESMF_Grid),intent(inout)               :: grid
+    type(GFS_control_type),          intent(in) :: Model
+    character(*), intent(in)                    :: outputfile
+
+    real(kind_phys),dimension(:,:),pointer :: temp_r2d
+    real(kind_phys),dimension(:,:,:),pointer :: temp_r3d
+    integer :: num
+
+    ! Register 2D fields
+    call create_2d_field_and_add_to_bundle(clm_lake%T_snow, "T_snow", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(clm_lake%T_ice, 'T_ice', trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(clm_lake%lake_snl2d, "lake_snl2d", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(clm_lake%lake_h2osno2d, "lake_h2osno2d", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(clm_lake%lake_tsfc, "lake_tsfc", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(clm_lake%lake_savedtke12d, "lake_savedtke12d", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(clm_lake%lake_sndpth2d, "lake_sndpth2d", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(clm_lake%clm_lakedepth, "clm_lakedepth", trim(outputfile), grid, bundle)
+    call create_2d_field_and_add_to_bundle(clm_lake%clm_lake_initialized, "clm_lake_initialized", trim(outputfile), grid, bundle)
+
+    ! Register 3D fields
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_z3d, 'lake_z3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_dz3d, 'lake_dz3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_soil_watsat3d, 'lake_soil_watsat3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_csol3d, 'lake_csol3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_soil_tkmg3d, 'lake_soil_tkmg3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_soil_tkdry3d, 'lake_soil_tkdry3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_soil_tksatu3d, 'lake_soil_tksatu3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_snow_z3d, 'lake_snow_z3d', 'levsnowsoil1_clm_lake', Model%nlevsnowsoil1_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_snow_dz3d, 'lake_snow_dz3d', 'levsnowsoil1_clm_lake', Model%nlevsnowsoil1_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_snow_zi3d, 'lake_snow_zi3d', 'levsnowsoil_clm_lake', Model%nlevsnowsoil_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_h2osoi_vol3d, 'lake_h2osoi_vol3d', 'levsnowsoil1_clm_lake', Model%nlevsnowsoil1_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_h2osoi_liq3d, 'lake_h2osoi_liq3d', 'levsnowsoil1_clm_lake', Model%nlevsnowsoil1_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_h2osoi_ice3d, 'lake_h2osoi_ice3d', 'levsnowsoil1_clm_lake', Model%nlevsnowsoil1_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_t_soisno3d, 'lake_t_soisno3d', 'levsnowsoil1_clm_lake', Model%nlevsnowsoil1_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_t_lake3d, 'lake_t_lake3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_icefrac3d, 'lake_icefrac3d', 'levlake_clm_lake', Model%nlevlake_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_clay3d, 'lake_clay3d', 'levsoil_clm_lake', Model%nlevsoil_clm_lake, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(clm_lake%lake_sand3d, 'lake_sand3d', 'levsoil_clm_lake', Model%nlevsoil_clm_lake, trim(outputfile), grid, bundle)
+
+  end subroutine Clm_lake_bundle_fields
+
   subroutine clm_lake_final(data)
     ! Final routine for clm_lake_data_type, called automatically when
     ! an object of that type goes out of scope.  This is simply a
@@ -429,4 +481,4 @@ module clm_lake_io
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine clm_lake_deallocate_data
 
-end module clm_lake_io
+end module FV3GFS_clm_lake_io
