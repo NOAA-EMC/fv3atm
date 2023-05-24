@@ -39,6 +39,9 @@ module FV3GFS_rrfs_sd_io
     real(kind_phys), pointer, private, dimension(:,:,:) :: &
          fire_in=>null() ! i, j, fire_aux_data_levels
 
+    real(kind_phys), pointer, private, dimension(:) :: &
+         fire_aux_data_levels=>null() ! 1:Model%fire_aux_data_levels index array for metadata write
+
   contains
     procedure, public :: register_axis => rrfs_sd_state_register_axis ! register fire_aux_data_levels axis
     procedure, public :: write_axis => rrfs_sd_state_write_axis ! write fire_aux_data_levels variable
@@ -106,17 +109,10 @@ contains
     class(rrfs_sd_state_type) :: data
     type(FmsNetcdfDomainFile_t) :: Sfc_restart
     type(GFS_control_type),      intent(in) :: Model
-    real(kind_phys) :: fire_aux_data_levels(Model%fire_aux_data_levels)
-    integer :: i
 
     call register_field(Sfc_restart, 'fire_aux_data_levels', 'double', (/'fire_aux_data_levels'/))
     call register_variable_attribute(Sfc_restart, 'fire_aux_data_levels', 'cartesian_axis' ,'Z', str_len=1)
-
-    do i=1,Model%fire_aux_data_levels
-      fire_aux_data_levels(i) = i
-    enddo
-
-    call write_data(Sfc_restart, 'fire_aux_data_levels', fire_aux_data_levels)
+    call write_data(Sfc_restart, 'fire_aux_data_levels', data%fire_aux_data_levels)
   end subroutine rrfs_sd_state_write_axis
 
   ! --------------------------------------------------------------------
@@ -125,7 +121,7 @@ contains
     implicit none
     class(rrfs_sd_state_type) :: data
     type(GFS_control_type),   intent(in) :: Model
-    integer :: nx, ny
+    integer :: nx, ny, i
 
     call data%deallocate_data
 
@@ -137,8 +133,12 @@ contains
     allocate(data%emanoc(nx,ny))
     allocate(data%fhist(nx,ny))
     allocate(data%coef_bb_dc(nx,ny))
-
+    allocate(data%fire_aux_data_levels(Model%fire_aux_data_levels))
     allocate(data%fire_in(nx,ny,Model%fire_aux_data_levels))
+
+    do i=1,Model%fire_aux_data_levels
+      data%fire_aux_data_levels(i) = i
+    enddo
 
   end subroutine rrfs_sd_state_allocate_data
 
@@ -230,7 +230,7 @@ contains
 
     ! Register 3D field
     call create_3d_field_and_add_to_bundle(data%fire_in, 'fire_in', 'fire_aux_data_levels', &
-         Model%fire_aux_data_levels, trim(outputfile), grid, bundle)
+         data%fire_aux_data_levels, trim(outputfile), grid, bundle)
   end subroutine rrfs_sd_bundle_fields
 
   ! --------------------------------------------------------------------
@@ -368,7 +368,8 @@ contains
     !--- register the 3D fields
     do num = 1,data%nvar_dust12m
       var3_p2 => data%dust12m_var(:,:,:,num)
-      call register_restart_field(restart, data%dust12m_name(num), var3_p2, dimensions=(/'time', 'lat ', 'lon '/),&
+      call register_restart_field(restart, data%dust12m_name(num), var3_p2, &
+           dimensions=(/'time', 'lat ', 'lon '/),&
            &is_optional=.true.)
       ! That was "is_optional=.not.mand" in the original, but mand was never initialized.
     enddo
@@ -444,7 +445,8 @@ contains
     !--- register the 2D fields
     do num = 1,data%nvar_emi
       var3_p2 => data%emi_var(:,:,:,num)
-      call register_restart_field(restart, data%emi_name(num), var3_p2, dimensions=(/'time   ','grid_yt','grid_xt'/))
+      call register_restart_field(restart, data%emi_name(num), var3_p2, &
+           dimensions=(/'time   ','grid_yt','grid_xt'/))
     enddo
   end subroutine rrfs_sd_emissions_register_emi
 
@@ -518,7 +520,8 @@ contains
     !--- register the 3D fields
     do num = 1,data%nvar_fire
       var3_p2 => data%fire_var(:,:,:,num)
-      call register_restart_field(restart, data%fire_name(num), var3_p2, dimensions=(/'t  ', 'lat', 'lon'/), is_optional=.true.)
+      call register_restart_field(restart, data%fire_name(num), var3_p2, &
+           dimensions=(/'t  ', 'lat', 'lon'/), is_optional=.true.)
     enddo
 
   end subroutine rrfs_sd_emissions_register_fire

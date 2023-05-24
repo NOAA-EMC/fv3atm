@@ -375,7 +375,7 @@ contains
 
   end subroutine create_2d_field_and_add_to_bundle
 
- subroutine create_3d_field_and_add_to_bundle(temp_r3d, field_name, axis_name, num_levels, outputfile, grid, bundle)
+ subroutine create_3d_field_and_add_to_bundle(temp_r3d, field_name, axis_name, axis_values, outputfile, grid, bundle)
 
    use esmf
 
@@ -384,7 +384,7 @@ contains
    real(kind_phys), dimension(:,:,:), pointer, intent(in)    :: temp_r3d
    character(len=*),                           intent(in)    :: field_name
    character(len=*),                           intent(in)    :: axis_name
-   integer,                                    intent(in)    :: num_levels
+   real(kind_phys), dimension(:),              intent(in)    :: axis_values
    character(len=*),                           intent(in)    :: outputfile
    type(ESMF_Grid),                            intent(in)    :: grid
    type(ESMF_FieldBundle),                     intent(inout) :: bundle
@@ -401,14 +401,14 @@ contains
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", name='output_file', value=trim(outputfile), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-   call add_zaxis_to_field(field, axis_name, num_levels)
+   call add_zaxis_to_field(field, axis_name, axis_values)
 
    call ESMF_FieldBundleAdd(bundle, (/field/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
   end subroutine create_3d_field_and_add_to_bundle
 
- subroutine add_zaxis_to_field(field, axis_name, num_levels)
+ subroutine add_zaxis_to_field(field, axis_name, axis_values)
 
    use esmf
 
@@ -416,23 +416,17 @@ contains
 
    type(ESMF_Field), intent(inout) :: field
    character(len=*), intent(in)    :: axis_name
-   integer,          intent(in)    :: num_levels
+   real(kind_phys), dimension(:), intent(in) :: axis_values
 
-   real(kind_phys), allocatable, dimension(:) :: buffer
-   integer :: rc, i
+   integer :: rc
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
                           name="ESMF:ungridded_dim_labels", valueList=(/trim(axis_name)/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-   allocate( buffer(num_levels) )
-   do i=1, num_levels
-      buffer(i)=i
-   end do
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3-dim", &
-                          name=trim(axis_name), valueList=buffer, rc=rc)
+                          name=trim(axis_name), valueList=axis_values, rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-   deallocate(buffer)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3-dim", &
                           name=trim(axis_name)//"cartesian_axis", value="Z", rc=rc)

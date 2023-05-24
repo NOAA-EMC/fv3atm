@@ -185,6 +185,7 @@ module FV3GFS_restart_io_mod
    real(kind_phys),dimension(:,:),pointer   :: temp_r2d
    real(kind_phys),dimension(:,:,:),pointer   :: temp_r3d
    integer :: num
+   real(kind_phys), allocatable :: axis_values(:)
 
    if (.not. allocated(phy_var2)) then
      write(0,*)'ERROR phy_var2, NOT allocated'
@@ -207,10 +208,15 @@ module FV3GFS_restart_io_mod
        call create_2d_field_and_add_to_bundle(temp_r2d, trim(phy_var2_names(num)), trim(outputfile), grid, bundle)
    enddo
 
+   allocate(axis_values(npz))
+   axis_values = (/ (i, i=1,npz) /)
+
    do num = 1,nvar3d
        temp_r3d => phy_var3(:,:,:,num)
-       call create_3d_field_and_add_to_bundle(temp_r3d, trim(phy_var3_names(num)), "zaxis_1", npz, trim(outputfile), grid, bundle)
+       call create_3d_field_and_add_to_bundle(temp_r3d, trim(phy_var3_names(num)), "zaxis_1", axis_values, trim(outputfile), grid, bundle)
    enddo
+
+   deallocate(axis_values)
 
  end subroutine fv_phy_restart_bundle_setup
 

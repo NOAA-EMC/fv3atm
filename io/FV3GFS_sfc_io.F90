@@ -1518,35 +1518,56 @@ contains
     character(*), intent(in)                    :: outputfile
 
     real(kind_phys),dimension(:,:,:),pointer :: temp_r3d
-    integer :: num
+    integer :: num, i
+    real(kind_phys), dimension(:), allocatable :: zaxis_1, zaxis_2, zaxis_3, zaxis_4
+
+    allocate(zaxis_1(Model%kice))
+    zaxis_1 = (/ (i, i=1,Model%kice) /)
 
     temp_r3d => sfc%var3ice(:,:,:)
-    call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(0)), "zaxis_1", Model%kice, trim(outputfile), grid, bundle)
+    call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(0)), "zaxis_1", zaxis_1, trim(outputfile), grid, bundle)
 
     if(Model%lsm == Model%lsm_ruc) then
       do num = 1,sfc%nvar3
         temp_r3d => sfc%var3(:,:,:,num)
-        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_1", Model%kice, trim(outputfile), grid, bundle)
+        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_1", zaxis_1, trim(outputfile), grid, bundle)
       enddo
     else
+      allocate(zaxis_2(Model%lsoil))
+      zaxis_2 = (/ (i, i=1,Model%lsoil) /)
       do num = 1,sfc%nvar3
         temp_r3d => sfc%var3(:,:,:,num)
-        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_2", Model%lsoil, trim(outputfile), grid, bundle)
+        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_2", zaxis_2, trim(outputfile), grid, bundle)
       enddo
+      deallocate(zaxis_2)
     endif
 
     if (Model%lsm == Model%lsm_noahmp) then
+      allocate(zaxis_3(3))
+      zaxis_3 = (/ (i, i=1,3) /)
+
       do num = sfc%nvar3+1,sfc%nvar3+3
         temp_r3d => sfc%var3sn(:,:,:,num)
-        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_3", 3, trim(outputfile), grid, bundle)
+        call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(num)), "zaxis_3", zaxis_3, trim(outputfile), grid, bundle)
       enddo
 
+      allocate(zaxis_2(Model%lsoil))
+      zaxis_2 = (/ (i, i=1,Model%lsoil) /)
+
       temp_r3d => sfc%var3eq(:,:,:,7)
-      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(7)), "zaxis_2", Model%lsoil, trim(outputfile), grid, bundle)
+      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(7)), "zaxis_2", zaxis_2, trim(outputfile), grid, bundle)
+
+      allocate(zaxis_4(7))
+      zaxis_4 = (/ (i, i=1,7) /)
 
       temp_r3d => sfc%var3zn(:,:,:,8)
-      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(8)), "zaxis_4", 7, trim(outputfile), grid, bundle)
+      call create_3d_field_and_add_to_bundle(temp_r3d, trim(sfc%name3(8)), "zaxis_4", zaxis_4, trim(outputfile), grid, bundle)
     endif ! lsm = lsm_noahmp
+
+    if(allocated(zaxis_1)) deallocate(zaxis_1)
+    if(allocated(zaxis_2)) deallocate(zaxis_2)
+    if(allocated(zaxis_3)) deallocate(zaxis_3)
+    if(allocated(zaxis_4)) deallocate(zaxis_4)
 
   end subroutine Sfc_io_bundle_3d_fields
 end module FV3GFS_sfc_io
