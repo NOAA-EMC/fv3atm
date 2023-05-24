@@ -75,6 +75,8 @@ module fv3gfs_cap_mod
   integer                                     :: dbug = 0
   integer                                     :: frestart(999) = -1
 
+  real(kind=8)                                :: timers, timere
+
 !-----------------------------------------------------------------------
 
   contains
@@ -1003,6 +1005,9 @@ module fv3gfs_cap_mod
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+    timers = 0.
+    timere = 0.
+
   end subroutine InitializeRealize
 
 !-----------------------------------------------------------------------------
@@ -1012,9 +1017,13 @@ module fv3gfs_cap_mod
     type(ESMF_GridComp)         :: gcomp
     integer, intent(out)        :: rc
 
+    real(kind=8)                :: MPI_Wtime
+
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+    timers = MPI_Wtime()
+    print *,'in FV3 cap, time between fv3 run step=', timers-timere
 
     if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance: ")
 
@@ -1023,6 +1032,9 @@ module fv3gfs_cap_mod
 
     call ModelAdvance_phase2(gcomp, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    timere = MPI_Wtime()
+    print *,'in FV3 cap, time in fv3 run step=', timers-timere
 
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance: ")
 
