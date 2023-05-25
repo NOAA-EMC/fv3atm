@@ -13,7 +13,6 @@ module GFS_typedefs
 
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
    use module_radlw_parameters,  only: topflw_type, sfcflw_type
-   use ozne_def,                 only: levozp, oz_coeff
    use h2o_def,                  only: levh2o, h2o_coeff
 
    implicit none
@@ -1560,6 +1559,21 @@ module GFS_typedefs
 
 !--- lightning threat and diagsnostics
     logical              :: lightning_threat !< report lightning threat indices
+
+!--- NRL Ozone physics
+    integer                        :: kozpl = 28                !<
+    integer                        :: kozc  = 48                !<
+    integer                        :: latsozp                   !<
+    integer                        :: levozp                    !< number of vertical layers in ozone forcing data 
+    integer                        :: timeoz                    !<
+    integer                        :: oz_coeff                  !< number of coefficients in ozone forcing data 
+    real (kind=kind_phys)          :: blatc                     !<
+    real (kind=kind_phys)          :: dphiozc                   !<
+    real (kind=kind_phys), pointer :: oz_lat(:)       => null() !<
+    real (kind=kind_phys), pointer :: oz_pres(:)      => null() !< natural log of ozone forcing data pressure levels
+    real (kind=kind_phys), pointer :: po3(:)          => null() !<
+    real (kind=kind_phys), pointer :: oz_time(:)      => null() !<
+    real (kind=kind_phys), pointer :: ozplin(:,:,:,:) => null() !<
 
     contains
       procedure :: init            => control_initialize
@@ -3996,6 +4010,10 @@ module GFS_typedefs
     character(len=20) :: namestr
     character(len=44) :: descstr
 
+!--- ozone physics
+    integer :: i1, i2, i3
+    real(kind=4), dimension(:), allocatable :: oz_lat4, oz_pres4, oz_time4, tempin
+
     ! dtend selection: default is to match all variables:
     dtend_select(1)='*'
     do ipat=2,pat_count
@@ -5370,28 +5388,51 @@ module GFS_typedefs
 
     ENDIF !}
 
-    ! To ensure that these values match what's in the physics,
-    ! array sizes are compared during model init in GFS_phys_time_vary_init()
-    !
-    ! from module ozinterp
-    if (Model%ntoz>0) then
-       if (Model%oz_phys) then
-          levozp   = 80
-          oz_coeff = 4
-       else if (Model%oz_phys_2015) then
-          levozp   = 53
-          oz_coeff = 6
-       else
-          write(*,*) 'Logic error, ntoz>0 but no ozone physics selected'
-          stop
-       end if
+    !--- NRL ozone physics
+    if (Model%ntoz > 0) then
+       ! Get dimensions from data file
+       open(unit=Model%kozpl,file='global_o3prdlos.f77', form='unformatted', convert='big_endian')
+       read (Model%kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz
+       rewind(Model%kozpl)
+       if (Model%me == Model%master) then
+          write(*,*) 'Reading in o3data from global_o3prdlos.f77 '
+          write(*,*) '      oz_coeff = ', Model%oz_coeff
+          write(*,*) '       latsozp = ', Model%latsozp
+          write(*,*) '        levozp = ', Model%levozp
+          write(*,*) '        timeoz = ', Model%timeoz
+       endif
+       ! Allocate space
+       allocate (Model%oz_lat(Model%latsozp))
+       allocate (Model%oz_pres(Model%levozp))
+       allocate (Model%po3(Model%levozp))
+       allocate (Model%oz_time(Model%timeoz+1))
+       allocate (Model%ozplin(Model%latsozp,Model%levozp,Model%oz_coeff,Model%timeoz))
+       !
+       allocate(oz_lat4(Model%latsozp), oz_pres4(Model%levozp), oz_time4(Model%timeoz+1), tempin(Model%latsozp))
+       read (Model%kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz, oz_lat4, oz_pres4, oz_time4
+
+       ! Store
+       Model%oz_pres(:) = oz_pres4(:)
+       Model%po3(:)     = log(100.0*Model%oz_pres(:)) ! from mb to ln(Pa)
+       Model%oz_lat(:)  = oz_lat4(:)
+       Model%oz_time(:) = oz_time4(:)
+       !
+       do i1=1,Model%timeoz
+          do i2=1,Model%oz_coeff
+             do i3=1,Model%levozp
+                READ(Model%kozpl) tempin
+                Model%ozplin(:,i3,i2,i1) = tempin(:)
+             enddo
+          enddo
+       enddo
+       close(Model%kozpl)
     else
        if (Model%oz_phys .or. Model%oz_phys_2015) then
           write(*,*) 'Logic error, ozone physics are selected, but ntoz<=0'
           stop
        else
-          levozp   = 1
-          oz_coeff = 1
+          Model%levozp   = 1
+          Model%oz_coeff = 1
        end if
     end if
 
@@ -6881,7 +6922,7 @@ module GFS_typedefs
     endif
 
 !--- ozone and stratosphere h2o needs
-    allocate (Tbd%ozpl  (IM,levozp,oz_coeff))
+    allocate (Tbd%ozpl  (IM,Model%levozp,Model%oz_coeff))
     allocate (Tbd%h2opl (IM,levh2o,h2o_coeff))
     Tbd%ozpl  = clear_val
     Tbd%h2opl = clear_val
