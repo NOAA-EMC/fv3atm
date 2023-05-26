@@ -1,14 +1,14 @@
-module FV3GFS_restart_io_mod
+module fv3atm_restart_io_mod
 
   use esmf
   use block_control_mod,  only: block_control_type
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
-  use FV3GFS_sfc_io
-  use FV3GFS_common_io,   only: create_2d_field_and_add_to_bundle, &
+  use fv3atm_sfc_io
+  use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
        create_3d_field_and_add_to_bundle, add_zaxis_to_field
-  use FV3GFS_rrfs_sd_io
-  use FV3GFS_clm_lake_io
+  use fv3atm_rrfs_sd_io
+  use fv3atm_clm_lake_io
 
   implicit none
   private
@@ -26,7 +26,7 @@ module FV3GFS_restart_io_mod
   type(Sfc_io_data_type) :: sfc
   type(ESMF_FieldBundle) :: phy_bundle, sfc_bundle
 
-  public FV3GFS_restart_register
+  public fv3atm_restart_register
 
   public fv_phy_restart_output
   public fv_phy_restart_bundle_setup
@@ -36,7 +36,7 @@ module FV3GFS_restart_io_mod
 
  contains
 
- subroutine FV3GFS_restart_register (Sfcprop, GFS_restart, Atm_block, Model)
+ subroutine fv3atm_restart_register (Sfcprop, GFS_restart, Atm_block, Model)
 
    ! this subroutine must allocate all data buffers and set the variable names
    ! for both 'phy' and 'sfc' restart bundles
@@ -88,7 +88,7 @@ module FV3GFS_restart_io_mod
      call rrfs_sd%allocate_data(Model)
    endif
 
- end subroutine FV3GFS_restart_register
+ end subroutine fv3atm_restart_register
 
  subroutine fv_phy_restart_output(GFS_Restart, Atm_block)
 
@@ -266,4 +266,4 @@ module FV3GFS_restart_io_mod
 
  end subroutine fv_sfc_restart_bundle_setup
 
-end module FV3GFS_restart_io_mod
+end module fv3atm_restart_io_mod

@@ -1,4 +1,4 @@
-module FV3GFS_rrfs_sd_io
+module fv3atm_rrfs_sd_io
   use block_control_mod,  only: block_control_type
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited,      &
        open_file, close_file,                 &
@@ -10,7 +10,7 @@ module FV3GFS_rrfs_sd_io
        GFS_data_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
   use GFS_diagnostics,    only: GFS_externaldiag_type
-  use FV3GFS_common_io,   only: get_nx_ny_from_atm, create_2d_field_and_add_to_bundle, &
+  use fv3atm_common_io,   only: get_nx_ny_from_atm, create_2d_field_and_add_to_bundle, &
        create_3d_field_and_add_to_bundle, add_zaxis_to_field
 
   implicit none
@@ -574,4 +574,4 @@ contains
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine rrfs_sd_emissions_final
 
-end module FV3GFS_rrfs_sd_io
+end module fv3atm_rrfs_sd_io

@@ -1,4 +1,4 @@
-module FV3GFS_common_io
+module fv3atm_common_io
   use GFS_typedefs, only: kind_phys
   use block_control_mod,  only: block_control_type
 
@@ -434,4 +434,4 @@ contains
 
  end subroutine add_zaxis_to_field
 
-end module FV3GFS_common_io
+end module fv3atm_common_io

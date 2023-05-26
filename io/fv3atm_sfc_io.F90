@@ -1,4 +1,4 @@
-module FV3GFS_sfc_io
+module fv3atm_sfc_io
 
   use block_control_mod,  only: block_control_type
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited, &
@@ -6,7 +6,7 @@ module FV3GFS_sfc_io
        register_variable_attribute, register_field, &
        read_restart, write_restart, write_data,     &
        get_global_io_domain_indices, variable_exists
-  use FV3GFS_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data, GFS_Data_transfer, &
+  use fv3atm_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data, GFS_Data_transfer, &
        create_2d_field_and_add_to_bundle, create_3d_field_and_add_to_bundle, &
        add_zaxis_to_field
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
@@ -41,7 +41,7 @@ module FV3GFS_sfc_io
     ! The lsoil flag is only meaningful when reading:;
     logical, public :: is_lsoil = .false.
 
-    ! SYNONYMS: Some nvar variables had two names in FV3GFS_io.F90. They have
+    ! SYNONYMS: Some nvar variables had two names in fv3atm_io.F90. They have
     ! only one name here. The "_s" is redundant because this file only has
     ! surface restart variables.
     !
@@ -1570,4 +1570,4 @@ contains
     if(allocated(zaxis_4)) deallocate(zaxis_4)
 
   end subroutine Sfc_io_bundle_3d_fields
-end module FV3GFS_sfc_io
+end module fv3atm_sfc_io

@@ -1,4 +1,4 @@
-module FV3GFS_oro_io
+module fv3atm_oro_io
 
   use block_control_mod,  only: block_control_type
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited, &
@@ -6,7 +6,7 @@ module FV3GFS_oro_io
        register_variable_attribute, register_field, &
        read_restart, write_restart, write_data,     &
        get_global_io_domain_indices, variable_exists
-  use FV3GFS_common_io,   only: get_nx_ny_from_atm
+  use fv3atm_common_io,   only: get_nx_ny_from_atm
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
   use mpp_mod,            only: mpp_error,  mpp_pe, mpp_root_pe, &
@@ -307,4 +307,4 @@ contains
 
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine Oro_scale_io_final
-end module FV3GFS_oro_io
+end module fv3atm_oro_io

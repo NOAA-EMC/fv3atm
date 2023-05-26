@@ -1,4 +1,4 @@
-module FV3GFS_io_mod
+module fv3atm_history_io_mod
 
 !-----------------------------------------------------------------------
 !    gfs_physics_driver_mod defines the GFS physics routines used by
@@ -33,7 +33,7 @@ module FV3GFS_io_mod
   use diag_util_mod,      only: find_input_field
   use constants_mod,      only: grav, rdgas
   use physcons,           only: con_tice          !saltwater freezing temp (K)
-  use FV3GFS_clm_lake_io,        only: clm_lake_data_type
+  use fv3atm_clm_lake_io,        only: clm_lake_data_type
 !
 !--- GFS_typedefs
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, &
@@ -41,9 +41,9 @@ module FV3GFS_io_mod
   use GFS_restart,        only: GFS_restart_type
   use GFS_diagnostics,    only: GFS_externaldiag_type
 
-  use FV3GFS_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data
-  use FV3GFS_sfc_io
-  use FV3GFS_oro_io
+  use fv3atm_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data
+  use fv3atm_sfc_io
+  use fv3atm_oro_io
 
 !
 !-----------------------------------------------------------------------
@@ -51,9 +51,9 @@ module FV3GFS_io_mod
   private
 
   !--- public interfaces ---
-  public  FV3GFS_restart_read, FV3GFS_restart_write
-  public  FV3GFS_GFS_checksum
-  public  fv3gfs_diag_register, fv3gfs_diag_output
+  public  fv3atm_restart_read, fv3atm_restart_write
+  public  fv3atm_checksum
+  public  fv3atm_diag_register, fv3atm_diag_output
 #ifdef use_WRTCOMP
   public  fv_phys_bundle_setup
 #endif
@@ -119,9 +119,9 @@ module FV3GFS_io_mod
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !--------------------
-! FV3GFS_restart_read
+! fv3atm_restart_read
 !--------------------
-  subroutine FV3GFS_restart_read (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, warm_start, ignore_rst_cksum)
+  subroutine fv3atm_restart_read (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, warm_start, ignore_rst_cksum)
     type(GFS_data_type),      intent(inout) :: GFS_Data(:)
     type(GFS_restart_type),   intent(inout) :: GFS_Restart
     type(block_control_type), intent(in)    :: Atm_block
@@ -136,12 +136,12 @@ module FV3GFS_io_mod
     !--- read in physics restart data
     call phys_restart_read (GFS_Restart, Atm_block, Model, fv_domain, ignore_rst_cksum)
 
-  end subroutine FV3GFS_restart_read
+  end subroutine fv3atm_restart_read
 
 !---------------------
-! FV3GFS_restart_write
+! fv3atm_restart_write
 !---------------------
-  subroutine FV3GFS_restart_write (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, timestamp)
+  subroutine fv3atm_restart_write (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, timestamp)
     type(GFS_data_type),         intent(inout) :: GFS_Data(:)
     type(GFS_restart_type),      intent(inout) :: GFS_Restart
     type(block_control_type),    intent(in)    :: Atm_block
@@ -155,13 +155,13 @@ module FV3GFS_io_mod
     !--- write physics restart data
     call phys_restart_write (GFS_Restart, Atm_block, Model, fv_domain, timestamp)
 
-  end subroutine FV3GFS_restart_write
+  end subroutine fv3atm_restart_write
 
 
-!--------------------
-! FV3GFS_GFS_checksum
-!--------------------
- subroutine FV3GFS_GFS_checksum (Model, GFS_Data, Atm_block)
+!----------------
+! fv3atm_checksum
+!----------------
+ subroutine fv3atm_checksum (Model, GFS_Data, Atm_block)
    !--- interface variables
    type(GFS_control_type),    intent(in) :: Model
    type(GFS_data_type),       intent(in) :: GFS_Data(:)
@@ -514,7 +514,7 @@ module FV3GFS_io_mod
    deallocate(temp2d)
    deallocate(temp3d)
    deallocate(temp3dlevsp1)
-   end subroutine FV3GFS_GFS_checksum
+   end subroutine fv3atm_checksum
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -536,7 +536,7 @@ module FV3GFS_io_mod
 !
 !----------------------------------------------------------------------
   subroutine sfc_prop_restart_read (Sfcprop, Atm_block, Model, fv_domain, warm_start, ignore_rst_cksum)
-    use FV3GFS_rrfs_sd_io
+    use fv3atm_rrfs_sd_io
     implicit none
     !--- interface variable definitions
     type(GFS_sfcprop_type),    intent(inout) :: Sfcprop(:)
@@ -771,7 +771,7 @@ module FV3GFS_io_mod
 !    calls:  register_restart_field, save_restart
 !----------------------------------------------------------------------
   subroutine sfc_prop_restart_write (Sfcprop, Atm_block, Model, fv_domain, timestamp)
-    use FV3GFS_rrfs_sd_io
+    use fv3atm_rrfs_sd_io
     implicit none
     !--- interface variable definitions
     type(GFS_sfcprop_type),      intent(in) :: Sfcprop(:)
@@ -1144,7 +1144,7 @@ module FV3GFS_io_mod
 !
 !    calls:  register_diag_field
 !-------------------------------------------------------------------------
-  subroutine fv3gfs_diag_register(Diag, Time, Atm_block, Model, xlon, xlat, axes)
+  subroutine fv3atm_diag_register(Diag, Time, Atm_block, Model, xlon, xlat, axes)
     use physcons,  only: con_g
 !--- subroutine interface variable definitions
     type(GFS_externaldiag_type),       intent(inout) :: Diag(:)
@@ -1169,7 +1169,7 @@ module FV3GFS_io_mod
     dtp    = Model%dtp
     imp_physics  = Model%imp_physics
     landsfcmdl  = Model%lsm
-!    print *,'in fv3gfs_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
+!    print *,'in fv3atm_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
 !      ' dtp=',dtp,' landsfcmdl=',Model%lsm
 !
 !save lon/lat for vector interpolation
@@ -1184,7 +1184,7 @@ module FV3GFS_io_mod
     enddo
 
     if (tot_diag_idx == DIAG_SIZE) then
-      call mpp_error(fatal, 'FV3GFS_io::fv3gfs_diag_register - need to increase parameter DIAG_SIZE')
+      call mpp_error(fatal, 'fv3atm_io::fv3atm_diag_register - need to increase parameter DIAG_SIZE')
     endif
 
     allocate(nstt(tot_diag_idx), nstt_vctbl(tot_diag_idx))
@@ -1245,10 +1245,10 @@ module FV3GFS_io_mod
     buffer_phys_bl = zero
     buffer_phys_nb = zero
     buffer_phys_windvect = zero
-    if(mpp_pe() == mpp_root_pe()) print *,'in fv3gfs_diag_register, nrgst_bl=',nrgst_bl,' nrgst_nb=',nrgst_nb, &
+    if(mpp_pe() == mpp_root_pe()) print *,'in fv3atm_diag_register, nrgst_bl=',nrgst_bl,' nrgst_nb=',nrgst_nb, &
        ' nrgst_vctbl=',nrgst_vctbl, 'isco=',isco,ieco,'jsco=',jsco,jeco,' num_axes_phys=', num_axes_phys
 
-  end subroutine fv3gfs_diag_register
+  end subroutine fv3atm_diag_register
 !-------------------------------------------------------------------------
 
 
@@ -1260,7 +1260,7 @@ module FV3GFS_io_mod
 !
 !    calls:  send_data
 !-------------------------------------------------------------------------
-  subroutine fv3gfs_diag_output(time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
+  subroutine fv3atm_diag_output(time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
                                 dt, time_int, time_intfull, time_radsw, time_radlw)
 !--- subroutine interface variable definitions
     type(time_type),           intent(in) :: time
@@ -1303,23 +1303,23 @@ module FV3GFS_io_mod
      is_in = atm_block%isc
      js_in = atm_block%jsc
 
-!     if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. time avg, time_int=',time_int
+!     if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. time avg, time_int=',time_int
      do idx = 1,tot_diag_idx
        if (diag(idx)%id > 0) then
          lcnvfac = diag(idx)%cnvfac
          if (diag(idx)%time_avg) then
            if ( trim(diag(idx)%time_avg_kind) == 'full' ) then
              lcnvfac = lcnvfac*rtime_intfull
-!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. full time avg, field=',trim(Diag(idx)%name),' time=',time_intfull
+!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. full time avg, field=',trim(Diag(idx)%name),' time=',time_intfull
            else if ( trim(diag(idx)%time_avg_kind) == 'rad_lw' ) then
              lcnvfac = lcnvfac*min(rtime_radlw,rtime_int)
-!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. rad longwave avg, field=',trim(Diag(idx)%name),' time=',time_radlw
+!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. rad longwave avg, field=',trim(Diag(idx)%name),' time=',time_radlw
            else if ( trim(diag(idx)%time_avg_kind) == 'rad_sw' ) then
              lcnvfac = lcnvfac*min(rtime_radsw,rtime_int)
-!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. rad shortwave avg, field=',trim(Diag(idx)%name),' time=',time_radsw
+!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. rad shortwave avg, field=',trim(Diag(idx)%name),' time=',time_radsw
            else if ( trim(diag(idx)%time_avg_kind) == 'rad_swlw_min' ) then
              lcnvfac = lcnvfac*min(max(rtime_radsw,rtime_radlw),rtime_int)
-!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. rad swlw min avg, field=',trim(Diag(idx)%name),' time=',time_radlw,time_radsw,time_int
+!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. rad swlw min avg, field=',trim(Diag(idx)%name),' time=',time_radlw,time_radsw,time_int
            else
              lcnvfac = lcnvfac*rtime_int
            endif
@@ -1450,7 +1450,7 @@ module FV3GFS_io_mod
          !---
          !--- skipping other 3D variables with the following else statement
          !---
-!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
+!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
 !             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
            do k=1, levo
              do j = 1, ny
@@ -1459,7 +1459,7 @@ module FV3GFS_io_mod
                  ii = i + isc -1
                  nb = Atm_block%blkno(ii,jj)
                  ix = Atm_block%ixp(ii,jj)
-!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io,sze(Diag(idx)%data(nb)%var3)=',  &
+!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io,sze(Diag(idx)%data(nb)%var3)=',  &
 !             size(Diag(idx)%data(nb)%var3,1),size(Diag(idx)%data(nb)%var3,2)
                  var3(i,j,k) = Diag(idx)%data(nb)%var3(ix,levo-k+1)*lcnvfac
                enddo
@@ -1520,7 +1520,7 @@ module FV3GFS_io_mod
      enddo
 
 
-  end subroutine fv3gfs_diag_output
+  end subroutine fv3atm_diag_output
 !
 !-------------------------------------------------------------------------
   subroutine store_data(id, work, Time, idx, intpl_method, fldname)
@@ -1847,7 +1847,7 @@ module FV3GFS_io_mod
        allocate(udimList(udimCount))
        call ESMF_AttributeGet(fcst_grid, convention="NetCDF", purpose="FV3", &
                               name="vertical_dim_labels", valueList=udimList, rc=rc)
-!       if(mpp_pe()==mpp_root_pe()) print *,'in fv3gfsio, vertical
+!       if(mpp_pe()==mpp_root_pe()) print *,'in fv3atmio, vertical
 !       list=',udimList(1:udimCount),'rc=',rc
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -2203,4 +2203,4 @@ module FV3GFS_io_mod
 #endif
 !-------------------------------------------------------------------------
 
-end module FV3GFS_io_mod
+end module fv3atm_history_io_mod

@@ -1,4 +1,4 @@
-module FV3GFS_clm_lake_io
+module fv3atm_clm_lake_io
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, &
                                 GFS_data_type, kind_phys
   use GFS_restart,        only: GFS_restart_type
@@ -10,7 +10,7 @@ module FV3GFS_clm_lake_io
                                 register_variable_attribute, register_field, &
                                 read_restart, write_restart, write_data,     &
                                 get_global_io_domain_indices, variable_exists
-  use FV3GFS_common_io
+  use fv3atm_common_io
 
   implicit none
 
@@ -492,4 +492,4 @@ module FV3GFS_clm_lake_io
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine clm_lake_deallocate_data
 
-end module FV3GFS_clm_lake_io
+end module fv3atm_clm_lake_io
