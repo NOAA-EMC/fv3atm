@@ -14,6 +14,12 @@ module fv3atm_clm_lake_io
 
   implicit none
 
+  private
+  public :: clm_lake_data_type, clm_lake_register_axes, clm_lake_allocate_data, &
+       clm_lake_register_fields, clm_lake_deallocate_data, clm_lake_write_axes, &
+       clm_lake_copy_from_grid, clm_lake_copy_to_grid, clm_lake_bundle_fields, &
+       clm_lake_final
+
   type clm_lake_data_type
     ! The clm_lake_data_type derived type is a class that stores
     ! temporary arrays used to read or write CLM Lake model restart

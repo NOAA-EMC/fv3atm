@@ -90,13 +90,14 @@ use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
 use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper,stochastic_physics_wrapper_end
 
-use fv3atm_history_io_mod,    only: fv3atm_restart_read, fv3atm_restart_write, &
-                              fv3atm_checksum,                       &
-                              fv3atm_diag_register, fv3atm_diag_output,  &
+use fv3atm_history_io_mod,    only: fv3atm_diag_register, fv3atm_diag_output,  &
                               DIAG_SIZE
 use fv3atm_restart_io_mod,    only: fv3atm_restart_register, &
+                                    fv3atm_checksum, &
                                     fv_phy_restart_output, &
-                                    fv_sfc_restart_output
+                                    fv_sfc_restart_output, &
+                                    fv3atm_restart_read, &
+                                    fv3atm_restart_write
 use fv_ufs_restart_io_mod,    only: fv_dyn_restart_register, &
                                     fv_dyn_restart_output
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
