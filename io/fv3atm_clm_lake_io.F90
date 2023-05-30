@@ -106,7 +106,7 @@ module fv3atm_clm_lake_io
     allocate(clm_lake%lake_sndpth2d(nx,ny))
     allocate(clm_lake%clm_lakedepth(nx,ny))
     allocate(clm_lake%clm_lake_initialized(nx,ny))
-    
+
     allocate(clm_lake%lake_z3d(nx,ny,Model%nlevlake_clm_lake))
     allocate(clm_lake%lake_dz3d(nx,ny,Model%nlevlake_clm_lake))
     allocate(clm_lake%lake_soil_watsat3d(nx,ny,Model%nlevlake_clm_lake))
@@ -465,7 +465,7 @@ module fv3atm_clm_lake_io
       deallocate(clm_lake%var) ; \
       nullify(clm_lake%var) ; \
     endif
-    
+
     IF_ASSOC_DEALLOC_NULL(T_snow)
     IF_ASSOC_DEALLOC_NULL(T_ice)
     IF_ASSOC_DEALLOC_NULL(lake_snl2d)
@@ -494,7 +494,7 @@ module fv3atm_clm_lake_io
     IF_ASSOC_DEALLOC_NULL(lake_icefrac3d)
     IF_ASSOC_DEALLOC_NULL(lake_clay3d)
     IF_ASSOC_DEALLOC_NULL(lake_sand3d)
-    
+
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine clm_lake_deallocate_data
 

@@ -619,7 +619,7 @@ contains
       do num = sfc%nvar_before_lake+1,sfc%nvar_before_lake+sfc%nvar2l
         var2_p => sfc%var2(:,:,num)
         if(sfc%is_lsoil) then
-          call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'lat','lon'/), is_optional=.not.mand) 
+          call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'lat','lon'/), is_optional=.not.mand)
         else
           call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=time2d, is_optional=.not.mand)
         endif
@@ -729,7 +729,7 @@ contains
 
     ! "To" variable:
     !   to=.TRUE.   means       transfer sfc data  TO  Sfcprop grid
-    !   to=.FALSE.  means  transfer into sfc data FROM Sfcprop grid 
+    !   to=.FALSE.  means  transfer into sfc data FROM Sfcprop grid
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -933,7 +933,7 @@ contains
       !
       !--- NSSTM variables
       !tgs - the following line is a bug that will show if(Model%cplwav) = true
-      !nt = sfc%nvar2m 
+      !nt = sfc%nvar2m
       if (Model%nstf_name(1) > 0) then
         if (reading .and. Model%nstf_name(2) == 1) then             ! nsst spinup
           !--- nsstm tref

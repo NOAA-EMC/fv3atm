@@ -806,7 +806,7 @@ contains
 
     type(phy_data_type) :: phy
     type(FmsNetcdfDomainFile_t) :: Phy_restart
-    
+
     isc = Atm_block%isc
     iec = Atm_block%iec
     jsc = Atm_block%jsc
@@ -1245,7 +1245,7 @@ contains
         enddo
       enddo
     endif
-    
+
   end subroutine phy_data_transfer_data
 
   subroutine phy_data_final(phy)
