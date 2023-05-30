@@ -1,6 +1,5 @@
 module fv3atm_restart_io_mod
 
-  use esmf
   use block_control_mod,  only: block_control_type
   use mpp_mod,            only: mpp_error,  mpp_pe, mpp_root_pe, &
                                 mpp_chksum, NOTE,   FATAL
@@ -27,7 +26,6 @@ module fv3atm_restart_io_mod
   public fv3atm_checksum
   public fv3atm_restart_read
   public fv3atm_restart_write
-  public phy_data_type
   public fv3atm_restart_register
   public fv_phy_restart_output
   public fv_phy_restart_bundle_setup
@@ -40,6 +38,10 @@ module fv3atm_restart_io_mod
     character(len=32),dimension(:),pointer :: var2_names => null()
     character(len=32),dimension(:),pointer :: var3_names => null()
     integer :: nvar2d = 0, nvar3d = 0, npz = 0
+  contains
+    procedure :: alloc => phy_data_alloc
+    procedure :: transfer_data => phy_data_transfer_data
+    final phy_data_final
   end type phy_data_type
 
   !--- GFDL filenames
@@ -61,6 +63,47 @@ module fv3atm_restart_io_mod
 
 contains
 
+  !--------------------
+  ! fv3atm_restart_read
+  !--------------------
+  subroutine fv3atm_restart_read (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, warm_start, ignore_rst_cksum)
+    implicit none
+    type(GFS_data_type),      intent(inout) :: GFS_Data(:)
+    type(GFS_restart_type),   intent(inout) :: GFS_Restart
+    type(block_control_type), intent(in)    :: Atm_block
+    type(GFS_control_type),   intent(inout) :: Model
+    type(domain2d),           intent(in)    :: fv_domain
+    logical,                  intent(in)    :: warm_start
+    logical,                  intent(in)    :: ignore_rst_cksum
+
+    !--- read in surface data from chgres
+    call sfc_prop_restart_read (GFS_Data%Sfcprop, Atm_block, Model, fv_domain, warm_start, ignore_rst_cksum)
+
+    !--- read in physics restart data
+    call phys_restart_read (GFS_Restart, Atm_block, Model, fv_domain, ignore_rst_cksum)
+
+  end subroutine fv3atm_restart_read
+
+  !---------------------
+  ! fv3atm_restart_write
+  !---------------------
+  subroutine fv3atm_restart_write (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, timestamp)
+    implicit none
+    type(GFS_data_type),         intent(inout) :: GFS_Data(:)
+    type(GFS_restart_type),      intent(inout) :: GFS_Restart
+    type(block_control_type),    intent(in)    :: Atm_block
+    type(GFS_control_type),      intent(in)    :: Model
+    type(domain2d),              intent(in)    :: fv_domain
+    character(len=32), optional, intent(in)    :: timestamp
+
+    !--- write surface data from chgres
+    call sfc_prop_restart_write (GFS_Data%Sfcprop, Atm_block, Model, fv_domain, timestamp)
+
+    !--- write physics restart data
+    call phys_restart_write (GFS_Restart, Atm_block, Model, fv_domain, timestamp)
+
+  end subroutine fv3atm_restart_write
+
   !----------------
   ! fv3atm_checksum
   !----------------
@@ -71,8 +114,8 @@ contains
     type(GFS_data_type),       intent(in) :: GFS_Data(:)
     type (block_control_type), intent(in) :: Atm_block
     !--- local variables
-    integer :: outunit, j, i, ix, nb, isc, iec, jsc, jec, lev, ct, l, ntr, k
-    integer :: nsfcprop2d, idx_opt, nt
+    integer :: outunit, i, ix, nb, isc, iec, jsc, jec, lev, ntr, k
+    integer :: nsfcprop2d, nt
     real(kind=kind_phys), allocatable :: temp2d(:,:,:)
     real(kind=kind_phys), allocatable :: temp3d(:,:,:,:)
     real(kind=kind_phys), allocatable :: temp3dlevsp1(:,:,:,:)
@@ -120,7 +163,7 @@ contains
     temp3d = zero
     temp3dlevsp1 = zero
 
-    !$omp parallel do default(shared) private(i, j, k, nb, ix, nt, ii1, jj1)
+    !$omp parallel do default(shared) private(i, k, nb, ix, nt, ii1, jj1)
     block_loop: do nb = 1, Atm_block%nblks
       allocate(ii1(Atm_block%blksz(nb)))
       allocate(jj1(Atm_block%blksz(nb)))
@@ -390,12 +433,12 @@ contains
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%htrlw)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%swhc)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%lwhc)
-      do l = 1,Model%ntot3d
-        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Tbd%phy_f3d(:,:,l))
+      do k = 1,Model%ntot3d
+        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Tbd%phy_f3d(:,:,k))
       enddo
-      do l = 1,ntr
-        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%qgrs(:,:,l))
-        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gq0(:,:,l))
+      do k = 1,ntr
+        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%qgrs(:,:,k))
+        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gq0(:,:,k))
       enddo
     enddo block_loop
 
@@ -420,55 +463,6 @@ contains
     deallocate(temp3dlevsp1)
   end subroutine fv3atm_checksum
 
-  !--------------------
-  ! fv3atm_restart_read
-  !--------------------
-  subroutine fv3atm_restart_read (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, warm_start, ignore_rst_cksum)
-    implicit none
-    type(GFS_data_type),      intent(inout) :: GFS_Data(:)
-    type(GFS_restart_type),   intent(inout) :: GFS_Restart
-    type(block_control_type), intent(in)    :: Atm_block
-    type(GFS_control_type),   intent(inout) :: Model
-    type(domain2d),           intent(in)    :: fv_domain
-    logical,                  intent(in)    :: warm_start
-    logical,                  intent(in)    :: ignore_rst_cksum
-
-    !--- read in surface data from chgres
-    call sfc_prop_restart_read (GFS_Data%Sfcprop, Atm_block, Model, fv_domain, warm_start, ignore_rst_cksum)
-
-    !--- read in physics restart data
-    call phys_restart_read (GFS_Restart, Atm_block, Model, fv_domain, ignore_rst_cksum)
-
-  end subroutine fv3atm_restart_read
-
-  !---------------------
-  ! fv3atm_restart_write
-  !---------------------
-  subroutine fv3atm_restart_write (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, timestamp)
-    implicit none
-    type(GFS_data_type),         intent(inout) :: GFS_Data(:)
-    type(GFS_restart_type),      intent(inout) :: GFS_Restart
-    type(block_control_type),    intent(in)    :: Atm_block
-    type(GFS_control_type),      intent(in)    :: Model
-    type(domain2d),              intent(in)    :: fv_domain
-    character(len=32), optional, intent(in)    :: timestamp
-
-    !--- write surface data from chgres
-    call sfc_prop_restart_write (GFS_Data%Sfcprop, Atm_block, Model, fv_domain, timestamp)
-
-    !--- write physics restart data
-    call phys_restart_write (GFS_Restart, Atm_block, Model, fv_domain, timestamp)
-
-  end subroutine fv3atm_restart_write
-
-
-
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  !
-  !                     PRIVATE SUBROUTINES
-  !
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
   !----------------------------------------------------------------------
   ! sfc_prop_restart_read
   !----------------------------------------------------------------------
@@ -492,22 +486,6 @@ contains
     type (domain2d),           intent(in)    :: fv_domain
     logical,                   intent(in)    :: warm_start
     logical,                   intent(in)    :: ignore_rst_cksum
-    !--- local variables
-    integer :: i, j, k, ix, lsoil, num, nb, i_start, j_start, i_end, j_end, nt, n
-    integer :: isc, iec, jsc, jec, nx, ny
-    integer :: id_restart
-    integer :: isnow
-    integer, allocatable :: ii1(:), jj1(:)
-    real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_fr => NULL()
-    !--- local variables for sncovr calculation
-    integer :: vegtyp
-    logical :: mand
-    real(kind=kind_phys) :: rsnow, tem, tem1
     !--- directory of the input files
     character(5)  :: indir='INPUT'
     character(37) :: infile
@@ -525,13 +503,6 @@ contains
 
     type(FmsNetcdfDomainFile_t) :: Oro_restart, Sfc_restart, dust12m_restart, emi_restart, rrfssd_restart
     type(FmsNetcdfDomainFile_t) :: Oro_ls_restart, Oro_ss_restart
-
-    isc = Atm_block%isc
-    iec = Atm_block%iec
-    jsc = Atm_block%jsc
-    jec = Atm_block%jec
-    nx  = (iec - isc + 1)
-    ny  = (jec - jsc + 1)
 
     !--- OROGRAPHY FILE
 
@@ -724,40 +695,17 @@ contains
     type(GFS_control_type),      intent(in) :: Model
     type(domain2d),              intent(in) :: fv_domain
     character(len=32), optional, intent(in) :: timestamp
-    !--- local variables
-    integer :: i, j, k, nb, ix, lsoil, num, nt
-    integer :: isc, iec, jsc, jec, nx, ny
-    integer :: id_restart
-    logical :: mand
-    integer, allocatable :: ii1(:), jj1(:)
-    character(len=32) :: fn_srf = 'sfc_data.nc'
-    real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
-    real(kind_phys) :: ice
     !--- directory of the input files
     character(7)  :: indir='RESTART'
     character(72) :: infile
     !--- fms2_io file open logic
     logical :: amiopen
     !--- variables used for fms2_io register axis
-    integer :: is, ie
-    integer, allocatable, dimension(:) :: buffer
 
     type(clm_lake_data_type), target :: clm_lake
     type(rrfs_sd_state_type) :: rrfs_sd_state
     type(Sfc_io_data_type) :: sfc
-
     type(FmsNetcdfDomainFile_t) :: Sfc_restart
-
-    isc = Atm_block%isc
-    iec = Atm_block%iec
-    jsc = Atm_block%jsc
-    jec = Atm_block%jec
-    nx  = (iec - isc + 1)
-    ny  = (jec - jsc + 1)
 
     !--- set filename
     infile=trim(indir)//'/'//trim(fn_srf)
@@ -849,14 +797,12 @@ contains
     !--- local variables
     integer :: i, j, k, nb, ix, num
     integer :: isc, iec, jsc, jec, nx, ny
-    integer :: id_restart
-    integer :: fdiag, ldiag
     character(len=64) :: fname
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p => NULL()
     !--- directory of the input files
     character(5)  :: indir='INPUT'
-    logical :: amiopen
+    logical :: amiopen, was_allocated
 
     type(phy_data_type) :: phy
     type(FmsNetcdfDomainFile_t) :: Phy_restart
@@ -868,12 +814,7 @@ contains
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
 
-    phy%npz = Atm_block%npz
-    phy%nvar2d = GFS_Restart%num2d
-    phy%nvar3d = GFS_Restart%num3d
-
-    fdiag  = GFS_Restart%fdiag
-    ldiag  = GFS_Restart%ldiag
+    was_allocated = phy%alloc(GFS_Restart, Atm_block)
 
     !--- open restart file and register axes
     fname = trim(indir)//'/'//trim(fn_phy)
@@ -889,17 +830,7 @@ contains
     endif
 
     !--- register the restart fields
-    if (.not. associated(phy%var2)) then
-      allocate (phy%var2(nx,ny,phy%nvar2d), phy%var2_names(phy%nvar2d))
-      allocate (phy%var3(nx,ny,phy%npz,phy%nvar3d), phy%var3_names(phy%nvar3d))
-      phy%var2 = zero
-      phy%var3 = zero
-      do num = 1,phy%nvar2d
-        phy%var2_names(num) = trim(GFS_Restart%name2d(num))
-      enddo
-      do num = 1,phy%nvar3d
-        phy%var3_names(num) = trim(GFS_Restart%name3d(num))
-      enddo
+    if(was_allocated) then
 
       do num = 1,phy%nvar2d
         var2_p => phy%var2(:,:,num)
@@ -919,43 +850,7 @@ contains
     call read_restart(Phy_restart, ignore_checksum=ignore_rst_cksum)
     call close_file(Phy_restart)
 
-    !--- place the data into the block GFS containers
-    !--- phy%var* variables
-    !$omp parallel do default(shared) private(i, j, nb, ix)
-    do num = 1,phy%nvar2d
-      do nb = 1,Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          i = Atm_block%index(nb)%ii(ix) - isc + 1
-          j = Atm_block%index(nb)%jj(ix) - jsc + 1
-          GFS_Restart%data(nb,num)%var2p(ix) = phy%var2(i,j,num)
-        enddo
-      enddo
-    enddo
-    !-- if restart from init time, reset accumulated diag fields
-    if( Model%phour < 1.e-7) then
-      do num = fdiag,ldiag
-        !$omp parallel do default(shared) private(i, j, nb, ix)
-        do nb = 1,Atm_block%nblks
-          do ix = 1, Atm_block%blksz(nb)
-            i = Atm_block%index(nb)%ii(ix) - isc + 1
-            j = Atm_block%index(nb)%jj(ix) - jsc + 1
-            GFS_Restart%data(nb,num)%var2p(ix) = zero
-          enddo
-        enddo
-      enddo
-    endif
-    do num = 1,phy%nvar3d
-      !$omp parallel do default(shared) private(i, j, k, nb, ix)
-      do nb = 1,Atm_block%nblks
-        do k=1,phy%npz
-          do ix = 1, Atm_block%blksz(nb)
-            i = Atm_block%index(nb)%ii(ix) - isc + 1
-            j = Atm_block%index(nb)%jj(ix) - jsc + 1
-            GFS_Restart%data(nb,num)%var3p(ix,k) = phy%var3(i,j,k,num)
-          enddo
-        enddo
-      enddo
-    enddo
+    call phy%transfer_data(.true., GFS_Restart, Atm_block, Model)
 
   end subroutine phys_restart_read
 
@@ -981,7 +876,6 @@ contains
     !--- local variables
     integer :: i, j, k, nb, ix, num
     integer :: isc, iec, jsc, jec, nx, ny
-    integer :: id_restart
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p => NULL()
     !--- used for axis data for fms2_io
@@ -989,7 +883,7 @@ contains
     integer, allocatable, dimension(:) :: buffer
     character(7) :: indir='RESTART'
     character(72) :: infile
-    logical :: amiopen
+    logical :: amiopen, allocated_something
 
     type(phy_data_type) :: phy
     type(FmsNetcdfDomainFile_t) :: Phy_restart
@@ -1001,9 +895,8 @@ contains
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
 
-    phy%npz = Atm_block%npz
-    phy%nvar2d = GFS_Restart%num2d
-    phy%nvar3d = GFS_Restart%num3d
+    !--- register the restart fields
+    allocated_something = phy%alloc(GFS_Restart, Atm_block)
 
     !--- set file name
     infile=trim(indir)//'/'//trim(fn_phy)
@@ -1043,20 +936,6 @@ contains
       call mpp_error(FATAL, 'Error opening file '//trim(infile))
     end if
 
-    !--- register the restart fields
-    if (.not. associated(phy%var2)) then
-      allocate (phy%var2(nx,ny,phy%nvar2d), phy%var2_names(phy%nvar2d))
-      allocate (phy%var3(nx,ny,phy%npz,phy%nvar3d), phy%var3_names(phy%nvar3d))
-      phy%var2 = zero
-      phy%var3 = zero
-      do num = 1,phy%nvar2d
-        phy%var2_names(num) = trim(GFS_Restart%name2d(num))
-      enddo
-      do num = 1,phy%nvar3d
-        phy%var3_names(num) = trim(GFS_Restart%name3d(num))
-      enddo
-    endif
-
     do num = 1,phy%nvar2d
       var2_p => phy%var2(:,:,num)
       call register_restart_field(Phy_restart, trim(GFS_Restart%name2d(num)), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
@@ -1070,30 +949,7 @@ contains
     nullify(var2_p)
     nullify(var3_p)
 
-    !--- 2D variables
-    !$omp parallel do default(shared) private(i, j, num, nb, ix)
-    do num = 1,phy%nvar2d
-      do nb = 1,Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          i = Atm_block%index(nb)%ii(ix) - isc + 1
-          j = Atm_block%index(nb)%jj(ix) - jsc + 1
-          phy%var2(i,j,num) = GFS_Restart%data(nb,num)%var2p(ix)
-        enddo
-      enddo
-    enddo
-    !--- 3D variables
-    !$omp parallel do default(shared) private(i, j, k, num, nb, ix)
-    do num = 1,phy%nvar3d
-      do nb = 1,Atm_block%nblks
-        do k=1,phy%npz
-          do ix = 1, Atm_block%blksz(nb)
-            i = Atm_block%index(nb)%ii(ix) - isc + 1
-            j = Atm_block%index(nb)%jj(ix) - jsc + 1
-            phy%var3(i,j,k,num) = GFS_Restart%data(nb,num)%var3p(ix,k)
-          enddo
-        enddo
-      enddo
-    enddo
+    call phy%transfer_data(.false., GFS_Restart, Atm_block, Model)
 
     call write_restart(Phy_restart)
     call close_file(Phy_restart)
@@ -1113,31 +969,9 @@ contains
     type(GFS_control_type),      intent(in) :: Model
 
     logical was_changed
-    integer :: isc, iec, jsc, jec, nx, ny
-    integer :: num
-
-    isc = Atm_block%isc
-    iec = Atm_block%iec
-    jsc = Atm_block%jsc
-    jec = Atm_block%jec
-    phy_quilt%npz = Atm_block%npz
-    nx  = (iec - isc + 1)
-    ny  = (jec - jsc + 1)
 
     !--------------- phy
-    phy_quilt%nvar2d = GFS_Restart%num2d
-    phy_quilt%nvar3d = GFS_Restart%num3d
-
-    allocate (phy_quilt%var2(nx,ny,phy_quilt%nvar2d), phy_quilt%var2_names(phy_quilt%nvar2d))
-    allocate (phy_quilt%var3(nx,ny,phy_quilt%npz,phy_quilt%nvar3d), phy_quilt%var3_names(phy_quilt%nvar3d))
-    phy_quilt%var2 = zero
-    phy_quilt%var3 = zero
-    do num = 1,phy_quilt%nvar2d
-      phy_quilt%var2_names(num) = trim(GFS_Restart%name2d(num))
-    enddo
-    do num = 1,phy_quilt%nvar3d
-      phy_quilt%var3_names(num) = trim(GFS_Restart%name3d(num))
-    enddo
+    was_changed = phy_quilt%alloc(GFS_Restart, Atm_block)
 
     !--------------- sfc
     was_changed = sfc_quilt%allocate_arrays(Model, Atm_block, .false., .true.)
@@ -1161,51 +995,7 @@ contains
     type(GFS_restart_type),      intent(in) :: GFS_Restart
     type(block_control_type),    intent(in) :: Atm_block
 
-    !*** local variables
-    integer :: i, j, k, n
-    integer :: nb, ix, num
-    integer :: isc, iec, jsc, jec, nx, ny
-    integer(8) :: rchk
-
-    isc = Atm_block%isc
-    iec = Atm_block%iec
-    jsc = Atm_block%jsc
-    jec = Atm_block%jec
-    phy_quilt%npz = Atm_block%npz
-    nx  = (iec - isc + 1)
-    ny  = (jec - jsc + 1)
-
-    !--- register the restart fields
-    if (.not. associated(phy_quilt%var2)) then
-      write(0,*)'phy_quilt%var2 must be allocated'
-    endif
-    if (.not. associated(phy_quilt%var3)) then
-      write(0,*)'phy_quilt%var3 must be allocated'
-    endif
-
-    !--- 2D variables
-    do num = 1,phy_quilt%nvar2d
-      do nb = 1,Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          i = Atm_block%index(nb)%ii(ix) - isc + 1
-          j = Atm_block%index(nb)%jj(ix) - jsc + 1
-          phy_quilt%var2(i,j,num) = GFS_Restart%data(nb,num)%var2p(ix)
-        enddo
-      enddo
-    enddo
-
-    !--- 3D variables
-    do num = 1,phy_quilt%nvar3d
-      do nb = 1,Atm_block%nblks
-        do k=1,phy_quilt%npz
-          do ix = 1, Atm_block%blksz(nb)
-            i = Atm_block%index(nb)%ii(ix) - isc + 1
-            j = Atm_block%index(nb)%jj(ix) - jsc + 1
-            phy_quilt%var3(i,j,k,num) = GFS_Restart%data(nb,num)%var3p(ix,k)
-          enddo
-        enddo
-      enddo
-    enddo
+    call phy_quilt%transfer_data(.false., GFS_Restart, Atm_block)
 
   end subroutine fv_phy_restart_output
 
@@ -1242,9 +1032,8 @@ contains
     integer,intent(out)                         :: rc
 
     !*** local variables
-    integer i, j, k, n
+    integer i
     character(128)    :: bdl_name
-    type(ESMF_Field)  :: field
     character(128)    :: outputfile
     real(kind_phys),dimension(:,:),pointer   :: temp_r2d
     real(kind_phys),dimension(:,:,:),pointer   :: temp_r3d
@@ -1298,14 +1087,8 @@ contains
     integer,intent(out)                         :: rc
 
     !*** local variables
-    integer i, j, k, n
     character(128)    :: sfcbdl_name
-    type(ESMF_Field)  :: field
     character(128)    :: outputfile
-    real(kind_phys),dimension(:,:),pointer   :: temp_r2d
-    real(kind_phys),dimension(:,:,:),pointer :: temp_r3d
-
-    integer :: num
 
     call ESMF_FieldBundleGet(bundle, name=sfcbdl_name,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1325,5 +1108,163 @@ contains
     endif
 
   end subroutine fv_sfc_restart_bundle_setup
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !
+  !                     PRIVATE SUBROUTINES
+  !
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  logical function phy_data_alloc(phy, GFS_Restart, Atm_block)
+    use fv3atm_common_io, only: get_nx_ny_from_atm
+    implicit none
+    class(phy_data_type) :: phy
+    type(GFS_restart_type),      intent(in) :: GFS_Restart
+    type(block_control_type),    intent(in) :: Atm_block
+
+    integer :: nx, ny, num
+
+    phy_data_alloc = .false.
+
+    if(associated(phy%var2)) return
+
+    call get_nx_ny_from_atm(Atm_block, nx, ny)
+
+    phy%npz = Atm_block%npz
+    phy%nvar2d = GFS_Restart%num2d
+    phy%nvar3d = GFS_Restart%num3d
+
+    allocate (phy%var2(nx,ny,phy%nvar2d), phy%var2_names(phy%nvar2d))
+    allocate (phy%var3(nx,ny,phy%npz,phy%nvar3d), phy%var3_names(phy%nvar3d))
+    phy%var2 = zero
+    phy%var3 = zero
+    do num = 1,phy%nvar2d
+      phy%var2_names(num) = trim(GFS_Restart%name2d(num))
+    enddo
+    do num = 1,phy%nvar3d
+      phy%var3_names(num) = trim(GFS_Restart%name3d(num))
+    enddo
+
+    phy_data_alloc = .true.
+  end function phy_data_alloc
+
+  subroutine phy_data_transfer_data(phy, reading, GFS_Restart, Atm_block, Model)
+    use mpp_mod,            only: FATAL, mpp_error
+    implicit none
+    class(phy_data_type) :: phy
+    logical, intent(in) :: reading
+    type(GFS_restart_type) :: GFS_Restart
+    type(block_control_type) :: Atm_block
+    type(GFS_control_type), optional, intent(in) :: Model
+
+    integer :: i, j, k, num, nb, ix
+
+    !--- register the restart fields
+    if (.not. associated(phy%var2)) then
+      call mpp_error(FATAL,'phy%var2 must be allocated')
+      return ! should never get here
+    endif
+    if (.not. associated(phy%var3)) then
+      call mpp_error(FATAL,'phy%var3 must be allocated')
+      return ! should never get here
+    endif
+
+    ! Copy 2D Vars
+
+    if(reading) then
+      !--- place the data into the block GFS containers
+      !--- phy%var* variables
+      do num = 1,phy%nvar2d
+        !$omp parallel do default(shared) private(i, j, nb, ix)
+        do nb = 1,Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            i = Atm_block%index(nb)%ii(ix) - Atm_block%isc + 1
+            j = Atm_block%index(nb)%jj(ix) - Atm_block%jsc + 1
+            GFS_Restart%data(nb,num)%var2p(ix) = phy%var2(i,j,num)
+          enddo
+        enddo
+      enddo
+    else
+      !--- 2D variables
+      do num = 1,phy%nvar2d
+        !$omp parallel do default(shared) private(i, j, nb, ix)
+        do nb = 1,Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            i = Atm_block%index(nb)%ii(ix) - Atm_block%isc + 1
+            j = Atm_block%index(nb)%jj(ix) - Atm_block%jsc + 1
+            phy%var2(i,j,num) = GFS_Restart%data(nb,num)%var2p(ix)
+          enddo
+        enddo
+      enddo
+    endif
+
+    !-- if restart from init time, reset accumulated diag fields
+
+    if(reading .and. present(Model)) then
+      if(Model%phour < 1.e-7) then
+        do num = GFS_Restart%fdiag,GFS_Restart%ldiag
+          !$omp parallel do default(shared) private(i, j, nb, ix)
+          do nb = 1,Atm_block%nblks
+            do ix = 1, Atm_block%blksz(nb)
+              i = Atm_block%index(nb)%ii(ix) - Atm_block%isc + 1
+              j = Atm_block%index(nb)%jj(ix) - Atm_block%jsc + 1
+              GFS_Restart%data(nb,num)%var2p(ix) = zero
+            enddo
+          enddo
+        enddo
+      endif
+    endif
+
+    ! Copy 3D Vars
+
+    if(reading) then
+      do num = 1,phy%nvar3d
+        !$omp parallel do default(shared) private(i, j, k, nb, ix)
+        do nb = 1,Atm_block%nblks
+          do k=1,phy%npz
+            do ix = 1, Atm_block%blksz(nb)
+              i = Atm_block%index(nb)%ii(ix) - Atm_block%isc + 1
+              j = Atm_block%index(nb)%jj(ix) - Atm_block%jsc + 1
+              GFS_Restart%data(nb,num)%var3p(ix,k) = phy%var3(i,j,k,num)
+            enddo
+          enddo
+        enddo
+      enddo
+    else
+      !--- 3D variables
+      do num = 1,phy%nvar3d
+        !$omp parallel do default(shared) private(i, j, k, nb, ix)
+        do nb = 1,Atm_block%nblks
+          do k=1,phy%npz
+            do ix = 1, Atm_block%blksz(nb)
+              i = Atm_block%index(nb)%ii(ix) - Atm_block%isc + 1
+              j = Atm_block%index(nb)%jj(ix) - Atm_block%jsc + 1
+              phy%var3(i,j,k,num) = GFS_Restart%data(nb,num)%var3p(ix,k)
+            enddo
+          enddo
+        enddo
+      enddo
+    endif
+    
+  end subroutine phy_data_transfer_data
+
+  subroutine phy_data_final(phy)
+    implicit none
+    type(phy_data_type) :: phy
+
+    ! This #define reduces code length by a lot
+#define IF_ASSOC_DEALLOC_NULL(var) \
+    if(associated(phy%var)) then ; \
+      deallocate(phy%var) ; \
+      nullify(phy%var) ; \
+    endif
+
+    IF_ASSOC_DEALLOC_NULL(var2)
+    IF_ASSOC_DEALLOC_NULL(var3)
+    IF_ASSOC_DEALLOC_NULL(var2_names)
+    IF_ASSOC_DEALLOC_NULL(var3_names)
+
+#undef IF_ASSOC_DEALLOC_NULL
+  end subroutine phy_data_final
 
 end module fv3atm_restart_io_mod

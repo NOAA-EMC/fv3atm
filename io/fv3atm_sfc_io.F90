@@ -255,7 +255,8 @@ contains
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
       else if(Model%lsm == Model%lsm_ruc .and. reading) then
-        ! Possible bug. This is only defined on read, not write.
+        ! The RUC defines zaxis_1 for reading, so it can read a restart from a different LSM.
+        ! The lsm_ruc never writes zaxis_2.
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil_lsm)
       endif
       if(Model%lsm == Model%lsm_noahmp) then

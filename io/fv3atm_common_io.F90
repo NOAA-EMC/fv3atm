@@ -24,6 +24,8 @@ module fv3atm_common_io
   public :: create_3d_field_and_add_to_bundle
   public :: add_zaxis_to_field
 
+  public :: get_nx_ny_from_atm
+
   interface copy_from_GFS_Data
     module procedure copy_from_GFS_Data_2d_phys2phys, &
          copy_from_GFS_Data_3d_phys2phys, &
@@ -50,8 +52,6 @@ module fv3atm_common_io
          GFS_data_transfer_3d_slice_phys2phys, &
          GFS_data_transfer_2d_stack_phys2phys
   end interface GFS_data_transfer
-
-  public :: get_nx_ny_from_atm
 
 contains
 
