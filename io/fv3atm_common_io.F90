@@ -1,6 +1,5 @@
 module fv3atm_common_io
   use GFS_typedefs, only: kind_phys
-  use block_control_mod,  only: block_control_type
 
   implicit none
   private
@@ -56,6 +55,7 @@ module fv3atm_common_io
 contains
 
   pure subroutine get_nx_ny_from_atm(Atm_block, nx, ny)
+    use block_control_mod,  only: block_control_type
     implicit none
     type(block_control_type), intent(in) :: Atm_block
     integer, intent(out), optional :: nx, ny

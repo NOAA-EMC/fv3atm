@@ -15,16 +15,8 @@ module fv3atm_history_io_mod
   !
   !--- FMS/GFDL modules
   use block_control_mod,  only: block_control_type
-  use mpp_mod,            only: mpp_error,  mpp_pe, mpp_root_pe, &
-       mpp_chksum, NOTE,   FATAL
-  use fms_mod,            only: stdout
-  use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited,      &
-       open_file, close_file,                 &
-       register_axis, register_restart_field, &
-       register_variable_attribute, register_field, &
-       read_restart, write_restart, write_data,     &
-       get_global_io_domain_indices, variable_exists
-  use mpp_domains_mod,    only: domain1d, domain2d, domainUG
+  use mpp_mod,            only: mpp_error,  mpp_pe, mpp_root_pe, FATAL
+  use mpp_domains_mod,    only: domain1d, domainUG
   use time_manager_mod,   only: time_type
   use diag_manager_mod,   only: register_diag_field, send_data
   use diag_axis_mod,      only: get_axis_global_length, get_diag_axis, &
@@ -32,16 +24,10 @@ module fv3atm_history_io_mod
   use diag_data_mod,      only: output_fields, max_output_fields
   use diag_util_mod,      only: find_input_field
   use constants_mod,      only: grav, rdgas
-  use physcons,           only: con_tice          !saltwater freezing temp (K)
-  use fv3atm_clm_lake_io,        only: clm_lake_data_type
   !
   !--- GFS_typedefs
-  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, &
-       GFS_data_type, kind_phys
-  use GFS_restart,        only: GFS_restart_type
+  use GFS_typedefs,       only: GFS_control_type, kind_phys
   use GFS_diagnostics,    only: GFS_externaldiag_type
-
-  use fv3atm_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data
 
   !
   !-----------------------------------------------------------------------

@@ -1,8 +1,7 @@
 module fv3atm_restart_io_mod
 
   use block_control_mod,  only: block_control_type
-  use mpp_mod,            only: mpp_error,  mpp_pe, mpp_root_pe, &
-                                mpp_chksum, NOTE,   FATAL
+  use mpp_mod,            only: mpp_error, mpp_chksum, NOTE,   FATAL
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys, GFS_data_type
   use GFS_restart,        only: GFS_restart_type
   use fms_mod,            only: stdout
@@ -11,10 +10,10 @@ module fv3atm_restart_io_mod
                                 register_axis, register_restart_field, &
                                 register_variable_attribute, register_field, &
                                 read_restart, write_restart, write_data,     &
-                                get_global_io_domain_indices, variable_exists
-  use mpp_domains_mod,    only: domain1d, domain2d, domainUG
+                                get_global_io_domain_indices
+  use mpp_domains_mod,    only: domain2d
   use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
-       create_3d_field_and_add_to_bundle, add_zaxis_to_field, copy_from_gfs_data
+       create_3d_field_and_add_to_bundle, copy_from_gfs_data
   use fv3atm_sfc_io
   use fv3atm_rrfs_sd_io
   use fv3atm_clm_lake_io

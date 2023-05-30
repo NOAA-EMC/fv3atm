@@ -1,16 +1,11 @@
 module fv3atm_clm_lake_io
-  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, &
-                                GFS_data_type, kind_phys
-  use GFS_restart,        only: GFS_restart_type
-  use GFS_diagnostics,    only: GFS_externaldiag_type
+  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use block_control_mod,  only: block_control_type
-  use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited,      &
-                                open_file, close_file,                 &
-                                register_axis, register_restart_field, &
-                                register_variable_attribute, register_field, &
-                                read_restart, write_restart, write_data,     &
-                                get_global_io_domain_indices, variable_exists
-  use fv3atm_common_io
+  use fms2_io_mod,        only: FmsNetcdfDomainFile_t, register_axis, &
+                                register_restart_field, write_data, &
+                                register_variable_attribute, register_field
+  use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
+                                create_3d_field_and_add_to_bundle
 
   implicit none
 

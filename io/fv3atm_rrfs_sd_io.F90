@@ -1,17 +1,11 @@
 module fv3atm_rrfs_sd_io
   use block_control_mod,  only: block_control_type
-  use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited,      &
-       open_file, close_file,                 &
-       register_axis, register_restart_field, &
-       register_variable_attribute, register_field, &
-       read_restart, write_restart, write_data,     &
-       get_global_io_domain_indices, variable_exists
-  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, &
-       GFS_data_type, kind_phys
-  use GFS_restart,        only: GFS_restart_type
-  use GFS_diagnostics,    only: GFS_externaldiag_type
+  use fms2_io_mod,        only: FmsNetcdfDomainFile_t, write_data, &
+                                register_axis, register_restart_field, &
+                                register_variable_attribute, register_field
+  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use fv3atm_common_io,   only: get_nx_ny_from_atm, create_2d_field_and_add_to_bundle, &
-       create_3d_field_and_add_to_bundle, add_zaxis_to_field
+                                create_3d_field_and_add_to_bundle
 
   implicit none
 

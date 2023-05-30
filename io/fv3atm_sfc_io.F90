@@ -1,18 +1,14 @@
 module fv3atm_sfc_io
 
   use block_control_mod,  only: block_control_type
-  use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited, &
-       register_axis, register_restart_field,       &
-       register_variable_attribute, register_field, &
-       read_restart, write_restart, write_data,     &
-       get_global_io_domain_indices, variable_exists
-  use fv3atm_common_io,   only: copy_from_GFS_Data, copy_to_GFS_Data, GFS_Data_transfer, &
-       create_2d_field_and_add_to_bundle, create_3d_field_and_add_to_bundle, &
-       add_zaxis_to_field
+  use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited, write_data,&
+                                register_axis, register_restart_field,       &
+                                register_variable_attribute, register_field, &
+                                get_global_io_domain_indices, variable_exists
+  use fv3atm_common_io,   only: GFS_Data_transfer, &
+       create_2d_field_and_add_to_bundle, create_3d_field_and_add_to_bundle
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
-  use GFS_restart,        only: GFS_restart_type
-  use mpp_mod,            only: mpp_error,  mpp_pe, mpp_root_pe, &
-       mpp_chksum, NOTE,   FATAL
+  use mpp_mod,            only: mpp_error,  NOTE
   use physcons,           only: con_tice          !saltwater freezing temp (K)
 
   implicit none
