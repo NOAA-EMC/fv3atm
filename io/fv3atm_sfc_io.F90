@@ -275,13 +275,19 @@ contains
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
       else if(Model%lsm == Model%lsm_ruc .and. reading) then
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil_lsm)
-        ! The RUC only ever writes zaxis_1, which is combined soil-ice, kice, which is 9.
-        ! Other LSMs read and write zaxis_2, which is lsoil for them, and that's always 4.
-        ! Defining zaxis_2 here lets RUC LSM read from a different soil vertical coordinate
-        ! (lsoil_lsm). In practice, this probably won't work well since levels will be
-        ! filled with zeroes. We retain this capability for historical reasons.
-        ! Just make sure you only restart RUC LSM off of RUC LSM, and always have
-        ! kice = lsoil = lsoil_lsm = 9 and everything will be fine.
+        ! The RUC only ever writes zaxis_1, which is combined soil/ice
+        ! vertical dimension, lsoil_lsm/kice, which is 9.  Other LSMs read and
+        ! write zaxis_2, which is lsoil for them, and that's always 4.
+        ! Defining zaxis_2 here lets RUC LSM read from a different soil
+        ! vertical coordinate (lsoil_lsm). It is needed for restart of RUC LSM
+        ! from RUC LSM. This capability exists for historical reasons, because
+        ! there are two sets of soil state variables: one set has lsoil=4
+        ! vertical layers (Noah LSM. NoahMP LSM), and another set has
+        ! lsoil_lsm=9 vertical levels (RUC LSM). Ideally there should be just
+        ! one set of soil variables that could have different vertical
+        ! dimension depending on the choice of LSM.  For now: just make sure
+        ! you only restart RUC LSM off of RUC LSM, and always have kice =
+        ! lsoil = lsoil_lsm = 9 and everything will be fine.
       endif
       if(Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_3', dimension_length=3)
