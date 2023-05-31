@@ -1,3 +1,5 @@
+!> \file fv3atm_oro_io.F90
+!! This file defines routines to read orography files for the fv3atm.
 module fv3atm_oro_io
 
   use block_control_mod,  only: block_control_type
@@ -12,6 +14,9 @@ module fv3atm_oro_io
   public :: Oro_io_data_type, Oro_io_register, Oro_io_copy, Oro_io_final
   public :: Oro_scale_io_data_type, Oro_scale_io_register, Oro_scale_io_copy, Oro_scale_io_final
 
+  !>\defgroup fv3atm_oro_io FV3ATM Orography I/O Module
+  !> @{
+  !>@ Storage of working arrays for reading orography data.
   type Oro_io_data_type
     character(len=32),    pointer, private, dimension(:)       :: name2 => null()
     real(kind=kind_phys), pointer, private, dimension(:,:,:)   :: var2  => null()
@@ -23,6 +28,7 @@ module fv3atm_oro_io
     final :: Oro_io_final
   end type Oro_io_data_type
 
+  !>@ Storage of working arrays for reading large-scale and small-scale orography data for gravity wave drag schemes.
   type Oro_scale_io_data_type
     character(len=32),    pointer, private, dimension(:)       :: name => null()
     real(kind=kind_phys), pointer, private, dimension(:,:,:)   :: var  => null()
@@ -32,11 +38,19 @@ module fv3atm_oro_io
     final :: Oro_scale_io_final
   end type Oro_scale_io_data_type
 
+  !>@ Number of two-dimensional orography fields (excluding large- and small-scale)
+  integer, parameter :: nvar_oro_2d  = 19
+
+  !>@ Number of large-scale and small-scale orography fields
   integer, parameter :: nvar_oro_scale = 10
-  integer, parameter :: nvar_o2  = 19
 
 contains
 
+  !>@brief Registers axes and fields for non-quilt restart reading of non-scaled orography variables.
+  !> \section oro_io_data_type%register procedure
+  !! Calls FMS restart register functions for axes and
+  !! variables in the non-scaled orography data. The scaled data is
+  !! handled by another function. This includes both 2D and 3D fields.
   subroutine Oro_io_register(oro, Model, Oro_restart, Atm_block)
     implicit none
     class(Oro_io_data_type) :: oro
@@ -69,8 +83,8 @@ contains
     nvar_vegfr  = Model%nvegcat
     nvar_soilfr = Model%nsoilcat
 
-    allocate(oro%name2(nvar_o2))
-    allocate(oro%var2(nx,ny,nvar_o2))
+    allocate(oro%name2(nvar_oro_2d))
+    allocate(oro%var2(nx,ny,nvar_oro_2d))
 
     allocate(oro%var3v(nx,ny,nvar_vegfr))
     allocate(oro%var3s(nx,ny,nvar_soilfr))
@@ -119,6 +133,10 @@ contains
 
   end subroutine Oro_io_register
 
+  !>@brief Copies orography data from temporary arrays back to Sfcprop grid arrays.
+  !> \section oro_io_data_type%copy procedure
+  !! After reading the restart, data is on temporary arrays with x-y data storage.
+  !! This subroutine copies the x-y fields to Sfcprop's blocked grid storage arrays.
   subroutine Oro_io_copy(oro, Model, Sfcprop, Atm_block)
     implicit none
     class(Oro_io_data_type) :: oro
@@ -197,6 +215,7 @@ contains
 
   end subroutine Oro_io_copy
 
+  !>@brief Destructor for Oro_io_data_type
   subroutine Oro_io_final(oro)
     implicit none
     type(Oro_io_data_type) :: oro
@@ -216,6 +235,11 @@ contains
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine Oro_io_final
 
+  !>@brief Registers axes and fields for non-quilt restart reading of scaled orography variables.
+  !> \section Calls FMS restart register functions for axes and
+  !! variables in the large-scale or small-scale orography data. The
+  !! scaled data is handled by another function. Each scale needs its
+  !! own instance of oro_scale_io_data_type.
   subroutine Oro_scale_io_register(oro_scale, Model, Oro_scale_restart, Atm_block)
     implicit none
     class(Oro_scale_io_data_type) :: oro_scale
@@ -263,6 +287,10 @@ contains
     enddo
   end subroutine Oro_scale_io_register
 
+  !>@brief Copies scaled orography data from temporary arrays back to Sfcprop grid arrays.
+  !> \section Oro_scale_io_data_type%copy procedure
+  !! After reading the restart, data is on temporary arrays with x-y data storage.
+  !! This subroutine copies the x-y fields to Sfcprop's blocked grid storage arrays.
   subroutine Oro_scale_io_copy(oro_scale, Sfcprop, Atm_block, first_index)
     implicit none
     class(Oro_scale_io_data_type) :: oro_scale
@@ -285,6 +313,7 @@ contains
     enddo
   end subroutine Oro_scale_io_copy
 
+  !>@brief Oro_scale_io_data_type destructor
   subroutine Oro_scale_io_final(oro_scale)
     implicit none
     type(Oro_scale_io_data_type) :: oro_scale
@@ -301,3 +330,4 @@ contains
 #undef IF_ASSOC_DEALLOC_NULL
   end subroutine Oro_scale_io_final
 end module fv3atm_oro_io
+!> @}

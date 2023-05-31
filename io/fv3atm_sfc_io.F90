@@ -1,3 +1,8 @@
+!> \file fv3atm_sfc_io.F90
+!! This file contains a derived type and subroutines to read and write restart files for
+!! most FV3ATM surface fields. It works both for quilt (via ESMF) and non-quilt (via FMS)
+!! restarts. Certain fields are handled by other files: fv3atm_oro_io.F90, fv3atm_rrfs_sd_io.F90,
+!! and fv3atm_clm_lake_io.F90.
 module fv3atm_sfc_io
 
   use block_control_mod,  only: block_control_type
@@ -20,10 +25,16 @@ module fv3atm_sfc_io
        Sfc_io_register_3d_fields, Sfc_io_copy_to_grid, Sfc_io_copy_from_grid, &
        Sfc_io_apply_safeguards, Sfc_io_transfer, Sfc_io_final
 
-  real(kind=kind_phys), parameter :: timin = 173.0_kind_phys  ! minimum temperature allowed for snow/ice
+  !> \defgroup fv3atm_sfc_io module
+  !> @{
+
+  !>@ Minimum temperature allowed for snow/ice
+  real(kind=kind_phys), parameter :: timin = 173.0_kind_phys
+
   real(kind_phys), parameter:: min_lake_orog = 200.0_kind_phys
   real(kind_phys), parameter:: zero = 0, one = 1
 
+  !> Internal data storage type for reading and writing surface restart files
   type Sfc_io_data_type
     integer, public :: nvar2o = 0
     integer, public :: nvar3 = 0
@@ -81,6 +92,11 @@ module fv3atm_sfc_io
 
 contains
 
+  !>@brief Calculates all nvar indices in the Sfc_io_data_type
+  !> \section Sfc_io_data_type%calculate_indices() procedure
+  !! Calculates all nvar counts, which record the number of fields
+  !! of various types. These determine array sizes.
+  !! Returns .true. if any nvar counts changed, or .false. otherwise.
   function Sfc_io_calculate_indices(sfc, Model, reading, warm_start)
     implicit none
     class(Sfc_io_data_type)             :: sfc
@@ -158,6 +174,12 @@ contains
 
   end function Sfc_io_calculate_indices
 
+  !>@brief Allocates internal Sfc_io_data_type arrays if array sizes should change.
+  !> \section Sfc_io_data_type%allocate_arrays() procedure
+  !! Calls calculate_arrays() to determine if any nvar counts have changed, based
+  !! on the new arguments. If they have changed, then arrays are reallocated.
+  !! The arrays will need to be filled with new data at that point, as the contents
+  !! will be unknown. Returns .true. if arrays were reallocated, and .false. otherwise.
   function Sfc_io_allocate_arrays(sfc, Model, Atm_block, reading, warm_start)
     implicit none
     class(Sfc_io_data_type)             :: sfc
@@ -219,6 +241,7 @@ contains
     endif
   end function Sfc_io_allocate_arrays
 
+  !>@ Registers all axes for reading or writing restarts using FMS (non-quilt)
   subroutine Sfc_io_register_axes(sfc, Model, Sfc_restart, reading, warm_start)
     implicit none
     class(Sfc_io_data_type)             :: sfc
@@ -251,9 +274,14 @@ contains
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
       else if(Model%lsm == Model%lsm_ruc .and. reading) then
-        ! The RUC defines zaxis_1 for reading, so it can read a restart from a different LSM.
-        ! The lsm_ruc never writes zaxis_2.
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil_lsm)
+        ! The RUC only ever writes zaxis_1, which is combined soil-ice, kice, which is 9.
+        ! Other LSMs read and write zaxis_2, which is lsoil for them, and that's always 4.
+        ! Defining zaxis_2 here lets RUC LSM read from a different soil vertical coordinate
+        ! (lsoil_lsm). In practice, this probably won't work well since levels will be
+        ! filled with zeroes. We retain this capability for historical reasons.
+        ! Just make sure you only restart RUC LSM off of RUC LSM, and always have
+        ! kice = lsoil = lsoil_lsm = 9 and everything will be fine.
       endif
       if(Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_3', dimension_length=3)
@@ -263,6 +291,7 @@ contains
     endif
   end subroutine Sfc_io_register_axes
 
+  !>@ Writes axis index variables and related metadata for all axes when writing FMS (non-quilt) restarts
   subroutine Sfc_io_write_axes(sfc, Model, Sfc_restart)
     implicit none
     class(Sfc_io_data_type)             :: sfc
@@ -329,6 +358,7 @@ contains
     call write_data( Sfc_restart, 'Time', 1)
   end subroutine Sfc_io_write_axes
 
+  !>@ Fills the name3d array with all surface 3D field names.
   subroutine Sfc_io_fill_3d_names(sfc,Model,warm_start)
     implicit none
     class(Sfc_io_data_type)           :: sfc
@@ -360,6 +390,7 @@ contains
     sfc%name3(0) = 'tiice'
   end subroutine Sfc_io_fill_3d_names
 
+  !>@ Fills the name2d array with all surface 2D field names. Updates nvar2m if needed.
   subroutine Sfc_io_fill_2d_names(sfc,Model,warm_start)
     implicit none
     class(Sfc_io_data_type)           :: sfc
@@ -519,6 +550,7 @@ contains
     endif
   end subroutine Sfc_io_fill_2d_names
 
+  !>@ Registers 2D fields with FMS for reading or writing non-quilt restart files
   subroutine Sfc_io_register_2d_fields(sfc,Model,Sfc_restart,reading,warm_start)
     implicit none
     class(Sfc_io_data_type)             :: sfc
@@ -624,6 +656,7 @@ contains
 
   end subroutine Sfc_io_register_2d_fields
 
+  !>@ Registers 3D fields with FMS for reading or writing non-quilt restart files
   subroutine Sfc_io_register_3d_fields(sfc,Model,Sfc_restart,reading,warm_start)
     implicit none
     class(Sfc_io_data_type)             :: sfc
@@ -693,6 +726,7 @@ contains
 
   end subroutine Sfc_io_register_3d_fields
 
+  !>@ Initializes some surface fields with reasonable defaults
   subroutine Sfc_io_init_fields(sfc,Model)
     implicit none
     class(Sfc_io_data_type)           :: sfc
@@ -706,6 +740,14 @@ contains
     endif
   end subroutine Sfc_io_init_fields
 
+  !>@ Copies data to the model grid (reading=true) or from the model grid (reading=false)
+  !> \section Sfc_io_data_type%transfer
+  !! Called to transfer data between the model grid and Sfc_io_data_type temporary arrays.
+  !! The FMS and ESMF restarts use the temporary arrays, not the model grid arrays. This
+  !! transfer routine copies to the model grid if reading=.true. or from the model grid
+  !! if reading=.false. This is mostly loops around GFS_data_transfer() interface calls.
+  !!
+  !! In addition, if override_frac_grid is provided, it will be set to Model%frac_grid.
   subroutine Sfc_io_transfer(sfc, reading, Model, Atm_block, Sfcprop, warm_start, override_frac_grid)
     !--- interface variable definitions
     implicit none
@@ -1163,6 +1205,7 @@ contains
     end do block_loop
   end subroutine Sfc_io_transfer
 
+  !>@ Copies from Sfc_io_data_type internal arrays to the model grid by calling transfer() with reading=.true.
   subroutine Sfc_io_copy_to_grid(sfc, Model, Atm_block, Sfcprop, warm_start, override_frac_grid)
     !--- interface variable definitions
     implicit none
@@ -1178,6 +1221,7 @@ contains
 
   end subroutine Sfc_io_copy_to_grid
 
+  !>@ Copies from the model grid to Sfc_io_data_type internal arrays by calling transfer() with reading=.false.
   subroutine Sfc_io_copy_from_grid(sfc, Model, Atm_block, Sfcprop)
     !--- interface variable definitions
     implicit none
@@ -1191,6 +1235,7 @@ contains
 
   end subroutine Sfc_io_copy_from_grid
 
+  !>@ Calculates values and applies safeguards after reading restart data.
   subroutine Sfc_io_apply_safeguards(sfc, Model, Atm_block, Sfcprop)
     !--- interface variable definitions
     implicit none
@@ -1422,6 +1467,7 @@ contains
 
   end subroutine Sfc_io_apply_safeguards
 
+  !>@ destructor for Sfc_io_data_type
   subroutine Sfc_io_final(sfc)
     implicit none
     type(Sfc_io_data_type)             :: sfc
@@ -1457,6 +1503,7 @@ contains
 
   end subroutine Sfc_io_final
 
+  !>@ Creates ESMF bundles for 2D fields, for writing surface restart files using the write component (quilt)
   subroutine Sfc_io_bundle_2d_fields(sfc, bundle, grid, Model, outputfile)
     use esmf
     use GFS_typedefs, only: GFS_control_type
@@ -1504,6 +1551,7 @@ contains
     endif
   end subroutine Sfc_io_bundle_2d_fields
 
+  !>@ Creates ESMF bundles for 3D fields, for writing surface restart files using the write component (quilt)
   subroutine Sfc_io_bundle_3d_fields(sfc, bundle, grid, Model, outputfile)
     use esmf
     use GFS_typedefs, only: GFS_control_type
@@ -1568,3 +1616,4 @@ contains
 
   end subroutine Sfc_io_bundle_3d_fields
 end module fv3atm_sfc_io
+!> @}

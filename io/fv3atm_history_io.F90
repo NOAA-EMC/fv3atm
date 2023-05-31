@@ -1,17 +1,9 @@
+!> \file fv3atm_history_io.F90
+!! This file defines routines used to output atmosphere diagnostic
+!! (history) data from the physics and surface fields, both for quilt
+!! and non-quilt output.
 module fv3atm_history_io_mod
 
-  !-----------------------------------------------------------------------
-  !    gfs_physics_driver_mod defines the GFS physics routines used by
-  !    the GFDL FMS system to obtain tendencies and boundary fluxes due
-  !    to the physical parameterizations and processes that drive
-  !    atmospheric time tendencies for use by other components, namely
-  !    the atmospheric dynamical core.
-  !
-  !    NOTE: This module currently supports only the operational GFS
-  !          parameterizations as of September 2015.  Further development
-  !          is needed to support the full suite of physical
-  !          parameterizations present in the GFS physics package.
-  !-----------------------------------------------------------------------
   !
   !--- FMS/GFDL modules
   use block_control_mod,  only: block_control_type
@@ -40,13 +32,20 @@ module fv3atm_history_io_mod
   public  fv_phys_bundle_setup
 #endif
 
+  !>\defgroup fv3atm_history_io_mod FV3ATM History I/O Module
+  !> @{
+
+  !>@ The maximum allowed number of diagnostic fields that can be defined in any given model run.
+  !! This does not include rrfs-sd or clm lake, which have their own data structures.
   integer, parameter, public :: DIAG_SIZE = 800
+
   real, parameter :: missing_value = 9.99e20_kind_phys
   real, parameter :: stndrd_atmos_ps = 101325.0_kind_phys
   real, parameter :: stndrd_atmos_lapse = 0.0065_kind_phys
   real, parameter :: drythresh = 1.e-4_kind_phys
   real, parameter :: zero = 0.0_kind_phys, one = 1.0_kind_phys
 
+  !>@ Storage type for temporary data during output of diagnostic (history) files
   type history_type
     integer :: tot_diag_idx = 0
 
@@ -81,22 +80,19 @@ module fv3atm_history_io_mod
 #endif
   end type history_type
 
+  !>@ This shared_history_data instance of history_type is shared between all calls to public module subroutines.
   type(history_type) :: shared_history_data
 
 CONTAINS
 
-  !-------------------------------------------------------------------------
-  !--- gfdl_diag_register ---
-  !-------------------------------------------------------------------------
-  !    creates and populates a data type which is then used to "register"
-  !    GFS physics diagnostic variables with the GFDL FMS diagnostic manager.
-  !    includes short & long names, units, conversion factors, etc.
-  !    there is no copying of data, but instead a clever use of pointers.
-  !    calls a GFDL FMS routine to register diagnositcs and compare against
-  !    the diag_table to determine what variables are to be output.
-  !
-  !    calls:  register_diag_field
-  !-------------------------------------------------------------------------
+  !>@brief Registers diagnostic variables with the FMS diagnostic manager.
+  !> \section fv3atm_diag_register subroutine
+  !! Creates and populates a data type which is then used to "register"
+  !! diagnostic variables with the GFDL FMS diagnostic manager.
+  !! includes short & long names, units, conversion factors, etc.
+  !! there is no copying of data, but instead a clever use of pointers.
+  !! calls a GFDL FMS routine to register diagnositcs and compare against
+  !! the diag_table to determine what variables are to be output.
   subroutine fv3atm_diag_register(Diag, Time, Atm_block, Model, xlon, xlat, axes)
     use physcons,  only: con_g
     implicit none
@@ -112,14 +108,10 @@ CONTAINS
     call shared_history_data%register(Diag, Time, Atm_block, Model, xlon, xlat, axes)
   end subroutine fv3atm_diag_register
 
-  !-------------------------------------------------------------------------
-  !--- gfs_diag_output ---
-  !-------------------------------------------------------------------------
-  !    routine to transfer the diagnostic data to the gfdl fms diagnostic
-  !    manager for eventual output to the history files.
-  !
-  !    calls:  send_data
-  !-------------------------------------------------------------------------
+  !>@brief Transfers diagnostic data to the FMS diagnostic manager
+  !> \section fv3atm_diag_output subroutine
+  !! This routine transfers diagnostic data to the FMS diagnostic
+  !!  manager for eventual output to the history files.
   subroutine fv3atm_diag_output(time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
        dt, time_int, time_intfull, time_radsw, time_radlw)
     !--- subroutine interface variable definitions
@@ -139,6 +131,11 @@ CONTAINS
   end subroutine fv3atm_diag_output
 
 #ifdef use_WRTCOMP
+  !>@brief Sets up the ESMF bundle to use for quilt diagnostic output
+  !> \section fv_phys_bundle_setup subroutine
+  !! This part of the write component (quilt) sets up the ESMF bundles
+  !! to use for writing diagnostic output. It is only defined when the
+  !! write component is enabled at compile time.
   subroutine fv_phys_bundle_setup(Diag, axes, phys_bundle, fcst_grid, quilting, nbdlphys, rc)
     !
     !-------------------------------------------------------------
@@ -161,11 +158,11 @@ CONTAINS
     call shared_history_data%bundle_setup(Diag, axes, phys_bundle, fcst_grid, quilting, nbdlphys, rc)
   end subroutine fv_phys_bundle_setup
 #endif
-  !
-  !---------------------------------------------------------------------
-  !*** Private subroutines
-  !---------------------------------------------------------------------
-  !
+
+  !>@brief Private implementation of fv3atm_diag_register. Do not call directly.
+  !> \section history_type%register procedure
+  !! This is the history_type%register procedure, which provides the internal
+  !! implementation of fv3atm_diag_register. Do not call this directly.
   subroutine history_type_register(hist, Diag, Time, Atm_block, Model, xlon, xlat, axes)
     use physcons,  only: con_g
     implicit none
@@ -273,8 +270,11 @@ CONTAINS
 
   end subroutine history_type_register
 
-  !-------------------------------------------------------------------------
-
+  !>@brief Internal implementation of fv3atm_diag_output
+  !> \section history_type%output procedure
+  !! This is history_type%output, which provides the internal
+  !! implementation of the public fv3atm_diag_output routine. Never
+  !! call this directly.
   subroutine history_type_output(hist, time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
        dt, time_int, time_intfull, time_radsw, time_radlw)
     !--- subroutine interface variable definitions
@@ -473,8 +473,11 @@ CONTAINS
       endif has_id
     end do history_loop
   end subroutine history_type_output
-  !
-  !-------------------------------------------------------------------------
+
+  !>@brief Part of the internal implementation of history_type_output (history_type%output)
+  !> \section history_type%store_data procedure
+  !! This routine copies data from an x-y array to internal buffers for later output.
+  !! Never call this subroutine directly; call fv3atm_diag_output instead.
   subroutine history_type_store_data(hist,id, work, Time, idx, intpl_method, fldname)
     implicit none
     class(history_type)                 :: hist
@@ -558,9 +561,11 @@ CONTAINS
     endif if_has_id
     !
   end subroutine history_type_store_data
-  !
-  !-------------------------------------------------------------------------
-  !
+
+  !>@brief Part of the internal implementation of history_type_output (history_type%output)
+  !> \section history_type%store_data3D procedure
+  !! This routine copies data from an x-y-z array to internal buffers for later output.
+  !! Never call this subroutine directly; call fv3atm_diag_output instead.
   subroutine history_type_store_data3D(hist, id, work, Time, idx, intpl_method, fldname)
     implicit none
     class(history_type)                 :: hist
@@ -665,10 +670,13 @@ CONTAINS
     endif
     !
   end subroutine history_type_store_data3D
-  !
-  !-------------------------------------------------------------------------
-  !
+
 #ifdef use_WRTCOMP
+  !>@brief Sets up the ESMF bundle to use for quilt diagnostic output
+  !> \section history_type%bundle_setup procedure
+  !! This part of the write component (quilt) sets up the ESMF bundles
+  !! to use for writing diagnostic output. It is only defined when the
+  !! write component is enabled at compile time.
 
   subroutine history_type_bundle_setup(hist, Diag, axes, phys_bundle, fcst_grid, quilting, nbdlphys, rc)
     ! set esmf bundle for phys output fields
@@ -936,8 +944,12 @@ CONTAINS
     nullify(hist%all_axes)
 
   end subroutine history_type_bundle_setup
-  !
-  !-----------------------------------------------------------------------------------------
+
+  !>@brief Adds one field to an ESMF field bundle for later output. Internal subroutine; do not call this directly.
+  !> \section history_type%add_field_to_phybundle procedure
+  !! This is part of the internal implementation of history_type_bundle_setup (history_type%bundle_setup).
+  !! It sets attributes for and logs information about a single ESMF field. Do not call this subroutine directly.
+  !! Call fv_phys_bundle_setup instead.
   subroutine history_type_add_field_to_phybundle(hist,var_name,long_name,units,cell_methods, axes,phys_grid, &
        kstt,phys_bundle,output_file,intpl_method,range,l2dvector,rcd)
     !
@@ -1130,8 +1142,15 @@ CONTAINS
     call ESMF_LogWrite('phys field add to fieldbundle '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine history_type_add_field_to_phybundle
-  !
-  !
+
+  !>@brief Private subroutine to search a field list for a specific name.
+  !> \section history_type%find_output_name procedure
+  !! Searches the GFS_Diagnostic-generated field list for a
+  !! specific name and retrieves the name that should be used for
+  !! outputting the variable. This is part of the internal
+  !! implementation of history_type_bundle_setup
+  !! (history_type%bundle_setup) and should not be called
+  !! directly. Call fv_phys_bundle_setup instead.
   subroutine history_type_find_output_name(hist,module_name,field_name,output_name)
     implicit none
     class(history_type)          :: hist
@@ -1153,7 +1172,8 @@ CONTAINS
       endif
     enddo
     if(output_name == '') then
-      print *,'Error, cant find out put name'
+19    format("Error: can't find output name for model field ",'"',A,'"')
+      print 19,trim(field_name)
     endif
 
   end subroutine history_type_find_output_name
@@ -1161,3 +1181,4 @@ CONTAINS
   !-------------------------------------------------------------------------
 
 end module fv3atm_history_io_mod
+!> @}

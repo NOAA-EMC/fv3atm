@@ -1,11 +1,20 @@
+!> \file fv3atm_clm_lake_io.F90
+!! This code reads and writes restart files for the CLM Lake Model. The source code of
+!! that model can be found in CCPP. Only the fv3atm_restart_io.F90 should ever access
+!! these routines.
+!!
+!! The CLM Lake Model has its own restart code due to its five alternative vertical
+!! levels, which don't match the five found in the other surface fields. For the sake
+!! of code simplicity, a dedicated file was a better implementation.
+
 module fv3atm_clm_lake_io
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use block_control_mod,  only: block_control_type
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, register_axis, &
-                                register_restart_field, write_data, &
-                                register_variable_attribute, register_field
+       register_restart_field, write_data, &
+       register_variable_attribute, register_field
   use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
-                                create_3d_field_and_add_to_bundle
+       create_3d_field_and_add_to_bundle
 
   implicit none
 
@@ -15,15 +24,17 @@ module fv3atm_clm_lake_io
        clm_lake_copy_from_grid, clm_lake_copy_to_grid, clm_lake_bundle_fields, &
        clm_lake_final
 
-  type clm_lake_data_type
-    ! The clm_lake_data_type derived type is a class that stores
-    ! temporary arrays used to read or write CLM Lake model restart
-    ! and axis variables. It can safely be declared and unused, but
-    ! you should only call these routines if the CLM Lake Model was
-    ! (or will be) used by this execution of the FV3. It is the
-    ! responsibility of the caller to ensure the necessary data is in
-    ! Sfc_restart, Sfcprop, and Model.
+  !>\defgroup CLM Lake Model restart public interface
+  !>  @{
 
+  !>@ The clm_lake_data_type derived type is a class that stores
+  !!  temporary arrays used to read or write CLM Lake model restart
+  !!  and axis variables. It can safely be declared and unused, but
+  !!  you should only call these routines if the CLM Lake Model was
+  !!  (or will be) used by this execution of the FV3. It is the
+  !!  responsibility of the caller to ensure the necessary data is in
+  !!  Sfc_restart, Sfcprop, and Model.
+  type clm_lake_data_type
     ! All 2D variables needed for a restart
     real(kind_phys), pointer, private, dimension(:,:) :: &
          T_snow=>null(), T_ice=>null(), &
@@ -79,9 +90,11 @@ module fv3atm_clm_lake_io
     final :: clm_lake_final
   end type clm_lake_data_type
 
-   CONTAINS
+CONTAINS
+
+  !>@ This subroutine is clm_lake%alocate_data. It deallocates all
+  !!  data, and reallocate to the size specified in Model
   subroutine clm_lake_allocate_data(clm_lake,Model)
-    ! Deallocate all data, and reallocate to the size specified in Model
     implicit none
     class(clm_lake_data_type) :: clm_lake
     type(GFS_control_type),   intent(in) :: Model
@@ -140,8 +153,9 @@ module fv3atm_clm_lake_io
     enddo
   end subroutine clm_lake_allocate_data
 
+  !>@ This is clm_lake%register_axes. It registers all five axes needed
+  !!  by CLM Lake restart data.
   subroutine clm_lake_register_axes(clm_lake,Model,Sfc_restart)
-    ! Register all five axes needed by CLM Lake restart data
     implicit none
     class(clm_lake_data_type) :: clm_lake
     type(GFS_control_type),      intent(in) :: Model
@@ -153,9 +167,10 @@ module fv3atm_clm_lake_io
     call register_axis(Sfc_restart, 'levsnowsoil1_clm_lake', dimension_length=Model%nlevsnowsoil1_clm_lake)
   end subroutine clm_lake_register_axes
 
+  !>@ This is clm_lake%write_axes. It creates variables with the name
+  !!  name as each clm_lake axis, and fills the variable with the
+  !!  appropriate indices
   subroutine clm_lake_write_axes(clm_lake, Model, Sfc_restart)
-    ! Create variables with the name name as each clm_lake axis, and
-    ! fill the variable with the appropriate indices
     implicit none
     class(clm_lake_data_type) :: clm_lake
     type(GFS_control_type),      intent(in) :: Model
@@ -179,9 +194,11 @@ module fv3atm_clm_lake_io
     call write_data(Sfc_restart, 'levsnowsoil1_clm_lake', clm_lake%levsnowsoil1_clm_lake)
   end subroutine clm_lake_write_axes
 
+  !>@ This is clm_lake%copy_from_grid. It copies from Sfcprop
+  !!  variables to the corresponding data temporary variables.
+  !!  Terrible things will happen if you don't call
+  !!  clm_lake%allocate_data first.
   subroutine clm_lake_copy_from_grid(clm_lake, Model, Atm_block, Sfcprop)
-    ! Copies from Sfcprop variables to the corresponding data temporary variables.
-    ! Terrible things will happen if you don't call clm_lake%allocate_data first.
     implicit none
     class(clm_lake_data_type) :: clm_lake
     type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
@@ -194,7 +211,7 @@ module fv3atm_clm_lake_io
 
     ! Copy data to temporary arrays
 
-!$omp parallel do default(shared) private(i, j, nb, ix)
+    !$omp parallel do default(shared) private(i, j, nb, ix)
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
         i = Atm_block%index(nb)%ii(ix) - isc + 1
@@ -232,9 +249,10 @@ module fv3atm_clm_lake_io
     enddo
   end subroutine clm_lake_copy_from_grid
 
+  !>@ This is clm_lake%copy_to_grid. It copies from data temporary
+  !!  variables to the corresponding Sfcprop variables.  Terrible
+  !!  things will happen if you don't call data%allocate_data first.
   subroutine clm_lake_copy_to_grid(clm_lake, Model, Atm_block, Sfcprop)
-    ! Copies from data temporary variables to the corresponding Sfcprop variables.
-    ! Terrible things will happen if you don't call data%allocate_data first.
     implicit none
     class(clm_lake_data_type) :: clm_lake
     type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
@@ -247,7 +265,7 @@ module fv3atm_clm_lake_io
 
     ! Copy data to temporary arrays
 
-!$omp parallel do default(shared) private(i, j, nb, ix)
+    !$omp parallel do default(shared) private(i, j, nb, ix)
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
         i = Atm_block%index(nb)%ii(ix) - isc + 1
@@ -285,10 +303,11 @@ module fv3atm_clm_lake_io
     enddo
   end subroutine clm_lake_copy_to_grid
 
+  !>@ This is clm_lake%register_fields, and it is only used in the
+  !!  non-quilt restart. It registers all restart fields needed by the
+  !!  CLM Lake Model.  Terrible things will happen if you don't call
+  !!  clm_lake%allocate_data and clm_lake%register_axes first.
   subroutine clm_lake_register_fields(clm_lake, Sfc_restart)
-    ! Registers all restart fields needed by the CLM Lake Model.
-    ! Terrible things will happen if you don't call clm_lake%allocate_data
-    ! and clm_lake%register_axes first.
     implicit none
     class(clm_lake_data_type) :: clm_lake
     type(FmsNetcdfDomainFile_t) :: Sfc_restart
@@ -316,61 +335,65 @@ module fv3atm_clm_lake_io
     ! Register 3D fields
     call register_restart_field(Sfc_restart, 'lake_z3d', clm_lake%lake_z3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_dz3d', clm_lake%lake_dz3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_soil_watsat3d', clm_lake%lake_soil_watsat3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_csol3d', clm_lake%lake_csol3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_soil_tkmg3d', clm_lake%lake_soil_tkmg3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_soil_tkdry3d', clm_lake%lake_soil_tkdry3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_soil_tksatu3d', clm_lake%lake_soil_tksatu3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_z3d', clm_lake%lake_snow_z3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_dz3d', clm_lake%lake_snow_dz3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_zi3d', clm_lake%lake_snow_zi3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsnowsoil_clm_lake ', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil_clm_lake ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_h2osoi_vol3d', clm_lake%lake_h2osoi_vol3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_h2osoi_liq3d', clm_lake%lake_h2osoi_liq3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_h2osoi_ice3d', clm_lake%lake_h2osoi_ice3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_soisno3d', clm_lake%lake_t_soisno3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_lake3d', clm_lake%lake_t_lake3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_icefrac3d', clm_lake%lake_icefrac3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_clay3d', clm_lake%lake_clay3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_sand3d', clm_lake%lake_sand3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-                      'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
   end subroutine clm_lake_register_fields
 
-
+  !>@ This is clm_lake%bundle_fields, and it is only used in the
+  !!  quilt restart. It bundles all fields needed by the CLM Lake
+  !!  Model, which makes them available to ESMF for restart I/O.
+  !!  Terrible things will happen if you don't call
+  !!  clm_lake%allocate_data and clm_lake%register_axes first.
   subroutine clm_lake_bundle_fields(clm_lake, bundle, grid, Model, outputfile)
     use esmf
     use GFS_typedefs, only: GFS_control_type
@@ -436,19 +459,20 @@ module fv3atm_clm_lake_io
 
   end subroutine Clm_lake_bundle_fields
 
+  !>@ Final routine (destructor) for the clm_lake_data_type, called
+  !!  automatically when an object of that type goes out of scope.  This
+  !!  is simply a wrapper around clm_lake%deallocate_data().
   subroutine clm_lake_final(clm_lake)
-    ! Final routine for clm_lake_data_type, called automatically when
-    ! an object of that type goes out of scope.  This is simply a
-    ! wrapper around clm_lake%deallocate_data().
     implicit none
     type(clm_lake_data_type) :: clm_lake
     call clm_lake_deallocate_data(clm_lake)
   end subroutine clm_lake_final
 
+  !>@ This is clm_lake%deallocate_data. It deallocates all data used,
+  !!  and nullifies the pointers. The clm_lake object can safely be
+  !!  used again after this call. This is also the implementation of
+  !!  the clm_lake_data_type final routine.
   subroutine clm_lake_deallocate_data(clm_lake)
-    ! Deallocates all data used, and nullifies the pointers. The clm_lake
-    ! object can safely be used again after this call. This is also
-    ! the implementation of the clm_lake_data_type final routine.
     implicit none
     class(clm_lake_data_type) :: clm_lake
 
@@ -494,3 +518,4 @@ module fv3atm_clm_lake_io
   end subroutine clm_lake_deallocate_data
 
 end module fv3atm_clm_lake_io
+!> @}
