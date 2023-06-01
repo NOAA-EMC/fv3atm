@@ -48,7 +48,6 @@
 !*** file bundle for output
 !--------------------------
       integer :: FBCount
-      character(128),dimension(:),allocatable     :: wrtFB_names
 !
 !-----------------------------------------------------------------------
 !***  THE OUTPUT FILE
