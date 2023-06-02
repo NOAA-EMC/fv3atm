@@ -929,6 +929,8 @@ contains
     if (Model%imp_physics == Model%imp_physics_thompson) then
       if (Model%ltaerosol) then
         Interstitial%nvdiff = 12
+     else if (Model%mraerosol) then
+        Interstitial%nvdiff = 10
       else
         Interstitial%nvdiff = 9
       endif
@@ -1018,6 +1020,8 @@ contains
       elseif (Model%imp_physics == Model%imp_physics_thompson) then
         if (Model%ltaerosol) then
           Interstitial%nvdiff = 12
+        else if (Model%mraerosol) then
+          Interstitial%nvdiff = 10
         else
           Interstitial%nvdiff = 9
         endif
