@@ -63,6 +63,7 @@ module GFS_restart
     integer :: ndiag_idx(20), itime
     integer :: nblks, num, nb, max_rstrt, offset 
     character(len=2) :: c2 = ''
+    logical :: surface_layer_saves_rainprev
     
     nblks = size(Init_parm%blksz)
     max_rstrt = size(Restart%name2d)
@@ -106,6 +107,12 @@ module GFS_restart
     Restart%ldiag = 3 + Model%ntot2d + Model%nctp + ndiag_rst
     Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
 
+    ! The CLM Lake Model needs raincprev and rainncprv, which some
+    ! surface layer schemes save, and some don't. If the surface layer
+    ! scheme does not save that variable, then it'll be saved
+    ! separately for clm_lake.
+    surface_layer_saves_rainprev = .false.
+
     ! GF
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       Restart%num2d = Restart%num2d + 3
@@ -121,14 +128,21 @@ module GFS_restart
     ! NoahMP
     if (Model%lsm == Model%lsm_noahmp) then
       Restart%num2d = Restart%num2d + 10
+      surface_layer_saves_rainprev = .true.
     endif
     ! RUC 
     if (Model%lsm == Model%lsm_ruc) then
       Restart%num2d = Restart%num2d + 5
+      surface_layer_saves_rainprev = .true.
     endif
     ! MYNN SFC
     if (Model%do_mynnsfclay) then
       Restart%num2d = Restart%num2d + 13
+    endif
+    ! Save rain prev for lake if surface layer doesn't.
+    if (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm .and. &
+         .not.surface_layer_saves_rainprev) then
+      Restart%num2d = Restart%num2d + 2
     endif
     ! Thompson aerosol-aware
     if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
@@ -428,6 +442,20 @@ module GFS_restart
         do nb = 1,nblks
           Restart%data(nb,num)%var2p => Sfcprop(nb)%qss(:)
         enddo
+    endif
+    ! Save rain prev for lake if surface layer doesn't.
+    if (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm .and. &
+         .not.surface_layer_saves_rainprev) then
+      num = num + 1
+      Restart%name2d(num) = 'raincprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%raincprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'rainncprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%rainncprv(:)
+      enddo
     endif
     ! Thompson aerosol-aware
     if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
