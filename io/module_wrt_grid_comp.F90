@@ -2158,7 +2158,7 @@
                   endif
                   call mpi_bcast(kchunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
                endif
-               if (wrt_int_state%mype == 0) then
+               if (lprnt) then
                   print *,'ichunk2d,jchunk2d',ichunk2d(grid_id),jchunk2d(grid_id)
                   print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id)
                endif
