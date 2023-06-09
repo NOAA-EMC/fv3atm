@@ -211,6 +211,8 @@ module fv3gfs_cap_mod
     logical                                :: use_saved_routehandles, rh_file_exist
     logical                                :: fieldbundle_is_restart = .false.
 
+    integer                                :: sloc
+    type(ESMF_StaggerLoc)                  :: staggerloc
 !
 !------------------------------------------------------------------------
 !
@@ -634,7 +636,12 @@ module fv3gfs_cap_mod
                 dstGrid(j,i) = grid
                 ! loop over all the mirror fields and set the balanced mirror Grid
                 do ii=1, fieldCount
-                  call ESMF_FieldEmptySet(fieldList(ii), grid=grid, rc=rc)
+                  call ESMF_InfoGetFromHost(fieldList(ii), info=info, rc=rc)
+                  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                  call ESMF_InfoGet(info, key="staggerloc", value=sloc, rc=rc)
+                  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                  staggerloc = sloc  ! convert integer into StaggerLoc_Flag
+                  call ESMF_FieldEmptySet(fieldList(ii), grid=grid, staggerloc=staggerloc, rc=rc)
                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
                 enddo
                 ! clean-up
