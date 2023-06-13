@@ -544,12 +544,13 @@ module post_fv3
                              sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
                              albedo, tg, prate_max, pwat, snow_acm, snow_bkt,  &
                              acgraup, graup_bucket, acfrain, frzrn_bucket,     &
-                             ltg1_max, ltg2_max, ltg3_max, aodtot, ebb, hwp,   &
+                             ltg1_max, ltg2_max, ltg3_max, ebb, hwp,           &
                              aod550,du_aod550,ss_aod550,su_aod550,oc_aod550,   &
                              bc_aod550,maod,                                   &
                              dustpm10, dustcb, bccb, occb, sulfcb, sscb,       &
                              dustallcb, ssallcb, dustpm, sspm, pp25cb, pp10cb, &
-                             no3cb, nh4cb, dusmass, ducmass, dusmass25,ducmass25
+                             no3cb, nh4cb, dusmass, ducmass, dusmass25,ducmass25, &
+                             snownc, graupelnc, qrmax
       use soil,        only: sldpth, sh2o, smc, stc, sllevel
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -605,9 +606,8 @@ module post_fv3
       real,dimension(:),    allocatable :: slat,qstl
       real,external::FPVSNEW
       real,dimension(:,:),allocatable :: dummy, p2d, t2d, q2d,  qs2d,  &
-                             cw2d, cfr2d, accswe_ice, accswe_land, &
-                             snacc_land, snacc_ice
-      real,dimension(:,:,:),allocatable :: extsmoke, extdust
+                             cw2d, cfr2d, snacc_land, snacc_ice
+      real,dimension(:,:,:),allocatable :: ext550
       character(len=80)              :: fieldname, wrtFBName, flatlon, &
                                         VarName
       type(ESMF_Grid)                :: wrtGrid
@@ -688,10 +688,7 @@ module post_fv3
 
       !Allocate for regional models only
       if(modelname=='FV3R') then
-        allocate(extsmoke(ista:iend,jsta:jend,lm))
-        allocate(extdust(ista:iend,jsta:jend,lm))
-        allocate(accswe_ice(ista:iend,jsta:jend))
-        allocate(accswe_land(ista:iend,jsta:jend))
+        allocate(ext550(ista:iend,jsta:jend,lm))
         allocate(snacc_ice(ista:iend,jsta:jend))
         allocate(snacc_land(ista:iend,jsta:jend))
       endif
@@ -999,17 +996,6 @@ module post_fv3
               enddo
             endif
 
-            ! total aod
-            if(trim(fieldname)=='aodtot') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aodtot,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  aodtot(i,j)=arrayr42d(i,j)
-                  if(abs(arrayr42d(i,j)-fillValue) < small) aodtot(i,j)=spval
-                enddo
-              enddo
-            endif
-
             ! biomass burning emissions
             if(trim(fieldname)=='ebb_smoke_hr') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ebb,arrayr42d,fillValue,spval)
@@ -1248,6 +1234,28 @@ module post_fv3
                 do i=ista, iend
                   frzrn_bucket(i,j) = arrayr42d(i,j)
                   if (abs(arrayr42d(i,j)-fillValue) < small) frzrn_bucket(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            !time step snow (in m)
+            if(trim(fieldname)=='snow') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snownc,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  snownc(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) snownc(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            !time step graupel (in m)
+            if(trim(fieldname)=='graupel') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,graupelnc,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  graupelnc(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) graupelnc(i,j) = spval 
                 enddo
               enddo
             endif
@@ -2235,25 +2243,6 @@ module post_fv3
             endif
 
             if(modelname=='FV3R')then
-            !acsnow
-            if(trim(fieldname)=='accswe_land') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,accswe_land,arrayr42d,fillvalue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  accswe_land(i,j) = arrayr42d(i,j)
-                  if(abs(arrayr42d(i,j)-fillvalue)<small) accswe_land(i,j) = spval
-                enddo
-              enddo
-            endif
-            if(trim(fieldname)=='accswe_ice') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,accswe_ice,arrayr42d,fillvalue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  accswe_ice(i,j) = arrayr42d(i,j)
-                  if(abs(arrayr42d(i,j)-fillvalue)<small) accswe_ice(i,j) = spval
-                enddo
-              enddo
-            endif
 
             !sndepac
             if(trim(fieldname)=='snacc_land') then
@@ -3729,6 +3718,8 @@ module post_fv3
               endif
             endif
 
+            if(modelname=='FV3R') then
+
             ! model level smoke
             if(trim(fieldname)=='smoke') then
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,smoke,arrayr43d,spval,fillvalue)
@@ -3755,35 +3746,18 @@ module post_fv3
               enddo
             endif
 
-            if(modelname=='FV3R') then
-
-            ! model level smoke_ext
-            if(trim(fieldname)=='smoke_ext') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,extsmoke,arrayr43d,spval,fillvalue)
+            ! model level ext550 extinction
+            if(trim(fieldname)=='ext550') then
+              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,ext550,arrayr43d,spval,fillvalue)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    extsmoke(i,j,l)=arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) extsmoke(i,j,l) = spval
+                    ext550(i,j,l)=arrayr43d(i,j,l)
+                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) ext550(i,j,l) = spval
                   enddo
                 enddo
               enddo
             endif
-
-            ! model level dust_ext
-            if(trim(fieldname)=='dust_ext') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,extdust,arrayr43d,spval,fillvalue)
-              do l=1,lm
-                do j=jsta,jend
-                  do i=ista, iend
-                    extdust(i,j,l)=arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) extdust(i,j,l) = spval
-                  enddo
-                enddo
-              enddo
-            endif
-
-            endif !end FV3R
 
             ! model level coarse dust
             if(trim(fieldname)=='coarsepm') then
@@ -3797,6 +3771,8 @@ module post_fv3
                 enddo
               enddo
             endif
+
+            endif !end FV3R
 
             ! Thompson scheme cloud ice effective radius
             if(trim(fieldname)=='cieffr') then
@@ -4276,21 +4252,25 @@ module post_fv3
 !      print *,'in post_gfs,ths=',maxval(ths(1:im,jsta:jend)), &
 !          minval(ths(1:im,jsta:jend))
 
-! compute cwm for gfdlmp
-!      if(  imp_physics == 11 ) then
+! compute cwm and max qrain in the column to be used later in precip type computation 
+        do j=jsta,jend
+          do i=ista,iend
+            qrmax(i,j)=0.
+          enddo
+        enddo
         do l=1,lm
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,ista,iend,cwm,qqg,qqs,qqr,qqi,qqw,spval)
+!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,ista,iend,cwm,qrmax,qqg,qqs,qqr,qqi,qqw,spval)
           do j=jsta,jend
             do i=ista,iend
-              if( qqg(i,j,l) /= spval) then
+              if( qqr(i,j,l) /= spval) then
                 cwm(i,j,l) = qqg(i,j,l)+qqs(i,j,l)+qqr(i,j,l)+qqi(i,j,l)+qqw(i,j,l)
+                qrmax(i,j)=max(qrmax(i,j),qqr(i,j,l))
               else
                 cwm(i,j,l) = spval
               endif
             enddo
           enddo
         enddo
-!      endif
 
 ! estimate 2m pres and convert t2m to theta
 !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,lm,pshltr,pint,tshltr,spval)
@@ -4340,28 +4320,15 @@ module post_fv3
 
       if(modelname=='FV3R') then
         ! smoke and dust extinction
-        !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,zint,taod5503d,aextc55,extsmoke,extdust,spval)
+        !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,zint,taod5503d,aextc55,ext550,spval)
         do l=1,lm
           do j=jsta,jend
             do i=ista, iend
-              if(taod5503d(i,j,l)<spval.and.aextc55(i,j,l)<spval) then
-                taod5503d(i,j,l)=extsmoke(i,j,l)+extdust(i,j,l)
+              if(ext550(i,j,l)<spval) then
+                taod5503d(i,j,l)=ext550(i,j,l)
                 aextc55(i,j,l)=taod5503d(i,j,l)/(zint(i,j,l)-zint(i,j,l+1))
               endif
             enddo
-          enddo
-        enddo
-
-        !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,accswe_ice,accswe_land,acsnow)
-        do j=jsta,jend
-          do i=ista, iend
-            if(accswe_land(i,j)<spval) then
-              acsnow(i,j) = accswe_land(i,j) 
-            elseif(accswe_ice(i,j)<spval) then
-              acsnow(i,j) = accswe_ice(i,j)
-            else
-              acsnow(i,j) = spval
-            endif
           enddo
         enddo
 
@@ -4378,10 +4345,7 @@ module post_fv3
           enddo
         enddo
 
-        deallocate(extsmoke)
-        deallocate(extdust)
-        deallocate(accswe_ice)
-        deallocate(accswe_land)
+        deallocate(ext550)
         deallocate(snacc_ice)
         deallocate(snacc_land)
 
