@@ -693,15 +693,6 @@ module post_fv3
         allocate(snacc_land(ista:iend,jsta:jend))
       endif
 
-      !wm
-!! GFS does not have convective precip
-!!$omp parallel do default(none) private(i,j) shared(jsta,jend,cprate,ista,iend)
-!      do j=jsta,jend
-!        do i=ista,iend
-!          cprate(i,j) = 0.
-!        enddo
-!      enddo
-
 !
 ! GFS doesn not yet output soil layer thickness, assign SLDPTH to be the same as nam
       sldpth(1) = 0.10
@@ -709,18 +700,9 @@ module post_fv3
       sldpth(3) = 0.6
       sldpth(4) = 1.0
 
-! GFS does not output time averaged convective and strat cloud fraction, set acfrcv to spval, n
-! cfrcv to 1
-!                     time averaged cloud fraction, set acfrst to spval, ncfrst to 1
-!                     UNDERGROUND RUNOFF, bgroff
-!                     inst incoming sfc longwave
-!                     inst incoming sfc shortwave, rswin
-!                     inst incoming clear sky sfc shortwave, rswinc
-!                     inst outgoing sfc shortwave, rswout
-!                     snow phase change heat flux, snopcx
-! GFS does not use total momentum flux,sfcuvx
+! set ncfrcv to 1, ncfrst to 1
 !$omp parallel do default(none),private(i,j),shared(jsta,jend,spval,ista,iend), &
-!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rswinc)
+!$omp& shared(ncfrcv,ncfrst)
       do j=jsta,jend
         do i=ista,iend
           ncfrcv(i,j) = 1.0
