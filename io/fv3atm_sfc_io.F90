@@ -69,8 +69,6 @@ module fv3atm_sfc_io
     character(len=32), pointer, dimension(:), public :: name2 => null()
     character(len=32), pointer, dimension(:), public :: name3 => null()
 
-    integer :: xaxis_1_chunk, yaxis_1_chunk
-
   contains
 
     procedure, public :: allocate_arrays => Sfc_io_allocate_arrays
@@ -316,14 +314,12 @@ contains
     call get_global_io_domain_indices(Sfc_restart, 'xaxis_1', is, ie, indices=buffer)
     call write_data(Sfc_restart, "xaxis_1", buffer)
     deallocate(buffer)
-    call get_dimension_size(Sfc_restart, 'xaxis_1', sfc%xaxis_1_chunk)
 
     call register_field(Sfc_restart, 'yaxis_1', 'double', (/'yaxis_1'/))
     call register_variable_attribute(Sfc_restart, 'yaxis_1', 'cartesian_axis', 'Y', str_len=1)
     call get_global_io_domain_indices(Sfc_restart, 'yaxis_1', is, ie, indices=buffer)
     call write_data(Sfc_restart, "yaxis_1", buffer)
     deallocate(buffer)
-    call get_dimension_size(Sfc_restart, 'yaxis_1', sfc%yaxis_1_chunk)
 
     call register_field(Sfc_restart, 'zaxis_1', 'double', (/'zaxis_1'/))
     call register_variable_attribute(Sfc_restart, 'zaxis_1', 'cartesian_axis', 'Z', str_len=1)
@@ -578,11 +574,16 @@ contains
     logical :: mand
 
     character(len=7) :: time2d(3)
+
+    integer :: xaxis_1_chunk, yaxis_1_chunk
     integer :: chunksizes2d(3)
+
+    call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
 
     if(.not.reading) then
       time2d=(/'xaxis_1','yaxis_1','Time   '/)
-      chunksizes2d=(/sfc%xaxis_1_chunk,sfc%yaxis_1_chunk,1/)
+      chunksizes2d=(/xaxis_1_chunk, yaxis_1_chunk, 1/)
     else
       time2d=(/'Time   ','yaxis_1','xaxis_1'/)
     endif
@@ -689,9 +690,14 @@ contains
     character(len=7), parameter :: xyz2_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/)
     character(len=7), parameter :: xyz3_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/)
     character(len=7), parameter :: xyz4_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/)
+
+    integer :: xaxis_1_chunk, yaxis_1_chunk
     integer :: chunksizes3d(4)
 
-    chunksizes3d = (/sfc%xaxis_1_chunk, sfc%yaxis_1_chunk, 1, 1/)
+    call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
+
+    chunksizes3d = (/xaxis_1_chunk, yaxis_1_chunk, 1, 1/)
 
     !--- register the 3D fields
     var3_p => sfc%var3ice(:,:,:)

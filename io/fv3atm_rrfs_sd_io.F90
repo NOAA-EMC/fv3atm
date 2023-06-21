@@ -6,7 +6,8 @@ module fv3atm_rrfs_sd_io
   use block_control_mod,  only: block_control_type
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, write_data, &
                                 register_axis, register_restart_field, &
-                                register_variable_attribute, register_field
+                                register_variable_attribute, register_field, &
+                                get_dimension_size
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use fv3atm_common_io,   only: get_nx_ny_from_atm, create_2d_field_and_add_to_bundle, &
                                 create_3d_field_and_add_to_bundle
@@ -193,23 +194,31 @@ contains
     class(rrfs_sd_state_type) :: data
     type(FmsNetcdfDomainFile_t) :: Sfc_restart
 
+    integer :: xaxis_1_chunk, yaxis_1_chunk
+    integer :: chunksizes2d(3), chunksizes3d(4)
+
+    call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
+    chunksizes2d = (/xaxis_1_chunk, yaxis_1_chunk, 1/)
+    chunksizes3d = (/xaxis_1_chunk, yaxis_1_chunk, 1, 1/)
+
     ! Register 2D fields
     call register_restart_field(Sfc_restart, 'emdust', data%emdust, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'emseas', data%emseas, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'emanoc', data%emanoc, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'fhist', data%fhist, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'coef_bb_dc', data%coef_bb_dc, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
 
     ! Register 3D field
     call register_restart_field(Sfc_restart, 'fire_in', data%fire_in, &
          dimensions=(/'xaxis_1             ', 'yaxis_1             ', &
          'fire_aux_data_levels', 'Time                '/), &
-         is_optional=.true.)
+         chunksizes=chunksizes3d, is_optional=.true.)
   end subroutine rrfs_sd_state_register_fields
 
   ! --------------------------------------------------------------------
