@@ -787,7 +787,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    !--- Model should restart at the forecast hours that are multiples of fhzero.
    !--- WARNING: For special cases that model needs to restart at non-multiple of fhzero
    !--- the fields in first output files are not accumulated from the beginning of
-   !--- the bucket, but the restart time.   
+   !--- the bucket, but the restart time.
    if (mod(sec,int(GFS_Control%fhzero*3600.)) /= 0) then
      diag_time = Time - real_to_time_type(mod(int((GFS_Control%kdt - 1)*dt_phys/3600.),int(GFS_Control%fhzero))*3600.0)
      if (mpp_pe() == mpp_root_pe()) print *,'Warning: in atmos_init,start at non multiple of fhzero'
@@ -2988,10 +2988,10 @@ end subroutine update_atmos_chemistry
             !--- Mean quantities
             ! MEAN Zonal compt of momentum flux (N/m**2)
             case ('mean_zonal_moment_flx_atm')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfc_cpl, Atm_block, nb, scale_factor=rtime, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfc_cpl, Atm_block, nb, scale_factor=-rtime, rc=localrc)
             ! MEAN Merid compt of momentum flux (N/m**2)
             case ('mean_merid_moment_flx_atm')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfc_cpl, Atm_block, nb, scale_factor=rtime, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfc_cpl, Atm_block, nb, scale_factor=-rtime, rc=localrc)
             ! MEAN Sensible heat flux (W/m**2)
             case ('mean_sensi_heat_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfc_cpl, Atm_block, nb, scale_factor=rtime, rc=localrc)

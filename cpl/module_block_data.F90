@@ -78,7 +78,7 @@ contains
     integer,                   pointer     :: source_ptr(:)
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional, intent(in)  :: scale_factor
+    real(kind=8),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -110,10 +110,10 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=8),           pointer     :: source_ptr(:)
+    real(kind=8),              pointer     :: source_ptr(:)
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional, intent(in)  :: scale_factor
+    real(kind=8),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -138,7 +138,7 @@ contains
     end if
 
     if (present(rc)) rc = localrc
-    
+
   end subroutine block_copy_1d_r8_to_2d_r8
 
   ! -- copy: 1D slice to 2D
@@ -147,11 +147,11 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:)
     integer,                   intent(in)  :: slice
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional, intent(in)  :: scale_factor
+    real(kind=8),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -188,12 +188,12 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:,:)
     integer,                   intent(in)  :: slice1
     integer,                   intent(in)  :: slice2
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional, intent(in)  :: scale_factor
+    real(kind=8),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -230,10 +230,10 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:)
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional, intent(in)  :: scale_factor
+    real(kind=8),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -269,10 +269,10 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:)
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional, intent(in)  :: scale_factor
+    real(kind=8),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -341,10 +341,10 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:,:)
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional, intent(in)  :: scale_factor
+    real(kind=8),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -417,11 +417,11 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:,:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:,:,:)
     integer,                   intent(in)  :: slice
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional, intent(in)  :: scale_factor
+    real(kind=8),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -713,10 +713,10 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=4),           pointer     :: source_ptr(:)
+    real(kind=4),              pointer     :: source_ptr(:)
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=4), optional, intent(in)  :: scale_factor
+    real(kind=4),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -750,11 +750,11 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=4),           pointer     :: source_ptr(:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:)
     integer,                   intent(in)  :: slice
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=4), optional, intent(in)  :: scale_factor
+    real(kind=4),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -833,10 +833,10 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
-    real(kind=4),           pointer     :: source_ptr(:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:)
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=4), optional, intent(in)  :: scale_factor
+    real(kind=4),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -872,10 +872,10 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=4),           pointer     :: source_ptr(:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:)
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=4), optional, intent(in)  :: scale_factor
+    real(kind=4),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -944,10 +944,10 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
-    real(kind=4),           pointer     :: source_ptr(:,:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:,:)
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=4), optional, intent(in)  :: scale_factor
+    real(kind=4),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
@@ -1020,11 +1020,11 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
-    real(kind=4),           pointer     :: source_ptr(:,:,:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:,:,:)
     integer,                   intent(in)  :: slice
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=4), optional, intent(in)  :: scale_factor
+    real(kind=4),    optional, intent(in)  :: scale_factor
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
