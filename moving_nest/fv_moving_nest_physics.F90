@@ -177,7 +177,7 @@ contains
 
         IPD_data(nb)%Sfcprop%tg3(ix) = mn_static%deep_soil_temp_grid(i_idx, j_idx)
 
-        ! Follow logic from FV3/io/FV3GFS_io.F90 line 1187
+        ! Follow logic from FV3/io/fv3atm_sfc_io.F90
         ! TODO this will need to be more complicated if we support frac_grid
         !if (nint(mn_static%soil_type_grid(i_idx, j_idx)) == 14 .or. int(mn_static%soil_type_grid(i_idx, j_idx)+0.5) <= 0) then
         !if (nint(mn_static%soil_type_grid(i_idx, j_idx)) == 14 .or.
