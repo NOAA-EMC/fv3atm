@@ -2853,7 +2853,8 @@ end subroutine update_atmos_chemistry
 
     !--- local parameters
     real(kind=ESMF_KIND_R8), parameter :: zeror8 = 0._ESMF_KIND_R8
-
+    real(kind=ESMF_KIND_R8), parameter :: revap  = 1._ESMF_KIND_R8/2.501E+06_ESMF_KIND_R8 ! reciprocal of specific
+                                                                                          ! heat of vaporization J/kg
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
 
@@ -2921,16 +2922,19 @@ end subroutine update_atmos_chemistry
               call block_data_copy(datar82d, GFS_data(nb)%coupling%v10mi_cpl, Atm_block, nb, rc=localrc)
             ! Instantaneous Zonal compt of momentum flux (N/m**2)
             case ('inst_zonal_moment_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfci_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfci_cpl, Atm_block, nb, scale_factor=-one, rc=localrc)
             ! Instantaneous Merid compt of momentum flux (N/m**2)
             case ('inst_merid_moment_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfci_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfci_cpl, Atm_block, nb, scale_factor=-one, rc=localrc)
             ! Instantaneous Sensible heat flux (W/m**2)
             case ('inst_sensi_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfci_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfci_cpl, Atm_block, nb, scale_factor=-one, rc=localrc)
             ! Instantaneous Latent heat flux (W/m**2)
             case ('inst_laten_heat_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, rc=localrc)
+            ! Instantaneous Evap flux (kg/m**2/s)
+            case ('inst_evap_rate')
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, scale_factor=-revap, rc=localrc)
             ! Instantaneous Downward long wave radiation flux (W/m**2)
             case ('inst_down_lw_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dlwsfci_cpl, Atm_block, nb, rc=localrc)
@@ -2998,6 +3002,9 @@ end subroutine update_atmos_chemistry
             ! MEAN Latent heat flux (W/m**2)
             case ('mean_laten_heat_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, scale_factor=rtime, rc=localrc)
+            ! MEAN Evap rate (kg/m**2/s)
+            case ('mean_evap_rate')
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, scale_factor=-rtime*revap, rc=localrc)
             ! MEAN Downward LW heat flux (W/m**2)
             case ('mean_down_lw_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dlwsfc_cpl, Atm_block, nb, scale_factor=rtime, rc=localrc)
