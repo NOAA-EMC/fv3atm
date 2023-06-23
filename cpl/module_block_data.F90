@@ -82,8 +82,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -117,8 +117,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -155,8 +155,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -197,8 +197,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -237,8 +237,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
     real(kind=8) :: factor
 
     ! -- begin
@@ -276,8 +276,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -308,12 +308,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),  optional,   intent(in)  :: scale_factor
-    integer, optional,         intent(out) :: rc
+    integer,       optional,   intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
-    real(kind=8)    :: factor
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
+    real(kind=8) :: factor
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -348,8 +348,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
     real(kind=8) :: factor
 
     ! -- begin
@@ -381,13 +381,13 @@ contains
     real(kind=8),              intent(in)  :: source_arr(:,:,:)
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional,    intent(in)  :: scale_factor
-    integer, optional,         intent(out) :: rc
+    real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
-    real(kind=8)    :: factor
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
+    real(kind=8) :: factor
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -425,8 +425,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
     real(kind=8) :: factor
 
     ! -- begin
@@ -462,13 +462,13 @@ contains
     integer,                   intent(in)  :: slice
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=8), optional,    intent(in)  :: scale_factor
-    integer, optional,         intent(out) :: rc
+    real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
-    real(kind=8)    :: factor
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
+    real(kind=8) :: factor
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -569,7 +569,7 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=8),           pointer     :: source_ptr(:)
+    real(kind=8),              pointer     :: source_ptr(:)
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
@@ -594,7 +594,7 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:)
     integer,                   intent(in)  :: slice
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
@@ -620,7 +620,7 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:,:)
     integer,                   intent(in)  :: slice1
     integer,                   intent(in)  :: slice2
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
@@ -647,7 +647,7 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
-    real(kind=8),           pointer     :: source_ptr(:,:)
+    real(kind=8),              pointer     :: source_ptr(:,:)
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
@@ -672,16 +672,15 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=8),           pointer     :: fract1_ptr(:)
-    real(kind=8),           pointer     :: fract2_ptr(:)
+    real(kind=8),              pointer     :: fract1_ptr(:)
+    real(kind=8),              pointer     :: fract2_ptr(:)
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
     integer, optional,         intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
-    real(kind=8) :: factor
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -720,8 +719,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
     real(kind=4) :: factor
 
     ! -- begin
@@ -758,8 +757,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
     real(kind=4) :: factor
 
     ! -- begin
@@ -800,9 +799,9 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
-    real(kind=4)    :: factor
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
+    real(kind=4) :: factor
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -840,8 +839,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
     real(kind=4) :: factor
 
     ! -- begin
@@ -879,8 +878,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
     real(kind=4) :: factor
 
     ! -- begin
@@ -910,13 +909,13 @@ contains
     real(kind=4),              intent(in)  :: source_arr(:,:)
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=4), optional,    intent(in)  :: scale_factor
-    integer, optional,         intent(out) :: rc
+    real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
-    real(kind=4)    :: factor
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
+    real(kind=4) :: factor
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -951,8 +950,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
     real(kind=4) :: factor
 
     ! -- begin
@@ -988,9 +987,9 @@ contains
     integer, optional,         intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
-    real(kind=4)    :: factor
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
+    real(kind=4) :: factor
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -1028,8 +1027,8 @@ contains
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
     real(kind=4) :: factor
 
     ! -- begin
@@ -1065,13 +1064,13 @@ contains
     integer,                   intent(in)  :: slice
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
-    real(kind=4), optional,    intent(in)  :: scale_factor
-    integer, optional,         intent(out) :: rc
+    real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,         optional, intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb, k
-    real(kind=4)    :: factor
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb, k
+    real(kind=4) :: factor
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -1104,7 +1103,7 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=4),           pointer     :: source_ptr(:)
+    real(kind=4),              pointer     :: source_ptr(:)
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
@@ -1129,7 +1128,7 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=4),           pointer     :: source_ptr(:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:)
     integer,                   intent(in)  :: slice
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
@@ -1182,7 +1181,7 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
-    real(kind=4),           pointer     :: source_ptr(:,:)
+    real(kind=4),              pointer     :: source_ptr(:,:)
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
@@ -1207,16 +1206,15 @@ contains
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
-    real(kind=4),           pointer     :: fract1_ptr(:)
-    real(kind=4),           pointer     :: fract2_ptr(:)
+    real(kind=4),              pointer     :: fract1_ptr(:)
+    real(kind=4),              pointer     :: fract2_ptr(:)
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
     integer, optional,         intent(out) :: rc
 
     ! -- local variables
-    integer         :: localrc
-    integer         :: i, ib, ix, j, jb
-    real(kind=4) :: factor
+    integer :: localrc
+    integer :: i, ib, ix, j, jb
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
