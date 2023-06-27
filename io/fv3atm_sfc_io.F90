@@ -107,7 +107,7 @@ contains
     integer :: nvar2m, nvar2o, nvar3, nvar2r, nvar2mp, nvar3mp, nvar2l
     integer :: nvar_before_lake
 
-    nvar2m = 48
+    nvar2m = 49
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       nvar2m = nvar2m + 4
       !nvar2m = nvar2m + 5
