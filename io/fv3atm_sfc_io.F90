@@ -438,7 +438,7 @@ contains
     nt=nt+1 ; sfc%name2(nt) = 'slope'
     nt=nt+1 ; sfc%name2(nt) = 'snoalb'
     !--- variables below here are optional
-    nt=nt+1 ; sfc_name2(nt) = 'scolor'
+    nt=nt+1 ; sfc%name2(nt) = 'scolor'
     nt=nt+1 ; sfc%name2(nt) = 'sncovr'
     nt=nt+1 ; sfc%name2(nt) = 'snodl' !snowd on land portion of a cell
     nt=nt+1 ; sfc%name2(nt) = 'weasdl'!weasd on land portion of a cell
@@ -594,7 +594,7 @@ contains
            .or. trim(sfc%name2(num)) == 'albdirvis_ice' .or. trim(sfc%name2(num)) == 'albdirnir_ice' &
            .or. trim(sfc%name2(num)) == 'albdifvis_ice' .or. trim(sfc%name2(num)) == 'albdifnir_ice' &
            .or. trim(sfc%name2(num)) == 'emis_lnd'      .or. trim(sfc%name2(num)) == 'emis_ice'      &
-           .or. trim(sfc%name2(num)) == 'sncovr_ice'    .or. trim(sfc_name2(num)) == 'scolor') then
+           .or. trim(sfc%name2(num)) == 'sncovr_ice'    .or. trim(sfc%name2(num)) == 'scolor') then
         if(reading .and. sfc%is_lsoil) then
           call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
         else
