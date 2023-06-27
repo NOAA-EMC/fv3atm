@@ -90,13 +90,14 @@ use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
 use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper,stochastic_physics_wrapper_end
 
-use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
-                              FV3GFS_GFS_checksum,                       &
-                              FV3GFS_diag_register, FV3GFS_diag_output,  &
+use fv3atm_history_io_mod,    only: fv3atm_diag_register, fv3atm_diag_output,  &
                               DIAG_SIZE
-use FV3GFS_restart_io_mod,    only: FV3GFS_restart_register, &
+use fv3atm_restart_io_mod,    only: fv3atm_restart_register, &
+                                    fv3atm_checksum, &
                                     fv_phy_restart_output, &
-                                    fv_sfc_restart_output
+                                    fv_sfc_restart_output, &
+                                    fv3atm_restart_read, &
+                                    fv3atm_restart_write
 use fv_ufs_restart_io_mod,    only: fv_dyn_restart_register, &
                                     fv_dyn_restart_output
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
@@ -369,7 +370,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'RADIATION STEP  ', GFS_control%kdt, GFS_control%fhour
-        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
@@ -383,7 +384,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP1   ', GFS_control%kdt, GFS_control%fhour
-        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_data, Atm_block)
       endif
 
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
@@ -402,7 +403,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
-        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_data, Atm_block)
       endif
       call getiauforcing(GFS_control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
@@ -736,15 +737,15 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !rab   call atmosphere_tracer_postinit (GFS_data, Atm_block)
 
    call atmosphere_nggps_diag (Time, init=.true.)
-   call FV3GFS_diag_register (GFS_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
+   call fv3atm_diag_register (GFS_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
    call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    if (quilting_restart) then
       call fv_dyn_restart_register (Atm(mygrid))
-      call FV3GFS_restart_register (GFS_data%Sfcprop, GFS_restart_var, Atm_block, GFS_control)
+      call fv3atm_restart_register (GFS_data%Sfcprop, GFS_restart_var, Atm_block, GFS_control)
    endif
-   call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain_for_read, &
+   call fv3atm_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain_for_read, &
                              Atm(mygrid)%flagstruct%warm_start, ignore_rst_cksum)
    if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
       call read_ca_restart (Atmos%domain,GFS_control%ncells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
@@ -966,7 +967,7 @@ subroutine update_atmos_model_state (Atmos, rc)
     if (chksum_debug) then
       if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', GFS_control%kdt, GFS_control%fhour
       if (mpp_pe() == mpp_root_pe()) print *,'in UPDATE STATE    ', size(GFS_data(1)%SfcProp%tsfc),'nblks=',Atm_block%nblks
-      call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
+      call fv3atm_checksum(GFS_control, GFS_data, Atm_block)
     endif
 
     !--- advance time ---
@@ -995,7 +996,7 @@ subroutine update_atmos_model_state (Atmos, rc)
       endif
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
-      call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
+      call fv3atm_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
                             GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull, &
                             GFS_control%fhswr, GFS_control%fhlwr)
     endif
@@ -1109,7 +1110,7 @@ subroutine atmos_model_restart(Atmos, timestamp)
        call fv_dyn_restart_output(Atm(mygrid), timestamp)
     else
        call atmosphere_restart(timestamp)
-       call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
+       call fv3atm_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                   GFS_control, Atmos%domain, timestamp)
     endif
     if(GFS_control%do_ca)then
