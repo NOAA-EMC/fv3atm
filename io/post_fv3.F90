@@ -258,6 +258,7 @@ module post_fv3
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
 
         if (wrtFBName(1:8) == 'restart_') cycle
+        if (wrtFBName(1:18) == 'cubed_sphere_grid_') cycle
 
 ! set grid spec:
 !      if(mype==0) print*,'in post_getattr_lam,output_grid=',trim(output_grid(grid_id)),'nfb=',nfb
@@ -896,7 +897,7 @@ module post_fv3
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
 
        if (wrtFBName(1:8) == 'restart_') cycle
-
+       if (wrtFBName(1:18) == 'cubed_sphere_grid_') cycle
 
        call ESMF_AttributeGet(wrt_int_state%wrtFB(ibdl), convention="NetCDF", purpose="FV3", &
                               name="grid_id", value=bundle_grid_id, rc=rc)
@@ -987,6 +988,7 @@ module post_fv3
           line=__LINE__, file=__FILE__)) return  ! bail out
 
        if (wrtFBName(1:8) == 'restart_') cycle
+       if (wrtFBName(1:18) == 'cubed_sphere_grid_') cycle
 
        call ESMF_AttributeGet(wrt_int_state%wrtFB(ibdl), convention="NetCDF", purpose="FV3", &
                               name="grid_id", value=bundle_grid_id, rc=rc)
