@@ -1089,7 +1089,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
 [conv_act_m]
   standard_name = consecutive_calls_for_grell_freitas_mid_level_convection
   long_name = Memory counter for GF midlevel
@@ -1097,7 +1097,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
 [hice]
   standard_name = sea_ice_thickness
   long_name = sea ice thickness
@@ -3029,7 +3029,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
 [pfi_lsan]
   standard_name = ice_flux_due_to_large_scale_precipitation
   long_name = instantaneous 3D flux of ice from nonconvective precipitation
@@ -5191,9 +5191,9 @@
   units = flag
   dimensions = ()
   type = integer
-[imfshalcnv_unified]
-  standard_name = identifier_for_unified_shallow_convection
-  long_name = flag for Unified shallow convection scheme
+[imfshalcnv_c3]
+  standard_name = identifier_for_c3_shallow_convection
+  long_name = flag for C3 shallow convection scheme
   units = flag
   dimensions = ()
   type = integer
@@ -5227,15 +5227,33 @@
   units = flag
   dimensions = ()
   type = integer
-[imfdeepcnv_unified]
-  standard_name = identifier_for_unified_deep_convection
-  long_name = flag for Unified deep convection scheme
+[imfdeepcnv_c3]
+  standard_name = identifier_for_c3_deep_convection
+  long_name = flag for C3 deep convection scheme
   units = flag
   dimensions = ()
   type = integer
 [imfdeepcnv_ntiedtke]
   standard_name = identifier_for_new_tiedtke_deep_convection
   long_name = flag for new Tiedtke deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[ichoice]
+  standard_name = identifier_for_c3_or_gf_deep_convection_closure
+  long_name = flag for C3 or GF deep convection closure
+  units = flag
+  dimensions = ()
+  type = integer
+[ichoicem]
+  standard_name = identifier_for_c3_or_gf_mid_convection_closure
+  long_name = flag for C3 or GF mid convection closure
+  units = flag
+  dimensions = ()
+  type = integer
+[ichoice_s]
+  standard_name = identifier_for_c3_or_gf_shallow_convection_closure
+  long_name = flag for C3 or GF shallow convection closure
   units = flag
   dimensions = ()
   type = integer
@@ -7440,7 +7458,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
 [imap]
   standard_name = map_of_block_column_number_to_global_i_index
   long_name = map of local index ix to global index i for this block
@@ -7664,7 +7682,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
 [forceq]
   standard_name = tendendy_of_specific_humidity_due_to_nonphysics
   long_name = moisture tendency due to dynamics only
@@ -7672,7 +7690,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
 [prevst]
   standard_name = air_temperature_on_previous_timestep
   long_name = temperature from previous time step
@@ -7680,7 +7698,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
 [prevsq]
   standard_name = specific_humidity_on_previous_timestep
   long_name = moisture from previous time step
@@ -7688,21 +7706,21 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifer_for_scale_aware_mass_flux_deep_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifer_for_scale_aware_mass_flux_deep_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection)
 [cactiv]
   standard_name = counter_for_grell_freitas_convection
   long_name = convective activity memory
   units = none
   dimensions = (horizontal_loop_extent)
   type = integer
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
 [cactiv_m]
   standard_name = counter_for_grell_freitas_mid_level_convection
   long_name = mid-level convective activity memory
   units = none
   dimensions = (horizontal_loop_extent)
   type = integer
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_unified_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
 [CLDFRA_BL]
   standard_name = subgrid_scale_cloud_area_fraction_in_atmosphere_layer
   long_name = subgrid cloud fraction from PBL scheme
