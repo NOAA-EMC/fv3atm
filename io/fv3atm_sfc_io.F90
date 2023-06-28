@@ -407,10 +407,10 @@ contains
     !--- names of the 2D variables to save
     nt=0
     nt=nt+1 ; sfc%name2(nt) = 'slmsk'
-    nt=nt+1 ; sfc%name2(nt) = 'tsea'    !tsfc
-    nt=nt+1 ; sfc%name2(nt) = 'sheleg'  !weasd
+    nt=nt+1 ; sfc%name2(nt) = 'tsea'    ! tsfc
+    nt=nt+1 ; sfc%name2(nt) = 'sheleg'  ! weasd in file. Optional for cold starts.
     nt=nt+1 ; sfc%name2(nt) = 'tg3'
-    nt=nt+1 ; sfc%name2(nt) = 'zorl'
+    nt=nt+1 ; sfc%name2(nt) = 'zorl'    ! Optional for cold starts.
     nt=nt+1 ; sfc%name2(nt) = 'alvsf'
     nt=nt+1 ; sfc%name2(nt) = 'alvwf'
     nt=nt+1 ; sfc%name2(nt) = 'alnsf'
@@ -432,20 +432,24 @@ contains
     nt=nt+1 ; sfc%name2(nt) = 'tisfc'
     nt=nt+1 ; sfc%name2(nt) = 'tprcp'
     nt=nt+1 ; sfc%name2(nt) = 'srflag'
-    nt=nt+1 ; sfc%name2(nt) = 'snwdph'  !snowd
+    nt=nt+1 ; sfc%name2(nt) = 'snwdph'  ! snowd in file. Optional for cold starts.
     nt=nt+1 ; sfc%name2(nt) = 'shdmin'
     nt=nt+1 ; sfc%name2(nt) = 'shdmax'
     nt=nt+1 ; sfc%name2(nt) = 'slope'
     nt=nt+1 ; sfc%name2(nt) = 'snoalb'
-    !--- variables below here are optional
+    !--- variables below here are optional, unless indicated.
     nt=nt+1 ; sfc%name2(nt) = 'sncovr'
-    nt=nt+1 ; sfc%name2(nt) = 'snodl' !snowd on land portion of a cell
-    nt=nt+1 ; sfc%name2(nt) = 'weasdl'!weasd on land portion of a cell
-    nt=nt+1 ; sfc%name2(nt) = 'tsfc'  !tsfc composite
-    nt=nt+1 ; sfc%name2(nt) = 'tsfcl' !temp on land portion of a cell
-    nt=nt+1 ; sfc%name2(nt) = 'zorlw' !zorl on water portion of a cell
-    nt=nt+1 ; sfc%name2(nt) = 'zorll' !zorl on land portion of a cell
-    nt=nt+1 ; sfc%name2(nt) = 'zorli' !zorl on ice portion of a cell
+    nt=nt+1 ; sfc%name2(nt) = 'snodl' ! snowd on land portion of a cell.
+                                      ! Mandatory for cold starts.
+    nt=nt+1 ; sfc%name2(nt) = 'weasdl'! weasd on land portion of a cell.
+                                      ! Mandatory for cold starts.
+    nt=nt+1 ; sfc%name2(nt) = 'tsfc'  ! tsfc composite
+    nt=nt+1 ; sfc%name2(nt) = 'tsfcl' ! temp on land portion of a cell
+    nt=nt+1 ; sfc%name2(nt) = 'zorlw' ! zorl on water portion of a cell
+                                      ! Mandatory for cold starts.
+    nt=nt+1 ; sfc%name2(nt) = 'zorll' ! zorl on land portion of a cell
+    nt=nt+1 ; sfc%name2(nt) = 'zorli' ! zorl on ice portion of a cell
+                                      ! Mandatory for cold starts.
     nt=nt+1 ; sfc%name2(nt) = 'albdirvis_lnd'
     nt=nt+1 ; sfc%name2(nt) = 'albdirnir_lnd'
     nt=nt+1 ; sfc%name2(nt) = 'albdifvis_lnd'
@@ -453,8 +457,10 @@ contains
     nt=nt+1 ; sfc%name2(nt) = 'emis_lnd'
     nt=nt+1 ; sfc%name2(nt) = 'emis_ice'
     nt=nt+1 ; sfc%name2(nt) = 'sncovr_ice'
-    nt=nt+1 ; sfc%name2(nt) = 'snodi' ! snowd on ice portion of a cell
+    nt=nt+1 ; sfc%name2(nt) = 'snodi' ! snowd on ice portion of a cell.
+                                      ! Mandatory for cold starts.
     nt=nt+1 ; sfc%name2(nt) = 'weasdi'! weasd on ice portion of a cell
+                                      ! Mandatory for cold starts.
 
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       nt=nt+1 ; sfc%name2(nt) = 'albdirvis_ice'
