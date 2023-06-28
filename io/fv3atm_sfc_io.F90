@@ -583,11 +583,10 @@ contains
     !--- register the 2D fields
     do num = 1,sfc%nvar2m
       var2_p => sfc%var2(:,:,num)
-      if (trim(sfc%name2(num)) == 'sncovr' .or. trim(sfc%name2(num)) == 'tsfcl' .or. trim(sfc%name2(num)) == 'zorll' &
-           .or. trim(sfc%name2(num)) == 'zorli' .or. trim(sfc%name2(num)) == 'zorlwav' &
-           .or. trim(sfc%name2(num)) == 'snodl' .or. trim(sfc%name2(num)) == 'weasdl'  &
-           .or. trim(sfc%name2(num)) == 'snodi' .or. trim(sfc%name2(num)) == 'weasdi'  &
-           .or. trim(sfc%name2(num)) == 'tsfc'  .or. trim(sfc%name2(num)) ==  'zorlw'  &
+      if (trim(sfc%name2(num)) == 'sncovr' .or. trim(sfc%name2(num)) == 'zorll' &
+           .or. trim(sfc%name2(num)) == 'zorl' .or. trim(sfc%name2(num)) == 'zorlwav' &
+           .or. trim(sfc%name2(num)) == 'snwdph' .or. trim(sfc%name2(num)) == 'sheleg'  &
+           .or. trim(sfc%name2(num)) == 'tsfc' &
            .or. trim(sfc%name2(num)) == 'albdirvis_lnd' .or. trim(sfc%name2(num)) == 'albdirnir_lnd' &
            .or. trim(sfc%name2(num)) == 'albdifvis_lnd' .or. trim(sfc%name2(num)) == 'albdifnir_lnd' &
            .or. trim(sfc%name2(num)) == 'albdirvis_ice' .or. trim(sfc%name2(num)) == 'albdirnir_ice' &
@@ -685,7 +684,7 @@ contains
 
     !--- register the 3D fields
     var3_p => sfc%var3ice(:,:,:)
-    call register_restart_field(Sfc_restart, sfc%name3(0), var3_p, dimensions=xyz1_time, is_optional=.true.)
+    call register_restart_field(Sfc_restart, sfc%name3(0), var3_p, dimensions=xyz1_time, is_optional=.false.)
 
     if(reading) then
       do num = 1,sfc%nvar3
@@ -1277,75 +1276,72 @@ contains
     i = Atm_block%index(1)%ii(1) - isc + 1
     j = Atm_block%index(1)%jj(1) - jsc + 1
 
-    if (sfc%var2(i,j,33) < -9990.0_kind_phys) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snodl')
+    if (sfc%var2(i,j,27) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snowd')
       !$omp parallel do default(shared) private(nb, ix, tem)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          if (Sfcprop(nb)%landfrac(ix) > zero) then
-            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
-            Sfcprop(nb)%snodl(ix)  = Sfcprop(nb)%snowd(ix) * tem
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            Sfcprop(nb)%snowd(ix)  = Sfcprop(nb)%snodi(ix)
+          elseif (Sfcprop(nb)%landfrac(ix) > zero) then
+            Sfcprop(nb)%snowd(ix)  = Sfcprop(nb)%snodl(ix)
           else
-            Sfcprop(nb)%snodl(ix)  = zero
+            Sfcprop(nb)%snowd(ix)  = zero
+          endif
+          if (Sfcprop(nb)%snowd(ix) > 10000. .or. Sfcprop(nb)%snowd(ix) < 0.0) then
+            print*,'cggg bad snowd pt ',nb,ix,Sfcprop(nb)%snowd(ix)
           endif
         enddo
       enddo
     endif
 
-    if (sfc%var2(i,j,34) < -9990.0_kind_phys) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing weasdl')
-      !$omp parallel do default(shared) private(nb, ix, tem)
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          if (Sfcprop(nb)%landfrac(ix) > zero) then
-            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
-            Sfcprop(nb)%weasdl(ix) = Sfcprop(nb)%weasd(ix) * tem
-          else
-            Sfcprop(nb)%weasdl(ix) = zero
-          endif
-        enddo
-      enddo
-    endif
-
-    if (sfc%var2(i,j,36) < -9990.0_kind_phys) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
+    if (sfc%var2(i,j,3) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing weasd')
       !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
-        enddo
-      enddo
-    endif
-
-    if (sfc%var2(i,j,37) < -9990.0_kind_phys) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlw')
-      !$omp parallel do default(shared) private(nb, ix)
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          if (Sfcprop(nb)%landfrac(ix) < one .and. Sfcprop(nb)%fice(ix) < one) then
-            Sfcprop(nb)%zorlw(ix) = min(Sfcprop(nb)%zorl(ix), 0.317)
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            Sfcprop(nb)%weasd(ix) = Sfcprop(nb)%weasdi(ix)
+          elseif (Sfcprop(nb)%landfrac(ix) > zero) then
+            Sfcprop(nb)%weasd(ix) = Sfcprop(nb)%weasdl(ix)
+          else
+            Sfcprop(nb)%weasd(ix) = zero
+          endif
+          if (Sfcprop(nb)%weasd(ix) > 10000. .or. Sfcprop(nb)%weasd(ix) < 0.0) then
+            print*,'cggg bad weasd pt ',nb,ix,Sfcprop(nb)%weasd(ix)
           endif
         enddo
       enddo
     endif
 
+!cggg Needed for first time step in radiation before Noah/NoahMP sets it from look up table.
+!cggg Just use a nominal value.
     if (sfc%var2(i,j,38) < -9990.0_kind_phys) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
       !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorll from existing variables
+          if (Sfcprop(nb)%landfrac(ix) > zero) then
+            Sfcprop(nb)%zorll(ix) = 25.0
+          endif
         enddo
       enddo
     endif
 
-    if (sfc%var2(i,j,39) < -9990.0_kind_phys) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorli')
+    if (sfc%var2(i,j,5) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorl')
       !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          if (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix)) > zero) then
-            Sfcprop(nb)%zorli(ix) = one
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorli(ix)
+          elseif (Sfcprop(nb)%landfrac(ix) > zero) then
+            Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix)
+          else
+            Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorlw(ix)
+          endif
+          if (Sfcprop(nb)%zorl(ix) > 10000. .or. Sfcprop(nb)%zorl(ix) < 0.0) then
+            print*,'cggg bad zorl pt ',nb,ix,Sfcprop(nb)%zorl(ix)
           endif
         enddo
       enddo
@@ -1368,36 +1364,6 @@ contains
         do ix = 1, Atm_block%blksz(nb)
           !         Sfcprop(nb)%sncovr_ice(ix) = Sfcprop(nb)%sncovr(ix)
           Sfcprop(nb)%sncovr_ice(ix) = zero
-        enddo
-      enddo
-    endif
-
-    if (sfc%var2(i,j,47) < -9990.0_kind_phys) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snodi')
-      !$omp parallel do default(shared) private(nb, ix, tem)
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          if (Sfcprop(nb)%fice(ix) > zero) then
-            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
-            Sfcprop(nb)%snodi(ix)  = min(Sfcprop(nb)%snowd(ix) * tem, 3.0)
-          else
-            Sfcprop(nb)%snodi(ix)  = zero
-          endif
-        enddo
-      enddo
-    endif
-
-    if (sfc%var2(i,j,48) < -9990.0_kind_phys) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing weasdi')
-      !$omp parallel do default(shared) private(nb, ix, tem)
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          if (Sfcprop(nb)%fice(ix) > zero) then
-            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
-            Sfcprop(nb)%weasdi(ix)  = Sfcprop(nb)%weasd(ix)*tem
-          else
-            Sfcprop(nb)%weasdi(ix)  = zero
-          endif
         enddo
       enddo
     endif
@@ -1433,6 +1399,9 @@ contains
             Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
                  + Sfcprop(nb)%tisfc(ix) * tem                      &
                  + Sfcprop(nb)%tsfco(ix) * (tem1-tem)
+            if (Sfcprop(nb)%tsfc(ix) > 10000. .or. Sfcprop(nb)%tsfc(ix) < 0.0) then
+              print*,'cggg bad tsfc pt ',nb,ix,Sfcprop(nb)%tsfc(ix)
+            endif
           enddo
         enddo
       else
@@ -1441,10 +1410,16 @@ contains
           do ix = 1, Atm_block%blksz(nb)
             if (Sfcprop(nb)%slmsk(ix) == 1) then
               Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
+              if (Sfcprop(nb)%tsfc(ix) < -99 .or. Sfcprop(nb)%tsfc(ix) > 999.) print*,'bad tsfc land ',nb,ix,Sfcprop(nb)%tsfcl(ix)
+            elseif(Sfcprop(nb)%fice(ix) > 0.0)then
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tisfc(ix)
+              if (Sfcprop(nb)%tsfc(ix) < -99 .or. Sfcprop(nb)%tsfc(ix) > 999.) print*,'bad tsfc ice  ',nb,ix,Sfcprop(nb)%tisfc(ix)
             else
-              tem = one - Sfcprop(nb)%fice(ix)
-              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix) &
-                   + Sfcprop(nb)%tsfco(ix) * tem
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfco(ix)
+              if (Sfcprop(nb)%tsfc(ix) < -99 .or. Sfcprop(nb)%tsfc(ix) > 999.) print*,'bad tsfc water ',nb,ix,Sfcprop(nb)%tsfco(ix)
+            endif
+            if (Sfcprop(nb)%tsfc(ix) > 10000. .or. Sfcprop(nb)%tsfc(ix) < 0.0) then
+              print*,'cggg bad tsfc pt ',nb,ix,Sfcprop(nb)%tsfc(ix)
             endif
           enddo
         enddo
@@ -1457,16 +1432,6 @@ contains
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           Sfcprop(nb)%zorlwav(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorlwav from existing variables
-        enddo
-      enddo
-    endif
-
-    if (nint(sfc%var3ice(1,1,1)) == -9999) then    !--- initialize internal ice temp from layer 1 and 2 soil temp
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tiice')
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%tiice(ix,1) = max(timin, min(con_tice, Sfcprop(nb)%stc(ix,1)))
-          Sfcprop(nb)%tiice(ix,2) = max(timin, min(con_tice, Sfcprop(nb)%stc(ix,2)))
         enddo
       enddo
     endif
