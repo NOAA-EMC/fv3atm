@@ -787,7 +787,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    !--- Model should restart at the forecast hours that are multiples of fhzero.
    !--- WARNING: For special cases that model needs to restart at non-multiple of fhzero
    !--- the fields in first output files are not accumulated from the beginning of
-   !--- the bucket, but the restart time.   
+   !--- the bucket, but the restart time.
    if (mod(sec,int(GFS_Control%fhzero*3600.)) /= 0) then
      diag_time = Time - real_to_time_type(mod(int((GFS_Control%kdt - 1)*dt_phys/3600.),int(GFS_Control%fhzero))*3600.0)
      if (mpp_pe() == mpp_root_pe()) print *,'Warning: in atmos_init,start at non multiple of fhzero'
@@ -2853,7 +2853,8 @@ end subroutine update_atmos_chemistry
 
     !--- local parameters
     real(kind=ESMF_KIND_R8), parameter :: zeror8 = 0._ESMF_KIND_R8
-
+    real(kind=ESMF_KIND_R8), parameter :: revap  = 1._ESMF_KIND_R8/2.501E+06_ESMF_KIND_R8 ! reciprocal of specific
+                                                                                          ! heat of vaporization J/kg
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
 
@@ -2931,6 +2932,9 @@ end subroutine update_atmos_chemistry
             ! Instantaneous Latent heat flux (W/m**2)
             case ('inst_laten_heat_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, rc=localrc)
+            ! Instantaneous Evap flux (kg/m**2/s)
+            case ('inst_evap_rate')
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, scale_factor=revap, rc=localrc)
             ! Instantaneous Downward long wave radiation flux (W/m**2)
             case ('inst_down_lw_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dlwsfci_cpl, Atm_block, nb, rc=localrc)
@@ -2998,6 +3002,9 @@ end subroutine update_atmos_chemistry
             ! MEAN Latent heat flux (W/m**2)
             case ('mean_laten_heat_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, scale_factor=rtime, rc=localrc)
+            ! MEAN Evap rate (kg/m**2/s)
+            case ('mean_evap_rate')
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, scale_factor=rtime*revap, rc=localrc)
             ! MEAN Downward LW heat flux (W/m**2)
             case ('mean_down_lw_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dlwsfc_cpl, Atm_block, nb, scale_factor=rtime, rc=localrc)
