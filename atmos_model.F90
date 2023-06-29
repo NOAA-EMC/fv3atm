@@ -2853,8 +2853,8 @@ end subroutine update_atmos_chemistry
 
     !--- local parameters
     real(kind=ESMF_KIND_R8), parameter :: zeror8 = 0._ESMF_KIND_R8
-    real(kind=ESMF_KIND_R8), parameter :: revap  = 1._ESMF_KIND_R8/2.501E+06_ESMF_KIND_R8 ! reciprocal of specific
-                                                                                          ! heat of vaporization J/kg
+    real(GFS_kind_phys),     parameter :: revap  = one/2.501E+06_GFS_kind_phys ! reciprocal of specific
+                                                                               ! heat of vaporization J/kg
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
 
