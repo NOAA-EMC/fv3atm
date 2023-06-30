@@ -691,6 +691,21 @@ module post_fv3
         allocate(ext550(ista:iend,jsta:jend,lm))
         allocate(snacc_ice(ista:iend,jsta:jend))
         allocate(snacc_land(ista:iend,jsta:jend))
+
+        do j=jsta,jend
+          do i=ista,iend
+            snacc_ice(i,j)=spval
+            snacc_land(i,j)=spval
+          end do
+        end do
+
+        do l=1,lm
+          do j=jsta,jend
+            do i=ista,iend
+              ext550(i,j,l)=spval
+            end do
+          end do
+        end do
       endif
 
 !
@@ -4309,6 +4324,9 @@ module post_fv3
               if(ext550(i,j,l)<spval) then
                 taod5503d(i,j,l)=ext550(i,j,l)
                 aextc55(i,j,l)=taod5503d(i,j,l)/(zint(i,j,l)-zint(i,j,l+1))
+              else
+                taod5503d(i,j,l)=spval
+                aextc55(i,j,l)=spval
               endif
             enddo
           enddo
