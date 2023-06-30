@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v17_p8_unified" version="1">
+<suite name="FV3_GFS_v17_p8_c3" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -66,8 +66,8 @@
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
       <scheme>GFS_DCNV_generic_pre</scheme>
-      <scheme>cu_unified_driver_pre</scheme>
-      <scheme>cu_unified_driver</scheme>
+      <scheme>cu_c3_driver_pre</scheme>
+      <scheme>cu_c3_driver</scheme>
       <scheme>GFS_DCNV_generic_post</scheme>
       <scheme>GFS_SCNV_generic_pre</scheme>
       <scheme>GFS_SCNV_generic_post</scheme>
@@ -82,7 +82,7 @@
         <subcycle loop="1">
         <scheme>mp_thompson_post</scheme>
         <scheme>GFS_MP_generic_post</scheme>
-        <scheme>cu_unified_driver_post</scheme>
+        <scheme>cu_c3_driver_post</scheme>
         <scheme>maximum_hourly_diagnostics</scheme>
       </subcycle>
   </group>
