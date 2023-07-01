@@ -4326,7 +4326,7 @@ module post_fv3
                 aextc55(i,j,l)=taod5503d(i,j,l)/(zint(i,j,l)-zint(i,j,l+1))
               else
                 taod5503d(i,j,l)=spval
-                aextc55(i,j,l)=spval
+                aextc55(i,j,l)=0.
               endif
             enddo
           enddo
