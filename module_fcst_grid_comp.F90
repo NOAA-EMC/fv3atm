@@ -55,8 +55,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
   use data_override_mod,  only: data_override_init
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
-  use fv3gfs_io_mod,      only: fv_phys_bundle_setup
-  use fv3gfs_restart_io_mod,  only: fv_phy_restart_bundle_setup, fv_sfc_restart_bundle_setup
+  use fv3atm_history_io_mod,  only: fv_phys_bundle_setup
+  use fv3atm_restart_io_mod,  only: fv_phy_restart_bundle_setup, fv_sfc_restart_bundle_setup
   use fv_ufs_restart_io_mod,  only: fv_core_restart_bundle_setup, &
                                     fv_srf_wnd_restart_bundle_setup, &
                                     fv_tracer_restart_bundle_setup
