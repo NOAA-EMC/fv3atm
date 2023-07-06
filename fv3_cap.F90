@@ -215,6 +215,8 @@ module fv3atm_cap_mod
     logical                                :: use_saved_routehandles, rh_file_exist
     logical                                :: fieldbundle_is_restart = .false.
 
+    integer                                :: sloc
+    type(ESMF_StaggerLoc)                  :: staggerloc
 !
 !------------------------------------------------------------------------
 !
@@ -640,7 +642,12 @@ module fv3atm_cap_mod
                 dstGrid(j,i) = grid
                 ! loop over all the mirror fields and set the balanced mirror Grid
                 do ii=1, fieldCount
-                  call ESMF_FieldEmptySet(fieldList(ii), grid=grid, rc=rc)
+                  call ESMF_InfoGetFromHost(fieldList(ii), info=info, rc=rc)
+                  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                  call ESMF_InfoGet(info, key="staggerloc", value=sloc, rc=rc)
+                  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                  staggerloc = sloc  ! convert integer into StaggerLoc_Flag
+                  call ESMF_FieldEmptySet(fieldList(ii), grid=grid, staggerloc=staggerloc, rc=rc)
                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
                 enddo
                 ! clean-up
@@ -1023,7 +1030,7 @@ module fv3atm_cap_mod
 
     rc = ESMF_SUCCESS
     timers = MPI_Wtime()
-    if(lprint) print *,'in FV3 cap, time between fv3 run step=', timers-timere,mype
+    if(lprint) print *,'in fv3_cap, time between fv3 run step=', timers-timere,mype
 
     if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance: ")
 
@@ -1036,7 +1043,7 @@ module fv3atm_cap_mod
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance: ")
 
     timere = MPI_Wtime()
-    if(lprint) print *,'in FV3 cap, time in fv3 run step=', timere-timers, mype
+    if(lprint) print *,'in fv3_cap, time in fv3 run step=', timere-timers, mype
 
   end subroutine ModelAdvance
 
@@ -1058,7 +1065,7 @@ module fv3atm_cap_mod
 
     rc = ESMF_SUCCESS
     timep1rs = MPI_Wtime()
-    if(lprint) print *,'in fv3_cap,modeladvance phase1 time ', timep1rs-timep2re,mype
+    if(lprint) print *,'in fv3_cap, time between fv3 run phase2 and phase1 ', timep1rs-timep2re,mype
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase1: ")
 
