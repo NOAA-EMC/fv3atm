@@ -1626,6 +1626,69 @@ module post_fv3
               enddo
             endif
 
+            if(nsoil==9) then
+            ! liquid volumetric soil mpisture in fraction
+            if(trim(fieldname)=='soill5') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  sh2o(i,j,5) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) sh2o(i,j,5) = spval
+                  if (sm(i,j) /= 0.0) sh2o(i,j,5) = spval
+                enddo
+              enddo
+            endif
+
+            ! liquid volumetric soil mpisture in fraction
+            if(trim(fieldname)=='soill6') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  sh2o(i,j,6) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) sh2o(i,j,6) = spval
+                  if (sm(i,j) /= 0.0) sh2o(i,j,6) = spval
+                enddo
+              enddo
+            endif
+
+            ! liquid volumetric soil mpisture in fraction
+            if(trim(fieldname)=='soill7') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  sh2o(i,j,7) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) sh2o(i,j,7) = spval
+                  if (sm(i,j) /= 0.0) sh2o(i,j,7) = spval
+                enddo
+              enddo
+            endif
+
+            ! liquid volumetric soil mpisture in fraction
+            if(trim(fieldname)=='soill8') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  sh2o(i,j,8) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) sh2o(i,j,8) = spval
+                  if (sm(i,j) /= 0.0) sh2o(i,j,8) = spval
+                enddo
+              enddo
+            endif
+
+            ! liquid volumetric soil mpisture in fraction
+            if(trim(fieldname)=='soill9') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  sh2o(i,j,9) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) sh2o(i,j,9) = spval
+                  if (sm(i,j) /= 0.0) sh2o(i,j,9) = spval
+                enddo
+              enddo
+            endif
+
+            endif !nsoil
+
             ! volumetric soil moisture
             if(trim(fieldname)=='soilw1') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm,fillValue)
