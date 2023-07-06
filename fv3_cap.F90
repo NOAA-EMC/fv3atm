@@ -76,9 +76,7 @@ module fv3atm_cap_mod
   integer                                     :: dbug = 0
   integer                                     :: frestart(999) = -1
 
-  real(kind=8)                                :: timers, timere
-  real(kind=8)                                :: timep1rs, timep1re
-  real(kind=8)                                :: timep2rs, timep2re
+  real(kind=8)                                :: timere, timep2re
 !-----------------------------------------------------------------------
 
   contains
@@ -1011,7 +1009,6 @@ module fv3atm_cap_mod
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-    timers = 0.
     timere = 0.
     timep2re = 0.
 
@@ -1025,7 +1022,7 @@ module fv3atm_cap_mod
 
     type(ESMF_GridComp)         :: gcomp
     integer, intent(out)        :: rc
-    real(kind=8)                :: MPI_Wtime
+    real(kind=8)                :: MPI_Wtime, timers
 
 !-----------------------------------------------------------------------------
 
@@ -1060,7 +1057,7 @@ module fv3atm_cap_mod
     logical                     :: fcstpe
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase1)'
     character(240)              :: msgString
-    real(kind=8)                :: MPI_Wtime
+    real(kind=8)                :: MPI_Wtime, timep1rs, timep1re
 
 !-----------------------------------------------------------------------------
 
@@ -1123,7 +1120,7 @@ module fv3atm_cap_mod
 
     type(ESMF_Clock)            :: clock, clock_out
 
-    real(kind=8)                :: MPI_Wtime
+    real(kind=8)                :: MPI_Wtime, timep2rs
 
 !-----------------------------------------------------------------------------
 
