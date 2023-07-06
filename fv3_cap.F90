@@ -1013,6 +1013,7 @@ module fv3atm_cap_mod
 
     timers = 0.
     timere = 0.
+    timep2re = 0.
 
     if(lprint) print *,'in fv3_cap, initirealz time=',MPI_Wtime()-timeirs,mype
 
@@ -1030,7 +1031,7 @@ module fv3atm_cap_mod
 
     rc = ESMF_SUCCESS
     timers = MPI_Wtime()
-    if(lprint) print *,'in fv3_cap, time between fv3 run step=', timers-timere,mype
+    if(lprint .and. timere>0.) print *,'in fv3_cap, time between fv3 run step=', timers-timere,mype
 
     if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance: ")
 
@@ -1065,7 +1066,7 @@ module fv3atm_cap_mod
 
     rc = ESMF_SUCCESS
     timep1rs = MPI_Wtime()
-    if(lprint) print *,'in fv3_cap, time between fv3 run phase2 and phase1 ', timep1rs-timep2re,mype
+    if(lprint .and. timep2re>0.) print *,'in fv3_cap, time between fv3 run phase2 and phase1 ', timep1rs-timep2re,mype
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase1: ")
 
