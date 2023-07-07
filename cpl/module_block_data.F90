@@ -13,6 +13,7 @@ module module_block_data
   interface block_data_copy
     module procedure block_copy_1d_i4_to_2d_r8
     module procedure block_copy_1d_r8_to_2d_r8
+    module procedure block_copy_spval_1d_r8_to_2d_r8
     module procedure block_copy_2d_r8_to_2d_r8
     module procedure block_copy_2d_r8_to_3d_r8
     module procedure block_copy_3d_r8_to_3d_r8
@@ -20,6 +21,7 @@ module module_block_data
     module procedure block_copy_1dslice2_r8_to_2d_r8
     module procedure block_copy_3dslice_r8_to_3d_r8
     module procedure block_copy_1d_r4_to_2d_r8
+    module procedure block_copy_spval_1d_r4_to_2d_r8
     module procedure block_copy_2d_r4_to_2d_r8
     module procedure block_copy_2d_r4_to_3d_r8
     module procedure block_copy_3d_r4_to_3d_r8
@@ -140,6 +142,43 @@ contains
     if (present(rc)) rc = localrc
 
   end subroutine block_copy_1d_r8_to_2d_r8
+
+  subroutine block_copy_spval_1d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, special_value, rc)
+
+    ! -- arguments
+    real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
+    real(kind=8),              pointer     :: source_ptr(:)
+    type(block_control_type),  intent(in)  :: block
+    integer,                   intent(in)  :: block_index
+    real(kind=8),              intent(in)  :: scale_factor
+    real(kind=8),              intent(in)  :: special_value
+    integer,         optional, intent(out) :: rc
+
+    ! -- local variables
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
+
+    ! -- begin
+    localrc = ESMF_RC_PTR_NOTALLOC
+    if (associated(destin_ptr) .and. associated(source_ptr)) then
+       !$omp parallel do private(ix,ib,jb,i,j)
+       do ix = 1, block%blksz(block_index)
+          ib = block%index(block_index)%ii(ix)
+          jb = block%index(block_index)%jj(ix)
+          i = ib - block%isc + 1
+          j = jb - block%jsc + 1
+          if (source_ptr(ix) .ne. special_value) then
+             destin_ptr(i,j) = scale_factor * source_ptr(ix)
+          else
+             destin_ptr(i,j) = special_value
+          end if
+       enddo
+       localrc = ESMF_SUCCESS
+    end if
+
+    if (present(rc)) rc = localrc
+
+  end subroutine block_copy_spval_1d_r8_to_2d_r8
 
   ! -- copy: 1D slice to 2D
 
@@ -742,6 +781,43 @@ contains
     if (present(rc)) rc = localrc
 
   end subroutine block_copy_1d_r4_to_2d_r8
+
+  subroutine block_copy_spval_1d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, special_value, rc)
+
+    ! -- arguments
+    real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
+    real(kind=4),              pointer     :: source_ptr(:)
+    type(block_control_type),  intent(in)  :: block
+    integer,                   intent(in)  :: block_index
+    real(kind=4),              intent(in)  :: scale_factor
+    real(kind=4),              intent(in)  :: special_value
+    integer,         optional, intent(out) :: rc
+
+    ! -- local variables
+    integer      :: localrc
+    integer      :: i, ib, ix, j, jb
+
+    ! -- begin
+    localrc = ESMF_RC_PTR_NOTALLOC
+    if (associated(destin_ptr) .and. associated(source_ptr)) then
+       !$omp parallel do private(ix,ib,jb,i,j)
+       do ix = 1, block%blksz(block_index)
+          ib = block%index(block_index)%ii(ix)
+          jb = block%index(block_index)%jj(ix)
+          i = ib - block%isc + 1
+          j = jb - block%jsc + 1
+          if (source_ptr(ix) .ne. special_value) then
+             destin_ptr(i,j) = scale_factor * source_ptr(ix)
+          else
+             destin_ptr(i,j) = special_value
+          end if
+       enddo
+       localrc = ESMF_SUCCESS
+    end if
+
+    if (present(rc)) rc = localrc
+
+  end subroutine block_copy_spval_1d_r4_to_2d_r8
 
   ! -- copy: 1D slice to 2D
 
