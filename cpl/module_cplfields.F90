@@ -26,7 +26,7 @@ module module_cplfields
   !  l : model levels (3D)
   !  s : surface (2D)
   !  t : tracers (4D)
-  integer,          public, parameter :: NexportFields = 119
+  integer,          public, parameter :: NexportFields = 121
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
@@ -61,6 +61,7 @@ module module_cplfields
     FieldInfo("mean_merid_moment_flx_atm                ", "s"), &
     FieldInfo("mean_sensi_heat_flx                      ", "s"), &
     FieldInfo("mean_laten_heat_flx                      ", "s"), &
+    FieldInfo("mean_evap_rate                           ", "s"), &
     FieldInfo("mean_down_lw_flx                         ", "s"), &
     FieldInfo("mean_down_sw_flx                         ", "s"), &
     FieldInfo("mean_prec_rate                           ", "s"), &
@@ -68,6 +69,7 @@ module module_cplfields
     FieldInfo("inst_merid_moment_flx                    ", "s"), &
     FieldInfo("inst_sensi_heat_flx                      ", "s"), &
     FieldInfo("inst_laten_heat_flx                      ", "s"), &
+    FieldInfo("inst_evap_rate                           ", "s"), &
     FieldInfo("inst_down_lw_flx                         ", "s"), &
     FieldInfo("inst_down_sw_flx                         ", "s"), &
     FieldInfo("inst_temp_height2m                       ", "s"), &
