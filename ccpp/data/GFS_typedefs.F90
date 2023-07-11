@@ -6821,6 +6821,10 @@ module GFS_typedefs
       allocate (Grid%ddy_o3    (IM))
       allocate (Grid%jindx1_o3 (IM))
       allocate (Grid%jindx2_o3 (IM))
+
+      Grid%ddy_o3      = clear_val
+      Grid%jindx1_o3   = clear_val
+      Grid%jindx2_o3   = clear_val
     endif
 
 !--- stratosphere h2o active
@@ -6828,6 +6832,10 @@ module GFS_typedefs
       allocate (Grid%ddy_h    (IM))
       allocate (Grid%jindx1_h (IM))
       allocate (Grid%jindx2_h (IM))
+
+      Grid%ddy_h       = clear_val
+      Grid%jindx1_h    = clear_val
+      Grid%jindx2_h    = clear_val
     endif
 
 !--- iccn active
@@ -6838,6 +6846,13 @@ module GFS_typedefs
       allocate (Grid%ddx_ci    (IM))
       allocate (Grid%iindx1_ci (IM))
       allocate (Grid%iindx2_ci (IM))
+
+      Grid%ddy_ci      = clear_val
+      Grid%jindx1_ci   = clear_val
+      Grid%jindx2_ci   = clear_val
+      Grid%ddx_ci      = clear_val
+      Grid%iindx1_ci   = clear_val
+      Grid%iindx2_ci   = clear_val
     endif
 
 !--- iaerclm active
@@ -6848,6 +6863,13 @@ module GFS_typedefs
       allocate (Grid%ddx_aer   (IM))
       allocate (Grid%iindx1_aer(IM))
       allocate (Grid%iindx2_aer(IM))
+
+      Grid%ddy_aer     = clear_val
+      Grid%jindx1_aer  = clear_val
+      Grid%jindx2_aer  = clear_val
+      Grid%ddx_aer     = clear_val
+      Grid%iindx1_aer  = clear_val
+      Grid%iindx2_aer  = clear_val
     endif
 
 !---  Model%do_ugwpv1
@@ -6856,6 +6878,11 @@ module GFS_typedefs
       allocate (Grid%ddy_j2tau  (IM))
       allocate (Grid%jindx1_tau (IM))
       allocate (Grid%jindx2_tau (IM))
+
+      Grid%ddy_j1tau   = clear_val
+      Grid%ddy_j2tau   = clear_val
+      Grid%jindx1_tau  = clear_val
+      Grid%jindx2_tau  = clear_val
    endif
 
  end subroutine grid_create
