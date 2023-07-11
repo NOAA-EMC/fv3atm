@@ -211,7 +211,7 @@
       type(ESMF_DistGrid)                     :: acceptorDG, newAcceptorDG
       integer                                 :: grid_id
 
-      logical                    :: top_parent_history_file_is_on_cubed_sphere_grid
+      logical                    :: history_file_on_native_grid
       character(len=esmf_maxstr) :: output_grid_name
 !
 !-----------------------------------------------------------------------
@@ -485,12 +485,12 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         endif
 
-    call ESMF_ConfigGetAttribute(config=CF, value=top_parent_history_file_is_on_cubed_sphere_grid, default=.false., &
-                                 label='top_parent_history_file_is_on_cubed_sphere_grid:', rc=rc)
+    call ESMF_ConfigGetAttribute(config=CF, value=history_file_on_native_grid, default=.false., &
+                                 label='history_file_on_native_grid:', rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 #if 1
-        if (n == 1 .and. top_parent_is_global .and. top_parent_history_file_is_on_cubed_sphere_grid) then
+        if (n == 1 .and. top_parent_is_global .and. history_file_on_native_grid) then
           do tl=1,6
             decomptile(1,tl) = 1
             decomptile(2,tl) = jidx
@@ -1291,7 +1291,7 @@
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! add the transfer attributes from importState to special cubed_sphere grid
-    if (n == 1 .and. top_parent_is_global .and. top_parent_history_file_is_on_cubed_sphere_grid) then
+    if (n == 1 .and. top_parent_is_global .and. history_file_on_native_grid) then
       call ESMF_AttributeAdd(wrtGrid_cubed_sphere, convention="NetCDF", purpose="FV3", &
                              attrList=attNameList(1:j-1), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1322,7 +1322,7 @@
                                name=trim(attNameList(i)), value=valueS, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        if (n == 1 .and. top_parent_is_global .and. top_parent_history_file_is_on_cubed_sphere_grid) then
+        if (n == 1 .and. top_parent_is_global .and. history_file_on_native_grid) then
           call ESMF_AttributeSet(wrtGrid_cubed_sphere, convention="NetCDF", purpose="FV3", &
                                  name=trim(attNameList(i)), value=valueS, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return

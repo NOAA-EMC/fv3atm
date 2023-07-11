@@ -563,7 +563,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer               :: layout(2), nx, ny
     integer, pointer      :: pelist(:) => null()
     logical               :: top_parent_is_global
-    logical               :: top_parent_history_file_is_on_cubed_sphere_grid
+    logical               :: history_file_on_native_grid
 
     integer                       :: num_restart_interval, restart_starttime
     real,dimension(:),allocatable :: restart_interval
@@ -985,7 +985,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! Create FieldBundle for Fields that need to be regridded bilinear
       if( quilting ) then
 
-        call ESMF_ConfigGetAttribute(config=CF, value=top_parent_history_file_is_on_cubed_sphere_grid, default=.false., label='top_parent_history_file_is_on_cubed_sphere_grid:', rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF, value=history_file_on_native_grid, default=.false., label='history_file_on_native_grid:', rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         nbdlphys = 2
@@ -1008,7 +1008,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            call create_bundle_and_add_it_to_state(trim(name_FB1), tempState, rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-           if (n == 1 .AND. top_parent_is_global .AND. top_parent_history_file_is_on_cubed_sphere_grid) then
+           if (n == 1 .AND. top_parent_is_global .AND. history_file_on_native_grid) then
              call create_bundle_and_add_it_to_state('cubed_sphere_grid_'//trim(name_FB1), tempState, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
            end if
@@ -1029,7 +1029,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
              call create_bundle_and_add_it_to_state(trim(name_FB1), tempState, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-             if (n == 1 .AND. top_parent_is_global .AND. top_parent_history_file_is_on_cubed_sphere_grid) then
+             if (n == 1 .AND. top_parent_is_global .AND. history_file_on_native_grid) then
                call create_bundle_and_add_it_to_state('cubed_sphere_grid_'//trim(name_FB1), tempState, rc=rc)
                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
              endif
