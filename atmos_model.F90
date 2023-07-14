@@ -2993,6 +2993,9 @@ end subroutine update_atmos_chemistry
             ! Land/Sea mask (sea:0,land:1)
             case ('inst_land_sea_mask', 'slmsk')
               call block_data_copy(datar82d, GFS_data(nb)%sfcprop%slmsk, Atm_block, nb, rc=localrc)
+            ! Total precipitation amount in each time step
+            case ('inst_rainfall_amount')
+              call block_data_copy(datar82d, GFS_data(nb)%sfcprop%tprcp, Atm_block, nb, rc=localrc)
             !--- Mean quantities
             ! MEAN Zonal compt of momentum flux (N/m**2)
             case ('mean_zonal_moment_flx_atm')
