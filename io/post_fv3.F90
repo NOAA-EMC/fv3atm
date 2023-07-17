@@ -3726,13 +3726,17 @@ module post_fv3
             endif
 
             ! model level tke
-            if(trim(fieldname)=='tke') then
+            if(trim(fieldname)=='qke') then
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,q2,arrayr43d, fillvalue,spval)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
                     q2(i,j,l)=arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) q2(i,j,l) = spval
+                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) then
+                      q2(i,j,l) = spval
+                    else
+                      q2(i,j,l) = q2(i,j,l)/2.0
+                    endif
                   enddo
                 enddo
 !              print *,'in gfs_post, get tke=',maxval(q2(:,:,l)), minval(q2(:,:,l)),'l=',l
