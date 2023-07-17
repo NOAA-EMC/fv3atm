@@ -144,6 +144,9 @@ SCHEME_FILES = [
     'physics/physics/cu_gf_driver_pre.F90',
     'physics/physics/cu_gf_driver.F90',
     'physics/physics/cu_gf_driver_post.F90',
+    'physics/physics/cu_c3_driver_pre.F90',
+    'physics/physics/cu_c3_driver.F90',
+    'physics/physics/cu_c3_driver_post.F90',
     'physics/physics/hedmf.f',
     'physics/physics/moninshoc.f',
     'physics/physics/satmedmfvdif.F',
@@ -180,6 +183,7 @@ SCHEME_FILES = [
     'physics/physics/lsm_noah.f',
     'physics/physics/noahmpdrv.F90',
     'physics/physics/flake_driver.F90',
+    'physics/physics/clm_lake.f90',
     'physics/physics/sfc_nst_pre.f',
     'physics/physics/sfc_nst.f',
     'physics/physics/sfc_nst_post.f',
@@ -188,9 +192,8 @@ SCHEME_FILES = [
     # HAFS FER_HIRES
     'physics/physics/mp_fer_hires.F90',
     # SMOKE
-    'physics/smoke/rrfs_smoke_wrapper.F90',
-    'physics/smoke/rrfs_smoke_postpbl.F90',
-    'physics/smoke/rrfs_smoke_lsdep_wrapper.F90',
+    'physics/physics/smoke_dust/rrfs_smoke_wrapper.F90',
+    'physics/physics/smoke_dust/rrfs_smoke_postpbl.F90',
     # RRTMGP
     'physics/physics/rrtmgp_aerosol_optics.F90',
     'physics/physics/rrtmgp_lw_main.F90',

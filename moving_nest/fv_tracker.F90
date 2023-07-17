@@ -26,7 +26,11 @@ module fv_tracker_mod
 
 #include <fms_platform.h>
 
+#ifdef OVERLOAD_R4
+  use constantsR4_mod,     only: pi=>pi_8, rad_to_deg, deg_to_rad, RVGAS, RDGAS
+#else
   use constants_mod,       only: pi=>pi_8, rad_to_deg, deg_to_rad, RVGAS, RDGAS
+#endif
   use fms_mod,             only: mpp_clock_id, CLOCK_SUBCOMPONENT, clock_flag_default, &
                                  mpp_clock_begin, mpp_clock_end
   use time_manager_mod,    only: time_type, get_time, set_time, operator(+), &

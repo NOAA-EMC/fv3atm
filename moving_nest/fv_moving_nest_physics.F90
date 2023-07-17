@@ -68,7 +68,11 @@ module fv_moving_nest_physics_mod
   use GFS_init,               only: GFS_grid_populate
 
   use boundary_mod,           only: update_coarse_grid, update_coarse_grid_mpp
+#ifdef OVERLOAD_R4
+  use constantsR4_mod,        only: cp_air, rdgas, grav, rvgas, kappa, pstd_mks, hlv
+#else
   use constants_mod,          only: cp_air, rdgas, grav, rvgas, kappa, pstd_mks, hlv
+#endif
   use field_manager_mod,      only: MODEL_ATMOS
   use fv_arrays_mod,          only: fv_atmos_type, fv_nest_type, fv_grid_type, R_GRID
   use fv_moving_nest_types_mod,   only: fv_moving_nest_prog_type, fv_moving_nest_physics_type, mn_surface_grids, fv_moving_nest_type
@@ -173,7 +177,7 @@ contains
 
         IPD_data(nb)%Sfcprop%tg3(ix) = mn_static%deep_soil_temp_grid(i_idx, j_idx)
 
-        ! Follow logic from FV3/io/FV3GFS_io.F90 line 1187
+        ! Follow logic from FV3/io/fv3atm_sfc_io.F90
         ! TODO this will need to be more complicated if we support frac_grid
         !if (nint(mn_static%soil_type_grid(i_idx, j_idx)) == 14 .or. int(mn_static%soil_type_grid(i_idx, j_idx)+0.5) <= 0) then
         !if (nint(mn_static%soil_type_grid(i_idx, j_idx)) == 14 .or.

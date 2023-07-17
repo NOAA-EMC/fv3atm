@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_HRRR_smoke" version="1">
+<suite name="FV3_HRRR_flake" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -70,7 +70,6 @@
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
-      <scheme>rrfs_smoke_lsdep_wrapper</scheme>
       <scheme>phys_tend</scheme>
     </subcycle>
   </group>
