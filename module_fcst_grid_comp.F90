@@ -1310,10 +1310,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       logical,save               :: first=.true.
       integer,save               :: dt_cap=0
+      type(ESMF_Time)            :: currTime,stopTime,startTime
 ! DH* 20230717 - needed?
-!      type(ESMF_Time)            :: currTime,stopTime,startTime
-!      integer                    :: mseconds
-      type(ESMF_Time)            :: currTime,stopTime
+!      integer                    :: mype,seconds
       integer                    :: seconds
 ! *DH 20230717
       real(kind=8)               :: mpi_wtime, tbeg1
