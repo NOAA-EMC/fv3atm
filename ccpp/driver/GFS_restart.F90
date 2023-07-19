@@ -118,7 +118,7 @@ module GFS_restart
       Restart%num2d = Restart%num2d + 3
     endif
     ! Unified convection
-    if (Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_c3) then
       Restart%num2d = Restart%num2d + 3
     endif
     ! CA
@@ -258,7 +258,7 @@ module GFS_restart
       enddo
     endif
     ! Unified convection
-    if (Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_c3) then
       num = num + 1
       Restart%name2d(num) = 'gf_2d_conv_act'
       do nb = 1,nblks
@@ -555,7 +555,7 @@ module GFS_restart
 
     !--Convection variable used in CB cloud fraction. Presently this
     !--is only needed in sgscloud_radpre for imfdeepcnv == imfdeepcnv_gf.
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) then
       num = num + 1
       Restart%name3d(num) = 'cnv_3d_ud_mf'
       do nb = 1,nblks
@@ -564,7 +564,7 @@ module GFS_restart
     endif
 
     !Unified convection scheme                                                                                                                                                                    
-    if (Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_c3) then
       num = num + 1
       Restart%name3d(num) = 'gf_3d_prevst'
       do nb = 1,nblks
