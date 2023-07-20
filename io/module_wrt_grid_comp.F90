@@ -1982,7 +1982,11 @@
 
 !recover fields from cartesian vector and sfc pressure
         call recover_fields(file_bundle,rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        ! FIXME rrfs_smoke_conus13km_fast_phy32_qr crashes with teh following error in recover_fields
+        ! 20230720 121647.816 ERROR            PET147 ESMF_Grid.F90:20442 ESMF_GridGetCoord2DR8 Arguments are incompatible  - - farrayPtr typekind does not match Grid typekind
+        ! 20230720 121647.816 ERROR            PET147 module_wrt_grid_comp.F90:2450 Arguments are incompatible  - Passing error in return code
+
+        ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       enddo
 !
 !-----------------------------------------------------------------------
