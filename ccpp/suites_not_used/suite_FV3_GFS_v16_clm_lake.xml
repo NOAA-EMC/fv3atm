@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v17_p8_rrtmgp" version="1">
+<suite name="FV3_GFS_v16_clm_lake" version="1">
   <!-- <init></init> -->
+  <group name="fast_physics">
+    <subcycle loop="1">
+      <scheme>fv_sat_adj</scheme>
+    </subcycle>
+  </group>
   <group name="time_vary">
     <subcycle loop="1">
       <scheme>GFS_time_vary_pre</scheme>
-      <scheme>GFS_rrtmgp_setup</scheme>
+      <scheme>GFS_rrtmg_setup</scheme>
       <scheme>GFS_rad_time_vary</scheme>
       <scheme>GFS_phys_time_vary</scheme>
     </subcycle>
@@ -13,15 +18,15 @@
   <group name="radiation">
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
-      <scheme>GFS_rrtmgp_pre</scheme>
+      <scheme>GFS_rrtmg_pre</scheme>
       <scheme>GFS_radiation_surface</scheme>
-      <scheme>GFS_rrtmgp_cloud_mp</scheme>
-      <scheme>GFS_rrtmgp_cloud_overlap</scheme>
-      <scheme>GFS_cloud_diagnostics</scheme>
-      <scheme>rrtmgp_aerosol_optics</scheme>
-      <scheme>rrtmgp_sw_main</scheme>
-      <scheme>rrtmgp_lw_main</scheme>
-      <scheme>GFS_rrtmgp_post</scheme>
+      <scheme>rad_sw_pre</scheme>
+      <scheme>rrtmg_sw</scheme>
+      <scheme>rrtmg_sw_post</scheme>
+      <scheme>rrtmg_lw_pre</scheme>
+      <scheme>rrtmg_lw</scheme>
+      <scheme>rrtmg_lw_post</scheme>
+      <scheme>GFS_rrtmg_post</scheme>
     </subcycle>
   </group>
   <group name="physics">
@@ -43,7 +48,8 @@
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>noahmpdrv</scheme>
+      <scheme>lsm_noah</scheme>
+      <scheme>clm_lake</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
@@ -57,8 +63,8 @@
       <scheme>satmedmfvdifq</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>unified_ugwp</scheme>
-      <scheme>unified_ugwp_post</scheme>
+      <scheme>cires_ugwp</scheme>
+      <scheme>cires_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys_2015</scheme>
@@ -74,21 +80,15 @@
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
-      <scheme>mp_thompson_pre</scheme>
-      </subcycle>
-      <subcycle loop="1">
-        <scheme>mp_thompson</scheme>
-      </subcycle>
-        <subcycle loop="1">
-        <scheme>mp_thompson_post</scheme>
-        <scheme>GFS_MP_generic_post</scheme>
-        <scheme>maximum_hourly_diagnostics</scheme>
-      </subcycle>
+      <scheme>gfdl_cloud_microphys</scheme>
+      <scheme>GFS_MP_generic_post</scheme>
+      <scheme>maximum_hourly_diagnostics</scheme>
+      <scheme>phys_tend</scheme>
+    </subcycle>
   </group>
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
-      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
