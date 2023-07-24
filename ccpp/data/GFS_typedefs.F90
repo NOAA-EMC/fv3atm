@@ -1082,6 +1082,7 @@ module GFS_typedefs
     real(kind_phys)      :: clm_lake_depth_default !< minimum lake elevation in clm lake model
     logical              :: clm_lake_use_lakedepth !< initialize lake from lakedepth
     logical              :: clm_lake_debug !< verbose debugging in clm_lake
+    logical              :: clm_debug_print !< enables prints in clm_lakedebugging in clm_laki
 
 !--- tuning parameters for physical parameterizations
     logical              :: ras             !< flag for ras convection scheme
@@ -3461,6 +3462,7 @@ module GFS_typedefs
     real(kind_phys)      :: clm_lake_depth_default = 50         !< default lake depth in clm lake model
     logical              :: clm_lake_use_lakedepth = .true.     !< initialize depth from lakedepth
     logical              :: clm_lake_debug = .false.            !< verbose debugging in clm_lake
+    logical              :: clm_debug_print = .false.           !< enables prints in clm_lake
 
     !--- land/surface model parameters
     integer              :: lsm            =  1              !< flag for land surface model to use =0  for osu lsm; =1  for noah lsm; =2  for noah mp lsm; =3  for RUC lsm
@@ -3706,7 +3708,7 @@ module GFS_typedefs
                                                              !< nstf_name(5) : zsea2 in mm
 !--- fractional grid
     logical              :: frac_grid       = .false.         !< flag for fractional grid
-    logical              :: frac_ice        = .false.         !< flag for fractional ice when fractional grid is not in use
+    logical              :: frac_ice        = .true.          !< flag for lake fractional ice when fractional grid is not in use
     logical              :: ignore_lake     = .true.          !< flag for ignoring lakes
     real(kind=kind_phys) :: min_lakeice     = 0.15d0          !< minimum lake ice value
     real(kind=kind_phys) :: min_seaice      = 1.0d-11         !< minimum sea  ice value
@@ -3915,7 +3917,7 @@ module GFS_typedefs
                           !--- lake model control
                                lkm, iopt_lake, lakedepth_threshold, lakefrac_threshold,     &
                                clm_lake_depth_default, clm_lake_use_lakedepth,              &
-                               clm_lake_debug, use_lake2m,                                  &
+                               clm_lake_debug, clm_debug_print, use_lake2m,                 &
                           !--- physical parameterizations
                                ras, trans_trac, old_monin, cnvgwd, mstrat, moist_adj,       &
                                cscnv, cal_pre, do_aw, do_shoc, shocaftcnv, shoc_cld,        &
@@ -4649,6 +4651,7 @@ module GFS_typedefs
     Model%clm_lake_depth_default = clm_lake_depth_default
     Model%clm_lake_use_lakedepth = clm_lake_use_lakedepth
     Model%clm_lake_debug = clm_lake_debug
+    Model%clm_debug_print = clm_debug_print
 
 ! Noah MP options from namelist
 !
@@ -5640,6 +5643,7 @@ module GFS_typedefs
           print *,'   clm_lake_use_lakedepth = ',Model%clm_lake_use_lakedepth
           print *,'   clm_lake_depth_default = ',Model%clm_lake_depth_default
           print *,'   clm_lake_debug         = ',Model%clm_lake_debug
+          print *,'   clm_debug_print        = ',Model%clm_debug_print
           print *,'   nlevlake_clm_lake      = ',Model%nlevlake_clm_lake
           print *,'   nlevsoil_clm_lake      = ',Model%nlevsoil_clm_lake
           print *,'   nlevsnow_clm_lake      = ',Model%nlevsnow_clm_lake
