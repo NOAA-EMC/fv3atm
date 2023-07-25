@@ -283,8 +283,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: vfrac  (:)   => null()  !< vegetation fraction
     integer,               pointer :: vtype  (:)   => null()  !< vegetation type
     integer,               pointer :: stype  (:)   => null()  !< soil type
+    integer,               pointer :: scolor  (:)   => null()  !< soil color
     integer,               pointer :: vtype_save (:) => null()!< vegetation type save
     integer,               pointer :: stype_save (:) => null()!< soil type save
+    integer,               pointer :: scolor_save (:) => null()!< soil color save
     real (kind=kind_phys), pointer :: uustar (:)   => null()  !< boundary layer parameter
     real (kind=kind_phys), pointer :: oro    (:)   => null()  !< orography
     real (kind=kind_phys), pointer :: oro_uf (:)   => null()  !< unfiltered orography
@@ -1045,6 +1047,8 @@ module GFS_typedefs
     integer              :: iopt_tbot !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb inversed)
+    integer              :: iopt_diag !2m t/q diagnostic approach (1->external GFS sfc_diag 2->original NoahMP 2-title 3->NoahMP 
+                                      !2-title + internal GFS sfc_diag  )
 
     ! -- RUC LSM options
     integer              :: mosaic_lu=0     !< control for use of fractional landuse in RUC land surface model
@@ -2379,6 +2383,8 @@ module GFS_typedefs
     allocate (Sfcprop%vtype_save (IM))
     allocate (Sfcprop%stype      (IM))
     allocate (Sfcprop%stype_save (IM))
+    allocate (Sfcprop%scolor     (IM))
+    allocate (Sfcprop%scolor_save(IM))
     allocate (Sfcprop%uustar     (IM))
     allocate (Sfcprop%oro        (IM))
     allocate (Sfcprop%oro_uf     (IM))
@@ -2397,6 +2403,8 @@ module GFS_typedefs
     Sfcprop%vtype_save = zero
     Sfcprop%stype      = zero
     Sfcprop%stype_save = zero
+    Sfcprop%scolor      = zero
+    Sfcprop%scolor_save = zero
     Sfcprop%uustar     = clear_val
     Sfcprop%oro        = clear_val
     Sfcprop%oro_uf     = clear_val
@@ -3493,6 +3501,8 @@ module GFS_typedefs
     integer              :: iopt_tbot      =  2  !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc       =  1  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs       =  2  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb reversed)
+    integer              :: iopt_diag      =  2  !2m t/q diagnostic approach (1->external GFS sfc_diag 2->original NoahMP 2-title
+                                                 !3->NoahMP 2-title + internal GFS sfc_diag  )
 
     integer              :: mosaic_lu      =  0  ! 1 - used of fractional landuse in RUC lsm
     integer              :: mosaic_soil    =  0  ! 1 - used of fractional soil in RUC lsm
@@ -3897,7 +3907,7 @@ module GFS_typedefs
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
-                               iopt_trs,                                                    &
+                               iopt_trs, iopt_diag,                                         &
                           !    RUC lsm options
                                mosaic_lu, mosaic_soil, isncond_opt, isncovr_opt,            &
                           !    GFDL surface layer options
@@ -4659,6 +4669,7 @@ module GFS_typedefs
     Model%iopt_tbot        = iopt_tbot
     Model%iopt_stc         = iopt_stc
     Model%iopt_trs         = iopt_trs
+    Model%iopt_diag        = iopt_diag
 
 ! RUC lsm options
     Model%mosaic_lu        = mosaic_lu
@@ -5597,6 +5608,7 @@ module GFS_typedefs
         print *,'iopt_tbot   =  ',Model%iopt_tbot
         print *,'iopt_stc   =  ', Model%iopt_stc
         print *,'iopt_trs   =  ', Model%iopt_trs
+        print *,'iopt_diag  =  ', Model%iopt_diag
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
         print *, 'The Physics options are'
@@ -6513,6 +6525,7 @@ module GFS_typedefs
         print *, ' iopt_tbot         : ', Model%iopt_tbot
         print *, ' iopt_stc          : ', Model%iopt_stc
         print *, ' iopt_trs          : ', Model%iopt_trs
+        print *, ' iopt_diag         : ', Model%iopt_diag
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
         print *, 'The Physics options are'

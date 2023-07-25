@@ -1053,6 +1053,18 @@
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+[scolor]
+  standard_name = soil_color_classification
+  long_name = soil color for lsm
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
+[scolor_save]
+  standard_name = soil_color_classification_save
+  long_name = soil color for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [uustar]
   standard_name = surface_friction_velocity
   long_name = boundary layer parameter
@@ -4902,6 +4914,12 @@
 [iopt_trs]
   standard_name = control_for_land_surface_scheme_surface_thermal_roughness
   long_name = choice for surface thermal roughness option (see noahmp module for definition)
+  units = index
+  dimensions = ()
+  type = integer
+[iopt_diag]
+  standard_name = control_for_land_surface_scheme_surface_diagnose_approach
+  long_name = choice for surface diagnose approach option (see noahmp module for definition)
   units = index
   dimensions = ()
   type = integer
