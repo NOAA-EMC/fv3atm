@@ -876,10 +876,13 @@
           endif
 
 ! deal with all of the Fields inside this fcstFB
-          call ESMF_FieldBundleGet(fcstFB, fieldCount=fieldCount, grid=fcstGrid, rc=rc)
+          call ESMF_FieldBundleGet(fcstFB, fieldCount=fieldCount, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           if (fieldCount > 0) then
+
+            call ESMF_FieldBundleGet(fcstFB, grid=fcstGrid, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
             allocate(fcstField(fieldCount))
             call ESMF_FieldBundleGet(fcstFB, fieldList=fcstField,     &
@@ -1979,6 +1982,11 @@
 
 !recover fields from cartesian vector and sfc pressure
         call recover_fields(file_bundle,rc)
+        ! FIXME rrfs_smoke_conus13km_fast_phy32_qr crashes with teh following error in recover_fields
+        ! 20230720 121647.816 ERROR            PET147 ESMF_Grid.F90:20442 ESMF_GridGetCoord2DR8 Arguments are incompatible  - - farrayPtr typekind does not match Grid typekind
+        ! 20230720 121647.816 ERROR            PET147 module_wrt_grid_comp.F90:2450 Arguments are incompatible  - Passing error in return code
+
+        ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       enddo
 !
 !-----------------------------------------------------------------------
@@ -2426,10 +2434,14 @@
      real(ESMF_KIND_R8) :: coslon, sinlon, sinlat
 !
 ! get filed count
-     call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, &
-                              grid=fieldGrid, rc=rc)
+     call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
+
+     if (fieldCount == 0) return
+
+     call ESMF_FieldBundleGet(file_bundle, grid=fieldGrid, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
      call ESMF_LogWrite("call recover field on wrt comp",ESMF_LOGMSG_INFO,rc=RC)
      call ESMF_GridGet(fieldgrid, dimCount=gridDimCount, rc=rc)
 
