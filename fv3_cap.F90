@@ -1097,6 +1097,7 @@ module fv3atm_cap_mod
     character(240)              :: msgString
 
     type(ESMF_Clock)            :: clock, clock_out
+    integer                     :: fieldCount
 
 !-----------------------------------------------------------------------------
 
@@ -1147,11 +1148,16 @@ module fv3atm_cap_mod
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
 
-          ! execute the routehandle from fcstFB -> wrtFB (either Regrid() or Redist())
-          call ESMF_FieldBundleSMM(fcstFB(j), wrtFB(j,n_group),         &
-                                   routehandle=routehandle(j, n_group), &
-                                   termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
+          ! execute the routehandle from fcstFB -> wrtFB (either Regrid() or Redist()), only if there are fields in the bundle
+          call ESMF_FieldBundleGet(fcstFB(j), fieldCount=fieldCount, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          if (fieldCount > 0) then
+            call ESMF_FieldBundleSMM(fcstFB(j), wrtFB(j,n_group),         &
+                                     routehandle=routehandle(j, n_group), &
+                                     termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          end if
 
         enddo
 
