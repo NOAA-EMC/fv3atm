@@ -164,6 +164,7 @@ SCHEME_FILES = [
     'physics/physics/mp_nssl.F90'                      ,
     'physics/physics/ozphys.f',
     'physics/physics/ozphys_2015.F90',
+    'physics/physics/ozphys_time_vary.F90',
     'physics/physics/zhaocarr_precpd.f',
     'physics/physics/phys_tend.F90',
     'physics/physics/radlw_main.F90',

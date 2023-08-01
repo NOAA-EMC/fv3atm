@@ -1114,8 +1114,6 @@ module GFS_typedefs
     logical              :: shocaftcnv      !< flag for SHOC
     logical              :: shoc_cld        !< flag for clouds
     logical              :: uni_cld         !< flag for clouds in grrad
-    logical              :: oz_phys         !< flag for old (2006) ozone physics
-    logical              :: oz_phys_2015    !< flag for new (2015) ozone physics
     logical              :: h2o_phys        !< flag for stratosphere h2o
     logical              :: pdfcld          !< flag for pdfcld
     logical              :: shcnvcw         !< flag for shallow convective cloud
@@ -1561,19 +1559,24 @@ module GFS_typedefs
     logical              :: lightning_threat !< report lightning threat indices
 
 !--- NRL Ozone physics
-    integer                        :: kozpl = 28                !<
-    integer                        :: kozc  = 48                !<
-    integer                        :: latsozp                   !<
-    integer                        :: levozp                    !< number of vertical layers in ozone forcing data 
-    integer                        :: timeoz                    !<
-    integer                        :: oz_coeff                  !< number of coefficients in ozone forcing data 
-    real (kind=kind_phys)          :: blatc                     !<
-    real (kind=kind_phys)          :: dphiozc                   !<
-    real (kind=kind_phys), pointer :: oz_lat(:)       => null() !<
-    real (kind=kind_phys), pointer :: oz_pres(:)      => null() !< natural log of ozone forcing data pressure levels
-    real (kind=kind_phys), pointer :: po3(:)          => null() !<
-    real (kind=kind_phys), pointer :: oz_time(:)      => null() !<
-    real (kind=kind_phys), pointer :: ozplin(:,:,:,:) => null() !<
+    logical                            :: oz_phys         !< Flag for old (2006) ozone physics
+    logical                            :: oz_phys_2015    !< Flag for new (2015) ozone physics
+    integer                            :: kozpl           !< File identifier for ozone forcing data
+    integer                            :: latsozp         !< Number of latitudes in ozone forcing data
+    integer                            :: levozp          !< Number of vertical layers in ozone forcing data
+    integer                            :: timeoz          !< Number of times in ozone forcing data
+    integer                            :: oz_coeff        !< Number of coefficients in ozone forcing data
+    real (kind=kind_phys), allocatable :: oz_lat(:)       !< Latitude for ozone forcing data
+    real (kind=kind_phys), allocatable :: oz_pres(:)      !< Pressure levels for ozone forcing data
+    real (kind=kind_phys), allocatable :: po3(:)          !< Natural log pressure levels for ozone forcing data
+    real (kind=kind_phys), allocatable :: oz_time(:)      !< Time for ozone forcing data
+    real (kind=kind_phys), allocatable :: ozplin(:,:,:,:) !< Ozone forcing data
+    integer                            :: kozc            !< File identifier for ozone climotology data
+    integer                            :: latsozc         !< Number of latitudes in ozone climotology data
+    integer                            :: levozc          !< Number of vertical layers in ozone climotology data
+    integer                            :: timeozc         !< Number of times in ozone climotology data
+    real (kind=kind_phys)              :: blatc           !< Parameter for ozone climotology
+    real (kind=kind_phys)              :: dphiozc         !< Parameter for ozone climotology
 
     contains
       procedure :: init            => control_initialize
@@ -3564,8 +3567,6 @@ module GFS_typedefs
     logical              :: do_shoc        = .false.                  !< flag for SHOC
     logical              :: shocaftcnv     = .false.                  !< flag for SHOC
     logical              :: shoc_cld       = .false.                  !< flag for SHOC in grrad
-    logical              :: oz_phys        = .true.                   !< flag for old (2006) ozone physics
-    logical              :: oz_phys_2015   = .false.                  !< flag for new (2015) ozone physics
     logical              :: h2o_phys       = .false.                  !< flag for stratosphere h2o
     logical              :: pdfcld         = .false.                  !< flag for pdfcld
     logical              :: shcnvcw        = .false.                  !< flag for shallow convective cloud
@@ -3839,6 +3840,12 @@ module GFS_typedefs
 !-- Lightning threat index
     logical :: lightning_threat = .false.
 
+!--- NRL Ozone physics
+    logical              :: oz_phys      = .true.   !< Flag for old (2006) ozone physics
+    logical              :: oz_phys_2015 = .false.  !< Flag for new (2015) ozone physics
+    integer              :: kozpl        = 28       !< File identifier for ozone forcing data
+    integer              :: kozc         = 48       !< File identifier for ozone climotology data
+
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 183
     character(len=40)  :: fscav_aero(max_scav_factors)
@@ -4013,6 +4020,7 @@ module GFS_typedefs
 !--- ozone physics
     integer :: i1, i2, i3
     real(kind=4), dimension(:), allocatable :: oz_lat4, oz_pres4, oz_time4, tempin
+    real(kind=4) :: blatc4
 
     ! dtend selection: default is to match all variables:
     dtend_select(1)='*'
@@ -5408,7 +5416,7 @@ module GFS_typedefs
        allocate (Model%oz_time(Model%timeoz+1))
        allocate (Model%ozplin(Model%latsozp,Model%levozp,Model%oz_coeff,Model%timeoz))
        !
-       allocate(oz_lat4(Model%latsozp), oz_pres4(Model%levozp), oz_time4(Model%timeoz+1), tempin(Model%latsozp))
+       allocate(oz_lat4(Model%latsozp), oz_pres4(Model%levozp), oz_time4(Model%timeoz+1))
        read (Model%kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz, oz_lat4, oz_pres4, oz_time4
 
        ! Store
@@ -5416,7 +5424,9 @@ module GFS_typedefs
        Model%po3(:)     = log(100.0*Model%oz_pres(:)) ! from mb to ln(Pa)
        Model%oz_lat(:)  = oz_lat4(:)
        Model%oz_time(:) = oz_time4(:)
+       deallocate(oz_lat4, oz_pres4, oz_time4)
        !
+       allocate(tempin(Model%latsozp))
        do i1=1,Model%timeoz
           do i2=1,Model%oz_coeff
              do i3=1,Model%levozp
@@ -5425,15 +5435,26 @@ module GFS_typedefs
              enddo
           enddo
        enddo
+       deallocate(tempin)
        close(Model%kozpl)
     else
-       if (Model%oz_phys .or. Model%oz_phys_2015) then
-          write(*,*) 'Logic error, ozone physics are selected, but ntoz<=0'
-          stop
+       !--- Diagnostic ozone
+       rewind (Model%kozc)
+       read (Model%kozc,end=101) Model%latsozc, Model%levozc, Model%timeozc, blatc4
+101    if (Model%levozc  < 10 .or. Model%levozc > 100) then
+          rewind (Model%kozc)
+          Model%levozc  = 17
+          Model%latsozc = 18
+          Model%blatc   = -85.0
        else
-          Model%levozp   = 1
-          Model%oz_coeff = 1
-       end if
+          Model%blatc   = blatc4
+       endif
+       Model%latsozp   = 2
+       Model%levozp    = 1
+       Model%timeoz    = 1
+       Model%oz_coeff  = 0
+       Model%dphiozc   = -(Model%blatc+Model%blatc)/(Model%latsozc-1)
+       return
     end if
 
 !--- quantities to be used to derive phy_f*d totals
