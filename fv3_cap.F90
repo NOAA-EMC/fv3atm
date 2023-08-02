@@ -1,4 +1,4 @@
-!--------------- FV3GFS solo model -----------------
+!--------------- FV3 ATM solo model ----------------
 !
 !*** The FV3 atmosphere grid component nuopc cap
 !
@@ -11,7 +11,7 @@
 ! 02 Nov 2017: J. Wang          Use Gerhard's transferable RouteHandle
 !
 
-module fv3gfs_cap_mod
+module fv3atm_cap_mod
 
   use ESMF
   use NUOPC
@@ -80,14 +80,14 @@ module fv3gfs_cap_mod
   contains
 
 !-----------------------------------------------------------------------
-!------------------- Solo fv3gfs code starts here ----------------------
+!------------------- Solo fv3atm code starts here ----------------------
 !-----------------------------------------------------------------------
 
   subroutine SetServices(gcomp, rc)
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-    character(len=*),parameter  :: subname='(fv3gfs_cap:SetServices)'
+    character(len=*),parameter  :: subname='(fv3atm_cap:SetServices)'
 
     rc = ESMF_SUCCESS
 
@@ -209,7 +209,7 @@ module fv3gfs_cap_mod
     integer                                :: wrttasks_per_group_from_parent, wrtLocalPet, num_threads
     character(len=64)                      :: rh_filename
     logical                                :: use_saved_routehandles, rh_file_exist
-    logical                                :: fieldbundle_is_restart = .false.
+    logical                                :: fieldbundle_uses_redist = .false.
 
     integer                                :: sloc
     type(ESMF_StaggerLoc)                  :: staggerloc
@@ -698,11 +698,12 @@ module fv3gfs_cap_mod
             if(mype == 0) print *,'af get wrtfb=',"output_"//trim(fcstItemNameList(j)),' rc=',rc
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            fieldbundle_is_restart = .false.
+            fieldbundle_uses_redist = .false.
+            ! if (fcstItemNameList(j)(1:8) == "restart_" .or. fcstItemNameList(j)(1:18) == "cubed_sphere_grid_") then
             if (fcstItemNameList(j)(1:8) == "restart_") then
               ! restart output forecast bundles, no need to set regridmethod
               ! Redist will be used instead of Regrid
-              fieldbundle_is_restart = .true.
+              fieldbundle_uses_redist = .true.
             else
               ! history output forecast bundles
               ! determine regridmethod
@@ -739,7 +740,7 @@ module fv3gfs_cap_mod
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               else
                 ! this is a Store() for the first wrtComp -> must do the Store()
-                if (fieldbundle_is_restart) then
+                if (fieldbundle_uses_redist) then
                   call ESMF_TraceRegionEnter("ESMF_FieldBundleRedistStore()", rc=rc)
                   call ESMF_FieldBundleRedistStore(fcstFB(j), wrtFB(j,1), &
                                                    routehandle=routehandle(j,1), &
@@ -983,7 +984,7 @@ module fv3gfs_cap_mod
     integer, intent(out) :: rc
 
     ! local variables
-    character(len=*),parameter :: subname='(fv3gfs_cap:InitializeRealize)'
+    character(len=*),parameter :: subname='(fv3atm_cap:InitializeRealize)'
     type(ESMF_Clock)           :: clock
     type(ESMF_State)           :: importState, exportState
     integer                    :: urc
@@ -1097,6 +1098,7 @@ module fv3gfs_cap_mod
     character(240)              :: msgString
 
     type(ESMF_Clock)            :: clock, clock_out
+    integer                     :: fieldCount
 
 !-----------------------------------------------------------------------------
 
@@ -1147,11 +1149,16 @@ module fv3gfs_cap_mod
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
 
-          ! execute the routehandle from fcstFB -> wrtFB (either Regrid() or Redist())
-          call ESMF_FieldBundleSMM(fcstFB(j), wrtFB(j,n_group),         &
-                                   routehandle=routehandle(j, n_group), &
-                                   termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
+          ! execute the routehandle from fcstFB -> wrtFB (either Regrid() or Redist()), only if there are fields in the bundle
+          call ESMF_FieldBundleGet(fcstFB(j), fieldCount=fieldCount, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          if (fieldCount > 0) then
+            call ESMF_FieldBundleSMM(fcstFB(j), wrtFB(j,n_group),         &
+                                     routehandle=routehandle(j, n_group), &
+                                     termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          end if
 
         enddo
 
@@ -1248,7 +1255,7 @@ module fv3gfs_cap_mod
     integer, intent(out)       :: rc
 
     ! local variables
-    character(len=*),parameter :: subname='(fv3gfs_cap:fv3_checkimport)'
+    character(len=*),parameter :: subname='(fv3atm_cap:fv3_checkimport)'
     integer                    :: n, nf
     type(ESMF_Clock)           :: clock
     type(ESMF_Time)            :: currTime, invalidTime
@@ -1335,7 +1342,7 @@ module fv3gfs_cap_mod
     integer, intent(out)       :: rc
 
     ! local variables
-    character(len=*),parameter :: subname='(fv3gfs_cap:TimestampExport_phase1)'
+    character(len=*),parameter :: subname='(fv3atm_cap:TimestampExport_phase1)'
     type(ESMF_Clock)           :: driverClock, modelClock
     type(ESMF_State)           :: exportState
 
@@ -1365,7 +1372,7 @@ module fv3gfs_cap_mod
     integer, intent(out)       :: rc
 
     ! local variables
-    character(len=*),parameter :: subname='(fv3gfs_cap:ModelFinalize)'
+    character(len=*),parameter :: subname='(fv3atm_cap:ModelFinalize)'
     integer                    :: i, urc
     type(ESMF_VM)              :: vm
     real(kind=8)               :: MPI_Wtime, timeffs
@@ -1413,4 +1420,4 @@ module fv3gfs_cap_mod
 !
 !-----------------------------------------------------------------------------
 
-end module fv3gfs_cap_mod
+end module fv3atm_cap_mod

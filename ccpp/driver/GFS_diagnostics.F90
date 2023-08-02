@@ -3840,6 +3840,18 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'scolor'
+    ExtDiag(idx)%desc = 'soil color in integer 1-20' 
+    ExtDiag(idx)%unit = 'number'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%scolor(:)
+    enddo
+
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'lfrac'
     ExtDiag(idx)%desc = 'land fraction'
     ExtDiag(idx)%unit = 'fraction [0:1]'
