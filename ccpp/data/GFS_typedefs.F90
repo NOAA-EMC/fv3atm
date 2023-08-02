@@ -5478,7 +5478,6 @@ module GFS_typedefs
        Model%timeoz    = 1
        Model%oz_coeff  = 0
        Model%dphiozc   = -(Model%blatc+Model%blatc)/(Model%latsozc-1)
-       return
     end if
 
 !--- quantities to be used to derive phy_f*d totals
