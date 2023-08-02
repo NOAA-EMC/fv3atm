@@ -1568,7 +1568,6 @@ module GFS_typedefs
 !--- NRL Ozone physics
     logical                            :: oz_phys         !< Flag for old (2006) ozone physics
     logical                            :: oz_phys_2015    !< Flag for new (2015) ozone physics
-    integer                            :: kozpl           !< File identifier for ozone forcing data
     integer                            :: latsozp         !< Number of latitudes in ozone forcing data
     integer                            :: levozp          !< Number of vertical layers in ozone forcing data
     integer                            :: timeoz          !< Number of times in ozone forcing data
@@ -1578,7 +1577,6 @@ module GFS_typedefs
     real (kind=kind_phys), allocatable :: po3(:)          !< Natural log pressure levels for ozone forcing data
     real (kind=kind_phys), allocatable :: oz_time(:)      !< Time for ozone forcing data
     real (kind=kind_phys), allocatable :: ozplin(:,:,:,:) !< Ozone forcing data
-    integer                            :: kozc            !< File identifier for ozone climotology data
     integer                            :: latsozc         !< Number of latitudes in ozone climotology data
     integer                            :: levozc          !< Number of vertical layers in ozone climotology data
     integer                            :: timeozc         !< Number of times in ozone climotology data
@@ -5423,9 +5421,9 @@ module GFS_typedefs
     !--- NRL ozone physics
     if (Model%ntoz > 0) then
        ! Get dimensions from data file
-       open(unit=Model%kozpl,file='global_o3prdlos.f77', form='unformatted', convert='big_endian')
-       read (Model%kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz
-       rewind(Model%kozpl)
+       open(unit=kozpl,file='global_o3prdlos.f77', form='unformatted', convert='big_endian')
+       read (kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz
+       rewind(kozpl)
        if (Model%me == Model%master) then
           write(*,*) 'Reading in o3data from global_o3prdlos.f77 '
           write(*,*) '      oz_coeff = ', Model%oz_coeff
@@ -5441,7 +5439,7 @@ module GFS_typedefs
        allocate (Model%ozplin(Model%latsozp,Model%levozp,Model%oz_coeff,Model%timeoz))
        !
        allocate(oz_lat4(Model%latsozp), oz_pres4(Model%levozp), oz_time4(Model%timeoz+1))
-       read (Model%kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz, oz_lat4, oz_pres4, oz_time4
+       read (kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz, oz_lat4, oz_pres4, oz_time4
 
        ! Store
        Model%oz_pres(:) = oz_pres4(:)
@@ -5454,19 +5452,19 @@ module GFS_typedefs
        do i1=1,Model%timeoz
           do i2=1,Model%oz_coeff
              do i3=1,Model%levozp
-                READ(Model%kozpl) tempin
+                READ(kozpl) tempin
                 Model%ozplin(:,i3,i2,i1) = tempin(:)
              enddo
           enddo
        enddo
        deallocate(tempin)
-       close(Model%kozpl)
+       close(kozpl)
     else
        !--- Diagnostic ozone
-       rewind (Model%kozc)
-       read (Model%kozc,end=101) Model%latsozc, Model%levozc, Model%timeozc, blatc4
+       rewind (kozc)
+       read (kozc,end=101) Model%latsozc, Model%levozc, Model%timeozc, blatc4
 101    if (Model%levozc  < 10 .or. Model%levozc > 100) then
-          rewind (Model%kozc)
+          rewind (kozc)
           Model%levozc  = 17
           Model%latsozc = 18
           Model%blatc   = -85.0

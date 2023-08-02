@@ -6696,12 +6696,6 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[kozc]
-  standard_name = file_indicator_for_ozone_climotology_data
-  long_name = file indicator for ozone climotology data
-  units = none
-  dimensions = ()
-  type = integer
 [latsozc]
   standard_name = number_of_latitudes_in_ozone_climotology_data
   long_name = number of latitude in ozone climotology data
@@ -6718,12 +6712,6 @@
   standard_name = number_of_levels_in_ozone_climotology_data
   long_name = number of vertical layers in ozone climotology data
   units = count
-  dimensions = ()
-  type = integer
-[kozpl]
-  standard_name = file_indicator_for_ozone_data
-  long_name = file indicator for ozone data
-  units = none
   dimensions = ()
   type = integer
 [latsozp]
