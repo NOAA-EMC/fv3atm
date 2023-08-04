@@ -284,8 +284,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: vfrac  (:)   => null()  !< vegetation fraction
     integer,               pointer :: vtype  (:)   => null()  !< vegetation type
     integer,               pointer :: stype  (:)   => null()  !< soil type
+    integer,               pointer :: scolor  (:)   => null()  !< soil color
     integer,               pointer :: vtype_save (:) => null()!< vegetation type save
     integer,               pointer :: stype_save (:) => null()!< soil type save
+    integer,               pointer :: scolor_save (:) => null()!< soil color save
     real (kind=kind_phys), pointer :: uustar (:)   => null()  !< boundary layer parameter
     real (kind=kind_phys), pointer :: oro    (:)   => null()  !< orography
     real (kind=kind_phys), pointer :: oro_uf (:)   => null()  !< unfiltered orography
@@ -971,9 +973,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: nssl_cccn      !<  CCN concentration (m-3)
     real(kind=kind_phys) :: nssl_alphah    !<  graupel shape parameter
     real(kind=kind_phys) :: nssl_alphahl   !<  hail shape parameter
-    real(kind=kind_phys) :: nssl_alphar  ! shape parameter for rain (imurain=1 only)                         
-    real(kind=kind_phys) :: nssl_ehw0_in ! constant or max assumed graupel-droplet collection efficiency   
-    real(kind=kind_phys) :: nssl_ehlw0_in! constant or max assumed hail-droplet collection efficiency   
+    real(kind=kind_phys) :: nssl_alphar    ! shape parameter for rain (imurain=1 only)                         
+    real(kind=kind_phys) :: nssl_ehw0      ! constant or max assumed graupel-droplet collection efficiency   
+    real(kind=kind_phys) :: nssl_ehlw0     ! constant or max assumed hail-droplet collection efficiency   
     logical              :: nssl_hail_on   !<  NSSL flag to activate the hail category
     logical              :: nssl_ccn_on    !<  NSSL flag to activate the CCN category
     logical              :: nssl_invertccn !<  NSSL flag to treat CCN as activated (true) or unactivated (false)
@@ -1046,6 +1048,8 @@ module GFS_typedefs
     integer              :: iopt_tbot !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb inversed)
+    integer              :: iopt_diag !2m t/q diagnostic approach (1->external GFS sfc_diag 2->original NoahMP 2-title 3->NoahMP 
+                                      !2-title + internal GFS sfc_diag  )
 
     ! -- RUC LSM options
     integer              :: mosaic_lu=0     !< control for use of fractional landuse in RUC land surface model
@@ -1147,7 +1151,7 @@ module GFS_typedefs
     integer              :: imfshalcnv_samf     = 2 !< flag for SAMF scale- & aerosol-aware mass-flux shallow convection scheme
     integer              :: imfshalcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
     integer              :: imfshalcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
-    integer              :: imfshalcnv_unified  = 5 !< flag for the unified convection scheme
+    integer              :: imfshalcnv_c3       = 5 !< flag for the Community Convective Cloud (C3) scheme
     logical              :: hwrf_samfdeep           !< flag for HWRF SAMF deepcnv scheme (HWRF)
     logical              :: progsigma               !< flag for prognostic area fraction in samf ddepcnv scheme (GFS)   
     integer              :: imfdeepcnv      !< flag for mass-flux deep convection scheme
@@ -1161,13 +1165,16 @@ module GFS_typedefs
     integer              :: imfdeepcnv_samf     = 2 !< flag for SAMF scale- & aerosol-aware mass-flux deep convection scheme
     integer              :: imfdeepcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
     integer              :: imfdeepcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
-    integer              :: imfdeepcnv_unified  = 5 !< flag for the unified convection scheme
+    integer              :: imfdeepcnv_c3       = 5 !< flag for the Community Convective Cloud (C3) scheme
     logical              :: hwrf_samfshal           !< flag for HWRF SAMF shalcnv scheme (HWRF)
     integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme
                                             !<     0: initial version of satmedmf (Nov. 2018)
                                             !<     1: updated version of satmedmf (as of May 2019)
     integer              :: isatmedmf_vdif  = 0 !< flag for initial version of satmedmf (Nov. 2018)
     integer              :: isatmedmf_vdifq = 1 !< flag for updated version of satmedmf (as of May 2019)
+    integer              :: ichoice         = 0 !< flag for closure of C3/GF deep convection
+    integer              :: ichoicem        = 13!< flag for closure of C3/GF mid convection
+    integer              :: ichoice_s       = 3 !< flag for closure of C3/GF shallow convection
 
     integer              :: nmtvr           !< number of topographic variables such as variance etc
                                             !< used in the GWD parameterization - 10 more added if
@@ -2377,6 +2384,8 @@ module GFS_typedefs
     allocate (Sfcprop%vtype_save (IM))
     allocate (Sfcprop%stype      (IM))
     allocate (Sfcprop%stype_save (IM))
+    allocate (Sfcprop%scolor     (IM))
+    allocate (Sfcprop%scolor_save(IM))
     allocate (Sfcprop%uustar     (IM))
     allocate (Sfcprop%oro        (IM))
     allocate (Sfcprop%oro_uf     (IM))
@@ -2395,6 +2404,8 @@ module GFS_typedefs
     Sfcprop%vtype_save = zero
     Sfcprop%stype      = zero
     Sfcprop%stype_save = zero
+    Sfcprop%scolor      = zero
+    Sfcprop%scolor_save = zero
     Sfcprop%uustar     = clear_val
     Sfcprop%oro        = clear_val
     Sfcprop%oro_uf     = clear_val
@@ -2687,7 +2698,7 @@ module GFS_typedefs
        Sfcprop%cqs2        = clear_val
        Sfcprop%lh          = clear_val
     end if
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) then
         allocate (Sfcprop%maxupmf(IM))
         allocate (Sfcprop%conv_act(IM))
         allocate (Sfcprop%conv_act_m(IM))
@@ -3139,7 +3150,7 @@ module GFS_typedefs
       Coupling%rrfs_hwp   = clear_val
     endif
 
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) then
       allocate (Coupling%qci_conv (IM,Model%levs))
       Coupling%qci_conv   = clear_val
     endif
@@ -3415,8 +3426,8 @@ module GFS_typedefs
     real(kind=kind_phys) :: nssl_alphah     = 0.0               !<  graupel shape parameter
     real(kind=kind_phys) :: nssl_alphahl    = 1.0               !<  hail shape parameter
     real(kind=kind_phys) :: nssl_alphar     = 0.0               ! shape parameter for rain (imurain=1 only)  
-    real(kind=kind_phys) :: nssl_ehw0_in    = 0.9               ! constant or max assumed graupel-droplet collection efficiency  
-    real(kind=kind_phys) :: nssl_ehlw0_in   = 0.9               ! constant or max assumed hail-droplet collection efficiency  
+    real(kind=kind_phys) :: nssl_ehw0       = 0.9               ! constant or max assumed graupel-droplet collection efficiency  
+    real(kind=kind_phys) :: nssl_ehlw0      = 0.9               ! constant or max assumed hail-droplet collection efficiency  
     logical              :: nssl_hail_on    = .false.           !<  NSSL flag to activate the hail category
     logical              :: nssl_ccn_on     = .true.            !<  NSSL flag to activate the CCN category
     logical              :: nssl_invertccn  = .true.            !<  NSSL flag to treat CCN as activated (true) or unactivated (false)
@@ -3489,6 +3500,8 @@ module GFS_typedefs
     integer              :: iopt_tbot      =  2  !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc       =  1  !snow/soil temperature time scheme (only layer 1)
     integer              :: iopt_trs       =  2  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb reversed)
+    integer              :: iopt_diag      =  2  !2m t/q diagnostic approach (1->external GFS sfc_diag 2->original NoahMP 2-title
+                                                 !3->NoahMP 2-title + internal GFS sfc_diag  )
 
     integer              :: mosaic_lu      =  0  ! 1 - used of fractional landuse in RUC lsm
     integer              :: mosaic_soil    =  0  ! 1 - used of fractional soil in RUC lsm
@@ -3801,6 +3814,10 @@ module GFS_typedefs
     integer :: spp_gwd      =  0
     logical :: do_spp       = .false.
 
+    integer              :: ichoice         = 0 !< flag for closure of C3/GF deep convection
+    integer              :: ichoicem        = 13!< flag for closure of C3/GF mid convection
+    integer              :: ichoice_s       = 3 !< flag for closure of C3/GF shallow convection
+
 !-- chem nml variables for RRFS-SD
     real(kind=kind_phys) :: dust_alpha = 0.
     real(kind=kind_phys) :: dust_gamma = 0.
@@ -3877,7 +3894,7 @@ module GFS_typedefs
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                                sedi_semi, decfl,                                            &
                                nssl_cccn, nssl_alphah, nssl_alphahl,                        &
-                               nssl_alphar, nssl_ehw0_in, nssl_ehlw0_in,                    &
+                               nssl_alphar, nssl_ehw0, nssl_ehlw0,                    &
                                nssl_invertccn, nssl_hail_on, nssl_ccn_on,                   &
                           !--- max hourly
                                avg_max_length,                                              &
@@ -3888,7 +3905,7 @@ module GFS_typedefs
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
-                               iopt_trs,                                                    &
+                               iopt_trs, iopt_diag,                                         &
                           !    RUC lsm options
                                mosaic_lu, mosaic_soil, isncond_opt, isncovr_opt,            &
                           !    GFDL surface layer options
@@ -3972,6 +3989,8 @@ module GFS_typedefs
                                wetdep_ls_opt, smoke_forecast, aero_ind_fdb, aero_dir_fdb,   &
                                rrfs_smoke_debug, do_plumerise, plumerisefire_frq,           &
                                addsmoke_flag, enh_mix, mix_chem, smoke_dir_fdb_coef,        &
+                          !--- C3/GF closures
+                               ichoice,ichoicem,ichoice_s,                                  &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
                           !          and (maybe) convection suppression
                                fh_dfi_radar, radar_tten_limits, do_cap_suppress,            &
@@ -4088,17 +4107,17 @@ module GFS_typedefs
       write(*,*) 'NO FLAG: pbl is generic'
     endif
 
-    if(imfshalcnv == Model%imfshalcnv_gf .or. imfshalcnv == Model%imfshalcnv_unified) then
+    if(imfshalcnv == Model%imfshalcnv_gf .or. imfshalcnv == Model%imfshalcnv_c3) then
       if(me==master) &
-           write(*,*) 'FLAG: imfshalcnv_gf or imfshalcnv_unified so scnv not generic'
+           write(*,*) 'FLAG: imfshalcnv_gf or imfshalcnv_c3 so scnv not generic'
       Model%flag_for_scnv_generic_tend=.false.
     elseif(me==master) then
       write(*,*) 'NO FLAG: scnv is generic'
     endif
 
-    if(imfdeepcnv == Model%imfdeepcnv_gf .or. imfdeepcnv == Model%imfdeepcnv_unified) then
+    if(imfdeepcnv == Model%imfdeepcnv_gf .or. imfdeepcnv == Model%imfdeepcnv_c3) then
       if(me==master) &
-           write(*,*) 'FLAG: imfdeepcnv_gf or imfdeepcnv_unified so dcnv not generic'
+           write(*,*) 'FLAG: imfdeepcnv_gf or imfdeepcnv_c3 so dcnv not generic'
       Model%flag_for_dcnv_generic_tend=.false.
     elseif(me==master) then
       write(*,*) 'NO FLAG: dcnv is generic'
@@ -4204,6 +4223,10 @@ module GFS_typedefs
     Model%smoke_dir_fdb_coef  = smoke_dir_fdb_coef
 
     Model%fire_aux_data_levels = 10
+
+    Model%ichoice_s = ichoice_s
+    Model%ichoicem  = ichoicem
+    Model%ichoice   = ichoice
 
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
@@ -4469,8 +4492,8 @@ module GFS_typedefs
     Model%nssl_alphah      = nssl_alphah
     Model%nssl_alphahl     = nssl_alphahl
     Model%nssl_alphar      = nssl_alphar
-    Model%nssl_ehw0_in     = nssl_ehw0_in
-    Model%nssl_ehlw0_in    = nssl_ehlw0_in
+    Model%nssl_ehw0        = nssl_ehw0
+    Model%nssl_ehlw0       = nssl_ehlw0
     Model%nssl_hail_on     = nssl_hail_on
     Model%nssl_ccn_on      = nssl_ccn_on
     Model%nssl_invertccn   = nssl_invertccn
@@ -4644,6 +4667,7 @@ module GFS_typedefs
     Model%iopt_tbot        = iopt_tbot
     Model%iopt_stc         = iopt_stc
     Model%iopt_trs         = iopt_trs
+    Model%iopt_diag        = iopt_diag
 
 ! RUC lsm options
     Model%mosaic_lu        = mosaic_lu
@@ -5570,6 +5594,7 @@ module GFS_typedefs
         print *,'iopt_tbot   =  ',Model%iopt_tbot
         print *,'iopt_stc   =  ', Model%iopt_stc
         print *,'iopt_trs   =  ', Model%iopt_trs
+        print *,'iopt_diag  =  ', Model%iopt_diag
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
         print *, 'The Physics options are'
@@ -5641,7 +5666,7 @@ module GFS_typedefs
                print *,' Grell-Freitas scale & aerosol-aware mass-flux deep conv scheme'
             elseif(Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke) then
                print *,' New Tiedtke cumulus scheme'
-            elseif(Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+            elseif(Model%imfdeepcnv == Model%imfdeepcnv_c3) then
                print *,' New unified cumulus convection scheme'
             endif
           endif
@@ -5686,7 +5711,7 @@ module GFS_typedefs
           print *,' Grell-Freitas scale- & aerosol-aware mass-flux shallow conv scheme (2013)'
         elseif (Model%imfshalcnv == Model%imfshalcnv_ntiedtke) then
           print *,' New Tiedtke cumulus scheme'
-        elseif (Model%imfshalcnv == Model%imfshalcnv_unified) then
+        elseif (Model%imfshalcnv == Model%imfshalcnv_c3) then
           print *,' New unified cumulus scheme'
         else
           print *,' unknown mass-flux scheme in use - defaulting to no shallow convection'
@@ -5934,7 +5959,7 @@ module GFS_typedefs
     endif
 
     if(Model%ras     .or. Model%cscnv)  Model%cnvcld = .false.
-    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf .or. Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified) Model%cnvcld = .false.
+    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf .or. Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) Model%cnvcld = .false.
     if(Model%cnvcld) Model%ncnvcld3d = 1
 
 !--- get cnvwind index in phy_f2d; last entry in phy_f2d array
@@ -6000,7 +6025,7 @@ module GFS_typedefs
     Model%lmfdeep2 = (Model%imfdeepcnv == Model%imfdeepcnv_samf         &
                       .or. Model%imfdeepcnv == Model%imfdeepcnv_gf      &
                       .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke &
-                      .or. Model%imfdeepcnv == Model%imfdeepcnv_unified)
+                      .or. Model%imfdeepcnv == Model%imfdeepcnv_c3)
 !--- END CODE FROM GLOOPR
 
 !--- BEGIN CODE FROM GLOOPB
@@ -6255,6 +6280,11 @@ module GFS_typedefs
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
       print *, ' use_med_flux      : ', Model%use_med_flux
+      if(Model%imfdeepcnv == Model%imfdeepcnv_gf .or.Model%imfdeepcnv == Model%imfdeepcnv_c3) then
+        print*,'ichoice_s          : ', Model%ichoice_s
+        print*,'ichoicem           : ', Model%ichoicem
+        print*,'ichoice            : ', Model%ichoice
+      endif
       if(model%rrfs_sd) then
         print *, ' '
         print *, 'smoke parameters'
@@ -6397,8 +6427,8 @@ module GFS_typedefs
         print *, ' nssl_alphah - graupel shape parameter : ', Model%nssl_alphah
         print *, ' nssl_alphahl - hail shape parameter   : ', Model%nssl_alphahl
         print *, ' nssl_alphar - rain shape parameter : ', Model%nssl_alphar
-        print *, ' nssl_ehw0_in - graupel-droplet collection effiency : ', Model%nssl_ehw0_in 
-        print *, ' nssl_ehlw0_in - hail-droplet collection effiency : ', Model%nssl_ehlw0_in                              
+        print *, ' nssl_ehw0 - graupel-droplet collection effiency : ', Model%nssl_ehw0 
+        print *, ' nssl_ehlw0 - hail-droplet collection effiency : ', Model%nssl_ehlw0                              
         print *, ' nssl_hail_on - hail activation flag   : ', Model%nssl_hail_on
         print *, ' lradar - radar refl. flag             : ', Model%lradar
         print *, ' lrefres                : ', Model%lrefres
@@ -6481,6 +6511,7 @@ module GFS_typedefs
         print *, ' iopt_tbot         : ', Model%iopt_tbot
         print *, ' iopt_stc          : ', Model%iopt_stc
         print *, ' iopt_trs          : ', Model%iopt_trs
+        print *, ' iopt_diag         : ', Model%iopt_diag
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
         print *, 'The Physics options are'
@@ -6789,6 +6820,10 @@ module GFS_typedefs
       allocate (Grid%ddy_o3    (IM))
       allocate (Grid%jindx1_o3 (IM))
       allocate (Grid%jindx2_o3 (IM))
+
+      Grid%ddy_o3      = clear_val
+      Grid%jindx1_o3   = clear_val
+      Grid%jindx2_o3   = clear_val
     endif
 
 !--- stratosphere h2o active
@@ -6796,6 +6831,10 @@ module GFS_typedefs
       allocate (Grid%ddy_h    (IM))
       allocate (Grid%jindx1_h (IM))
       allocate (Grid%jindx2_h (IM))
+
+      Grid%ddy_h       = clear_val
+      Grid%jindx1_h    = clear_val
+      Grid%jindx2_h    = clear_val
     endif
 
 !--- iccn active
@@ -6806,6 +6845,13 @@ module GFS_typedefs
       allocate (Grid%ddx_ci    (IM))
       allocate (Grid%iindx1_ci (IM))
       allocate (Grid%iindx2_ci (IM))
+
+      Grid%ddy_ci      = clear_val
+      Grid%jindx1_ci   = clear_val
+      Grid%jindx2_ci   = clear_val
+      Grid%ddx_ci      = clear_val
+      Grid%iindx1_ci   = clear_val
+      Grid%iindx2_ci   = clear_val
     endif
 
 !--- iaerclm active
@@ -6816,6 +6862,13 @@ module GFS_typedefs
       allocate (Grid%ddx_aer   (IM))
       allocate (Grid%iindx1_aer(IM))
       allocate (Grid%iindx2_aer(IM))
+
+      Grid%ddy_aer     = clear_val
+      Grid%jindx1_aer  = clear_val
+      Grid%jindx2_aer  = clear_val
+      Grid%ddx_aer     = clear_val
+      Grid%iindx1_aer  = clear_val
+      Grid%iindx2_aer  = clear_val
     endif
 
 !---  Model%do_ugwpv1
@@ -6824,6 +6877,11 @@ module GFS_typedefs
       allocate (Grid%ddy_j2tau  (IM))
       allocate (Grid%jindx1_tau (IM))
       allocate (Grid%jindx2_tau (IM))
+
+      Grid%ddy_j1tau   = clear_val
+      Grid%ddy_j2tau   = clear_val
+      Grid%jindx1_tau  = clear_val
+      Grid%jindx2_tau  = clear_val
    endif
 
  end subroutine grid_create
@@ -6939,7 +6997,7 @@ module GFS_typedefs
     allocate (Tbd%hpbl (IM))
     Tbd%hpbl     = clear_val
 
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == Model%imfshalcnv_samf .or. Model%imfdeepcnv == Model%imfdeepcnv_unified .or. Model%imfshalcnv == Model%imfshalcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == Model%imfshalcnv_samf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3 .or. Model%imfshalcnv == Model%imfshalcnv_c3) then
        allocate(Tbd%prevsq(IM, Model%levs))
        Tbd%prevsq = clear_val
     endif
@@ -6949,7 +7007,7 @@ module GFS_typedefs
        Tbd%ud_mf = zero
     endif
 
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or.  Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or.  Model%imfdeepcnv == Model%imfdeepcnv_c3) then
        allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%forceq(IM, Model%levs))
        allocate(Tbd%forcet(IM, Model%levs))
@@ -6959,7 +7017,7 @@ module GFS_typedefs
        Tbd%prevst = clear_val
     end if
 
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or.  Model%imfdeepcnv == Model%imfdeepcnv_unified) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or.  Model%imfdeepcnv == Model%imfdeepcnv_c3) then
        allocate(Tbd%cactiv(IM))
        allocate(Tbd%cactiv_m(IM))
        allocate(Tbd%aod_gf(IM))
