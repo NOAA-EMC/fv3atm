@@ -107,7 +107,7 @@ contains
     integer :: nvar2m, nvar2o, nvar3, nvar2r, nvar2mp, nvar3mp, nvar2l
     integer :: nvar_before_lake
 
-    nvar2m = 48
+    nvar2m = 49
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       nvar2m = nvar2m + 4
       !nvar2m = nvar2m + 5
@@ -438,6 +438,7 @@ contains
     nt=nt+1 ; sfc%name2(nt) = 'slope'
     nt=nt+1 ; sfc%name2(nt) = 'snoalb'
     !--- variables below here are optional, unless indicated.
+    nt=nt+1 ; sfc%name2(nt) = 'scolor'
     nt=nt+1 ; sfc%name2(nt) = 'sncovr'
     nt=nt+1 ; sfc%name2(nt) = 'snodl' ! snowd on land portion of a cell.
                                       ! Mandatory for cold starts.
@@ -598,7 +599,7 @@ contains
            .or. trim(sfc%name2(num)) == 'albdirvis_ice' .or. trim(sfc%name2(num)) == 'albdirnir_ice' &
            .or. trim(sfc%name2(num)) == 'albdifvis_ice' .or. trim(sfc%name2(num)) == 'albdifnir_ice' &
            .or. trim(sfc%name2(num)) == 'emis_lnd'      .or. trim(sfc%name2(num)) == 'emis_ice'      &
-           .or. trim(sfc%name2(num)) == 'sncovr_ice') then
+           .or. trim(sfc%name2(num)) == 'sncovr_ice'    .or. trim(sfc%name2(num)) == 'scolor') then
         if(reading .and. sfc%is_lsoil) then
           call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
         else
@@ -834,6 +835,7 @@ contains
       call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop(nb)%shdmax)  !--- shdmax
       call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop(nb)%slope)   !--- slope
       call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop(nb)%snoalb)  !--- snoalb
+      call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop(nb)%scolor)  !--- scolor
       call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop(nb)%sncovr)  !--- sncovr
       call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop(nb)%snodl)   !--- snodl (snowd on land  portion of a cell)
       call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop(nb)%weasdl)  !--- weasdl (weasd on land  portion of a cell)
@@ -1282,9 +1284,23 @@ contains
     i = Atm_block%index(1)%ii(1) - isc + 1
     j = Atm_block%index(1)%jj(1) - jsc + 1
 
+    if (sfc%var2(i,j,32) < -9990.0_kind_phys) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - set init soil color')
+      !$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if ( nint (Sfcprop(nb)%slmsk(ix)) == 1 ) then  !including glacier
+            Sfcprop(nb)%scolor(ix)  = 4
+          else
+            Sfcprop(nb)%scolor(ix)  = zero
+          endif
+        enddo
+      enddo
+    endif
+
     if (sfc%var2(i,j,27) < -9990.0_kind_phys) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snowd')
-      !$omp parallel do default(shared) private(nb, ix, tem)
+      !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           if (Sfcprop(nb)%fice(ix) > zero) then
@@ -1296,7 +1312,6 @@ contains
           endif
           if (Sfcprop(nb)%snowd(ix) > 10000. .or. Sfcprop(nb)%snowd(ix) < 0.0) then
             print*,'cggg bad snowd pt ',nb,ix,Sfcprop(nb)%snowd(ix)
-          endif
         enddo
       enddo
     endif
@@ -1322,7 +1337,7 @@ contains
 
 !cggg Needed for first time step in radiation before Noah/NoahMP sets it from look up table.
 !cggg Just use a nominal value.
-    if (sfc%var2(i,j,38) < -9990.0_kind_phys) then
+    if (sfc%var2(i,j,39) < -9990.0_kind_phys) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
       !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
@@ -1353,7 +1368,7 @@ contains
       enddo
     endif
 
-    if (sfc%var2(i,j,45) < -9990.0_kind_phys) then
+    if (sfc%var2(i,j,46) < -9990.0_kind_phys) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing emis_ice')
       !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
@@ -1363,7 +1378,7 @@ contains
       enddo
     endif
 
-    if (sfc%var2(i,j,46) < -9990.0_kind_phys .and. Model%lsm /= Model%lsm_ruc) then
+    if (sfc%var2(i,j,47) < -9990.0_kind_phys .and. Model%lsm /= Model%lsm_ruc) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr_ice')
       !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
@@ -1375,7 +1390,7 @@ contains
     endif
 
     if (Model%use_cice_alb) then
-      if (sfc%var2(i,j,49) < -9990.0_kind_phys) then
+      if (sfc%var2(i,j,50) < -9990.0_kind_phys) then
         !$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
@@ -1393,7 +1408,7 @@ contains
     endif
 
     ! Fill in composite tsfc for coldstart runs - must happen after tsfcl is computed
-    compute_tsfc_for_colstart: if (sfc%var2(i,j,35) < -9990.0_kind_phys) then
+    compute_tsfc_for_colstart: if (sfc%var2(i,j,36) < -9990.0_kind_phys) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing composite tsfc')
       if(Model%frac_grid) then ! 3-way composite
         !$omp parallel do default(shared) private(nb, ix, tem, tem1)
