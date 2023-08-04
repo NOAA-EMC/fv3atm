@@ -1312,6 +1312,7 @@ contains
           endif
           if (Sfcprop(nb)%snowd(ix) > 10000. .or. Sfcprop(nb)%snowd(ix) < 0.0) then
             print*,'cggg bad snowd pt ',nb,ix,Sfcprop(nb)%snowd(ix)
+          endif
         enddo
       enddo
     endif
