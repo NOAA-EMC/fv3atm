@@ -544,7 +544,7 @@ module GFS_typedefs
     !--- variables needed for cpllnd = .TRUE. and cpllnd2atm=.TRUE.
     real (kind=kind_phys), pointer :: sncovr1_lnd(:)         => null()   !< sfc snow area fraction over land
     real (kind=kind_phys), pointer :: qsurf_lnd(:)           => null()   !< sfc specific humidity
-    real (kind=kind_phys), pointer :: evap_lnd(:)            => null()   !< sfc latent heat flux over land
+    real (kind=kind_phys), pointer :: evap_lnd(:)            => null()   !< sfc latent heat flux over land, converted to evaporative flux
     real (kind=kind_phys), pointer :: hflx_lnd(:)            => null()   !< sfc sensible heat flux over land
     real (kind=kind_phys), pointer :: ep_lnd(:)              => null()   !< sfc up pot latent heat flux over land
     real (kind=kind_phys), pointer :: t2mmp_lnd(:)           => null()   !< 2 meter temperature over land 
