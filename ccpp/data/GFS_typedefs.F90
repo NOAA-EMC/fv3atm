@@ -9,7 +9,7 @@ module GFS_typedefs
                                        con_csol, con_epsqs, con_rocp, con_rog,         &
                                        con_omega, con_rerth, con_psat, karman, rainmin,&
                                        con_c, con_plnk, con_boltz, con_solr_2008,      &
-                                       con_solr_2002, con_thgni
+                                       con_solr_2002, con_thgni, con_1ovg
 
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
    use module_radlw_parameters,  only: topflw_type, sfcflw_type
@@ -1806,7 +1806,7 @@ module GFS_typedefs
 !--- In/Out (???) (physics only)
     real (kind=kind_phys), pointer :: swhc (:,:)   => null()  !< clear sky sw heating rates ( k/s )
     real (kind=kind_phys), pointer :: lwhc (:,:)   => null()  !< clear sky lw heating rates ( k/s )
-    real (kind=kind_phys), pointer :: lwhd (:,:,:) => null()  !< idea sky lw heating rates ( k/s )
+    real (kind=kind_phys), pointer :: lwhd (:,:,:) => null()  !< idea sky lw heating rates ( k/s ) !DJS2023 THIS IS NOT USED. IT IS REFERENCED, BUT NEVER SET?
 
     contains
       procedure :: create  => radtend_create   !<   allocate array data
@@ -2113,6 +2113,12 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ltg1_max(:)        => null()  !
     real (kind=kind_phys), pointer :: ltg2_max(:)        => null()  !
     real (kind=kind_phys), pointer :: ltg3_max(:)        => null()  !
+
+    !--- NRL Ozone physics diagnostics
+    real (kind=kind_phys), pointer :: do3_dt_prd(:,:)  => null()
+    real (kind=kind_phys), pointer :: do3_dt_ozmx(:,:) => null()
+    real (kind=kind_phys), pointer :: do3_dt_temp(:,:) => null()
+    real (kind=kind_phys), pointer :: do3_dt_ohoz(:,:) => null()
 
     contains
       procedure :: create    => diag_create
@@ -5460,7 +5466,7 @@ module GFS_typedefs
        deallocate(tempin)
        close(kozpl)
     else
-       !--- Diagnostic ozone
+       !--- Climatological ozone
        rewind (kozc)
        read (kozc,end=101) Model%latsozc, Model%levozc, Model%timeozc, blatc4
 101    if (Model%levozc  < 10 .or. Model%levozc > 100) then
@@ -7616,6 +7622,12 @@ module GFS_typedefs
         allocate (Diag%dwn_mf (IM,Model%levs))
         allocate (Diag%det_mf (IM,Model%levs))
       endif
+      if (Model%oz_phys_2015) then
+         allocate(Diag%do3_dt_prd( IM, Model%levs))
+         allocate(Diag%do3_dt_ozmx(IM, Model%levs))
+         allocate(Diag%do3_dt_temp(IM, Model%levs))
+         allocate(Diag%do3_dt_ohoz(IM, Model%levs))
+      endif
     endif
 
 ! UGWP
@@ -7953,6 +7965,12 @@ module GFS_typedefs
         Diag%upd_mf   = zero
         Diag%dwn_mf   = zero
         Diag%det_mf   = zero
+      endif
+      if (Model%oz_phys_2015) then
+         Diag%do3_dt_prd  = zero
+         Diag%do3_dt_ozmx = zero
+         Diag%do3_dt_temp = zero
+         Diag%do3_dt_ohoz = zero
       endif
     endif
 
