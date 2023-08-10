@@ -11,7 +11,7 @@ module module_write_netcdf
   use netcdf
   use module_fv3_io_def,only : ideflate, nbits, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
-                               output_grid,dx,dy,lon1,lat1,lon2,lat2, &
+                               dx,dy,lon1,lat1,lon2,lat2, &
                                time_unlimited
   use mpi
 
@@ -95,6 +95,7 @@ module module_write_netcdf
     integer, dimension(:), allocatable :: deToTileMap, localDeToDeMap
     logical :: do_io
     integer :: par_access
+    character(len=ESMF_MAXSTR) :: output_grid_name
 !
     is_cubed_sphere = .false.
     tileCount = 0
@@ -106,13 +107,15 @@ module module_write_netcdf
     do_io = par .or. (mype==0)
 
     call ESMF_FieldBundleGet(wrtfb, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
+    call ESMF_AttributeGet(wrtfb, convention="NetCDF", purpose="FV3", &
+                           name='grid', value=output_grid_name, rc=rc); ESMF_ERR_RETURN(rc)
 
     allocate(compress_err(fieldCount)); compress_err=-999.
     allocate(fldlev(fieldCount)) ; fldlev = 0
     allocate(fcstField(fieldCount))
     allocate(varids(fieldCount))
 
-    call ESMF_FieldBundleGet(wrtfb, fieldList=fcstField, grid=wrtGrid, &
+    call ESMF_FieldBundleGet(wrtfb, fieldList=fcstField, grid=wrtgrid, &
 !                             itemorderflag=ESMF_ITEMORDER_ADDORDER, &
                              rc=rc); ESMF_ERR_RETURN(rc)
 
@@ -161,6 +164,10 @@ module module_write_netcdf
           if (.not. par) then
              start_i = 1
              start_j = 1
+          end if
+          if (is_cubed_sphere) then
+             start_i = mod(start_i, im)
+             start_j = mod(start_j, jm)
           end if
        end if
 
@@ -240,21 +247,18 @@ module module_write_netcdf
        ncerr = nf90_put_att(ncid, timeiso_varid, "_Encoding", "UTF-8"); NC_ERR_STOP(ncerr)
 
        ! coordinate variable attributes based on output_grid type
-       if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
-           trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
+       if (trim(output_grid_name) == 'gaussian' .or. &
+           trim(output_grid_name) == 'latlon') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
-                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+       else if (trim(output_grid_name) == 'rotated_latlon') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "rotated T-cell longiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "rotated T-cell latiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'lambert_conformal') then
+       else if (trim(output_grid_name) == 'lambert_conformal') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "x-coordinate of projection"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "meters"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "y-coordinate of projection"); NC_ERR_STOP(ncerr)
@@ -466,10 +470,10 @@ module module_write_netcdf
 
     ! write lon (lon_varid)
     if (par) then
-       call ESMF_GridGetCoord(wrtGrid, coordDim=1, farrayPtr=array_r8, rc=rc); ESMF_ERR_RETURN(rc)
+       call ESMF_GridGetCoord(wrtgrid, coordDim=1, farrayPtr=array_r8, rc=rc); ESMF_ERR_RETURN(rc)
        ncerr = nf90_put_var(ncid, lon_varid, values=array_r8, start=start_idx); NC_ERR_STOP(ncerr)
     else
-       call ESMF_GridGetCoord(wrtGrid, coordDim=1, array=array, rc=rc); ESMF_ERR_RETURN(rc)
+       call ESMF_GridGetCoord(wrtgrid, coordDim=1, array=array, rc=rc); ESMF_ERR_RETURN(rc)
        if (is_cubed_sphere) then
           do t=1,tileCount
              call ESMF_ArrayGather(array, array_r8_cube(:,:,t), rootPet=0, tile=t, rc=rc); ESMF_ERR_RETURN(rc)
@@ -491,39 +495,35 @@ module module_write_netcdf
     ! write grid_xt (im_varid)
     if (do_io) then
        allocate (x(im))
-       if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
-           trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
+       if (trim(output_grid_name) == 'gaussian' .or. trim(output_grid_name) == 'latlon') then
           ncerr = nf90_put_var(ncid, im_varid, values=array_r8(:,jstart), start=[istart], count=[iend-istart+1]); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
-                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+       else if (trim(output_grid_name) == 'rotated_latlon') then
           do i=1,im
              x(i) = lon1(grid_id) + (lon2(grid_id)-lon1(grid_id))/(im-1) * (i-1)
           end do
           ncerr = nf90_put_var(ncid, im_varid, values=x); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'lambert_conformal') then
+       else if (trim(output_grid_name) == 'lambert_conformal') then
           do i=1,im
              x(i) = dx(grid_id) * (i-1)
           end do
           ncerr = nf90_put_var(ncid, im_varid, values=x); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
+       else if (trim(output_grid_name) == 'cubed_sphere') then
           do i=1,im
              x(i) = i
           end do
           ncerr = nf90_put_var(ncid, im_varid, values=x); NC_ERR_STOP(ncerr)
        else
-          if (mype==0) write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
+          if (mype==0) write(0,*)'unknown output_grid ', trim(output_grid_name)
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
 
     ! write lat (lat_varid)
     if (par) then
-       call ESMF_GridGetCoord(wrtGrid, coordDim=2, farrayPtr=array_r8, rc=rc); ESMF_ERR_RETURN(rc)
+       call ESMF_GridGetCoord(wrtgrid, coordDim=2, farrayPtr=array_r8, rc=rc); ESMF_ERR_RETURN(rc)
        ncerr = nf90_put_var(ncid, lat_varid, values=array_r8, start=start_idx); NC_ERR_STOP(ncerr)
     else
-       call ESMF_GridGetCoord(wrtGrid, coordDim=2, array=array, rc=rc); ESMF_ERR_RETURN(rc)
+       call ESMF_GridGetCoord(wrtgrid, coordDim=2, array=array, rc=rc); ESMF_ERR_RETURN(rc)
        if (is_cubed_sphere) then
           do t=1,tileCount
              call ESMF_ArrayGather(array, array_r8_cube(:,:,t), rootPet=0, tile=t, rc=rc); ESMF_ERR_RETURN(rc)
@@ -542,29 +542,25 @@ module module_write_netcdf
     ! write grid_yt (jm_varid)
     if (do_io) then
        allocate (y(jm))
-       if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
-           trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
+       if (trim(output_grid_name) == 'gaussian' .or. trim(output_grid_name) == 'latlon') then
           ncerr = nf90_put_var(ncid, jm_varid, values=array_r8(istart,:), start=[jstart], count=[jend-jstart+1]); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
-                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+       else if (trim(output_grid_name) == 'rotated_latlon') then
           do j=1,jm
              y(j) = lat1(grid_id) + (lat2(grid_id)-lat1(grid_id))/(jm-1) * (j-1)
           end do
           ncerr = nf90_put_var(ncid, jm_varid, values=y); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'lambert_conformal') then
+       else if (trim(output_grid_name) == 'lambert_conformal') then
           do j=1,jm
              y(j) = dy(grid_id) * (j-1)
           end do
           ncerr = nf90_put_var(ncid, jm_varid, values=y); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
+       else if (trim(output_grid_name) == 'cubed_sphere') then
           do j=1,jm
              y(j) = j
           end do
           ncerr = nf90_put_var(ncid, jm_varid, values=y); NC_ERR_STOP(ncerr)
        else
-          if (mype==0) write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
+          if (mype==0) write(0,*)'unknown output_grid ', trim(output_grid_name)
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
