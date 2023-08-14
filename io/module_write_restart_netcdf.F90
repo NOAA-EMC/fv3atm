@@ -11,6 +11,7 @@ module module_write_restart_netcdf
   use fms
   use netcdf
   use mpi
+  use mpp_mod, only : mpp_chksum
 
   implicit none
   private
