@@ -76,9 +76,7 @@ module fv3atm_cap_mod
   integer                                     :: dbug = 0
   integer                                     :: frestart(999) = -1
 
-  real(kind=8)                                :: timers, timere
-  real(kind=8)                                :: timep1rs, timep1re
-  real(kind=8)                                :: timep2rs, timep2re
+  real(kind=8)                                :: timere, timep2re
 !-----------------------------------------------------------------------
 
   contains
@@ -1012,8 +1010,8 @@ module fv3atm_cap_mod
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-    timers = 0.
     timere = 0.
+    timep2re = 0.
 
     if(lprint) print *,'in fv3_cap, initirealz time=',MPI_Wtime()-timeirs,mype
 
@@ -1025,13 +1023,13 @@ module fv3atm_cap_mod
 
     type(ESMF_GridComp)         :: gcomp
     integer, intent(out)        :: rc
-    real(kind=8)                :: MPI_Wtime
+    real(kind=8)                :: MPI_Wtime, timers
 
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
     timers = MPI_Wtime()
-    if(lprint) print *,'in fv3_cap, time between fv3 run step=', timers-timere,mype
+    if(lprint .and. timere>0.) print *,'in fv3_cap, time between fv3 run step=', timers-timere,mype
 
     if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance: ")
 
@@ -1060,13 +1058,13 @@ module fv3atm_cap_mod
     logical                     :: fcstpe
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase1)'
     character(240)              :: msgString
-    real(kind=8)                :: MPI_Wtime
+    real(kind=8)                :: MPI_Wtime, timep1rs, timep1re
 
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
     timep1rs = MPI_Wtime()
-    if(lprint) print *,'in fv3_cap, time between fv3 run phase2 and phase1 ', timep1rs-timep2re,mype
+    if(lprint .and. timep2re>0.) print *,'in fv3_cap, time between fv3 run phase2 and phase1 ', timep1rs-timep2re,mype
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase1: ")
 
@@ -1124,7 +1122,7 @@ module fv3atm_cap_mod
     type(ESMF_Clock)            :: clock, clock_out
     integer                     :: fieldCount
 
-    real(kind=8)                :: MPI_Wtime
+    real(kind=8)                :: MPI_Wtime, timep2rs
 
 !-----------------------------------------------------------------------------
 

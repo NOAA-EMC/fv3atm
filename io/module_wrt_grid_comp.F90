@@ -2093,7 +2093,9 @@
         if (mype == lead_write_task) then
           !** write out inline post log file
           open(newunit=nolog,file='log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
-          write(nolog,"(' completed fv3atm fhour=',f10.3,2x,6(i4,2x))") nfhour, idate(1:6)
+          write(nolog,"('completed: fv3atm')")
+          write(nolog,"('forecast hour: ',f10.3)") nfhour
+          write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
           close(nolog)
         endif
         if (lprnt) then
@@ -2396,7 +2398,9 @@
           if (out_phase == 1 .and. mype == lead_write_task) then
             !** write out log file
             open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED')
-            write(nolog,"(' completed fv3atm fhour=',f10.3,2x,6(i4,2x))") nfhour, idate(1:6)
+            write(nolog,"('completed: fv3atm')")
+            write(nolog,"('forecast hour: ',f10.3)") nfhour
+            write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
             close(nolog)
           endif
         enddo two_phase_loop
