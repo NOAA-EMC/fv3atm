@@ -163,6 +163,8 @@
       type(ESMF_DELayout)                     :: delayout
       type(ESMF_Grid)                         :: fcstGrid
       type(ESMF_Grid), allocatable            :: wrtGrid(:)
+      type(ESMF_Grid)                         :: wrtGrid_cubed_sphere
+      logical                                 :: create_wrtGrid_cubed_sphere = .true.
       type(ESMF_Grid)                         :: actualWrtGrid
       type(ESMF_Array)                        :: array
       type(ESMF_Field)                        :: field_work, field
@@ -208,6 +210,9 @@
 
       type(ESMF_DistGrid)                     :: acceptorDG, newAcceptorDG
       integer                                 :: grid_id
+
+      logical                    :: history_file_on_native_grid
+      character(len=esmf_maxstr) :: output_grid_name
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -480,10 +485,35 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         endif
 
+    call ESMF_ConfigGetAttribute(config=CF, value=history_file_on_native_grid, default=.false., &
+                                 label='history_file_on_native_grid:', rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+#if 1
+        if (n == 1 .and. top_parent_is_global .and. history_file_on_native_grid) then
+          do tl=1,6
+            decomptile(1,tl) = 1
+            decomptile(2,tl) = jidx
+            decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
+          enddo
+          call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
+                                 name="gridfile", value=gridfile, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          wrtGrid_cubed_sphere = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
+                                                       regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+                                                       decompflagPTile=decompflagPTile,                                   &
+                                                       staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
+                                                       name='wrt_grid', rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          create_wrtGrid_cubed_sphere = .false.
+        endif
+#endif
+
         if ( trim(output_grid(n)) == 'cubed_sphere_grid' ) then
           !*** Create cubed sphere grid from file
-          if (top_parent_is_global .and. n==1) then
-            gridfile = 'grid_spec.nc'   ! global top-level parent
+          if (top_parent_is_global .and. n == 1) then
             do tl=1,6
               decomptile(1,tl) = 1
               decomptile(2,tl) = jidx
@@ -493,7 +523,6 @@
                                    name="gridfile", value=gridfile, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            call ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
             wrtGrid(n) = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                              &
                                             regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
                                             decompflagPTile=decompflagPTile,                                   &
@@ -528,8 +557,6 @@
                                       rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            if (lprnt) print *,'in nested/regional cubed_sphere grid, regDecomp=',regDecomp,' PetMap=',petMap(1),petMap(ntasks), &
-              'gridfile=',trim(gridfile)
             deallocate(petMap)
           endif
         else  ! non 'cubed_sphere_grid'
@@ -869,29 +896,51 @@
             call ESMF_StateAdd(imp_state_write, (/mirrorFB/), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! copy the fcstFB Attributes to the 'mirror_' FieldBundle
+            ! copy the fcstFB Attributes to the 'mirror_' FieldBundle
             call ESMF_AttributeCopy(fcstFB, mirrorFB, attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           endif
 
 ! deal with all of the Fields inside this fcstFB
-          call ESMF_FieldBundleGet(fcstFB, fieldCount=fieldCount, grid=fcstGrid, rc=rc)
+          call ESMF_FieldBundleGet(fcstFB, fieldCount=fieldCount, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           if (fieldCount > 0) then
+
+            call ESMF_FieldBundleGet(fcstFB, grid=fcstGrid, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
             allocate(fcstField(fieldCount))
             call ESMF_FieldBundleGet(fcstFB, fieldList=fcstField,     &
                                      itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            actualWrtGrid = wrtGrid(grid_id)
+            if (fcstItemNameList(i)(1:18) == 'cubed_sphere_grid_') then
 
-            ! If this is a 'restart' bundle the actual grid that the output field ('field_work' below) is created on
-            ! must be the same grid as forecast grid, not the output grid for this grid_id (wrtGrid(grid_id)).
-            ! For 'cubed_sphere_grid' these are the same, but for all other output grids (like Lambert) they are not.
-            if (fcstItemNameList(i)(1:8) == 'restart_') then
+              if (create_wrtGrid_cubed_sphere) then
+                ! create a grid from fcstGrid on forecast grid comp, by rebalancing distgrid to the local PETs
+                ! access the acceptor DistGrid
+                call ESMF_GridGet(fcstGrid, distgrid=acceptorDG, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                ! rebalance the acceptor DistGrid across the local PETs
+                newAcceptorDG = ESMF_DistGridCreate(acceptorDG, balanceflag=.true., rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                wrtGrid_cubed_sphere = ESMF_GridCreate(fcstGrid, newAcceptorDG, copyAttributes=.true., rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+                create_wrtGrid_cubed_sphere = .false.
+              end if
+
+              actualWrtGrid = wrtGrid_cubed_sphere
+              call ESMF_AttributeSet(fieldbundle, convention="NetCDF", purpose="FV3-nooutput", name="output_grid", value="cubed_sphere_grid", rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            else if (fcstItemNameList(i)(1:8) == 'restart_') then
+              ! If this is a 'restart' bundle the actual grid that the output field ('field_work' below) is created on
+              ! must be the same grid as forecast grid, not the output grid for this grid_id (wrtGrid(grid_id)).
+              ! For 'cubed_sphere_grid' these are the same, but for all other output grids (like Lambert) they are not.
+
               ! create a grid from fcstGrid on forecast grid comp, by rebalancing distgrid to the local PETs
               ! access the acceptor DistGrid
               call ESMF_GridGet(fcstGrid, distgrid=acceptorDG, rc=rc)
@@ -901,7 +950,11 @@
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               actualWrtGrid = ESMF_GridCreate(fcstGrid, newAcceptorDG, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            end if ! end of setting actualWrtGrid for restart bundle
+            else
+              actualWrtGrid = wrtGrid(grid_id)
+              call ESMF_AttributeSet(fieldbundle, convention="NetCDF", purpose="FV3-nooutput", name="output_grid", value=output_grid(grid_id), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            end if
 
             do j=1, fieldCount
 
@@ -925,7 +978,7 @@
 !                        'gridToFieldMap=',gridToFieldMap,'ungriddedLBound=',ungriddedLBound,         &
 !                        'ungriddedUBound=',ungriddedUBound,'rc=',rc
 
-! create the output field on output grid
+              ! create the output field on output grid
               field_work = ESMF_FieldCreate(actualWrtGrid, typekind, name=fieldName, & ! use actualWrtGrid instead of wrtGrid(grid_id)
                                             staggerloc=staggerloc,             &
                                             gridToFieldMap=gridToFieldMap,     &
@@ -936,7 +989,7 @@
               call ESMF_AttributeCopy(fcstField(j), field_work, attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! get output file name
+              ! get output file name
               call ESMF_AttributeGet(fcstField(j), convention="NetCDF", purpose="FV3", &
                                      name="output_file", value=outfile_name, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -947,13 +1000,13 @@
               endif
               call ESMF_LogWrite("af fcstfield, get output_file",ESMF_LOGMSG_INFO,rc=RC)
 
-!             if (lprnt) print *,' i=',i,' j=',j,' outfilename=',trim(outfilename(j,i))
+              ! if (lprnt) print *,' i=',i,' j=',j,' outfilename=',trim(outfilename(j,i))
 
-! add the output field to the 'output_' FieldBundle
+              ! add the output field to the 'output_' FieldBundle
               call ESMF_FieldBundleAdd(fieldbundle, (/field_work/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! deal with grids for which 'is_moving' is .true.
+              ! deal with grids for which 'is_moving' is .true.
               if (is_moving(grid_id)) then
                 ! create an empty field that will serve as acceptor for GridTransfer of fcstGrid
                 field_work = ESMF_FieldEmptyCreate(name=fieldName, rc=rc)
@@ -981,11 +1034,10 @@
 
               endif
 
-! local garbage collection
+              ! local garbage collection
               deallocate(gridToFieldMap, ungriddedLBound, ungriddedUBound)
             enddo
-!
-            ! call ESMF_AttributeCopy(fcstGrid, wrtGrid(grid_id), &
+
             call ESMF_AttributeCopy(fcstGrid, actualWrtGrid   , &
                                     attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1000,15 +1052,13 @@
           return
         endif
 
-!end FBCount
-      enddo
-!
-!loop over all items in the imp_state_write and count output FieldBundles
+      enddo !FBCount
+
+      !loop over all items in the imp_state_write and count output FieldBundles
       call get_outfile(FBCount, outfilename, FBlist_outfilename, noutfile)
       wrt_int_state%FBCount = noutfile
 
-!
-!create output field bundles
+      !create output field bundles
       allocate(wrt_int_state%wrtFB(wrt_int_state%FBCount))
       ! if (lprnt) write(0,*)'wrt_initialize_p1: allocated ',wrt_int_state%FBCount, ' wrt_int_state%wrtFB'
 
@@ -1016,7 +1066,7 @@
 
         wrt_int_state%wrtFB(i) = ESMF_FieldBundleCreate(name=trim(FBlist_outfilename(i)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        ! if (lprnt) write(0,*)'wrt_initialize_p1: created wrtFB ',i, ' with name ', trim(wrt_int_state%wrtFB_names(i))
+        ! if (lprnt) write(0,*)'wrt_initialize_p1: created wrtFB ',i, ' with name ', trim(FBlist_outfilename(i))
 
         ! if (lprnt) write(0,*)'wrt_initialize_p1: loop over ', FBCount, ' forecast bundles'
         do n=1, FBCount
@@ -1029,9 +1079,9 @@
           ! if (lprnt) write(0,*)'wrt_initialize_p1: is ', trim(fcstItemNameList(n)), ' == ', trim(FBlist_outfilename(i))
 
           if (trim_regridmethod_suffix(fcstItemNameList(n)) == trim_regridmethod_suffix(FBlist_outfilename(i))) then
-!
-! copy the fcstfield bundle Attributes to the output field bundle
-            ! if (lprnt) write(0,*)'wrt_initialize_p1: copy atts/fields from ', "output_"//trim(fcstItemNameList(n)), ' to ', trim(wrt_int_state%wrtFB_names(i))
+
+            ! copy the fcstfield bundle Attributes to the output field bundle
+            ! if (lprnt) write(0,*)'wrt_initialize_p1: copy atts/fields from ', "output_"//trim(fcstItemNameList(n)), ' to ', trim(FBlist_outfilename(i))
             call ESMF_AttributeCopy(fcstFB,  wrt_int_state%wrtFB(i), &
                                     attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
 
@@ -1059,10 +1109,6 @@
 
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!             if (lprnt) print *,'in wrt,add field,i=',i,'n=',n,' j=',j, &
-!                        'fieldname=',trim(fieldnamelist(j)), ' outfile_name=',trim(outfile_name), &
-!                       ' field bundle name, FBlist_outfilename(i)=',trim(FBlist_outfilename(i))
-
               if( trim(outfile_name) == trim(FBlist_outfilename(i))) then
                 call ESMF_FieldBundleAdd(wrt_int_state%wrtFB(i), (/fcstField(j)/), rc=rc)
 
@@ -1074,21 +1120,26 @@
 
           endif ! index(trim(fcstItemNameList(n)),trim(FBlist_outfilename(i)))
 
-        enddo ! end FBCount
+        enddo ! FBCount
 
-! add output grid related attributes
+        ! add output grid related attributes, only for history files(bundles), skip restart
+        if (FBlist_outfilename(i)(1:8) /= 'restart_') then
+
+            call ESMF_AttributeGet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3-nooutput", &
+                                   name="output_grid", value=output_grid_name, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
             call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                    attrList=(/"source","grid  "/), rc=rc)
             call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                    name="source", value="FV3GFS", rc=rc)
 
-            if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
+            if (trim(output_grid_name) == 'cubed_sphere_grid') then
 
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="grid", value="cubed_sphere", rc=rc)
 
-            else if (trim(output_grid(grid_id)) == 'gaussian_grid') then
+            else if (trim(output_grid_name) == 'gaussian_grid') then
 
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="grid", value="gaussian", rc=rc)
@@ -1099,9 +1150,9 @@
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="jm", value=jmo(grid_id), rc=rc)
 
-            else if (trim(output_grid(grid_id)) == 'regional_latlon'        &
-                .or. trim(output_grid(grid_id)) == 'regional_latlon_moving' &
-                .or. trim(output_grid(grid_id)) == 'global_latlon') then
+            else if (trim(output_grid_name) == 'regional_latlon'        &
+                .or. trim(output_grid_name) == 'regional_latlon_moving' &
+                .or. trim(output_grid_name) == 'global_latlon') then
 
               ! for 'regional_latlon_moving' lon1/2 and lat1/2 will be overwritten in run phase
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
@@ -1112,7 +1163,7 @@
                                      name="dlon", value=dlon(grid_id), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="dlat", value=dlat(grid_id), rc=rc)
-              if (trim(output_grid(grid_id)) /= 'regional_latlon_moving') then
+              if (trim(output_grid_name) /= 'regional_latlon_moving') then
                 call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                        name="lon1", value=lon1(grid_id), rc=rc)
                 call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
@@ -1122,8 +1173,8 @@
                 call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                        name="lat2", value=lat2(grid_id), rc=rc)
               endif
-            else if (trim(output_grid(grid_id)) == 'rotated_latlon' &
-                .or. trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+            else if (trim(output_grid_name) == 'rotated_latlon' &
+                .or. trim(output_grid_name) == 'rotated_latlon_moving') then
 
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="grid", value="rotated_latlon", rc=rc)
@@ -1145,7 +1196,7 @@
                                      name="dlon", value=dlon(grid_id), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="dlat", value=dlat(grid_id), rc=rc)
-              if (trim(output_grid(grid_id)) /= 'rotated_latlon_moving') then
+              if (trim(output_grid_name) /= 'rotated_latlon_moving') then
                 call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                        name="lon1", value=lon1(grid_id), rc=rc)
                 call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
@@ -1155,7 +1206,7 @@
                 call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="lat2", value=lat2(grid_id), rc=rc)
               endif
-            else if (trim(output_grid(grid_id)) == 'lambert_conformal') then
+            else if (trim(output_grid_name) == 'lambert_conformal') then
 
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="grid", value="lambert_conformal", rc=rc)
@@ -1192,6 +1243,7 @@
                                      name="dy", value=dy(grid_id), rc=rc)
 
             end if
+        end if
 
       enddo ! end wrt_int_state%FBCount
 !
@@ -1235,13 +1287,18 @@
         endif
       enddo
 
-
     do n = 1, ngrids
-! add the transfer attributes from importState to grid
+    ! add the transfer attributes from importState to grid
     call ESMF_AttributeAdd(wrtGrid(n), convention="NetCDF", purpose="FV3", &
                            attrList=attNameList(1:j-1), rc=rc)
-
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    ! add the transfer attributes from importState to special cubed_sphere grid
+    if (n == 1 .and. top_parent_is_global .and. history_file_on_native_grid) then
+      call ESMF_AttributeAdd(wrtGrid_cubed_sphere, convention="NetCDF", purpose="FV3", &
+                             attrList=attNameList(1:j-1), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    endif
 
 ! loop over the added attributes, access the value (only scalar allowed),
 ! and set them on the grid
@@ -1266,8 +1323,13 @@
         endif
         call ESMF_AttributeSet(wrtGrid(n), convention="NetCDF", purpose="FV3", &
                                name=trim(attNameList(i)), value=valueS, rc=rc)
-
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        if (n == 1 .and. top_parent_is_global .and. history_file_on_native_grid) then
+          call ESMF_AttributeSet(wrtGrid_cubed_sphere, convention="NetCDF", purpose="FV3", &
+                                 name=trim(attNameList(i)), value=valueS, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        endif
 
       else if (typekindList(i) == ESMF_TYPEKIND_I4) then
         call ESMF_AttributeGet(imp_state_write,                    &
@@ -1804,6 +1866,7 @@
                              fieldbundle=mirror_bundle, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+          ! if (fcstItemNameList(i)(1:8) == "restart_" .or. fcstItemNameList(i)(1:18) == 'cubed_sphere_grid_') then
           if (fcstItemNameList(i)(1:8) == "restart_") then
             ! restart output forecast bundles, use Redist instead of Regrid
 
@@ -1979,6 +2042,11 @@
 
 !recover fields from cartesian vector and sfc pressure
         call recover_fields(file_bundle,rc)
+        ! FIXME rrfs_smoke_conus13km_fast_phy32_qr crashes with teh following error in recover_fields
+        ! 20230720 121647.816 ERROR            PET147 ESMF_Grid.F90:20442 ESMF_GridGetCoord2DR8 Arguments are incompatible  - - farrayPtr typekind does not match Grid typekind
+        ! 20230720 121647.816 ERROR            PET147 module_wrt_grid_comp.F90:2450 Arguments are incompatible  - Passing error in return code
+
+        ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       enddo
 !
 !-----------------------------------------------------------------------
@@ -2004,6 +2072,7 @@
                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__)) return
 
                   if (wrtFBName(1:8) == 'restart_') cycle
+                  if (wrtFBName(1:18) == 'cubed_sphere_grid_') cycle
 
                   call mask_fields(wrt_int_state%wrtFB(nbdl),rc)
                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -2426,10 +2495,14 @@
      real(ESMF_KIND_R8) :: coslon, sinlon, sinlat
 !
 ! get filed count
-     call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, &
-                              grid=fieldGrid, rc=rc)
+     call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
+
+     if (fieldCount == 0) return
+
+     call ESMF_FieldBundleGet(file_bundle, grid=fieldGrid, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
      call ESMF_LogWrite("call recover field on wrt comp",ESMF_LOGMSG_INFO,rc=RC)
      call ESMF_GridGet(fieldgrid, dimCount=gridDimCount, rc=rc)
 
@@ -3290,7 +3363,7 @@
                        trim(tileFileName), ESMF_LOGMSG_INFO, rc=rc)
 
     if (status == ESMF_FILESTATUS_OLD) then
-      ! This writes the vectical coordinates and the time dimension into the
+      ! This writes the vertical coordinates and the time dimension into the
       ! file. Doing this before the large data sets are written, assuming that
       ! the first time coming into ioCompRun() with this tileFileName, only
       ! the grid info is written. Second time in, with ESMF_FILESTATUS_OLD,
@@ -3314,7 +3387,7 @@
         ncerr = nf90_open(tileFileName, NF90_WRITE, ncid=ncid)
 
         if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-        ! loop over all the fields in the bundle and handle their vectical dims
+        ! loop over all the fields in the bundle and handle their vertical dims
 
         thereAreVerticals = .false.
         do i=1, fieldCount
@@ -3447,7 +3520,6 @@
               attName = attNameList(i)
               call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                                      name=trim(attNameList(i)), typekind=typekind, rc=rc)
-!                print *,'in esmf call, att name=',trim(attNameList(i))
 
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -3455,7 +3527,7 @@
                 call ESMF_AttributeGet(grid,                               &
                                        convention="NetCDF", purpose="FV3", &
                                        name=trim(attNameList(i)), value=valueS, rc=rc)
-!                print *,'in esmf call, att string value=',trim(valueS)
+
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
                 ncerr = nf90_put_att(ncid, varid, &
@@ -3468,7 +3540,7 @@
                 call ESMF_AttributeGet(grid,                               &
                                        convention="NetCDF", purpose="FV3", &
                                        name=trim(attNameList(i)), value=valueI4, rc=rc)
-!                print *,'in esmf call, att I4 value=',valueR8
+
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
                 ncerr = nf90_put_att(ncid, varid, &
                                      trim(attName(6:len(attName))), values=valueI4)
@@ -3479,7 +3551,6 @@
                 call ESMF_AttributeGet(grid,                               &
                                        convention="NetCDF", purpose="FV3", &
                                        name=trim(attNameList(i)), value=valueR4, rc=rc)
-!                print *,'in esmf call, att r4 value=',valueR8
 
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -3492,7 +3563,6 @@
                 call ESMF_AttributeGet(grid,                               &
                                        convention="NetCDF", purpose="FV3", &
                                        name=trim(attNameList(i)), value=valueR8, rc=rc)
-!                print *,'in esmf call, att r8 value=',valueR8
 
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
                 ncerr = nf90_put_att(ncid, varid, &
