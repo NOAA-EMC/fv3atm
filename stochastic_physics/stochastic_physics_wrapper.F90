@@ -137,6 +137,8 @@ module stochastic_physics_wrapper_mod
              GFS_Control%spp_rad = 1
            case('gwd')
              GFS_Control%spp_gwd = 1
+           case('cu_deep')
+             GFS_Control%spp_cu_deep = 1
            end select
          end do
       end if
@@ -248,6 +250,10 @@ module stochastic_physics_wrapper_mod
                case('rad')
                  do nb=1,Atm_block%nblks
                      GFS_Data(nb)%Coupling%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                 end do
+               case('cu_deep')
+                 do nb=1,Atm_block%nblks
+                     GFS_Data(nb)%Coupling%spp_wts_cu_deep(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                end select
             end do
