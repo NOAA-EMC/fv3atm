@@ -70,6 +70,7 @@ module fv3atm_cap_mod
   logical, allocatable                        :: is_moving_FB(:)
 
   logical                                     :: profile_memory = .true.
+  logical                                     :: write_runtimelog = .false.
   logical                                     :: lprint = .false.
 
   integer                                     :: mype = -1
@@ -247,6 +248,11 @@ module fv3atm_cap_mod
                            convention="NUOPC", purpose="Instance", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     profile_memory = (trim(value)/="false")
+
+    call ESMF_AttributeGet(gcomp, name="RunTimeLog", value=value, defaultValue="false", &
+                           convention="NUOPC", purpose="Instance", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    write_runtimelog = (trim(value)=="true")
 
     call ESMF_AttributeGet(gcomp, name="DumpFields", value=value, defaultValue="false", &
                            convention="NUOPC", purpose="Instance", rc=rc)
@@ -975,7 +981,7 @@ module fv3atm_cap_mod
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-    if(lprint) print *,'in fv3_cap, init time=',MPI_Wtime()-timeis,mype
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap, init time=',MPI_Wtime()-timeis,mype
 !-----------------------------------------------------------------------
 !
   end subroutine InitializeAdvertise
@@ -1013,7 +1019,7 @@ module fv3atm_cap_mod
     timere = 0.
     timep2re = 0.
 
-    if(lprint) print *,'in fv3_cap, initirealz time=',MPI_Wtime()-timeirs,mype
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap, initirealz time=',MPI_Wtime()-timeirs,mype
 
   end subroutine InitializeRealize
 
@@ -1029,7 +1035,7 @@ module fv3atm_cap_mod
 
     rc = ESMF_SUCCESS
     timers = MPI_Wtime()
-    if(lprint .and. timere>0.) print *,'in fv3_cap, time between fv3 run step=', timers-timere,mype
+    if(write_runtimelog .and. timere>0. .and. lprint) print *,'in fv3_cap, time between fv3 run step=', timers-timere,mype
 
     if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance: ")
 
@@ -1042,7 +1048,7 @@ module fv3atm_cap_mod
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance: ")
 
     timere = MPI_Wtime()
-    if(lprint) print *,'in fv3_cap, time in fv3 run step=', timere-timers, mype
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap, time in fv3 run step=', timere-timers, mype
 
   end subroutine ModelAdvance
 
@@ -1064,7 +1070,7 @@ module fv3atm_cap_mod
 
     rc = ESMF_SUCCESS
     timep1rs = MPI_Wtime()
-    if(lprint .and. timep2re>0.) print *,'in fv3_cap, time between fv3 run phase2 and phase1 ', timep1rs-timep2re,mype
+    if(write_runtimelog .and. timep2re>0. .and. lprint) print *,'in fv3_cap, time between fv3 run phase2 and phase1 ', timep1rs-timep2re,mype
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase1: ")
 
@@ -1095,7 +1101,7 @@ module fv3atm_cap_mod
     endif
 
     timep1re = MPI_Wtime()
-    if(lprint) print *,'in fv3_cap,modeladvance phase1 time ', timep1re-timep1rs,mype
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap,modeladvance phase1 time ', timep1re-timep1rs,mype
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance_phase1: ")
 
   end subroutine ModelAdvance_phase1
@@ -1232,7 +1238,7 @@ module fv3atm_cap_mod
     end if
 
     timep2re = MPI_Wtime()
-    if(lprint) print *,'in fv3_cap,modeladvance phase2 time ', timep2re-timep2rs, mype
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap,modeladvance phase2 time ', timep2re-timep2rs, mype
     if(profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance_phase2: ")
 
   end subroutine ModelAdvance_phase2
@@ -1441,7 +1447,7 @@ module fv3atm_cap_mod
     call ESMF_GridCompDestroy(fcstComp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
-    if(lprint)print *,'in fv3_cap, finalize time=',MPI_Wtime()-timeffs, mype
+    if(write_runtimelog .and. lprnt) print *,'in fv3_cap, finalize time=',MPI_Wtime()-timeffs, mype
 
   end subroutine ModelFinalize
 !
