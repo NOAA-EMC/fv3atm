@@ -1447,7 +1447,7 @@ module fv3atm_cap_mod
     call ESMF_GridCompDestroy(fcstComp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
-    if(write_runtimelog .and. lprnt) print *,'in fv3_cap, finalize time=',MPI_Wtime()-timeffs, mype
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap, finalize time=',MPI_Wtime()-timeffs, mype
 
   end subroutine ModelFinalize
 !
