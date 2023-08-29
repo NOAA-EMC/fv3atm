@@ -651,6 +651,7 @@ contains
       ! Tell CLM Lake to allocate data, and register its axes and fields
       if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
         call clm_lake%allocate_data(Model)
+        call clm_lake%fill_data(Model,Atm_block,Sfcprop)
         call clm_lake%copy_from_grid(Model,Atm_block,Sfcprop)
         call clm_lake%register_axes(Model, Sfc_restart)
         call clm_lake%register_fields(Sfc_restart)
@@ -988,10 +989,12 @@ contains
 
     if(Model%iopt_lake == 2 .and. Model%lkm > 0) then
       call clm_lake_quilt%allocate_data(Model)
+      call clm_lake_quilt%fill_data(Model, Atm_block, Sfcprop)
     endif
 
     if(Model%rrfs_sd) then
       call rrfs_sd_quilt%allocate_data(Model)
+      call rrfs_sd_quilt%fill_data(Model, Atm_block, Sfcprop)
     endif
 
   end subroutine fv3atm_restart_register

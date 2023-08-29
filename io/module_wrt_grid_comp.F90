@@ -2040,13 +2040,10 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         endif
 
-!recover fields from cartesian vector and sfc pressure
+        !recover fields from cartesian vector and sfc pressure
         call recover_fields(file_bundle,rc)
-        ! FIXME rrfs_smoke_conus13km_fast_phy32_qr crashes with teh following error in recover_fields
-        ! 20230720 121647.816 ERROR            PET147 ESMF_Grid.F90:20442 ESMF_GridGetCoord2DR8 Arguments are incompatible  - - farrayPtr typekind does not match Grid typekind
-        ! 20230720 121647.816 ERROR            PET147 module_wrt_grid_comp.F90:2450 Arguments are incompatible  - Passing error in return code
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       enddo
 !
 !-----------------------------------------------------------------------
@@ -2485,6 +2482,7 @@
      type(ESMF_TypeKind_Flag) typekind
      character(100) fieldName,uwindname,vwindname
      type(ESMF_Field),   allocatable  :: fcstField(:)
+     real(ESMF_KIND_R4), dimension(:,:),     pointer  :: lonr4, latr4
      real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lon, lat
      real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lonloc, latloc
      real(ESMF_KIND_R4), dimension(:,:),     pointer  :: pressfc
@@ -2493,6 +2491,8 @@
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: cart3dPtr2dr4
      real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: cart3dPtr3dr4
      real(ESMF_KIND_R8) :: coslon, sinlon, sinlat
+
+     type(ESMF_Array) :: lon_array, lat_array
 !
 ! get filed count
      call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, rc=rc)
@@ -2510,9 +2510,25 @@
 
      call ESMF_LogWrite("call recover field get coord 1",ESMF_LOGMSG_INFO,rc=RC)
 
-     call ESMF_GridGetCoord(fieldgrid, coordDim=1, farrayPtr=lon, rc=rc)
-
+     call ESMF_GridGetCoord(fieldgrid, coordDim=1, array=lon_array, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     call ESMF_ArrayGet(lon_array, typekind=typekind, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     if (typekind == ESMF_TYPEKIND_R4) then
+        call ESMF_GridGetCoord(fieldgrid, coordDim=1, farrayPtr=lonr4, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        allocate(lon(lbound(lonr4,1):ubound(lonr4,1),lbound(lonr4,2):ubound(lonr4,2)))
+        lon = lonr4
+     else if (typekind == ESMF_TYPEKIND_R8) then
+        call ESMF_GridGetCoord(fieldgrid, coordDim=1, farrayPtr=lon, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     else
+        write(0,*)'lon_array unknown typekind'
+        rc = 1
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     endif
+
 
      allocate(lonloc(lbound(lon,1):ubound(lon,1),lbound(lon,2):ubound(lon,2)))
      istart = lbound(lon,1)
@@ -2529,9 +2545,24 @@
 
      call ESMF_LogWrite("call recover field get coord 2",ESMF_LOGMSG_INFO,rc=RC)
 
-     call ESMF_GridGetCoord(fieldgrid, coordDim=2, farrayPtr=lat, rc=rc)
-
+     call ESMF_GridGetCoord(fieldgrid, coordDim=2, array=lat_array, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     call ESMF_ArrayGet(lat_array, typekind=typekind, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     if (typekind == ESMF_TYPEKIND_R4) then
+        call ESMF_GridGetCoord(fieldgrid, coordDim=2, farrayPtr=latr4, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        allocate(lat(lbound(latr4,1):ubound(latr4,1),lbound(latr4,2):ubound(latr4,2)))
+        lat = latr4
+     else if (typekind == ESMF_TYPEKIND_R8) then
+        call ESMF_GridGetCoord(fieldgrid, coordDim=2, farrayPtr=lat, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     else
+        write(0,*)'lon_array unknown typekind'
+        rc = 1
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     endif
 
      allocate(latloc(lbound(lat,1):ubound(lat,1),lbound(lat,2):ubound(lat,2)))
      istart = lbound(lat,1)
