@@ -7147,6 +7147,12 @@
   units = flag
   dimensions = ()
   type = logical
+[clm_debug_print]
+  standard_name = flag_for_printing_in_clm_lake_model
+  long_name = flag for printing in clm lake model
+  units = flag
+  dimensions = ()
+  type = logical
 [fire_aux_data_levels]
   standard_name = fire_auxiliary_data_extent
   long_name = number of levels of fire auxiliary data
