@@ -22,7 +22,7 @@ module fv3atm_clm_lake_io
   public :: clm_lake_data_type, clm_lake_register_axes, clm_lake_allocate_data, &
        clm_lake_register_fields, clm_lake_deallocate_data, clm_lake_write_axes, &
        clm_lake_copy_from_grid, clm_lake_copy_to_grid, clm_lake_bundle_fields, &
-       clm_lake_final
+       clm_lake_final, clm_lake_fill_data
 
   !>\defgroup CLM Lake Model restart public interface
   !>  @{
@@ -72,6 +72,9 @@ module fv3atm_clm_lake_io
     ! write_axes writes variables to Sfc_restart, with the name of
     ! each axis, containing the appropriate information
     procedure, public :: write_axes => clm_lake_write_axes
+
+    ! fills internal arrays with zero:
+    procedure, public :: fill_data => clm_lake_fill_data
 
     ! copy_from_grid copies from Sfcprop to internal pointers (declared above)
     procedure, public :: copy_from_grid => clm_lake_copy_from_grid
@@ -193,6 +196,61 @@ CONTAINS
     call write_data(Sfc_restart, 'levsnowsoil_clm_lake', clm_lake%levsnowsoil_clm_lake)
     call write_data(Sfc_restart, 'levsnowsoil1_clm_lake', clm_lake%levsnowsoil1_clm_lake)
   end subroutine clm_lake_write_axes
+
+  !>@ This is clm_lake%fill_data. It fills internal arrays with zero
+  !!  Terrible things will happen if you don't call
+  !!  clm_lake%allocate_data first.
+  subroutine clm_lake_fill_data(clm_lake, Model, Atm_block, Sfcprop)
+    implicit none
+    class(clm_lake_data_type) :: clm_lake
+    type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
+    type(GFS_control_type),   intent(in) :: Model
+    type(block_control_type), intent(in) :: Atm_block
+
+    real(kind_phys), parameter :: zero = 0
+    integer :: nb, ix, isc, jsc, i, j
+    isc = Model%isc
+    jsc = Model%jsc
+
+    ! Copy data to temporary arrays
+
+    !$omp parallel do default(shared) private(i, j, nb, ix)
+    do nb = 1, Atm_block%nblks
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+
+        clm_lake%T_snow(i,j) = zero
+        clm_lake%T_ice(i,j) = zero
+        clm_lake%lake_snl2d(i,j) = zero
+        clm_lake%lake_h2osno2d(i,j) = zero
+        clm_lake%lake_tsfc(i,j) = zero
+        clm_lake%lake_savedtke12d(i,j) = zero
+        clm_lake%lake_sndpth2d(i,j) = zero
+        clm_lake%clm_lakedepth(i,j) = zero
+        clm_lake%clm_lake_initialized(i,j) = zero
+
+        clm_lake%lake_z3d(i,j,:) = zero
+        clm_lake%lake_dz3d(i,j,:) = zero
+        clm_lake%lake_soil_watsat3d(i,j,:) = zero
+        clm_lake%lake_csol3d(i,j,:) = zero
+        clm_lake%lake_soil_tkmg3d(i,j,:) = zero
+        clm_lake%lake_soil_tkdry3d(i,j,:) = zero
+        clm_lake%lake_soil_tksatu3d(i,j,:) = zero
+        clm_lake%lake_snow_z3d(i,j,:) = zero
+        clm_lake%lake_snow_dz3d(i,j,:) = zero
+        clm_lake%lake_snow_zi3d(i,j,:) = zero
+        clm_lake%lake_h2osoi_vol3d(i,j,:) = zero
+        clm_lake%lake_h2osoi_liq3d(i,j,:) = zero
+        clm_lake%lake_h2osoi_ice3d(i,j,:) = zero
+        clm_lake%lake_t_soisno3d(i,j,:) = zero
+        clm_lake%lake_t_lake3d(i,j,:) = zero
+        clm_lake%lake_icefrac3d(i,j,:) = zero
+        clm_lake%lake_clay3d(i,j,:) = zero
+        clm_lake%lake_sand3d(i,j,:) = zero
+      enddo
+    enddo
+  end subroutine clm_lake_fill_data
 
   !>@ This is clm_lake%copy_from_grid. It copies from Sfcprop
   !!  variables to the corresponding data temporary variables.
