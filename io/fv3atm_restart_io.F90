@@ -14,7 +14,7 @@ module fv3atm_restart_io_mod
                                 register_axis, register_restart_field, &
                                 register_variable_attribute, register_field, &
                                 read_restart, write_restart, write_data,     &
-                                get_global_io_domain_indices
+                                get_global_io_domain_indices, get_dimension_size
   use mpp_domains_mod,    only: domain2d
   use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
        create_3d_field_and_add_to_bundle, copy_from_gfs_data
@@ -891,6 +891,7 @@ contains
     character(7) :: indir='RESTART'
     character(72) :: infile
     logical :: amiopen, allocated_something
+    integer :: xaxis_1_chunk, yaxis_1_chunk
 
     type(phy_data_type) :: phy
     type(FmsNetcdfDomainFile_t) :: Phy_restart
@@ -917,6 +918,7 @@ contains
       call get_global_io_domain_indices(Phy_restart, 'xaxis_1', is, ie, indices=buffer)
       call write_data(Phy_restart, "xaxis_1", buffer)
       deallocate(buffer)
+      call get_dimension_size(Phy_restart, 'xaxis_1', xaxis_1_chunk)
 
       call register_axis(Phy_restart, 'yaxis_1', 'Y')
       call register_field(Phy_restart, 'yaxis_1', 'double', (/'yaxis_1'/))
@@ -924,6 +926,7 @@ contains
       call get_global_io_domain_indices(Phy_restart, 'yaxis_1', is, ie, indices=buffer)
       call write_data(Phy_restart, "yaxis_1", buffer)
       deallocate(buffer)
+      call get_dimension_size(Phy_restart, 'yaxis_1', yaxis_1_chunk)
 
       call register_axis(Phy_restart, 'zaxis_1', phy%npz)
       call register_field(Phy_restart, 'zaxis_1', 'double', (/'zaxis_1'/))
@@ -946,12 +949,12 @@ contains
     do num = 1,phy%nvar2d
       var2_p => phy%var2(:,:,num)
       call register_restart_field(Phy_restart, trim(GFS_Restart%name2d(num)), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
-           &is_optional=.true.)
+           & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,1/), is_optional=.true.)
     enddo
     do num = 1,phy%nvar3d
       var3_p => phy%var3(:,:,:,num)
       call register_restart_field(Phy_restart, trim(GFS_Restart%name3d(num)), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis_1','Time   '/),&
-           &is_optional=.true.)
+           & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,1,1/), is_optional=.true.)
     enddo
     nullify(var2_p)
     nullify(var3_p)

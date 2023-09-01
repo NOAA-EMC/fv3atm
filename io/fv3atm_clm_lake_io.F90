@@ -12,7 +12,7 @@ module fv3atm_clm_lake_io
   use block_control_mod,  only: block_control_type
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, register_axis, &
        register_restart_field, write_data, &
-       register_variable_attribute, register_field
+       register_variable_attribute, register_field, get_dimension_size
   use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
        create_3d_field_and_add_to_bundle
 
@@ -370,81 +370,89 @@ CONTAINS
     class(clm_lake_data_type) :: clm_lake
     type(FmsNetcdfDomainFile_t) :: Sfc_restart
 
+    integer :: xaxis_1_chunk, yaxis_1_chunk
+    integer :: chunksizes2d(3), chunksizes3d(4)
+
+    call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
+    chunksizes2d = (/xaxis_1_chunk, yaxis_1_chunk, 1/)
+    chunksizes3d = (/xaxis_1_chunk, yaxis_1_chunk, 1, 1/)
+
     ! Register 2D fields
     call register_restart_field(Sfc_restart, 'T_snow', clm_lake%T_snow, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'T_ice', clm_lake%T_ice, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_snl2d', clm_lake%lake_snl2d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_h2osno2d', clm_lake%lake_h2osno2d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_tsfc', clm_lake%lake_tsfc, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_savedtke12d', clm_lake%lake_savedtke12d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_sndpth2d', clm_lake%lake_sndpth2d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'clm_lakedepth', clm_lake%clm_lakedepth, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'clm_lake_initialized', clm_lake%clm_lake_initialized, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), chunksizes=chunksizes2d, is_optional=.true.)
 
     ! Register 3D fields
     call register_restart_field(Sfc_restart, 'lake_z3d', clm_lake%lake_z3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_dz3d', clm_lake%lake_dz3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_soil_watsat3d', clm_lake%lake_soil_watsat3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_csol3d', clm_lake%lake_csol3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_soil_tkmg3d', clm_lake%lake_soil_tkmg3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_soil_tkdry3d', clm_lake%lake_soil_tkdry3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_soil_tksatu3d', clm_lake%lake_soil_tksatu3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_z3d', clm_lake%lake_snow_z3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_dz3d', clm_lake%lake_snow_dz3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_zi3d', clm_lake%lake_snow_zi3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsnowsoil_clm_lake ', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil_clm_lake ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_h2osoi_vol3d', clm_lake%lake_h2osoi_vol3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_h2osoi_liq3d', clm_lake%lake_h2osoi_liq3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_h2osoi_ice3d', clm_lake%lake_h2osoi_ice3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_soisno3d', clm_lake%lake_t_soisno3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
+         'levsnowsoil1_clm_lake', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_lake3d', clm_lake%lake_t_lake3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_icefrac3d', clm_lake%lake_icefrac3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levlake_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_clay3d', clm_lake%lake_clay3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levsoil_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_sand3d', clm_lake%lake_sand3d, &
          dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
-         'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
+         'levsoil_clm_lake     ', 'Time                 '/), chunksizes=chunksizes3d, is_optional=.true.)
   end subroutine clm_lake_register_fields
 
   !>@ This is clm_lake%bundle_fields, and it is only used in the
