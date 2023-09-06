@@ -5698,6 +5698,12 @@
   units = flag
   dimensions = ()
   type = logical
+[ca_advect]
+  standard_name = flag_for_cellular_automata_advection
+  long_name = cellular automata main switch
+  units = flag
+  dimensions = ()
+  type = logical
 [ca_sgs]
   standard_name = flag_for_sgs_cellular_automata
   long_name = switch for sgs ca
