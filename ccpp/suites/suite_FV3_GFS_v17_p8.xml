@@ -8,6 +8,7 @@
       <scheme>GFS_rrtmg_setup</scheme>
       <scheme>GFS_rad_time_vary</scheme>
       <scheme>GFS_phys_time_vary</scheme>
+      <scheme>ozphys_time_vary</scheme>
     </subcycle>
   </group>
   <group name="radiation">
@@ -83,6 +84,9 @@
         <scheme>mp_thompson_post</scheme>
         <scheme>GFS_MP_generic_post</scheme>
         <scheme>maximum_hourly_diagnostics</scheme>
+      </subcycle>
+      <subcycle loop="1">
+        <scheme>GFS_physics_post</scheme>
       </subcycle>
   </group>
   <group name="stochastics">
