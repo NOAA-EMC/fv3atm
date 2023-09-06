@@ -104,6 +104,7 @@ SCHEME_FILES = [
     'physics/physics/GFS_surface_loop_control_part1.F90',
     'physics/physics/GFS_surface_loop_control_part2.F90',
     'physics/physics/GFS_time_vary_pre.fv3.F90',
+    'physics/physics/GFS_physics_diagnostics.F90',
     'physics/physics/cires_ugwp.F90',
     'physics/physics/cires_ugwp_post.F90',
     'physics/physics/unified_ugwp.F90',
