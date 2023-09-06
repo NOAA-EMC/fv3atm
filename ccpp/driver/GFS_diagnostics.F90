@@ -2696,8 +2696,8 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 2
         ExtDiag(idx)%name = 'lake_q2m'
-        ExtDiag(idx)%desc = 'Humidity at 2 m from Lake Model'
-        ExtDiag(idx)%unit = '%'
+        ExtDiag(idx)%desc = '2m specific humidity from Lake Model'
+        ExtDiag(idx)%unit = 'kg/kg'
         ExtDiag(idx)%mod_name = 'gfs_sfc'
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
@@ -3837,6 +3837,18 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%stype(:)
     enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'scolor'
+    ExtDiag(idx)%desc = 'soil color in integer 1-20' 
+    ExtDiag(idx)%unit = 'number'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%scolor(:)
+    enddo
+
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
