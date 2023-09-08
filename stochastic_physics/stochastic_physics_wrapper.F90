@@ -37,6 +37,10 @@ module stochastic_physics_wrapper_mod
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: sst
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: lmsk
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: lake
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: uwind
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: vwind
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: height
+  real(kind=kind_phys), dimension(:,:),   allocatable, save :: dx
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: condition
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca_deep_cpl, ca_turb_cpl, ca_shal_cpl
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca1_cpl, ca2_cpl, ca3_cpl
@@ -189,7 +193,11 @@ module stochastic_physics_wrapper_mod
            allocate(sst         (1:nblks, maxblk))
            allocate(lmsk        (1:nblks, maxblk))
            allocate(lake        (1:nblks, maxblk))
+           allocate(uwind       (1:nblks, maxblk, 1:levs))
+           allocate(vwind       (1:nblks, maxblk, 1:levs))
+           allocate(height      (1:nblks, maxblk, 1:levs))
            allocate(condition   (1:nblks, maxblk))
+           allocate(dx          (1:nblks, maxblk))
            allocate(ca_deep_cpl (1:nblks, maxblk))
            allocate(ca_turb_cpl (1:nblks, maxblk))
            allocate(ca_shal_cpl (1:nblks, maxblk))
@@ -374,16 +382,20 @@ module stochastic_physics_wrapper_mod
              sst        (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%tsfco(:)
              lmsk       (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%slmsk(:)
              lake       (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%lakefrac(:)
+             uwind      (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%ugrs(:,:)
+             vwind      (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%vgrs(:,:)
+             height     (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%phil(:,:)
+             dx         (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%dx(:)
              condition  (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%condition(:)
              ca_deep_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_deep(:)
              ca_turb_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_turb(:)
              ca_shal_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_shal(:)
          enddo
          call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtp,GFS_control%restart,GFS_Control%first_time_step,              &
-            sst,lmsk,lake,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl, Atm(mygrid)%domain_for_coupler,nblks,                    &
+            sst,lmsk,lake,uwind,vwind,height,dx,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl, Atm(mygrid)%domain_for_coupler,nblks,      &
             Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, levs,                        &
             GFS_Control%nthresh,GFS_Control%tile_num,GFS_Control%nca,GFS_Control%ncells,GFS_Control%nlives,                       &
-            GFS_Control%nfracseed, GFS_Control%nseed,GFS_Control%iseed_ca,                                                        &
+            GFS_Control%nfracseed, GFS_Control%nseed,GFS_Control%iseed_ca,GFS_Control%ca_advect,                                  &
             GFS_Control%nspinup,GFS_Control%ca_trigger,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
          ! Copy contiguous data back as needed
          do nb=1,nblks
@@ -461,6 +473,10 @@ module stochastic_physics_wrapper_mod
            deallocate(sst         )
            deallocate(lmsk        )
            deallocate(lake        )
+           deallocate(uwind       )
+           deallocate(vwind       )
+           deallocate(height      )
+           deallocate(dx          )
            deallocate(condition   )
            deallocate(ca_deep_cpl )
            deallocate(ca_turb_cpl )
