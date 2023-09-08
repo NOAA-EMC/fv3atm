@@ -1,7 +1,7 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
   url = https://github.com/SamuelTrahanNOAA/GFDL_atmos_cubed_sphere
-  branch = conus13km
+  branch = bugfix/string-length-mismatch
 [submodule "ccpp/framework"]
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
