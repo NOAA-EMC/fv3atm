@@ -2510,6 +2510,19 @@ module GFS_diagnostics
       enddo
     endif
 
+    if (Model%do_spp) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'spp_wts_cu_deep'
+      ExtDiag(idx)%desc = 'spp cu deep perturbation wts'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%spp_wts_cu_deep(:,:)
+      enddo
+    endif
+
     if (Model%lndp_type /= 0) then
       idx = idx + 1
       ExtDiag(idx)%axes = 3
@@ -2696,8 +2709,8 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 2
         ExtDiag(idx)%name = 'lake_q2m'
-        ExtDiag(idx)%desc = 'Humidity at 2 m from Lake Model'
-        ExtDiag(idx)%unit = '%'
+        ExtDiag(idx)%desc = '2m specific humidity from Lake Model'
+        ExtDiag(idx)%unit = 'kg/kg'
         ExtDiag(idx)%mod_name = 'gfs_sfc'
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))

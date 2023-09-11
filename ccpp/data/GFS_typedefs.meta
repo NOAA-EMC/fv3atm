@@ -2938,6 +2938,14 @@
   type = real
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
+[spp_wts_cu_deep]
+  standard_name = spp_weights_for_cu_deep_scheme
+  long_name = spp weights for cu deep scheme
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
 [sfc_wts]
   standard_name = surface_stochastic_weights_from_coupled_process
   long_name = weights for stochastic surface physics perturbation
@@ -5698,6 +5706,12 @@
   units = flag
   dimensions = ()
   type = logical
+[ca_advect]
+  standard_name = flag_for_cellular_automata_advection
+  long_name = cellular automata main switch
+  units = flag
+  dimensions = ()
+  type = logical
 [ca_sgs]
   standard_name = flag_for_sgs_cellular_automata
   long_name = switch for sgs ca
@@ -5853,7 +5867,7 @@
   units = none
   dimensions =  (number_of_perturbed_spp_schemes)
   type = character
-  kind = len=3
+  kind = len=10
   active = (do_stochastically_perturbed_parameterizations)
 [spp_pbl]
   standard_name = control_for_pbl_spp_perturbations
@@ -5882,6 +5896,12 @@
 [spp_gwd]
   standard_name = control_for_gravity_wave_drag_spp_perturbations
   long_name = control for gravity wave drag spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_cu_deep]
+  standard_name = control_for_deep_convection_spp_perturbations
+  long_name = control for deep convection spp perturbations
   units = count
   dimensions = ()
   type = integer
@@ -7144,6 +7164,12 @@
 [clm_lake_debug]
   standard_name = flag_for_verbose_debugging_in_clm_lake_model
   long_name = flag for verbose debugging in clm lake model
+  units = flag
+  dimensions = ()
+  type = logical
+[clm_debug_print]
+  standard_name = flag_for_printing_in_clm_lake_model
+  long_name = flag for printing in clm lake model
   units = flag
   dimensions = ()
   type = logical
