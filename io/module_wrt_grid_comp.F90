@@ -2090,7 +2090,9 @@
         if (mype == lead_write_task) then
           !** write out inline post log file
           open(newunit=nolog,file='log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
-          write(nolog,"(' completed fv3atm fhour=',f10.3,2x,6(i4,2x))") nfhour, idate(1:6)
+          write(nolog,"('completed: fv3atm')")
+          write(nolog,"('forecast hour: ',f10.3)") nfhour
+          write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
           close(nolog)
         endif
         if (lprnt) then
@@ -2224,7 +2226,7 @@
                   endif
                   call mpi_bcast(kchunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
                endif
-               if (wrt_int_state%mype == 0) then
+               if (lprnt) then
                   print *,'ichunk2d,jchunk2d',ichunk2d(grid_id),jchunk2d(grid_id)
                   print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id)
                endif
@@ -2393,7 +2395,9 @@
           if (out_phase == 1 .and. mype == lead_write_task) then
             !** write out log file
             open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED')
-            write(nolog,"(' completed fv3atm fhour=',f10.3,2x,6(i4,2x))") nfhour, idate(1:6)
+            write(nolog,"('completed: fv3atm')")
+            write(nolog,"('forecast hour: ',f10.3)") nfhour
+            write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
             close(nolog)
           endif
         enddo two_phase_loop
