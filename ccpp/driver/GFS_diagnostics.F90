@@ -2510,6 +2510,19 @@ module GFS_diagnostics
       enddo
     endif
 
+    if (Model%do_spp) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'spp_wts_cu_deep'
+      ExtDiag(idx)%desc = 'spp cu deep perturbation wts'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%spp_wts_cu_deep(:,:)
+      enddo
+    endif
+
     if (Model%lndp_type /= 0) then
       idx = idx + 1
       ExtDiag(idx)%axes = 3
