@@ -9,7 +9,8 @@ module fv3atm_sfc_io
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited, write_data,&
                                 register_axis, register_restart_field,       &
                                 register_variable_attribute, register_field, &
-                                get_global_io_domain_indices, variable_exists
+                                get_global_io_domain_indices, variable_exists, &
+                                get_dimension_size
   use fv3atm_common_io,   only: GFS_Data_transfer, &
        create_2d_field_and_add_to_bundle, create_3d_field_and_add_to_bundle
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
@@ -575,8 +576,15 @@ contains
 
     character(len=7) :: time2d(3)
 
+    integer :: xaxis_1_chunk, yaxis_1_chunk
+    integer :: chunksizes2d(3)
+
+    call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
+
     if(.not.reading) then
       time2d=(/'xaxis_1','yaxis_1','Time   '/)
+      chunksizes2d=(/xaxis_1_chunk, yaxis_1_chunk, 1/)
     else
       time2d=(/'Time   ','yaxis_1','xaxis_1'/)
     endif
@@ -599,13 +607,13 @@ contains
           call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
         else
           call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d,&
-               &is_optional=.true.)
+               & chunksizes=chunksizes2d, is_optional=.true.)
         end if
       else
         if(reading .and. sfc%is_lsoil) then
           call register_restart_field(Sfc_restart,sfc%name2(num),var2_p, dimensions=(/'lat','lon'/))
         else
-          call register_restart_field(Sfc_restart,sfc%name2(num),var2_p, dimensions=time2d)
+          call register_restart_field(Sfc_restart,sfc%name2(num),var2_p, dimensions=time2d, chunksizes=chunksizes2d)
         end if
       endif
     enddo
@@ -618,7 +626,7 @@ contains
         if(sfc%is_lsoil) then
           call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
         else
-          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d, is_optional=.not.mand)
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d, chunksizes=chunksizes2d, is_optional=.not.mand)
         endif
       enddo
     endif
@@ -629,7 +637,7 @@ contains
         if(sfc%is_lsoil) then
           call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/) )
         else
-          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d)
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d, chunksizes=chunksizes2d)
         end if
       enddo
     endif ! mp/ruc
@@ -643,7 +651,7 @@ contains
         if(sfc%is_lsoil) then
           call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
         else
-          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d, is_optional=.not.mand)
+          call register_restart_field(Sfc_restart, sfc%name2(num), var2_p, dimensions=time2d, chunksizes=chunksizes2d, is_optional=.not.mand)
         end if
       enddo
     endif ! noahmp
@@ -656,7 +664,7 @@ contains
         if(sfc%is_lsoil) then
           call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=(/'lat','lon'/), is_optional=.not.mand)
         else
-          call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=time2d, is_optional=.not.mand)
+          call register_restart_field(Sfc_restart, sfc%name2(num),var2_p,dimensions=time2d, chunksizes=chunksizes2d, is_optional=.not.mand)
         endif
       enddo
     endif
@@ -684,9 +692,17 @@ contains
     character(len=7), parameter :: xyz3_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/)
     character(len=7), parameter :: xyz4_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/)
 
+    integer :: xaxis_1_chunk, yaxis_1_chunk
+    integer :: chunksizes3d(4)
+
+    call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
+
+    chunksizes3d = (/xaxis_1_chunk, yaxis_1_chunk, 1, 1/)
+
     !--- register the 3D fields
     var3_p => sfc%var3ice(:,:,:)
-    call register_restart_field(Sfc_restart, sfc%name3(0), var3_p, dimensions=xyz1_time, is_optional=.true.)
+    call register_restart_field(Sfc_restart, sfc%name3(0), var3_p, dimensions=xyz1_time, chunksizes=chunksizes3d, is_optional=.true.)
 
     if(reading) then
       do num = 1,sfc%nvar3
@@ -706,13 +722,13 @@ contains
     elseif(Model%lsm == Model%lsm_ruc) then
       do num = 1,sfc%nvar3
         var3_p => sfc%var3(:,:,:,num)
-        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=xyz1_time)
+        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=xyz1_time, chunksizes=chunksizes3d)
       enddo
       nullify(var3_p)
     else ! writing something other than ruc
       do num = 1,sfc%nvar3
         var3_p => sfc%var3(:,:,:,num)
-        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=xyz2_time)
+        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=xyz2_time, chunksizes=chunksizes3d)
       enddo
       nullify(var3_p)
     endif
@@ -721,14 +737,14 @@ contains
       mand = .not.reading
       do num = sfc%nvar3+1,sfc%nvar3+3
         var3_p1 => sfc%var3sn(:,:,:,num)
-        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p1, dimensions=xyz3_time, is_optional=.not.mand)
+        call register_restart_field(Sfc_restart, sfc%name3(num), var3_p1, dimensions=xyz3_time, chunksizes=chunksizes3d, is_optional=.not.mand)
       enddo
 
       var3_p2 => sfc%var3eq(:,:,:,7)
-      call register_restart_field(Sfc_restart, sfc%name3(7), var3_p2, dimensions=xyz2_time, is_optional=.not.mand)
+      call register_restart_field(Sfc_restart, sfc%name3(7), var3_p2, dimensions=xyz2_time, chunksizes=chunksizes3d, is_optional=.not.mand)
 
       var3_p3 => sfc%var3zn(:,:,:,8)
-      call register_restart_field(Sfc_restart, sfc%name3(8), var3_p3, dimensions=xyz4_time, is_optional=.not.mand)
+      call register_restart_field(Sfc_restart, sfc%name3(8), var3_p3, dimensions=xyz4_time, chunksizes=chunksizes3d, is_optional=.not.mand)
     endif   !mp
 
   end subroutine Sfc_io_register_3d_fields

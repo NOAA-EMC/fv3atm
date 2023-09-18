@@ -2040,13 +2040,10 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         endif
 
-!recover fields from cartesian vector and sfc pressure
+        !recover fields from cartesian vector and sfc pressure
         call recover_fields(file_bundle,rc)
-        ! FIXME rrfs_smoke_conus13km_fast_phy32_qr crashes with teh following error in recover_fields
-        ! 20230720 121647.816 ERROR            PET147 ESMF_Grid.F90:20442 ESMF_GridGetCoord2DR8 Arguments are incompatible  - - farrayPtr typekind does not match Grid typekind
-        ! 20230720 121647.816 ERROR            PET147 module_wrt_grid_comp.F90:2450 Arguments are incompatible  - Passing error in return code
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       enddo
 !
 !-----------------------------------------------------------------------
@@ -2093,7 +2090,9 @@
         if (mype == lead_write_task) then
           !** write out inline post log file
           open(newunit=nolog,file='log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
-          write(nolog,"(' completed fv3atm fhour=',f10.3,2x,6(i4,2x))") nfhour, idate(1:6)
+          write(nolog,"('completed: fv3atm')")
+          write(nolog,"('forecast hour: ',f10.3)") nfhour
+          write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
           close(nolog)
         endif
         if (lprnt) then
@@ -2227,7 +2226,7 @@
                   endif
                   call mpi_bcast(kchunk3d(grid_id),1,mpi_integer,0,wrt_mpi_comm,rc)
                endif
-               if (wrt_int_state%mype == 0) then
+               if (lprnt) then
                   print *,'ichunk2d,jchunk2d',ichunk2d(grid_id),jchunk2d(grid_id)
                   print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id)
                endif
@@ -2396,7 +2395,9 @@
           if (out_phase == 1 .and. mype == lead_write_task) then
             !** write out log file
             open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED')
-            write(nolog,"(' completed fv3atm fhour=',f10.3,2x,6(i4,2x))") nfhour, idate(1:6)
+            write(nolog,"('completed: fv3atm')")
+            write(nolog,"('forecast hour: ',f10.3)") nfhour
+            write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
             close(nolog)
           endif
         enddo two_phase_loop
@@ -2485,6 +2486,7 @@
      type(ESMF_TypeKind_Flag) typekind
      character(100) fieldName,uwindname,vwindname
      type(ESMF_Field),   allocatable  :: fcstField(:)
+     real(ESMF_KIND_R4), dimension(:,:),     pointer  :: lonr4, latr4
      real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lon, lat
      real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lonloc, latloc
      real(ESMF_KIND_R4), dimension(:,:),     pointer  :: pressfc
@@ -2493,6 +2495,8 @@
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: cart3dPtr2dr4
      real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: cart3dPtr3dr4
      real(ESMF_KIND_R8) :: coslon, sinlon, sinlat
+
+     type(ESMF_Array) :: lon_array, lat_array
 !
 ! get filed count
      call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, rc=rc)
@@ -2510,9 +2514,25 @@
 
      call ESMF_LogWrite("call recover field get coord 1",ESMF_LOGMSG_INFO,rc=RC)
 
-     call ESMF_GridGetCoord(fieldgrid, coordDim=1, farrayPtr=lon, rc=rc)
-
+     call ESMF_GridGetCoord(fieldgrid, coordDim=1, array=lon_array, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     call ESMF_ArrayGet(lon_array, typekind=typekind, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     if (typekind == ESMF_TYPEKIND_R4) then
+        call ESMF_GridGetCoord(fieldgrid, coordDim=1, farrayPtr=lonr4, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        allocate(lon(lbound(lonr4,1):ubound(lonr4,1),lbound(lonr4,2):ubound(lonr4,2)))
+        lon = lonr4
+     else if (typekind == ESMF_TYPEKIND_R8) then
+        call ESMF_GridGetCoord(fieldgrid, coordDim=1, farrayPtr=lon, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     else
+        write(0,*)'lon_array unknown typekind'
+        rc = 1
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     endif
+
 
      allocate(lonloc(lbound(lon,1):ubound(lon,1),lbound(lon,2):ubound(lon,2)))
      istart = lbound(lon,1)
@@ -2529,9 +2549,24 @@
 
      call ESMF_LogWrite("call recover field get coord 2",ESMF_LOGMSG_INFO,rc=RC)
 
-     call ESMF_GridGetCoord(fieldgrid, coordDim=2, farrayPtr=lat, rc=rc)
-
+     call ESMF_GridGetCoord(fieldgrid, coordDim=2, array=lat_array, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     call ESMF_ArrayGet(lat_array, typekind=typekind, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     if (typekind == ESMF_TYPEKIND_R4) then
+        call ESMF_GridGetCoord(fieldgrid, coordDim=2, farrayPtr=latr4, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        allocate(lat(lbound(latr4,1):ubound(latr4,1),lbound(latr4,2):ubound(latr4,2)))
+        lat = latr4
+     else if (typekind == ESMF_TYPEKIND_R8) then
+        call ESMF_GridGetCoord(fieldgrid, coordDim=2, farrayPtr=lat, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     else
+        write(0,*)'lon_array unknown typekind'
+        rc = 1
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+     endif
 
      allocate(latloc(lbound(lat,1):ubound(lat,1),lbound(lat,2):ubound(lat,2)))
      istart = lbound(lat,1)

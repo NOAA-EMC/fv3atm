@@ -565,7 +565,12 @@ contains
         ncerr = nf90_def_dim(ncid, trim(dimLabel), valueCount, dimid=dimid); NC_ERR_STOP(ncerr); NC_ERR_STOP(ncerr)
       endif
       if( typekind == ESMF_TYPEKIND_R4 ) then
-        ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_FLOAT, dimids=(/dimid/), varid=varid); NC_ERR_STOP(ncerr)
+        !!! FIXME Use NF90_DOUBLE as axis type, even though axis data are float
+        !!!       This is needed to make phy/sfc restart files identical to FMS
+        !!!       restart files which always defines all axis as double
+
+        ! ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_FLOAT, dimids=(/dimid/), varid=varid); NC_ERR_STOP(ncerr)
+        ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_DOUBLE, dimids=(/dimid/), varid=varid); NC_ERR_STOP(ncerr)
         ncerr = nf90_put_att(ncid, varid, trim(axis_attr_name), "Z"); NC_ERR_STOP(ncerr)
         ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
         ncerr = nf90_put_var(ncid, varid, values=valueListr4); NC_ERR_STOP(ncerr)

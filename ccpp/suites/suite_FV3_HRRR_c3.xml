@@ -43,7 +43,7 @@
       <scheme>mynnsfc_wrapper</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
       <scheme>lsm_ruc</scheme>
-      <scheme>flake_driver</scheme>
+      <scheme>clm_lake</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
     <!-- End of surface iteration loop -->
