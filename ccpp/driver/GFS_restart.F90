@@ -63,6 +63,7 @@ module GFS_restart
     integer :: ndiag_idx(20), itime
     integer :: nblks, num, nb, max_rstrt, offset 
     character(len=2) :: c2 = ''
+    logical :: surface_layer_saves_rainprev
     
     nblks = size(Init_parm%blksz)
     max_rstrt = size(Restart%name2d)
@@ -106,8 +107,18 @@ module GFS_restart
     Restart%ldiag = 3 + Model%ntot2d + Model%nctp + ndiag_rst
     Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
 
+    ! The CLM Lake Model needs raincprev and rainncprv, which some
+    ! surface layer schemes save, and some don't. If the surface layer
+    ! scheme does not save that variable, then it'll be saved
+    ! separately for clm_lake.
+    surface_layer_saves_rainprev = .false.
+
     ! GF
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+      Restart%num2d = Restart%num2d + 3
+    endif
+    ! Unified convection
+    if (Model%imfdeepcnv == Model%imfdeepcnv_c3) then
       Restart%num2d = Restart%num2d + 3
     endif
     ! CA
@@ -117,14 +128,21 @@ module GFS_restart
     ! NoahMP
     if (Model%lsm == Model%lsm_noahmp) then
       Restart%num2d = Restart%num2d + 10
+      surface_layer_saves_rainprev = .true.
     endif
     ! RUC 
     if (Model%lsm == Model%lsm_ruc) then
       Restart%num2d = Restart%num2d + 5
+      surface_layer_saves_rainprev = .true.
     endif
     ! MYNN SFC
     if (Model%do_mynnsfclay) then
       Restart%num2d = Restart%num2d + 13
+    endif
+    ! Save rain prev for lake if surface layer doesn't.
+    if (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm .and. &
+         .not.surface_layer_saves_rainprev) then
+      Restart%num2d = Restart%num2d + 2
     endif
     ! Thompson aerosol-aware
     if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
@@ -151,6 +169,10 @@ module GFS_restart
     ! GF
     if (Model%imfdeepcnv == 3) then
       Restart%num3d = Restart%num3d + 3
+    endif
+    ! Unified convection
+    if (Model%imfdeepcnv == 5) then
+      Restart%num3d = Restart%num3d + 4
     endif
     ! MYNN PBL
     if (Model%do_mynnedmf) then
@@ -233,6 +255,24 @@ module GFS_restart
       Restart%name2d(num) = 'ca_condition'
       do nb = 1,nblks
         Restart%data(nb,num)%var2p => Coupling(nb)%condition(:)
+      enddo
+    endif
+    ! Unified convection
+    if (Model%imfdeepcnv == Model%imfdeepcnv_c3) then
+      num = num + 1
+      Restart%name2d(num) = 'gf_2d_conv_act'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'gf_2d_conv_act_m'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act_m(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'aod_gf'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%aod_gf(:)
       enddo
     endif
     !--- RAP/HRRR-specific variables, 2D
@@ -403,6 +443,20 @@ module GFS_restart
           Restart%data(nb,num)%var2p => Sfcprop(nb)%qss(:)
         enddo
     endif
+    ! Save rain prev for lake if surface layer doesn't.
+    if (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm .and. &
+         .not.surface_layer_saves_rainprev) then
+      num = num + 1
+      Restart%name2d(num) = 'raincprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%raincprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'rainncprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%rainncprv(:)
+      enddo
+    endif
     ! Thompson aerosol-aware
     if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
       num = num + 1
@@ -501,11 +555,30 @@ module GFS_restart
 
     !--Convection variable used in CB cloud fraction. Presently this
     !--is only needed in sgscloud_radpre for imfdeepcnv == imfdeepcnv_gf.
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) then
       num = num + 1
       Restart%name3d(num) = 'cnv_3d_ud_mf'
       do nb = 1,nblks
         Restart%data(nb,num)%var3p => Tbd(nb)%ud_mf(:,:)
+      enddo
+    endif
+
+    !Unified convection scheme                                                                                                                                                                    
+    if (Model%imfdeepcnv == Model%imfdeepcnv_c3) then
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_prevst'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%prevst(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_prevsq'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_qci_conv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%qci_conv(:,:)
       enddo
     endif
 
