@@ -7,13 +7,13 @@
 
 module module_write_netcdf
 
+  use mpi
   use esmf
   use netcdf
-  use module_fv3_io_def,only : ideflate, nbits, &
+  use module_fv3_io_def,only : ideflate, nbits, zstandard_level, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
                                dx,dy,lon1,lat1,lon2,lat2, &
                                time_unlimited
-  use mpi
 
   implicit none
   private
@@ -450,6 +450,16 @@ module module_write_netcdf
             ncerr = nf90_put_att(ncid, varids(i), 'grid_mapping', 'cubed_sphere'); NC_ERR_STOP(ncerr)
          end if
 
+         if (zstandard_level(grid_id) > 0) then
+            ncerr = nf90_def_var_zstandard(ncid, varids(i), zstandard_level(grid_id))
+            if (ncerr /= nf90_noerr) then
+               if (ncerr == nf90_enofilter) then
+                  if (mype==0) write(0,*) 'Zstandard filter not found.'
+               end if
+               NC_ERR_STOP(ncerr)
+            end if
+         end if
+
        end do   ! i=1,fieldCount
 
        ncerr = nf90_enddef(ncid); NC_ERR_STOP(ncerr)
@@ -649,7 +659,7 @@ module module_write_netcdf
          if (typekind == ESMF_TYPEKIND_R4) then
             if (par) then
                call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4_3d, rc=rc); ESMF_ERR_RETURN(rc)
-               if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
+               if ((ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) .and. nbits(grid_id) > 0) then
                   dataMax = maxval(array_r4_3d)
                   dataMin = minval(array_r4_3d)
                   call mpi_allreduce(mpi_in_place,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
@@ -665,7 +675,7 @@ module module_write_netcdf
                      call ESMF_ArrayGather(array, array_r4_3d_cube(:,:,:,t), rootPet=0, tile=t, rc=rc); ESMF_ERR_RETURN(rc)
                   end do
                   if (mype==0) then
-                     if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
+                     if ((ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) .and. nbits(grid_id) > 0) then
                         call quantize_array(array_r4_3d_cube, minval(array_r4_3d_cube), maxval(array_r4_3d_cube), nbits(grid_id), compress_err(i))
                      end if
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d_cube, start=start_idx); NC_ERR_STOP(ncerr)
@@ -673,7 +683,7 @@ module module_write_netcdf
                else
                   call ESMF_FieldGather(fcstField(i), array_r4_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                   if (mype==0) then
-                     if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
+                     if ((ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) .and. nbits(grid_id) > 0) then
                         call quantize_array(array_r4_3d, minval(array_r4_3d), maxval(array_r4_3d), nbits(grid_id), compress_err(i))
                      end if
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
@@ -711,7 +721,7 @@ module module_write_netcdf
 
     end do ! end fieldCount
 
-    if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0 .and. do_io) then
+    if ((ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) .and. nbits(grid_id) > 0 .and. do_io) then
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        do i=1, fieldCount
           if (compress_err(i) > 0) then

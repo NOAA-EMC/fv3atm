@@ -40,7 +40,7 @@
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
                                       stdlat1, stdlat2, dx, dy, iau_offset,     &
-                                      ideflate, lflname_fulltime
+                                      ideflate, zstandard_level, lflname_fulltime
       use module_write_netcdf, only : write_netcdf
       use module_write_restart_netcdf
       use physcons,            only : pi => con_pi
@@ -361,6 +361,7 @@
       allocate(kchunk3d(ngrids))
       allocate(ideflate(ngrids))
       allocate(nbits(ngrids))
+      allocate(zstandard_level(ngrids))
 
       allocate(wrt_int_state%out_grid_info(ngrids))
 
@@ -466,6 +467,12 @@
         call ESMF_ConfigGetAttribute(config=CF,value=jchunk3d(n),default=0,label ='jchunk3d:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=kchunk3d(n),default=0,label ='kchunk3d:',rc=rc)
 
+        ! zstandard compression flag
+        call ESMF_ConfigGetAttribute(config=CF,value=zstandard_level(n),default=0,label ='zstandard_level:',rc=rc)
+        if (zstandard_level(n) < 0) zstandard_level(n)=0
+
+        call ESMF_ConfigGetAttribute(config=CF,value=nbits(n),default=0,label ='nbits:',rc=rc)
+
         ! zlib compression flag
         call ESMF_ConfigGetAttribute(config=CF,value=ideflate(n),default=0,label ='ideflate:',rc=rc)
         if (ideflate(n) < 0) ideflate(n)=0
@@ -473,6 +480,7 @@
         call ESMF_ConfigGetAttribute(config=CF,value=nbits(n),default=0,label ='nbits:',rc=rc)
         if (lprnt) then
             print *,'ideflate=',ideflate(n),' nbits=',nbits(n)
+            print *,'zstandard_level=',zstandard_level(n)
         end if
         ! nbits quantization level for lossy compression (must be between 1 and 31)
         ! 1 is most compression, 31 is least. If outside this range, set to zero
