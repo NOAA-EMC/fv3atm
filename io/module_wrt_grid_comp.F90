@@ -478,6 +478,13 @@
         if (ideflate(n) < 0) ideflate(n)=0
 
         call ESMF_ConfigGetAttribute(config=CF,value=nbits(n),default=0,label ='nbits:',rc=rc)
+
+        if (ideflate(n) > 0 .and. zstandard_level(n) > 0) then
+           write(0,*)"wrt_initialize_p1: zlib and zstd compression cannot be both enabled at the same time"
+           call ESMF_LogWrite("wrt_initialize_p1: zlib and zstd compression cannot be both enabled at the same time",ESMF_LOGMSG_ERROR,rc=RC)
+           call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        end if
+
         if (lprnt) then
             print *,'ideflate=',ideflate(n),' nbits=',nbits(n)
             print *,'zstandard_level=',zstandard_level(n)
