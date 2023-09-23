@@ -574,7 +574,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call atmosphere_domain (Atmos%domain, Atmos%domain_for_read, Atmos%layout, &
                            Atmos%regional, Atmos%nested, &
-                           Atmos%ngrids, Atmos%mygrid, Atmos%pelist, Atmos%grid_type)
+                           Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
    Atmos%moving_nest_parent = .false.
    Atmos%is_moving_nest = .false.
 #ifdef MOVING_NEST
