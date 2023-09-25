@@ -138,7 +138,6 @@ public setup_exportdata
                                                          ! (they correspond to the x, y, pfull, phalf axes)
      integer, pointer              :: pelist(:) =>null() ! pelist where atmosphere is running.
      integer                       :: layout(2)          ! computer task laytout
-     integer                       :: grid_type
      logical                       :: regional           ! true if domain is regional
      logical                       :: nested             ! true if there is a nest
      logical                       :: moving_nest_parent ! true if this grid has a moving nest child
