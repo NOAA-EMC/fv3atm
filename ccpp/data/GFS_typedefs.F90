@@ -14,6 +14,7 @@ module GFS_typedefs
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
    use module_radlw_parameters,  only: topflw_type, sfcflw_type
    use h2o_def,                  only: levh2o, h2o_coeff
+   use module_ozphys,            only: ty_ozphys
 
    implicit none
 
@@ -1568,22 +1569,11 @@ module GFS_typedefs
     logical              :: lightning_threat !< report lightning threat indices
 
 !--- NRL Ozone physics
-    logical                            :: oz_phys         !< Flag for old (2006) ozone physics
-    logical                            :: oz_phys_2015    !< Flag for new (2015) ozone physics
-    integer                            :: latsozp         !< Number of latitudes in ozone forcing data
-    integer                            :: levozp          !< Number of vertical layers in ozone forcing data
-    integer                            :: timeoz          !< Number of times in ozone forcing data
-    integer                            :: oz_coeff        !< Number of coefficients in ozone forcing data
-    real (kind=kind_phys), allocatable :: oz_lat(:)       !< Latitude for ozone forcing data
-    real (kind=kind_phys), allocatable :: oz_pres(:)      !< Pressure levels for ozone forcing data
-    real (kind=kind_phys), allocatable :: po3(:)          !< Natural log pressure levels for ozone forcing data
-    real (kind=kind_phys), allocatable :: oz_time(:)      !< Time for ozone forcing data
-    real (kind=kind_phys), allocatable :: ozplin(:,:,:,:) !< Ozone forcing data
-    integer                            :: latsozc         !< Number of latitudes in ozone climotology data
-    integer                            :: levozc          !< Number of vertical layers in ozone climotology data
-    integer                            :: timeozc         !< Number of times in ozone climotology data
-    real (kind=kind_phys)              :: blatc           !< Parameter for ozone climotology
-    real (kind=kind_phys)              :: dphiozc         !< Parameter for ozone climotology
+    logical         :: oz_phys         !< Flag for old (2006) ozone physics
+    logical         :: oz_phys_2015    !< Flag for new (2015) ozone physics
+    type(ty_ozphys) :: ozphys          !< DDT with data needed by ozone physics
+    integer         :: levozp          !< Number of vertical layers in ozone forcing data
+    integer         :: oz_coeff        !< Number of coefficients in ozone forcing data
 
     contains
       procedure :: init            => control_initialize
@@ -3866,8 +3856,8 @@ module GFS_typedefs
     logical :: lightning_threat = .false.
 
 !--- NRL Ozone physics
-    logical              :: oz_phys      = .true.   !< Flag for old (2006) ozone physics
-    logical              :: oz_phys_2015 = .false.  !< Flag for new (2015) ozone physics
+    logical              :: oz_phys      = .false.  !< Flag for old (2006) ozone physics
+    logical              :: oz_phys_2015 = .true.   !< Flag for new (2015) ozone physics
     integer              :: kozpl        = 28       !< File identifier for ozone forcing data
     integer              :: kozc         = 48       !< File identifier for ozone climotology data
 
@@ -4044,10 +4034,8 @@ module GFS_typedefs
     character(len=20) :: namestr
     character(len=44) :: descstr
 
-!--- ozone physics
-    integer :: i1, i2, i3
-    real(kind=4), dimension(:), allocatable :: oz_lat4, oz_pres4, oz_time4, tempin
-    real(kind=4) :: blatc4
+!--- NRL ozone physics
+    character(len=128) :: err_message
 
     ! dtend selection: default is to match all variables:
     dtend_select(1)='*'
@@ -5432,62 +5420,21 @@ module GFS_typedefs
 
     !--- NRL ozone physics
     if (Model%ntoz > 0) then
-       ! Get dimensions from data file
-       open(unit=kozpl,file='global_o3prdlos.f77', form='unformatted', convert='big_endian')
-       read (kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz
-       rewind(kozpl)
+       ! Load data for ozone physics into DDT ozphys
+       err_message    = Model%ozphys%load_forcing('global_o3prdlos.f77',kozpl)
+       Model%levozp   = Model%ozphys%nlev
+       Model%oz_coeff = Model%ozphys%ncf
+
        if (Model%me == Model%master) then
           write(*,*) 'Reading in o3data from global_o3prdlos.f77 '
-          write(*,*) '      oz_coeff = ', Model%oz_coeff
-          write(*,*) '       latsozp = ', Model%latsozp
-          write(*,*) '        levozp = ', Model%levozp
-          write(*,*) '        timeoz = ', Model%timeoz
+          write(*,*) '      oz_coeff = ', Model%ozphys%ncf
+          write(*,*) '       latsozp = ', Model%ozphys%nlat
+          write(*,*) '        levozp = ', Model%ozphys%nlev
+          write(*,*) '        timeoz = ', Model%ozphys%ntime
        endif
-       ! Allocate space
-       allocate (Model%oz_lat(Model%latsozp))
-       allocate (Model%oz_pres(Model%levozp))
-       allocate (Model%po3(Model%levozp))
-       allocate (Model%oz_time(Model%timeoz+1))
-       allocate (Model%ozplin(Model%latsozp,Model%levozp,Model%oz_coeff,Model%timeoz))
-       !
-       allocate(oz_lat4(Model%latsozp), oz_pres4(Model%levozp), oz_time4(Model%timeoz+1))
-       read (kozpl) Model%oz_coeff, Model%latsozp, Model%levozp, Model%timeoz, oz_lat4, oz_pres4, oz_time4
-
-       ! Store
-       Model%oz_pres(:) = oz_pres4(:)
-       Model%po3(:)     = log(100.0*Model%oz_pres(:)) ! from mb to ln(Pa)
-       Model%oz_lat(:)  = oz_lat4(:)
-       Model%oz_time(:) = oz_time4(:)
-       deallocate(oz_lat4, oz_pres4, oz_time4)
-       !
-       allocate(tempin(Model%latsozp))
-       do i1=1,Model%timeoz
-          do i2=1,Model%oz_coeff
-             do i3=1,Model%levozp
-                READ(kozpl) tempin
-                Model%ozplin(:,i3,i2,i1) = tempin(:)
-             enddo
-          enddo
-       enddo
-       deallocate(tempin)
-       close(kozpl)
     else
        !--- Climatological ozone
-       rewind (kozc)
-       read (kozc,end=101) Model%latsozc, Model%levozc, Model%timeozc, blatc4
-101    if (Model%levozc  < 10 .or. Model%levozc > 100) then
-          rewind (kozc)
-          Model%levozc  = 17
-          Model%latsozc = 18
-          Model%blatc   = -85.0
-       else
-          Model%blatc   = blatc4
-       endif
-       Model%latsozp   = 2
-       Model%levozp    = 1
-       Model%timeoz    = 1
-       Model%oz_coeff  = 0
-       Model%dphiozc   = -(Model%blatc+Model%blatc)/(Model%latsozc-1)
+       err_message = Model%ozphys%load_clim('global_o3prdlos.f77',kozc)
     end if
 
 !--- quantities to be used to derive phy_f*d totals
@@ -7014,8 +6961,8 @@ module GFS_typedefs
 !--- ozone and stratosphere h2o needs
     allocate (Tbd%ozpl  (IM,Model%levozp,Model%oz_coeff))
     allocate (Tbd%h2opl (IM,levh2o,h2o_coeff))
-    Tbd%ozpl  = clear_val
     Tbd%h2opl = clear_val
+    Tbd%ozpl  = clear_val
 
 !--- ccn and in needs
     ! DH* allocate only for MG? *DH

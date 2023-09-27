@@ -21,6 +21,7 @@ VARIABLE_DEFINITION_FILES = [
     'physics/physics/radlw_param.f',
     'physics/physics/h2o_def.f',
     'physics/physics/radiation_surface.f',
+    'physics/physics/module_ozphys.F90',
     'data/CCPP_typedefs.F90',
     'data/GFS_typedefs.F90',
     'data/CCPP_data.F90',
@@ -39,6 +40,10 @@ TYPEDEFS_NEW_METADATA = {
         },
     'module_radlw_parameters' : {
         'module_radlw_parameters' : '',
+        },
+    'module_ozphys' : {
+        'module_ozphys' : '',
+        'ty_ozphys'     : '',
         },
     'CCPP_typedefs' : {
         'GFS_interstitial_type' : 'GFS_Interstitial(cdata%thrd_no)',
@@ -165,7 +170,6 @@ SCHEME_FILES = [
     'physics/physics/mp_nssl.F90'                      ,
     'physics/physics/ozphys.f',
     'physics/physics/ozphys_2015.F90',
-    'physics/physics/ozphys_time_vary.F90',
     'physics/physics/zhaocarr_precpd.f',
     'physics/physics/phys_tend.F90',
     'physics/physics/radlw_main.F90',

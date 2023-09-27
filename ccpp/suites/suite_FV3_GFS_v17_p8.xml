@@ -8,7 +8,6 @@
       <scheme>GFS_rrtmg_setup</scheme>
       <scheme>GFS_rad_time_vary</scheme>
       <scheme>GFS_phys_time_vary</scheme>
-      <scheme>ozphys_time_vary</scheme>
     </subcycle>
   </group>
   <group name="radiation">
