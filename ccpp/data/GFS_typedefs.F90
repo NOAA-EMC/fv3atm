@@ -5421,7 +5421,7 @@ module GFS_typedefs
     !--- NRL ozone physics
     if (Model%ntoz > 0) then
        ! Load data for ozone physics into DDT ozphys
-       err_message    = Model%ozphys%load_forcing('global_o3prdlos.f77',kozpl)
+       err_message    = Model%ozphys%load_o3prog('global_o3prdlos.f77',kozpl)
        Model%levozp   = Model%ozphys%nlev
        Model%oz_coeff = Model%ozphys%ncf
 
@@ -5434,7 +5434,7 @@ module GFS_typedefs
        endif
     else
        !--- Climatological ozone
-       err_message = Model%ozphys%load_clim('global_o3prdlos.f77',kozc)
+       err_message = Model%ozphys%load_o3clim('global_o3prdlos.f77',kozc)
     end if
 
 !--- quantities to be used to derive phy_f*d totals
