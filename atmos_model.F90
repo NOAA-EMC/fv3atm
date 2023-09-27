@@ -2015,7 +2015,7 @@ end subroutine update_atmos_chemistry
 
 ! get upward LW flux:  for sea ice covered area
 !----------------------------------------------
-          fldname = 'mean_up_lw_flx_ice'
+          fldname = 'lwup_flx_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2042,7 +2042,7 @@ end subroutine update_atmos_chemistry
 
 ! get latent heat flux:  for sea ice covered area
 !------------------------------------------------
-          fldname = 'mean_laten_heat_flx_atm_into_ice'
+          fldname = 'laten_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2062,7 +2062,7 @@ end subroutine update_atmos_chemistry
 
 ! get sensible heat flux:  for sea ice covered area
 !--------------------------------------------------
-          fldname = 'mean_sensi_heat_flx_atm_into_ice'
+          fldname = 'sensi_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2122,7 +2122,7 @@ end subroutine update_atmos_chemistry
 
 ! get sea ice volume:  for sea ice covered area
 !----------------------------------------------
-          fldname = 'mean_ice_volume'
+          fldname = 'sea_ice_volume'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2143,7 +2143,7 @@ end subroutine update_atmos_chemistry
 
 ! get snow volume:  for sea ice covered area
 !-------------------------------------------
-          fldname = 'mean_snow_volume'
+          fldname = 'snow_volume_on_sea_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2251,7 +2251,7 @@ end subroutine update_atmos_chemistry
 
 ! get upward LW flux:  for open ocean
 !----------------------------------------------
-          fldname = 'mean_up_lw_flx_ocn'
+          fldname = 'lwup_flx_ocn'
           if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2271,7 +2271,7 @@ end subroutine update_atmos_chemistry
 
 ! get latent heat flux:  for open ocean
 !------------------------------------------------
-          fldname = 'mean_laten_heat_flx_atm_into_ocn'
+          fldname = 'laten_heat_flx_atm_into_ocn'
           if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2291,7 +2291,7 @@ end subroutine update_atmos_chemistry
 
 ! get sensible heat flux:  for open ocean
 !--------------------------------------------------
-          fldname = 'mean_sensi_heat_flx_atm_into_ocn'
+          fldname = 'sensi_heat_flx_atm_into_ocn'
           if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then

@@ -168,13 +168,13 @@ module module_cplfields
     FieldInfo("sea_ice_surface_temperature              ", "s"), &
     FieldInfo("sea_surface_temperature                  ", "s"), &
     FieldInfo("ice_fraction                             ", "s"), &
-    FieldInfo("mean_up_lw_flx_ice                       ", "s"), &
-    FieldInfo("mean_laten_heat_flx_atm_into_ice         ", "s"), &
-    FieldInfo("mean_sensi_heat_flx_atm_into_ice         ", "s"), &
+    FieldInfo("lwup_flx_ice                             ", "s"), &
+    FieldInfo("laten_heat_flx_atm_into_ice              ", "s"), &
+    FieldInfo("sensi_heat_flx_atm_into_ice              ", "s"), &
     FieldInfo("stress_on_air_ice_zonal                  ", "s"), &
     FieldInfo("stress_on_air_ice_merid                  ", "s"), &
-    FieldInfo("mean_ice_volume                          ", "s"), &
-    FieldInfo("mean_snow_volume                         ", "s"), &
+    FieldInfo("sea_ice_volume                           ", "s"), &
+    FieldInfo("snow_volume_on_sea_ice                   ", "s"), &
     FieldInfo("inst_ice_ir_dif_albedo                   ", "s"), &
     FieldInfo("inst_ice_ir_dir_albedo                   ", "s"), &
     FieldInfo("inst_ice_vis_dif_albedo                  ", "s"), &
@@ -185,9 +185,9 @@ module module_cplfields
     ! For receiving fluxes from mediator
     FieldInfo("stress_on_air_ocn_zonal                  ", "s"), &
     FieldInfo("stress_on_air_ocn_merid                  ", "s"), &
-    FieldInfo("mean_laten_heat_flx_atm_into_ocn         ", "s"), &
-    FieldInfo("mean_sensi_heat_flx_atm_into_ocn         ", "s"), &
-    FieldInfo("mean_up_lw_flx_ocn                       ", "s"), &
+    FieldInfo("laten_heat_flx_atm_into_ocn              ", "s"), &
+    FieldInfo("sensi_heat_flx_atm_into_ocn              ", "s"), &
+    FieldInfo("lwup_flx_ocn                             ", "s"), &
 
     !  For JEDI
     ! dynamics
