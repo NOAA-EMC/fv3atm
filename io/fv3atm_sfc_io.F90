@@ -11,7 +11,7 @@ module fv3atm_sfc_io
                                 register_variable_attribute, register_field, &
                                 get_global_io_domain_indices, variable_exists, &
                                 get_dimension_size
-  use fv3atm_common_io,   only: GFS_Data_transfer, &
+  use fv3atm_common_io,   only: GFS_Data_transfer, axis_type, &
        create_2d_field_and_add_to_bundle, create_3d_field_and_add_to_bundle
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use mpp_mod,            only: mpp_error,  NOTE
@@ -309,19 +309,19 @@ contains
     integer :: i, is, ie
     logical :: mand
 
-    call register_field(Sfc_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
+    call register_field(Sfc_restart, 'xaxis_1', axis_type, (/'xaxis_1'/))
     call register_variable_attribute(Sfc_restart, 'xaxis_1', 'cartesian_axis', 'X', str_len=1)
     call get_global_io_domain_indices(Sfc_restart, 'xaxis_1', is, ie, indices=buffer)
     call write_data(Sfc_restart, "xaxis_1", buffer)
     deallocate(buffer)
 
-    call register_field(Sfc_restart, 'yaxis_1', 'double', (/'yaxis_1'/))
+    call register_field(Sfc_restart, 'yaxis_1', axis_type, (/'yaxis_1'/))
     call register_variable_attribute(Sfc_restart, 'yaxis_1', 'cartesian_axis', 'Y', str_len=1)
     call get_global_io_domain_indices(Sfc_restart, 'yaxis_1', is, ie, indices=buffer)
     call write_data(Sfc_restart, "yaxis_1", buffer)
     deallocate(buffer)
 
-    call register_field(Sfc_restart, 'zaxis_1', 'double', (/'zaxis_1'/))
+    call register_field(Sfc_restart, 'zaxis_1', axis_type, (/'zaxis_1'/))
     call register_variable_attribute(Sfc_restart, 'zaxis_1', 'cartesian_axis', 'Z', str_len=1)
     allocate( buffer(Model%kice) )
     do i=1, Model%kice
@@ -331,7 +331,7 @@ contains
     deallocate(buffer)
 
     if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-      call register_field(Sfc_restart, 'zaxis_2', 'double', (/'zaxis_2'/))
+      call register_field(Sfc_restart, 'zaxis_2', axis_type, (/'zaxis_2'/))
       call register_variable_attribute(Sfc_restart, 'zaxis_2', 'cartesian_axis', 'Z', str_len=1)
       allocate( buffer(Model%lsoil) )
       do i=1, Model%lsoil
@@ -342,7 +342,7 @@ contains
     endif
 
     if(Model%lsm == Model%lsm_noahmp) then
-      call register_field(Sfc_restart, 'zaxis_3', 'double', (/'zaxis_3'/))
+      call register_field(Sfc_restart, 'zaxis_3', axis_type, (/'zaxis_3'/))
       call register_variable_attribute(Sfc_restart, 'zaxis_3', 'cartesian_axis', 'Z', str_len=1)
       allocate(buffer(3))
       do i=1, 3
@@ -351,7 +351,7 @@ contains
       call write_data(Sfc_restart, 'zaxis_3', buffer)
       deallocate(buffer)
 
-      call register_field(Sfc_restart, 'zaxis_4', 'double', (/'zaxis_4'/))
+      call register_field(Sfc_restart, 'zaxis_4', axis_type, (/'zaxis_4'/))
       call register_variable_attribute(Sfc_restart, 'zaxis_4', 'cartesian_axis' ,'Z', str_len=1)
       allocate(buffer(7))
       do i=1, 7
@@ -360,7 +360,7 @@ contains
       call write_data(Sfc_restart, 'zaxis_4', buffer)
       deallocate(buffer)
     end if
-    call register_field(Sfc_restart, 'Time', 'double', (/'Time'/))
+    call register_field(Sfc_restart, 'Time', axis_type, (/'Time'/))
     call register_variable_attribute(Sfc_restart, 'Time', 'cartesian_axis', 'T', str_len=1)
     call write_data( Sfc_restart, 'Time', 1)
   end subroutine Sfc_io_write_axes

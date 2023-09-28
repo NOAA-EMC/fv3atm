@@ -31,6 +31,12 @@ module fv3atm_common_io
 
   public :: get_nx_ny_from_atm
 
+#ifdef CCPP_32BIT
+  character(len=5), parameter, public :: axis_type = 'float'
+#else
+  character(len=6), parameter, public :: axis_type = 'double'
+#endif
+
   !>\defgroup fv3atm_common_io FV3ATM Common I/O Utilities Module
   !> @{
 
