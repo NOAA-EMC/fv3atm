@@ -2938,6 +2938,14 @@
   type = real
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
+[spp_wts_cu_deep]
+  standard_name = spp_weights_for_cu_deep_scheme
+  long_name = spp weights for cu deep scheme
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
 [sfc_wts]
   standard_name = surface_stochastic_weights_from_coupled_process
   long_name = weights for stochastic surface physics perturbation
@@ -5865,7 +5873,7 @@
   units = none
   dimensions =  (number_of_perturbed_spp_schemes)
   type = character
-  kind = len=3
+  kind = len=10
   active = (do_stochastically_perturbed_parameterizations)
 [spp_pbl]
   standard_name = control_for_pbl_spp_perturbations
@@ -5894,6 +5902,12 @@
 [spp_gwd]
   standard_name = control_for_gravity_wave_drag_spp_perturbations
   long_name = control for gravity wave drag spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_cu_deep]
+  standard_name = control_for_deep_convection_spp_perturbations
+  long_name = control for deep convection spp perturbations
   units = count
   dimensions = ()
   type = integer

@@ -17,7 +17,7 @@ module fv3atm_restart_io_mod
                                 get_global_io_domain_indices, get_dimension_size
   use mpp_domains_mod,    only: domain2d
   use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
-       create_3d_field_and_add_to_bundle, copy_from_gfs_data
+       create_3d_field_and_add_to_bundle, copy_from_gfs_data, axis_type
   use fv3atm_sfc_io
   use fv3atm_rrfs_sd_io
   use fv3atm_clm_lake_io
@@ -913,7 +913,7 @@ contains
     amiopen=open_file(Phy_restart, trim(infile), 'overwrite', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
     if( amiopen ) then
       call register_axis(Phy_restart, 'xaxis_1', 'X')
-      call register_field(Phy_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
+      call register_field(Phy_restart, 'xaxis_1', axis_type, (/'xaxis_1'/))
       call register_variable_attribute(Phy_restart, 'xaxis_1', 'cartesian_axis', 'X', str_len=1)
       call get_global_io_domain_indices(Phy_restart, 'xaxis_1', is, ie, indices=buffer)
       call write_data(Phy_restart, "xaxis_1", buffer)
@@ -921,7 +921,7 @@ contains
       call get_dimension_size(Phy_restart, 'xaxis_1', xaxis_1_chunk)
 
       call register_axis(Phy_restart, 'yaxis_1', 'Y')
-      call register_field(Phy_restart, 'yaxis_1', 'double', (/'yaxis_1'/))
+      call register_field(Phy_restart, 'yaxis_1', axis_type, (/'yaxis_1'/))
       call register_variable_attribute(Phy_restart, 'yaxis_1', 'cartesian_axis', 'Y', str_len=1)
       call get_global_io_domain_indices(Phy_restart, 'yaxis_1', is, ie, indices=buffer)
       call write_data(Phy_restart, "yaxis_1", buffer)
@@ -929,7 +929,7 @@ contains
       call get_dimension_size(Phy_restart, 'yaxis_1', yaxis_1_chunk)
 
       call register_axis(Phy_restart, 'zaxis_1', phy%npz)
-      call register_field(Phy_restart, 'zaxis_1', 'double', (/'zaxis_1'/))
+      call register_field(Phy_restart, 'zaxis_1', axis_type, (/'zaxis_1'/))
       call register_variable_attribute(Phy_restart, 'zaxis_1', 'cartesian_axis', 'Z', str_len=1)
       allocate( buffer(phy%npz) )
       do i=1, phy%npz
@@ -939,7 +939,7 @@ contains
       deallocate(buffer)
 
       call register_axis(Phy_restart, 'Time', unlimited)
-      call register_field(Phy_restart, 'Time', 'double', (/'Time'/))
+      call register_field(Phy_restart, 'Time', axis_type, (/'Time'/))
       call register_variable_attribute(Phy_restart, 'Time', 'cartesian_axis', 'T', str_len=1)
       call write_data(Phy_restart, "Time", 1)
     else

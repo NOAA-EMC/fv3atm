@@ -14,7 +14,7 @@ module fv3atm_clm_lake_io
        register_restart_field, write_data, &
        register_variable_attribute, register_field, get_dimension_size
   use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
-       create_3d_field_and_add_to_bundle
+       create_3d_field_and_add_to_bundle, axis_type
 
   implicit none
 
@@ -179,16 +179,16 @@ CONTAINS
     type(GFS_control_type),      intent(in) :: Model
     type(FmsNetcdfDomainFile_t) :: Sfc_restart
     integer :: i
-    call register_field(Sfc_restart, 'levlake_clm_lake', 'double', (/'levlake_clm_lake'/))
+    call register_field(Sfc_restart, 'levlake_clm_lake', axis_type, (/'levlake_clm_lake'/))
     call register_variable_attribute(Sfc_restart, 'levlake_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
 
-    call register_field(Sfc_restart, 'levsoil_clm_lake', 'double', (/'levsoil_clm_lake'/))
+    call register_field(Sfc_restart, 'levsoil_clm_lake', axis_type, (/'levsoil_clm_lake'/))
     call register_variable_attribute(Sfc_restart, 'levsoil_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
 
-    call register_field(Sfc_restart, 'levsnowsoil_clm_lake', 'double', (/'levsnowsoil_clm_lake'/))
+    call register_field(Sfc_restart, 'levsnowsoil_clm_lake', axis_type, (/'levsnowsoil_clm_lake'/))
     call register_variable_attribute(Sfc_restart, 'levsnowsoil_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
 
-    call register_field(Sfc_restart, 'levsnowsoil1_clm_lake', 'double', (/'levsnowsoil1_clm_lake'/))
+    call register_field(Sfc_restart, 'levsnowsoil1_clm_lake', axis_type, (/'levsnowsoil1_clm_lake'/))
     call register_variable_attribute(Sfc_restart, 'levsnowsoil1_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
 
     call write_data(Sfc_restart, 'levlake_clm_lake', clm_lake%levlake_clm_lake)
