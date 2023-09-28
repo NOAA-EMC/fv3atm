@@ -83,8 +83,10 @@ module module_write_netcdf
     integer :: oldMode
     integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
     integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid, timeiso_varid
-    integer, dimension(:), allocatable :: dimids_2d, dimids_3d
+    integer, dimension(:), allocatable :: dimids_2d, dimids_3d, dimids, chunksizes
     integer, dimension(:), allocatable :: varids
+    integer :: xtype
+    integer :: ishuffle
     logical shuffle
 
     logical :: is_cubed_sphere
@@ -315,136 +317,59 @@ module module_write_netcdf
          call ESMF_FieldGet(fcstField(i), name=fldName, rank=rank, typekind=typekind, rc=rc); ESMF_ERR_RETURN(rc)
 
          par_access = NF90_INDEPENDENT
-         ! define variables
+
          if (rank == 2) then
-           if (typekind == ESMF_TYPEKIND_R4) then
-             if (ideflate(grid_id) > 0) then
-               shuffle=.true.
-               if (ichunk2d(grid_id) < 0 .or. jchunk2d(grid_id) < 0) then
-                  ! let netcdf lib choose chunksize
-                  ! shuffle filter on for 2d fields (lossless compression)
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_2d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate(grid_id)); NC_ERR_STOP(ncerr)
-               else
-                  if (is_cubed_sphere) then
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_2d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate(grid_id), &
-                                       chunksizes=[im,jm,tileCount,1]); NC_ERR_STOP(ncerr)
-                  else
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_2d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate(grid_id), &
-                                       chunksizes=[ichunk2d(grid_id),jchunk2d(grid_id),          1]); NC_ERR_STOP(ncerr)
-                  end if
-               end if
-               ! compression filters require collective access.
-               par_access = NF90_COLLECTIVE
-             else if (zstandard_level(grid_id) > 0) then
-               shuffle=.true.
-               if (ichunk2d(grid_id) < 0 .or. jchunk2d(grid_id) < 0) then
-                  ! let netcdf lib choose chunksize
-                  ! shuffle filter on for 2d fields (lossless compression)
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_2d, varids(i), &
-                                       shuffle=shuffle,zstandard_level=zstandard_level(grid_id)); NC_ERR_STOP(ncerr)
-               else
-                  if (is_cubed_sphere) then
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_2d, varids(i), &
-                                       shuffle=shuffle,zstandard_level=zstandard_level(grid_id),&
-                                       chunksizes=[im,jm,tileCount,1]); NC_ERR_STOP(ncerr)
-                  else
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_2d, varids(i), &
-                                       shuffle=shuffle,zstandard_level=zstandard_level(grid_id),&
-                                       chunksizes=[ichunk2d(grid_id),jchunk2d(grid_id),          1]); NC_ERR_STOP(ncerr)
-                  end if
-               end if
-               ! compression filters require collective access.
-               par_access = NF90_COLLECTIVE
-             else ! no compression
-               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                    dimids_2d, varids(i)); NC_ERR_STOP(ncerr)
-             end if
-           else if (typekind == ESMF_TYPEKIND_R8) then
-             ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
-                                  dimids_2d, varids(i)); NC_ERR_STOP(ncerr)
-           else
-             if (mype==0) write(0,*)'Unsupported typekind ', typekind
-             call ESMF_Finalize(endflag=ESMF_END_ABORT)
-           end if
+           dimids = dimids_2d
          else if (rank == 3) then
-           if (typekind == ESMF_TYPEKIND_R4) then
-             if (ideflate(grid_id) > 0) then
-               ! shuffle filter off for 3d fields using lossy compression
-               if (nbits(grid_id) > 0) then
-                   shuffle=.false.
-               else
-                   shuffle=.true.
-               end if
-               if (ichunk3d(grid_id) < 0 .or. jchunk3d(grid_id) < 0 .or. kchunk3d(grid_id) < 0) then
-                  ! let netcdf lib choose chunksize
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle, deflate_level=ideflate(grid_id)); NC_ERR_STOP(ncerr)
-               else
-                  if (is_cubed_sphere) then
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle, deflate_level=ideflate(grid_id), &
-                                       chunksizes=[im,jm,lm,tileCount,1]); NC_ERR_STOP(ncerr)
-                  else
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle, deflate_level=ideflate(grid_id), &
-                                       chunksizes=[ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id),          1]); NC_ERR_STOP(ncerr)
-                  end if
-               end if
-               ! compression filters require collective access.
-               par_access = NF90_COLLECTIVE
-             else if (zstandard_level(grid_id) > 0) then
-               ! shuffle filter off for 3d fields using lossy compression
-               if (nbits(grid_id) > 0) then
-                   shuffle=.false.
-               else
-                   shuffle=.true.
-               end if
-               if (ichunk3d(grid_id) < 0 .or. jchunk3d(grid_id) < 0 .or. kchunk3d(grid_id) < 0) then
-                  ! let netcdf lib choose chunksize
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle, zstandard_level=zstandard_level(grid_id)); NC_ERR_STOP(ncerr)
-               else
-                  if (is_cubed_sphere) then
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle, zstandard_level=zstandard_level(grid_id),&
-                                       chunksizes=[im,jm,tileCount,1]); NC_ERR_STOP(ncerr)
-                  else
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle, zstandard_level=zstandard_level(grid_id),&
-                                       chunksizes=[ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id),          1]); NC_ERR_STOP(ncerr)
-                  end if
-               end if
-               ! compression filters require collective access.
-               par_access = NF90_COLLECTIVE
-             else ! no compression
-               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                    dimids_3d, varids(i)); NC_ERR_STOP(ncerr)
-             end if
-           else if (typekind == ESMF_TYPEKIND_R8) then
-             ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
-                                  dimids_3d, varids(i)); NC_ERR_STOP(ncerr)
-           else
-             if (mype==0) write(0,*)'Unsupported typekind ', typekind
-             call ESMF_Finalize(endflag=ESMF_END_ABORT)
-           end if
+           dimids = dimids_3d
          else
            if (mype==0) write(0,*)'Unsupported rank ', rank
            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+         end if
+
+         if (typekind == ESMF_TYPEKIND_R4) then
+           xtype = NF90_FLOAT
+         else if (typekind == ESMF_TYPEKIND_R8) then
+           xtype = NF90_DOUBLE
+         else
+           if (mype==0) write(0,*)'Unsupported typekind ', typekind
+           call ESMF_Finalize(endflag=ESMF_END_ABORT)
+         end if
+
+         ! define variable
+         ncerr = nf90_def_var(ncid, trim(fldName), xtype, dimids, varids(i)) ; NC_ERR_STOP(ncerr)
+
+         ! compression, shuffling  and chunking
+         if (ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) then
+            par_access = NF90_COLLECTIVE
+            if (rank == 2 .and. ichunk2d(grid_id) > 0 .and. jchunk2d(grid_id) > 0) then
+               if (is_cubed_sphere) then
+                  chunksizes = [im, jm, tileCount, 1]
+               else
+                  chunksizes = [ichunk2d(grid_id), jchunk2d(grid_id),            1]
+               end if
+               ncerr = nf90_def_var_chunking(ncid, varids(i), NF90_CHUNKED, chunksizes) ; NC_ERR_STOP(ncerr)
+            else if (rank == 3 .and. ichunk3d(grid_id) > 0 .and. jchunk3d(grid_id) > 0 .and. kchunk3d(grid_id) > 0) then
+               if (is_cubed_sphere) then
+                  chunksizes = [im, jm, lm, tileCount, 1]
+               else
+                  chunksizes = [ichunk3d(grid_id), jchunk3d(grid_id), kchunk3d(grid_id),            1]
+               end if
+               ncerr = nf90_def_var_chunking(ncid, varids(i), NF90_CHUNKED, chunksizes) ; NC_ERR_STOP(ncerr)
+            end if
+
+            ishuffle = NF90_SHUFFLE
+            ! shuffle filter off for 3d fields using lossy compression
+            if (rank == 3 .and. nbits(grid_id) > 0) then
+                ishuffle = NF90_NOSHUFFLE
+            end if
+            if (ideflate(grid_id) > 0) then
+              ncerr = nf90_def_var_deflate(ncid, varids(i), ishuffle, 1, ideflate(grid_id)) ; NC_ERR_STOP(ncerr)
+            else if (zstandard_level(grid_id) > 0) then
+              ncerr = nf90_def_var_deflate(ncid, varids(i), ishuffle, 0, 0) ; NC_ERR_STOP(ncerr)
+              ncerr = nf90_def_var_zstandard(ncid, varids(i), zstandard_level(grid_id)) ; NC_ERR_STOP(ncerr)
+            end if
+
          end if
 
          if (par) then
