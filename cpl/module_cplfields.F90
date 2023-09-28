@@ -64,7 +64,7 @@ module module_cplfields
     FieldInfo("mean_evap_rate                           ", "s"), &
     FieldInfo("mean_down_lw_flx                         ", "s"), &
     FieldInfo("mean_down_sw_flx                         ", "s"), &
-    FieldInfo("mean_prec_rate                           ", "s"), &
+    FieldInfo("inst_prec_rate                           ", "s"), &
     FieldInfo("inst_zonal_moment_flx                    ", "s"), &
     FieldInfo("inst_merid_moment_flx                    ", "s"), &
     FieldInfo("inst_sensi_heat_flx                      ", "s"), &
@@ -106,7 +106,7 @@ module module_cplfields
     FieldInfo("inst_merid_wind_height_lowest            ", "s"), &
     FieldInfo("inst_pres_height_lowest                  ", "s"), &
     FieldInfo("inst_height_lowest                       ", "s"), &
-    FieldInfo("mean_fprec_rate                          ", "s"), &
+    FieldInfo("inst_fprec_rate                          ", "s"), &
     FieldInfo("openwater_frac_in_atm                    ", "s"), &
     FieldInfo("ice_fraction_in_atm                      ", "s"), &
     FieldInfo("lake_fraction                            ", "s"), &
@@ -122,7 +122,7 @@ module module_cplfields
     FieldInfo("inst_merid_wind_height_lowest_from_phys  ", "s"), &
     FieldInfo("inst_pres_height_lowest_from_phys        ", "s"), &
     FieldInfo("inst_spec_humid_height_lowest_from_phys  ", "s"), &
-    FieldInfo("mean_prec_rate_conv                      ", "s"), &
+    FieldInfo("inst_prec_rate_conv                      ", "s"), &
     FieldInfo("inst_temp_height_lowest_from_phys        ", "s"), &
     FieldInfo("inst_exner_function_height_lowest        ", "s"), &
     FieldInfo("surface_friction_velocity                ", "s"), &
