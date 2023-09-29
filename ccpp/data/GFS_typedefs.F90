@@ -1493,6 +1493,9 @@ module GFS_typedefs
     integer              :: ncnvwind        !< the index of surface wind enhancement due to convection for MYNN SFC and RAS CNV in phy f2d
 
 !-- nml variables for RRFS-SD
+    real(kind=kind_phys) :: dust_drylimit_factor  !< factor for drylimit parameterization in fengsha
+    real(kind=kind_phys) :: dust_moist_correction !< factor to tune volumetric soil moisture
+    integer              :: dust_moist_opt        !< dust moisture option 1:fecan 2:shao
     real(kind=kind_phys) :: dust_alpha        !< alpha parameter for fengsha dust scheme
     real(kind=kind_phys) :: dust_gamma        !< gamma parameter for fengsha dust scheme
     real(kind=kind_phys) :: wetdep_ls_alpha   !< alpha parameter for wet deposition
@@ -3805,9 +3808,12 @@ module GFS_typedefs
     integer              :: ichoice_s       = 3 !< flag for closure of C3/GF shallow convection
 
 !-- chem nml variables for RRFS-SD
+    real(kind=kind_phys) :: dust_drylimit_factor  = 1.0
+    real(kind=kind_phys) :: dust_moist_correction = 1.0
     real(kind=kind_phys) :: dust_alpha = 0.
     real(kind=kind_phys) :: dust_gamma = 0.
     real(kind=kind_phys) :: wetdep_ls_alpha = 0.
+    integer :: dust_moist_opt = 1         ! fecan :1  else shao
     integer :: seas_opt = 2
     integer :: dust_opt = 5
     integer :: drydep_opt  = 1
@@ -3971,6 +3977,7 @@ module GFS_typedefs
                           !--- aerosol scavenging factors ('name:value' string array)
                                fscav_aero,                                                  &
                           !--- RRFS-SD namelist
+                               dust_drylimit_factor, dust_moist_correction, dust_moist_opt, &
                                dust_alpha, dust_gamma, wetdep_ls_alpha,                     &
                                seas_opt, dust_opt, drydep_opt, coarsepm_settling,           &
                                wetdep_ls_opt, smoke_forecast, aero_ind_fdb, aero_dir_fdb,   &
@@ -4190,6 +4197,9 @@ module GFS_typedefs
 
 !--- RRFS-SD
     Model%rrfs_sd           = rrfs_sd
+    Model%dust_drylimit_factor = dust_drylimit_factor
+    Model%dust_moist_correction = dust_moist_correction
+    Model%dust_moist_opt    = dust_moist_opt
     Model%dust_alpha        = dust_alpha
     Model%dust_gamma        = dust_gamma
     Model%wetdep_ls_alpha   = wetdep_ls_alpha
@@ -6290,6 +6300,9 @@ module GFS_typedefs
       if(model%rrfs_sd) then
         print *, ' '
         print *, 'smoke parameters'
+        print *, 'dust_drylimit_factor: ',Model%dust_drylimit_factor
+        print *, 'dust_moist_correction: ',Model%dust_moist_correction
+        print *, 'dust_moist_opt   : ',Model%dust_moist_opt
         print *, 'dust_alpha       : ',Model%dust_alpha
         print *, 'dust_gamma       : ',Model%dust_gamma
         print *, 'wetdep_ls_alpha  : ',Model%wetdep_ls_alpha
