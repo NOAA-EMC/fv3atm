@@ -10,6 +10,7 @@ module module_write_restart_netcdf
   use mpi
   use esmf
   use fms
+  use mpp_mod, only : mpp_chksum   ! needed for fms 2023.02
   use netcdf
   use module_fv3_io_def,only : zstandard_level
 
