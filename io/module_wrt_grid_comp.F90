@@ -2040,9 +2040,11 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         endif
 
-        !recover fields from cartesian vector and sfc pressure
-        call recover_fields(file_bundle,rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        if (fcstItemNameList(i)(1:8) /= "restart_") then
+          !recover fields from cartesian vector and sfc pressure
+          call recover_fields(file_bundle,rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        end if
 
       enddo
 !
