@@ -431,13 +431,7 @@ module GFS_typedefs
 
     ! CLM Lake model internal variables:
     real (kind=kind_phys), pointer :: lake_albedo(:)     => null()  !
-    real (kind=kind_phys), pointer :: lake_z3d(:,:)     => null()  !
-    real (kind=kind_phys), pointer :: lake_dz3d(:,:)    => null()  !
-    real (kind=kind_phys), pointer :: lake_soil_watsat3d(:,:) => null()  !
-    real (kind=kind_phys), pointer :: lake_csol3d(:,:)   => null()  !
-    real (kind=kind_phys), pointer :: lake_soil_tkmg3d(:,:)   => null()  !
-    real (kind=kind_phys), pointer :: lake_soil_tkdry3d(:,:)  => null()  !
-    real (kind=kind_phys), pointer :: lake_soil_tksatu3d(:,:) => null()  !
+    real (kind=kind_phys), pointer :: input_lakedepth(:) => null()  !
     real (kind=kind_phys), pointer :: lake_h2osno2d(:)   => null()  !
     real (kind=kind_phys), pointer :: lake_sndpth2d(:)   => null()  !
     real (kind=kind_phys), pointer :: lake_snl2d(:)      => null()  !
@@ -454,8 +448,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lake_icefrac3d(:,:)=> null()
     real (kind=kind_phys), pointer :: lake_rho0(:)=> null()
     real (kind=kind_phys), pointer :: lake_ht(:)=> null()
-    real (kind=kind_phys), pointer :: lake_clay3d(:,:) => null()
-    real (kind=kind_phys), pointer :: lake_sand3d(:,:) => null()
     integer, pointer :: lake_is_salty(:) => null()
     integer, pointer :: lake_cannot_freeze(:) => null()
     real (kind=kind_phys), pointer :: clm_lake_initialized(:) => null() !< lakeini was called
@@ -1501,6 +1493,9 @@ module GFS_typedefs
     integer              :: ncnvwind        !< the index of surface wind enhancement due to convection for MYNN SFC and RAS CNV in phy f2d
 
 !-- nml variables for RRFS-SD
+    real(kind=kind_phys) :: dust_drylimit_factor  !< factor for drylimit parameterization in fengsha
+    real(kind=kind_phys) :: dust_moist_correction !< factor to tune volumetric soil moisture
+    integer              :: dust_moist_opt        !< dust moisture option 1:fecan 2:shao
     real(kind=kind_phys) :: dust_alpha        !< alpha parameter for fengsha dust scheme
     real(kind=kind_phys) :: dust_gamma        !< gamma parameter for fengsha dust scheme
     real(kind=kind_phys) :: wetdep_ls_alpha   !< alpha parameter for wet deposition
@@ -2715,13 +2710,7 @@ module GFS_typedefs
        allocate(Sfcprop%lake_t2m(IM))
        allocate(Sfcprop%lake_q2m(IM))
        allocate(Sfcprop%lake_albedo(IM))
-       allocate(Sfcprop%lake_z3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_dz3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_soil_watsat3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_csol3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_soil_tkmg3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_soil_tkdry3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_soil_tksatu3d(IM,Model%nlevlake_clm_lake))
+       allocate(Sfcprop%input_lakedepth(IM))
        allocate(Sfcprop%lake_h2osno2d(IM))
        allocate(Sfcprop%lake_sndpth2d(IM))
        allocate(Sfcprop%lake_snl2d(IM))
@@ -2738,8 +2727,6 @@ module GFS_typedefs
        allocate(Sfcprop%lake_icefrac3d(IM,Model%nlevlake_clm_lake))
        allocate(Sfcprop%lake_rho0(IM))
        allocate(Sfcprop%lake_ht(IM))
-       allocate(Sfcprop%lake_clay3d(IM,Model%nlevsoil_clm_lake))
-       allocate(Sfcprop%lake_sand3d(IM,Model%nlevsoil_clm_lake))
        allocate(Sfcprop%lake_is_salty(IM))
        allocate(Sfcprop%lake_cannot_freeze(IM))
        allocate(Sfcprop%clm_lake_initialized(IM))
@@ -2747,13 +2734,7 @@ module GFS_typedefs
        Sfcprop%lake_t2m = clear_val
        Sfcprop%lake_q2m = clear_val
        Sfcprop%lake_albedo = clear_val
-       Sfcprop%lake_z3d = clear_val
-       Sfcprop%lake_dz3d = clear_val
-       Sfcprop%lake_soil_watsat3d = clear_val
-       Sfcprop%lake_csol3d = clear_val
-       Sfcprop%lake_soil_tkmg3d = clear_val
-       Sfcprop%lake_soil_tkdry3d = clear_val
-       Sfcprop%lake_soil_tksatu3d = clear_val
+       Sfcprop%input_lakedepth = clear_val
        Sfcprop%lake_h2osno2d = clear_val
        Sfcprop%lake_sndpth2d = clear_val
        Sfcprop%lake_snl2d = clear_val
@@ -2770,8 +2751,6 @@ module GFS_typedefs
        Sfcprop%lake_icefrac3d = clear_val
        Sfcprop%lake_rho0 = -111
        Sfcprop%lake_ht = -111
-       Sfcprop%lake_clay3d = clear_val
-       Sfcprop%lake_sand3d = clear_val
        Sfcprop%lake_is_salty = zero
        Sfcprop%lake_cannot_freeze = zero
        Sfcprop%clm_lake_initialized = zero
@@ -3829,9 +3808,12 @@ module GFS_typedefs
     integer              :: ichoice_s       = 3 !< flag for closure of C3/GF shallow convection
 
 !-- chem nml variables for RRFS-SD
+    real(kind=kind_phys) :: dust_drylimit_factor  = 1.0
+    real(kind=kind_phys) :: dust_moist_correction = 1.0
     real(kind=kind_phys) :: dust_alpha = 0.
     real(kind=kind_phys) :: dust_gamma = 0.
     real(kind=kind_phys) :: wetdep_ls_alpha = 0.
+    integer :: dust_moist_opt = 1         ! fecan :1  else shao
     integer :: seas_opt = 2
     integer :: dust_opt = 5
     integer :: drydep_opt  = 1
@@ -3995,6 +3977,7 @@ module GFS_typedefs
                           !--- aerosol scavenging factors ('name:value' string array)
                                fscav_aero,                                                  &
                           !--- RRFS-SD namelist
+                               dust_drylimit_factor, dust_moist_correction, dust_moist_opt, &
                                dust_alpha, dust_gamma, wetdep_ls_alpha,                     &
                                seas_opt, dust_opt, drydep_opt, coarsepm_settling,           &
                                wetdep_ls_opt, smoke_forecast, aero_ind_fdb, aero_dir_fdb,   &
@@ -4214,6 +4197,9 @@ module GFS_typedefs
 
 !--- RRFS-SD
     Model%rrfs_sd           = rrfs_sd
+    Model%dust_drylimit_factor = dust_drylimit_factor
+    Model%dust_moist_correction = dust_moist_correction
+    Model%dust_moist_opt    = dust_moist_opt
     Model%dust_alpha        = dust_alpha
     Model%dust_gamma        = dust_gamma
     Model%wetdep_ls_alpha   = wetdep_ls_alpha
@@ -6314,6 +6300,9 @@ module GFS_typedefs
       if(model%rrfs_sd) then
         print *, ' '
         print *, 'smoke parameters'
+        print *, 'dust_drylimit_factor: ',Model%dust_drylimit_factor
+        print *, 'dust_moist_correction: ',Model%dust_moist_correction
+        print *, 'dust_moist_opt   : ',Model%dust_moist_opt
         print *, 'dust_alpha       : ',Model%dust_alpha
         print *, 'dust_gamma       : ',Model%dust_gamma
         print *, 'wetdep_ls_alpha  : ',Model%wetdep_ls_alpha
