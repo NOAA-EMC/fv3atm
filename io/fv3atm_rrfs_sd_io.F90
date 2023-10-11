@@ -10,7 +10,7 @@ module fv3atm_rrfs_sd_io
                                 get_dimension_size
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use fv3atm_common_io,   only: get_nx_ny_from_atm, create_2d_field_and_add_to_bundle, &
-                                create_3d_field_and_add_to_bundle
+                                create_3d_field_and_add_to_bundle, axis_type
 
   implicit none
 
@@ -114,7 +114,7 @@ contains
     type(FmsNetcdfDomainFile_t) :: Sfc_restart
     type(GFS_control_type),      intent(in) :: Model
 
-    call register_field(Sfc_restart, 'fire_aux_data_levels', 'double', (/'fire_aux_data_levels'/))
+    call register_field(Sfc_restart, 'fire_aux_data_levels', axis_type, (/'fire_aux_data_levels'/))
     call register_variable_attribute(Sfc_restart, 'fire_aux_data_levels', 'cartesian_axis' ,'Z', str_len=1)
     call write_data(Sfc_restart, 'fire_aux_data_levels', data%fire_aux_data_levels)
   end subroutine rrfs_sd_state_write_axis
