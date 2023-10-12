@@ -2175,6 +2175,28 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%gfluxi(:)
     enddo
 
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'wilt'
+    ExtDiag(idx)%desc = 'wiltimg point (volumetric)'
+    ExtDiag(idx)%unit = 'Proportion'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%smcwlt2(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'fldcp'
+    ExtDiag(idx)%desc = 'Field Capacity (volumetric)'
+    ExtDiag(idx)%unit = 'fraction'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%smcref2(:)
+    enddo
+
     if (Model%lsm == Model%lsm_noahmp) then   
      idx = idx + 1
      ExtDiag(idx)%axes = 2
@@ -2197,28 +2219,6 @@ module GFS_diagnostics
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%epi(:)
-    enddo
-
-    idx = idx + 1
-    ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'wilt'
-    ExtDiag(idx)%desc = 'wiltimg point (volumetric)'
-    ExtDiag(idx)%unit = 'Proportion'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%smcwlt2(:)
-    enddo
-
-    idx = idx + 1
-    ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'fldcp'
-    ExtDiag(idx)%desc = 'Field Capacity (volumetric)'
-    ExtDiag(idx)%unit = 'fraction'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%smcref2(:)
     enddo
 
     idx = idx + 1
@@ -4105,7 +4105,6 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%visdfdi(:)
     enddo
 
-  if (Model%rdlai) then
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'xlaixy'
@@ -4116,7 +4115,6 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%xlaixy(:)
     enddo
-  endif
 
     do num = 1,Model%nvegcat
       write (xtra,'(i2)') num
