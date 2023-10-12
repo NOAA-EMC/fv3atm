@@ -923,6 +923,14 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[fire_heat_flux_out]
+  standard_name = surface_fire_heat_flux
+  long_name = heat flux of fire at the surface
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [snoalb]
   standard_name = upper_bound_of_max_albedo_assuming_deep_snow
   long_name = maximum snow albedo
@@ -1582,7 +1590,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .and. flag_for_reading_leaf_area_index_from_input))
+  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [xsaixy]
   standard_name = stem_area_index
   long_name = stem area index
@@ -4594,6 +4602,12 @@
   units = flag
   dimensions = ()
   type = integer
+[add_fire_heat_flux]
+  standard_name = flag_for_fire_heat_flux
+  long_name = flag to add fire heat flux to LSM
+  units = flag
+  dimensions = ()
+  type = logical
 [isncond_opt]
   standard_name = control_for_soil_thermal_conductivity_option_in_ruc_lsm
   long_name = control for soil thermal conductivity option in RUC land surface model
