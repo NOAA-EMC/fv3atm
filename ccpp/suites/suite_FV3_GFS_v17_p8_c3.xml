@@ -84,14 +84,11 @@
         <scheme>cu_c3_driver_post</scheme>
         <scheme>maximum_hourly_diagnostics</scheme>
       </subcycle>
-      <subcycle loop="1">
-        <scheme>GFS_physics_post</scheme>
-      </subcycle>
   </group>
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
-      <scheme>phys_tend</scheme>
+      <scheme>GFS_physics_post</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
