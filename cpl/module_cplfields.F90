@@ -26,7 +26,7 @@ module module_cplfields
   !  l : model levels (3D)
   !  s : surface (2D)
   !  t : tracers (4D)
-  integer,          public, parameter :: NexportFields = 121
+  integer,          public, parameter :: NexportFields = 119
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
@@ -118,8 +118,6 @@ module module_cplfields
     FieldInfo("leaf_area_index                          ", "s"), &
     FieldInfo("temperature_of_soil_layer                ", "g"), &
     FieldInfo("height                                   ", "s"), &
-    FieldInfo("inst_zonal_wind_height_lowest_from_phys  ", "s"), &
-    FieldInfo("inst_merid_wind_height_lowest_from_phys  ", "s"), &
     FieldInfo("inst_pres_height_lowest_from_phys        ", "s"), &
     FieldInfo("inst_spec_humid_height_lowest_from_phys  ", "s"), &
     FieldInfo("inst_prec_rate_conv                      ", "s"), &

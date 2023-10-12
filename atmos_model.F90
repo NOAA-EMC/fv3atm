@@ -3332,12 +3332,6 @@ end subroutine update_atmos_chemistry
             ! bottom layer meridional wind (v)
             case('inst_merid_wind_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%v_bot, zeror8, Atm_block, nb, rc=localrc)
-            ! bottom layer zonal wind (u) from physics
-            case('inst_zonal_wind_height_lowest_from_phys')
-              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%ugrs, 1, zeror8, Atm_block, nb, rc=localrc)
-            ! bottom layer meridional wind (v) from physics
-            case('inst_merid_wind_height_lowest_from_phys')
-              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%vgrs, 1, zeror8, Atm_block, nb, rc=localrc)
             ! surface friction velocity
             case('surface_friction_velocity')
               call block_data_copy_or_fill(datar82d, GFS_data(nb)%Sfcprop%uustar, zeror8, Atm_block, nb, rc=localrc)
