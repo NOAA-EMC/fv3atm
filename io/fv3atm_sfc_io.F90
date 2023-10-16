@@ -1666,6 +1666,16 @@ contains
       endif
     endif compute_tsfc_for_coldstart
 
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+
+            if (Sfcprop(nb)%tsfc(ix) > 375. .or. Sfcprop(nb)%tsfc(ix) < 50.0) then
+              print*,'cggg2 bad tsfc pt ',nb,ix,Sfcprop(nb)%tsfc(ix)
+            endif
+
+          enddo
+        enddo
+
     if (sfc%var2(i,j,sfc%nvar2m) < -9990.0_kind_phys) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlwav')
       !$omp parallel do default(shared) private(nb, ix)
