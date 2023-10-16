@@ -4808,16 +4808,16 @@ module GFS_diagnostics
     !MYNN
     if (Model%do_mynnedmf) then
 
-      !idx = idx + 1
-      !ExtDiag(idx)%axes = 2
-      !ExtDiag(idx)%name = 'ktop_plume'
-      !ExtDiag(idx)%desc = 'k-level of plume top'
-      !ExtDiag(idx)%unit = 'n/a'
-      !ExtDiag(idx)%mod_name = 'gfs_sfc'
-      !allocate (ExtDiag(idx)%data(nblks))
-      !do nb = 1,nblks
-      !  ExtDiag(idx)%data(nb)%var2 => real(IntDiag(nb)%ktop_plume(:),kind=kind_phys)
-      !enddo
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'ztop_plume'
+      ExtDiag(idx)%desc = 'height of highest plume'
+      ExtDiag(idx)%unit = 'm'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ztop_plume(:)
+      enddo
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
@@ -4830,16 +4830,16 @@ module GFS_diagnostics
         ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%maxmf(:)
       enddo
 
-      !idx = idx + 1
-      !ExtDiag(idx)%axes = 2
-      !ExtDiag(idx)%name = 'nupdraft'
-      !ExtDiag(idx)%desc = 'number of plumes in grid column'
-      !ExtDiag(idx)%unit = 'n/a'
-      !ExtDiag(idx)%mod_name = 'gfs_sfc'
-      !allocate (ExtDiag(idx)%data(nblks))
-      !do nb = 1,nblks
-      !  ExtDiag(idx)%data(nb)%var2 => real(IntDiag(nb)%nupdraft(:),kind=kind_phys)
-      !enddo
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'maxwidth'
+      ExtDiag(idx)%desc = 'maximum width of plumes in grid column'
+      ExtDiag(idx)%unit = 'm'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%maxwidth(:)
+      enddo
     endif
 
     if (Model%do_mynnsfclay) then

@@ -1896,7 +1896,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: det_thl    (:,:)   => null()  !
     real (kind=kind_phys), pointer :: det_sqv    (:,:)   => null()  !
     real (kind=kind_phys), pointer :: maxMF       (:)    => null()  !
-    integer, pointer               :: nupdraft    (:)    => null()  !
+    real (kind=kind_phys), pointer :: maxwidth    (:)    => null()  !
+    real (kind=kind_phys), pointer :: ztop_plume  (:)    => null()  !
     integer, pointer               :: ktop_plume  (:)    => null()  !
     real (kind=kind_phys), pointer :: exch_h     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: exch_m     (:,:)   => null()  !
@@ -7668,8 +7669,9 @@ module GFS_typedefs
         allocate (Diag%qbuoy     (IM,Model%levs))
         allocate (Diag%qdiss     (IM,Model%levs))
       endif
-      allocate (Diag%nupdraft  (IM))
+      allocate (Diag%maxwidth  (IM))
       allocate (Diag%maxmf     (IM))
+      allocate (Diag%ztop_plume(IM))
       allocate (Diag%ktop_plume(IM))
       allocate (Diag%exch_h    (IM,Model%levs))
       allocate (Diag%exch_m    (IM,Model%levs))
@@ -7692,8 +7694,9 @@ module GFS_typedefs
         Diag%qbuoy         = clear_val
         Diag%qdiss         = clear_val
       endif
-      Diag%nupdraft      = 0
+      Diag%maxwidth      = clear_val
       Diag%maxmf         = clear_val
+      Diag%ztop_plume    = clear_val
       Diag%ktop_plume    = 0
       Diag%exch_h        = clear_val
       Diag%exch_m        = clear_val
@@ -7881,8 +7884,9 @@ module GFS_typedefs
         Diag%det_thl       = clear_val
         Diag%det_sqv       = clear_val
       endif
-      Diag%nupdraft      = 0
+      Diag%maxwidth      = clear_val
       Diag%maxmf         = clear_val
+      Diag%ztop_plume    = clear_val
       Diag%ktop_plume    = 0
       Diag%exch_h        = clear_val
       Diag%exch_m        = clear_val
