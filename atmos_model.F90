@@ -2730,6 +2730,37 @@ end subroutine update_atmos_chemistry
           endif
         endif
 
+        fldname = 'hflx_fire'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%hflx_fire(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'evap_fire'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%evap_fire(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+
           ! write post merge import data to NetCDF file.
           if (GFS_control%cpl_imp_dbg) then
             call ESMF_FieldGet(importFields(n), grid=grid, rc=rc)

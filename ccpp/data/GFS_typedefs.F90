@@ -294,6 +294,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: hflx   (:)   => null()  !<
     real (kind=kind_phys), pointer :: qss    (:)   => null()  !<
 
+!--- fire_behavior
+    real (kind=kind_phys), pointer :: hflx_fire (:)   => null()  !< kinematic surface upward sensible heat flux of fire
+    real (kind=kind_phys), pointer :: evap_fire (:)   => null()  !< kinematic surface upward latent heat flux of fire
+
 !-- In/Out
     real (kind=kind_phys), pointer :: maxupmf(:)   => null()  !< maximum up draft mass flux for Grell-Freitas
     real (kind=kind_phys), pointer :: conv_act(:)  => null()  !< convective activity counter for Grell-Freitas
@@ -739,6 +743,7 @@ module GFS_typedefs
     logical              :: cplchm          !< default no cplchm collection
     logical              :: cpllnd          !< default no cpllnd collection
     logical              :: rrfs_sd         !< default no rrfs_sd collection
+    logical              :: cpl_fire        !< default no fire_behavior collection
     logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
     logical              :: cpl_imp_mrg     !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg     !< default no write import data to file post merge
@@ -2798,6 +2803,14 @@ module GFS_typedefs
       Sfcprop%fire_in    = clear_val
     endif
 
+    !--- if fire_behavior is on
+    if(Model%cpl_fire) then
+      allocate (Sfcprop%hflx_fire   (IM))
+      allocate (Sfcprop%evap_fire   (IM))
+      Sfcprop%hflx_fire = zero
+      Sfcprop%evap_fire = zero
+    endif
+
   end subroutine sfcprop_create
 
 
@@ -3250,6 +3263,7 @@ module GFS_typedefs
     logical              :: cplchm         = .false.         !< default no cplchm collection
     logical              :: cpllnd         = .false.         !< default no cpllnd collection
     logical              :: rrfs_sd        = .false.         !< default no rrfs_sd collection
+    logical              :: cpl_fire       = .false.         !< default no fire behavior colleciton
     logical              :: use_cice_alb   = .false.         !< default no cice albedo
     logical              :: cpl_imp_mrg    = .false.         !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg    = .false.         !< default no write import data to file post merge
@@ -3861,7 +3875,7 @@ module GFS_typedefs
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
-                               cplchm, cpllnd, cpl_imp_mrg, cpl_imp_dbg, rrfs_sd,           &
+                               cplchm, cpllnd, cpl_imp_mrg, cpl_imp_dbg, cpl_fire, rrfs_sd, &
                                use_cice_alb,                                                &
 #ifdef IDEA_PHYS
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
@@ -4207,6 +4221,7 @@ module GFS_typedefs
 
 !--- RRFS-SD
     Model%rrfs_sd           = rrfs_sd
+    Model%cpl_fire          = cpl_fire
     Model%dust_alpha        = dust_alpha
     Model%dust_gamma        = dust_gamma
     Model%wetdep_ls_alpha   = wetdep_ls_alpha
@@ -6294,6 +6309,7 @@ module GFS_typedefs
       print *, ' cplchm            : ', Model%cplchm
       print *, ' cpllnd            : ', Model%cpllnd
       print *, ' rrfs_sd           : ', Model%rrfs_sd
+      print *, ' cpl_fire          : ', Model%cpl_fire
       print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
