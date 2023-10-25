@@ -3060,7 +3060,6 @@ module GFS_typedefs
       Coupling%psurfi_cpl  = clear_val
     endif
 
-    !--prognostic closure - moisture coupling
     if(Model%progsigma)then
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
        Coupling%dqdt_qmicro = clear_val
@@ -4709,6 +4708,7 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
+    !--prognostic closure - moisture coupling                                                                                 
     if ((progsigma .and. imfdeepcnv/=2) .and. (progsigma .and. imfdeepcnv/=5)) then
        write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
        stop
