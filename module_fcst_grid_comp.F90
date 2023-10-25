@@ -606,14 +606,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     num_restart_interval = ESMF_ConfigGetLen(config=CF, label ='restart_interval:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if (mype == 0) print *,'af nems config,num_restart_interval=',num_restart_interval
+    if (mype == 0) print *,'af ufs config,num_restart_interval=',num_restart_interval
     if (num_restart_interval<=0) num_restart_interval = 1
     allocate(restart_interval(num_restart_interval))
     restart_interval = 0
     call ESMF_ConfigGetAttribute(CF,valueList=restart_interval,label='restart_interval:', &
                                  count=num_restart_interval, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if (mype == 0) print *,'af nems config,restart_interval=',restart_interval
+    if (mype == 0) print *,'af ufs config,restart_interval=',restart_interval
 !
     call fms_init(fcst_mpi_comm)
     call mpp_init()
