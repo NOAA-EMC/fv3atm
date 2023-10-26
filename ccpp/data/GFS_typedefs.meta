@@ -2034,59 +2034,11 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_z3d]
-  standard_name = depth_of_lake_interface_layers
-  long_name = depth of lake interface layers
-  units = fraction
-  dimensions = (horizontal_loop_extent, lake_vertical_dimension_for_clm_lake_model)
-  type = real
-  kind = kind_phys
-  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_dz3d]
-  standard_name = thickness_of_lake_layers
-  long_name = thickness of lake layers
-  units = fraction
-  dimensions = (horizontal_loop_extent, lake_vertical_dimension_for_clm_lake_model)
-  type = real
-  kind = kind_phys
-  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_soil_watsat3d]
-  standard_name = saturated_volumetric_soil_water_in_lake_model
-  long_name = saturated volumetric soil water in lake model
+[input_lakedepth]
+  standard_name = lake_depth_before_correction
+  long_name = lake depth_before_correction
   units = m
-  dimensions = (horizontal_loop_extent, lake_vertical_dimension_for_clm_lake_model)
-  type = real
-  kind = kind_phys
-  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_csol3d]
-  standard_name = soil_heat_capacity_in_lake_model
-  long_name = soil heat capacity in lake model
-  units = m
-  dimensions = (horizontal_loop_extent, lake_vertical_dimension_for_clm_lake_model)
-  type = real
-  kind = kind_phys
-  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_soil_tkmg3d]
-  standard_name = soil_mineral_thermal_conductivity_in_lake_model
-  long_name = soil mineral thermal conductivity in lake model
-  units = m
-  dimensions = (horizontal_loop_extent, lake_vertical_dimension_for_clm_lake_model)
-  type = real
-  kind = kind_phys
-  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_soil_tkdry3d]
-  standard_name = dry_soil_thermal_conductivity_in_lake_model
-  long_name = dry soil thermal conductivity in lake model
-  units = m
-  dimensions = (horizontal_loop_extent, lake_vertical_dimension_for_clm_lake_model)
-  type = real
-  kind = kind_phys
-  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_soil_tksatu3d]
-  standard_name = saturated_soil_thermal_conductivity_in_lake_model
-  long_name = saturated soil thermal conductivity in lake model
-  units = m
-  dimensions = (horizontal_loop_extent, lake_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2217,20 +2169,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_clay3d]
-  standard_name = clm_lake_percent_clay
-  long_name = percent clay in clm lake model
-  units = percent
-  dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_clm_lake_model)
-  type = integer
-  active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
-[lake_sand3d]
-  standard_name = clm_lake_percent_sand
-  long_name = percent sand in clm lake model
-  units = percent
-  dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_clm_lake_model)
-  type = integer
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
 [lake_is_salty]
   standard_name = clm_lake_is_salty
@@ -2603,7 +2541,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
+  active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
 [dswsfci_cpl]
   standard_name = surface_downwelling_shortwave_flux_for_coupling
   long_name = instantaneous sfc downward sw flux
@@ -2611,7 +2549,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
+  active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
 [dnirbmi_cpl]
   standard_name = surface_downwelling_direct_nir_shortwave_flux_for_coupling
   long_name = instantaneous sfc nir beam downward sw flux
@@ -2907,7 +2845,7 @@
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
 [spp_wts_sfc]
-  standard_name = spp_weights_for_surface_layer_scheme 
+  standard_name = spp_weights_for_surface_layer_scheme
   long_name = spp weights for surface layer scheme
   units = 1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
@@ -2916,7 +2854,7 @@
   active = (do_stochastically_perturbed_parameterizations)
 [spp_wts_mp]
   standard_name = spp_weights_for_microphysics_scheme
-  long_name = spp weights for microphysics scheme 
+  long_name = spp weights for microphysics scheme
   units = 1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
@@ -2924,7 +2862,7 @@
   active = (do_stochastically_perturbed_parameterizations)
 [spp_wts_gwd]
   standard_name = spp_weights_for_gravity_wave_drag_scheme
-  long_name = spp weights for gravity wave drag scheme 
+  long_name = spp weights for gravity wave drag scheme
   units = 1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
@@ -2932,7 +2870,15 @@
   active = (do_stochastically_perturbed_parameterizations)
 [spp_wts_rad]
   standard_name = spp_weights_for_radiation_scheme
-  long_name = spp weights for radiation scheme 
+  long_name = spp weights for radiation scheme
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
+[spp_wts_cu_deep]
+  standard_name = spp_weights_for_cu_deep_scheme
+  long_name = spp weights for cu deep scheme
   units = 1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
@@ -3726,7 +3672,7 @@
   type = integer
 [inc_minor_gas]
   standard_name = flag_to_include_minor_gases_in_rrtmg
-  long_name = flag to include minor trace gases in rrtmg 
+  long_name = flag to include minor trace gases in rrtmg
   units = flag
   dimensions = ()
   type = logical
@@ -5698,6 +5644,12 @@
   units = flag
   dimensions = ()
   type = logical
+[ca_advect]
+  standard_name = flag_for_cellular_automata_advection
+  long_name = cellular automata main switch
+  units = flag
+  dimensions = ()
+  type = logical
 [ca_sgs]
   standard_name = flag_for_sgs_cellular_automata
   long_name = switch for sgs ca
@@ -5853,7 +5805,7 @@
   units = none
   dimensions =  (number_of_perturbed_spp_schemes)
   type = character
-  kind = len=3
+  kind = len=10
   active = (do_stochastically_perturbed_parameterizations)
 [spp_pbl]
   standard_name = control_for_pbl_spp_perturbations
@@ -5882,6 +5834,12 @@
 [spp_gwd]
   standard_name = control_for_gravity_wave_drag_spp_perturbations
   long_name = control for gravity wave drag spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_cu_deep]
+  standard_name = control_for_deep_convection_spp_perturbations
+  long_name = control for deep convection spp perturbations
   units = count
   dimensions = ()
   type = integer
@@ -6325,7 +6283,7 @@
   type = integer
 [ntbcl]
   standard_name = index_for_bcphilic
-  long_name = index for bcphilic 
+  long_name = index for bcphilic
   units = index
   dimensions = ()
   type = integer
@@ -6337,7 +6295,7 @@
   type = integer
 [ntocl]
   standard_name = index_for_ocphilic
-  long_name = index for ocphilic 
+  long_name = index for ocphilic
   units = index
   dimensions = ()
   type = integer
@@ -6441,6 +6399,29 @@
   dimensions = (7)
   type = real
   kind = kind_phys
+  active = (do_smoke_coupling)
+[dust_moist_correction]
+  standard_name = dust_moist_correction_fengsha_dust_scheme
+  long_name = moisture correction term for fengsha dust emission
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[dust_drylimit_factor]
+  standard_name = dust_drylimit_factor_fengsha_dust_scheme
+  long_name = moisture correction term for drylimit in fengsha dust emission
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[dust_moist_opt]
+  standard_name = control_for_dust_soil_moisture_option
+  long_name = smoke dust moisture parameterization 1 - fecan 2 - shao
+  units = index
+  dimensions = ()
+  type = integer
   active = (do_smoke_coupling)
 [dust_alpha]
   standard_name = alpha_fengsha_dust_scheme
@@ -7144,6 +7125,12 @@
 [clm_lake_debug]
   standard_name = flag_for_verbose_debugging_in_clm_lake_model
   long_name = flag for verbose debugging in clm lake model
+  units = flag
+  dimensions = ()
+  type = logical
+[clm_debug_print]
+  standard_name = flag_for_printing_in_clm_lake_model
+  long_name = flag for printing in clm lake model
   units = flag
   dimensions = ()
   type = logical

@@ -2510,6 +2510,19 @@ module GFS_diagnostics
       enddo
     endif
 
+    if (Model%do_spp) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'spp_wts_cu_deep'
+      ExtDiag(idx)%desc = 'spp cu deep perturbation wts'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%spp_wts_cu_deep(:,:)
+      enddo
+    endif
+
     if (Model%lndp_type /= 0) then
       idx = idx + 1
       ExtDiag(idx)%axes = 3
@@ -2696,8 +2709,8 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 2
         ExtDiag(idx)%name = 'lake_q2m'
-        ExtDiag(idx)%desc = 'Humidity at 2 m from Lake Model'
-        ExtDiag(idx)%unit = '%'
+        ExtDiag(idx)%desc = '2m specific humidity from Lake Model'
+        ExtDiag(idx)%unit = 'kg/kg'
         ExtDiag(idx)%mod_name = 'gfs_sfc'
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
@@ -4048,6 +4061,50 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%wetness(:)
     enddo
 
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'nirbmdi'
+    ExtDiag(idx)%desc = 'sfc nir beam sw downward flux'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%nirbmdi(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'nirdfdi'
+    ExtDiag(idx)%desc = 'sfc nir diff sw downward flux'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%nirdfdi(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'visbmdi'
+    ExtDiag(idx)%desc = 'sfc uv+vis beam sw downward flux'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%visbmdi(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'visdfdi'
+    ExtDiag(idx)%desc = ' sfc uv+vis diff sw downward flux'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%visdfdi(:)
+    enddo
+
   if (Model%rdlai) then
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -5073,42 +5130,6 @@ module GFS_diagnostics
 
     integer :: nk, idx0, iblk
     
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_z3d, 'lake_z3d', 'lake_depth_on_interface_levels', 'm')
-    enddo
-    
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_clay3d, 'lake_clay3d', 'percent clay on soil levels in clm lake model', '%')
-    enddo
-
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_sand3d, 'lake_sand3d', 'percent sand on soil levels in clm lake model', '%')
-    enddo
-    
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_dz3d, 'lake_dz3d', 'lake level thickness', 'm')
-    enddo
-
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_soil_watsat3d, 'lake_soil_watsat3d', 'saturated volumetric soil water', 'm3 m-3')
-    enddo
-
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_csol3d, 'lake_csol3d', 'soil heat capacity', 'J m-3 K-1')
-    enddo
-
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_soil_tkmg3d, 'lake_soil_tkmg3d', 'soil thermal conductivity, minerals', 'W m-1 K-1')
-    enddo
-
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_soil_tkdry3d, 'lake_soil_tkdry3d', 'soil thermal conductivity, dry soil', 'W m-1 K-1')
-    enddo
-
-    do iblk=1,nblks
-      call link_all_levels(Sfcprop(iblk)%lake_soil_tksatu3d, 'lake_soil_tksatu3d', 'soil thermal conductivity, saturated soil', 'W m-1 K-1')
-    enddo
-
     do iblk=1,nblks
       call link_all_levels(Sfcprop(iblk)%lake_snow_z3d, 'lake_snow_z3d', 'lake snow level depth', 'm')
     enddo
