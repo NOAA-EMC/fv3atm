@@ -9617,7 +9617,7 @@
   relative_path = ../physics/physics/
   dependencies = hooks/machine.F,hooks/physcons.F90
   dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f
-  dependencies = h2o_photo/h2o_def.f,o3_photo/ozne_def.f
+  dependencies = photochem/h2o_def.f,photochem/ozne_def.f
 
 [ccpp-arg-table]
   name = GFS_typedefs

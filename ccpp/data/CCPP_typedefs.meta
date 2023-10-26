@@ -3187,7 +3187,7 @@
   name = CCPP_typedefs
   type = module
   relative_path = ../physics/physics
-  dependencies = hooks/machine.F,o3_photo/ozne_def.f,Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f
+  dependencies = hooks/machine.F,photochem/ozne_def.f,Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f
 
 [ccpp-arg-table]
   name = CCPP_typedefs
