@@ -2325,7 +2325,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%max_hail_diam_sfc(:)
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%max_hail_diam_sfc(:)
     enddo
 
     idx = idx + 1
