@@ -8,8 +8,8 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/AndersJensen-NOAA/ccpp-physics
-  branch = max_hail_mp
+  url = https://github.com/joeolson42/ccpp-physics
+  branch = mynnthomp_oct2023
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
