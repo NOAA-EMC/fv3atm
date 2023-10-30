@@ -171,6 +171,7 @@ SCHEME_FILES = [
     'physics/physics/PBL/YSU/ysuvdif.F90',
     'physics/physics/PBL/saYSU/shinhongvdif.F90',
     'physics/physics/Radiation/RRTMG/radsw_main.F90',
+    'physics/physics/Radiation/RRTMG/radlw_main.F90',
     'physics/physics/Radiation/RRTMG/rrtmg_lw_post.F90',
     'physics/physics/Radiation/RRTMG/rrtmg_sw_post.F90',
     'physics/physics/Radiation/RRTMG/rad_sw_pre.F90',
