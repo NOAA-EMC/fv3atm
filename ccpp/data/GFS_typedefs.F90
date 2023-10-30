@@ -1963,6 +1963,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: cldfra (:,:)   => null()  !< instantaneous 3D cloud fraction
     !--- MP quantities for 3D diagnositics
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
+    real (kind=kind_phys), pointer :: max_hail_diam_sfc(:) => null()  !< instantaneous max hail diameter sfc
     real (kind=kind_phys), pointer :: cldfra2d (:)   => null()  !< instantaneous 2D cloud fraction
     real (kind=kind_phys), pointer :: total_albedo (:)   => null()  !< total sky (with cloud) albedo at toa
     real (kind=kind_phys), pointer :: lwp_ex (:)     => null()  !< liquid water path from microphysics
@@ -7634,6 +7635,7 @@ module GFS_typedefs
 
     !--- 3D diagnostics for Thompson MP / GFDL MP
     allocate (Diag%refl_10cm(IM,Model%levs))
+    allocate (Diag%max_hail_diam_sfc(IM))
 
     !--- New PBL Diagnostics
     allocate (Diag%dkt(IM,Model%levs))
@@ -7984,6 +7986,7 @@ module GFS_typedefs
 
 ! max hourly diagnostics
     Diag%refl_10cm   = -35.
+    Diag%max_hail_diam_sfc = -999.
     Diag%refdmax     = -35.
     Diag%refdmax263k = -35.
     Diag%t02max      = -999.

@@ -2318,6 +2318,17 @@ module GFS_diagnostics
     enddo
 
     idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'max_hail_diam_sfc'
+    ExtDiag(idx)%desc = 'Maximum hail diameter at lowest model level'
+    ExtDiag(idx)%unit = 'm'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%max_hail_diam_sfc(:)
+    enddo
+
+    idx = idx + 1
     ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'dkt'
     ExtDiag(idx)%desc = 'Atmospheric heat diffusivity'
