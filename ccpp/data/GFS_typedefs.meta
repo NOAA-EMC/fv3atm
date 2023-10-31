@@ -9618,6 +9618,7 @@
   dependencies = hooks/machine.F,hooks/physcons.F90
   dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f
   dependencies = photochem/h2o_def.f,photochem/ozne_def.f
+  dependencies = MP/GFDL/GFDL_parse_tracers.F90
 
 [ccpp-arg-table]
   name = GFS_typedefs
