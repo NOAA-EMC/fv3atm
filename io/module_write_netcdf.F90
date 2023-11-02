@@ -10,7 +10,7 @@ module module_write_netcdf
   use mpi
   use esmf
   use netcdf
-  use module_fv3_io_def,only : ideflate, nbits, zstandard_level, &
+  use module_fv3_io_def,only : ideflate, nbits, quantize_mode, quantize_nsd, zstandard_level, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
                                dx,dy,lon1,lat1,lon2,lat2, &
                                time_unlimited
@@ -86,6 +86,7 @@ module module_write_netcdf
     integer, dimension(:), allocatable :: dimids_2d, dimids_3d, dimids, chunksizes
     integer, dimension(:), allocatable :: varids
     integer :: xtype
+    integer :: quant_mode
     integer :: ishuffle
     logical shuffle
 
@@ -358,10 +359,10 @@ module module_write_netcdf
                ncerr = nf90_def_var_chunking(ncid, varids(i), NF90_CHUNKED, chunksizes) ; NC_ERR_STOP(ncerr)
             end if
 
-            ishuffle = NF90_SHUFFLE
-            ! shuffle filter off for 3d fields using lossy compression
-            if (rank == 3 .and. nbits(grid_id) > 0) then
-                ishuffle = NF90_NOSHUFFLE
+            ishuffle = NF90_NOSHUFFLE
+            ! shuffle filter on when using lossy compression
+            if ( nbits(grid_id) > 0 .or. quantize_nsd(grid_id) > 0) then
+                ishuffle = NF90_SHUFFLE
             end if
             if (ideflate(grid_id) > 0) then
               ncerr = nf90_def_var_deflate(ncid, varids(i), ishuffle, 1, ideflate(grid_id)) ; NC_ERR_STOP(ncerr)
@@ -370,6 +371,24 @@ module module_write_netcdf
               ncerr = nf90_def_var_zstandard(ncid, varids(i), zstandard_level(grid_id)) ; NC_ERR_STOP(ncerr)
             end if
 
+            ! turn on quantize only for 3d variables and if requested
+            if (rank == 3 .and. quantize_nsd(grid_id) > 0) then
+              ! nf90_quantize_bitgroom = 1
+              ! nf90_quantize_granularbr = 2
+              ! nf90_quantize_bitround = 3  (nsd is number of bits)
+              if (trim(quantize_mode(grid_id)) == 'quantize_bitgroom') then
+                quant_mode = 1
+              else if (trim(quantize_mode(grid_id)) == 'quantize_granularbr') then
+                quant_mode = 2
+              else if (trim(quantize_mode(grid_id)) == 'quantize_bitround') then
+                quant_mode = 3
+              else
+                if (mype==0) write(0,*)'Unknown quantize_mode ', trim(quantize_mode(grid_id))
+                call ESMF_Finalize(endflag=ESMF_END_ABORT)
+              endif
+
+              ncerr = nf90_def_var_quantize(ncid, varids(i), quant_mode, quantize_nsd(grid_id)) ; NC_ERR_STOP(ncerr)
+            end if
          end if
 
          if (par) then
