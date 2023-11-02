@@ -5053,6 +5053,12 @@
   units = flag
   dimensions = ()
   type = logical
+[ozphys]
+  standard_name = dataset_for_ozone_physics
+  long_name = dataset for NRL ozone physics
+  units = mixed
+  dimensions = ()
+  type = ty_ozphys
 [h2o_phys]
   standard_name = flag_for_stratospheric_water_vapor_physics
   long_name = flag for stratospheric water vapor physics
@@ -6651,6 +6657,18 @@
   units = flag
   dimensions = ()
   type = logical
+[levozp]
+  standard_name = vertical_dimension_of_ozone_forcing_data
+  long_name = number of vertical layers in ozone forcing data
+  units = count
+  dimensions = ()
+  type = integer
+[oz_coeff]
+  standard_name = number_of_coefficients_in_ozone_data
+  long_name = number of coefficients in ozone forcing data
+  units = count
+  dimensions = ()
+  type = integer
 [ipt]
   standard_name = index_of_horizontal_gridpoint_for_debug_output
   long_name = horizontal index for point used for diagnostic printout
@@ -7410,7 +7428,7 @@
   standard_name = ozone_forcing
   long_name = ozone forcing data
   units = mixed
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_forcing_data)
+  dimensions = (horizontal_loop_extent,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_data)
   type = real
   kind = kind_phys
 [h2opl]
@@ -8856,6 +8874,38 @@
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D)
+[do3_dt_prd]
+  standard_name = ozone_tendency_due_to_production_and_loss_rate
+  long_name = ozone tendency due to production and loss rate
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
+[do3_dt_ozmx]
+  standard_name = ozone_tendency_due_to_ozone_mixing_ratio
+  long_name = ozone tendency due to ozone mixing ratio
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
+[do3_dt_temp]
+  standard_name = ozone_tendency_due_to_temperature
+  long_name = ozone tendency due to temperature
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
+[do3_dt_ohoz]
+  standard_name = ozone_tendency_due_to_overhead_ozone_column
+  long_name = ozone tendency due to overhead ozone column
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
 [refl_10cm]
   standard_name = radar_reflectivity_10cm
   long_name = instantaneous refl_10cm
@@ -9616,7 +9666,7 @@
   type = module
   relative_path = ../physics/physics
   dependencies = machine.F,physcons.F90,radlw_param.f,radsw_param.f
-  dependencies = GFDL_parse_tracers.F90,h2o_def.f,ozne_def.f
+  dependencies = GFDL_parse_tracers.F90,h2o_def.f,module_ozphys.F90
 
 [ccpp-arg-table]
   name = GFS_typedefs
@@ -9781,6 +9831,13 @@
   standard_name = gravitational_acceleration
   long_name = gravitational acceleration
   units = m s-2
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_1ovg]
+  standard_name = one_divided_by_the_gravitational_acceleration
+  long_name = inverse of gravitational acceleration
+  units = s2 m-1
   dimensions = ()
   type = real
   kind = kind_phys

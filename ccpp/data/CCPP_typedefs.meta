@@ -3187,7 +3187,7 @@
   name = CCPP_typedefs
   type = module
   relative_path = ../physics/physics
-  dependencies = machine.F,ozne_def.f,radlw_param.f,radsw_param.f
+  dependencies = machine.F,radlw_param.f,radsw_param.f
   dependencies = rte-rrtmgp/rrtmgp/mo_gas_optics_rrtmgp.F90,rte-rrtmgp/rte/mo_optical_props.F90
   dependencies = rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90
   dependencies = rte-rrtmgp/rrtmgp/mo_gas_concentrations.F90,rte-rrtmgp/rte/mo_rte_config.F90
