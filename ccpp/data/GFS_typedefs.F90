@@ -3907,7 +3907,7 @@ module GFS_typedefs
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                                sedi_semi, decfl,                                            &
                                nssl_cccn, nssl_alphah, nssl_alphahl,                        &
-                               nssl_alphar, nssl_ehw0, nssl_ehlw0,                    &
+                               nssl_alphar, nssl_ehw0, nssl_ehlw0,                          &
                                nssl_invertccn, nssl_hail_on, nssl_ccn_on, nssl_3moment,     &
                           !--- max hourly
                                avg_max_length,                                              &
