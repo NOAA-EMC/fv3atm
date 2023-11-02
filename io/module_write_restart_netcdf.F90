@@ -7,10 +7,12 @@
 
 module module_write_restart_netcdf
 
+  use mpi
   use esmf
   use fms
+  use mpp_mod, only : mpp_chksum   ! needed for fms 2023.02
   use netcdf
-  use mpi
+  use module_fv3_io_def,only : zstandard_level
 
   implicit none
   private
@@ -370,6 +372,16 @@ module module_write_restart_netcdf
          end if
          if (par) then
              ncerr = nf90_var_par_access(ncid, varids(i), par_access); NC_ERR_STOP(ncerr)
+         end if
+
+         if (zstandard_level(1) > 0) then
+            ncerr = nf90_def_var_zstandard(ncid, varids(i), zstandard_level(1))
+            if (ncerr /= nf90_noerr) then
+               if (ncerr == nf90_enofilter) then
+                  if (mype==0) write(0,*) 'Zstandard filter not found.'
+               end if
+               NC_ERR_STOP(ncerr)
+            end if
          end if
 
        end do   ! i=1,fieldCount
