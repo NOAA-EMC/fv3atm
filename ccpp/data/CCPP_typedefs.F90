@@ -8,7 +8,6 @@ module CCPP_typedefs
     use machine,  only: kind_grid, kind_dyn, kind_phys
 
     ! Constants/dimensions needed for interstitial DDTs
-    use ozne_def,                 only: oz_coeff
     use GFS_typedefs,             only: clear_val, LTP
 
     ! Physics type defininitions needed for interstitial DDTs
@@ -881,7 +880,7 @@ contains
     Interstitial%nf_albd          = NF_ALBD
     Interstitial%nspc1            = NSPC1
     if (Model%oz_phys .or. Model%oz_phys_2015) then
-      Interstitial%oz_coeffp5     = oz_coeff+5
+      Interstitial%oz_coeffp5     = Model%oz_coeff+5
     else
       Interstitial%oz_coeffp5     = 5
     endif
