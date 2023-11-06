@@ -278,6 +278,30 @@
   type = real
   kind = kind_phys
   active = (index_of_mass_number_concentration_of_hail_in_tracer_concentration_array > 0)
+[qgrs(:,:,index_of_reflectivity_of_rain_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_rain_in_air
+  long_name = reflectivity of rain
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_reflectivity_of_rain_in_tracer_concentration_array > 0)
+[qgrs(:,:,index_of_reflectivity_of_graupel_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_graupel_in_air
+  long_name = reflectivity of graupel
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_reflectivity_of_graupel_in_tracer_concentration_array > 0)
+[qgrs(:,:,index_of_reflectivity_of_hail_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_hail_in_air
+  long_name = reflectivity of hail
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_reflectivity_of_hail_in_tracer_concentration_array > 0)
 [qgrs(:,:,index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array)]
   standard_name = cloud_condensation_nuclei_number_concentration
   long_name = number concentration of cloud condensation nuclei
@@ -568,6 +592,30 @@
   type = real
   kind = kind_phys
   active = ( index_of_hail_volume_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_reflectivity_of_rain_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_rain_of_new_state
+  long_name = reflectivity of rain updated by physics
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_reflectivity_of_rain_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_reflectivity_of_graupel_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_graupel_of_new_state
+  long_name = reflectivity of graupel updated by physics
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_reflectivity_of_graupel_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_reflectivity_of_hail_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_hail_of_new_state
+  long_name = reflectivity of hail updated by physics
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_reflectivity_of_hail_in_tracer_concentration_array > 0 )
 [gq0(:,:,index_of_cloud_area_fraction_in_atmosphere_layer_in_tracer_concentration_array)]
   standard_name = cloud_area_fraction_in_atmosphere_layer_of_new_state
   long_name = cloud fraction updated by physics
@@ -4312,6 +4360,12 @@
   units = flag
   dimensions = ()
   type = logical
+[nssl_3moment]
+  standard_name = nssl_3moment
+  long_name = 3-moment activation flag in NSSL microphysics scheme
+  units = flag
+  dimensions = ()
+  type = logical
 [tf]
   standard_name = all_ice_cloud_threshold_temperature
   long_name = threshold temperature below which all cloud is ice
@@ -6134,6 +6188,24 @@
 [nthv]
   standard_name = index_of_hail_volume_in_tracer_concentration_array
   long_name = tracer index for hail particle volume
+  units = index
+  dimensions = ()
+  type = integer
+[ntrz]
+  standard_name = index_of_reflectivity_of_rain_in_tracer_concentration_array
+  long_name = tracer index for rain reflectivity
+  units = index
+  dimensions = ()
+  type = integer
+[ntgz]
+  standard_name = index_of_reflectivity_of_graupel_in_tracer_concentration_array
+  long_name = tracer index for graupel reflectivity
+  units = index
+  dimensions = ()
+  type = integer
+[nthz]
+  standard_name = index_of_reflectivity_of_hail_in_tracer_concentration_array
+  long_name = tracer index for hail reflectivity
   units = index
   dimensions = ()
   type = integer
