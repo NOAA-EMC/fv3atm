@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v17_coupled_p8" version="1">
+<suite name="FV3_GFS_v17_p8_ugwpv1" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -44,7 +44,6 @@
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
       <scheme>noahmpdrv</scheme>
-      <scheme>sfc_cice</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
@@ -58,8 +57,8 @@
       <scheme>satmedmfvdifq</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>unified_ugwp</scheme>
-      <scheme>unified_ugwp_post</scheme>
+      <scheme>ugwpv1_gsldrag</scheme>
+      <scheme>ugwpv1_gsldrag_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>h2ophys</scheme>
