@@ -61,7 +61,6 @@
       <scheme>unified_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
-      <scheme>ozphys_2015</scheme>
       <scheme>h2ophys</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
@@ -88,7 +87,7 @@
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
-      <scheme>phys_tend</scheme>
+      <scheme>GFS_physics_post</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
