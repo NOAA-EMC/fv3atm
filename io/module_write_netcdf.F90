@@ -10,7 +10,7 @@ module module_write_netcdf
   use mpi
   use esmf
   use netcdf
-  use module_fv3_io_def,only : ideflate, nbits, quantize_mode, quantize_nsd, zstandard_level, &
+  use module_fv3_io_def,only : ideflate, quantize_mode, quantize_nsd, zstandard_level, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
                                dx,dy,lon1,lat1,lon2,lat2, &
                                time_unlimited
@@ -20,11 +20,6 @@ module module_write_netcdf
   public write_netcdf
 
   logical :: par
-
-  interface quantize_array
-     module procedure quantize_array_3d
-     module procedure quantize_array_4d
-  end interface
 
   contains
 
@@ -361,7 +356,7 @@ module module_write_netcdf
 
             ishuffle = NF90_NOSHUFFLE
             ! shuffle filter on when using lossy compression
-            if ( nbits(grid_id) > 0 .or. quantize_nsd(grid_id) > 0) then
+            if ( quantize_nsd(grid_id) > 0) then
                 ishuffle = NF90_SHUFFLE
             end if
             if (ideflate(grid_id) > 0) then
@@ -645,14 +640,6 @@ module module_write_netcdf
          if (typekind == ESMF_TYPEKIND_R4) then
             if (par) then
                call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4_3d, rc=rc); ESMF_ERR_RETURN(rc)
-               if ((ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) .and. nbits(grid_id) > 0) then
-                  dataMax = maxval(array_r4_3d)
-                  dataMin = minval(array_r4_3d)
-                  call mpi_allreduce(mpi_in_place,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
-                  call mpi_allreduce(mpi_in_place,dataMin,1,mpi_real4,mpi_min,mpi_comm,ierr)
-                  call quantize_array(array_r4_3d, dataMin, dataMax, nbits(grid_id), compress_err(i))
-                  call mpi_allreduce(mpi_in_place,compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
-               end if
                ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
             else
                if (is_cubed_sphere) then
@@ -661,17 +648,11 @@ module module_write_netcdf
                      call ESMF_ArrayGather(array, array_r4_3d_cube(:,:,:,t), rootPet=0, tile=t, rc=rc); ESMF_ERR_RETURN(rc)
                   end do
                   if (mype==0) then
-                     if ((ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) .and. nbits(grid_id) > 0) then
-                        call quantize_array(array_r4_3d_cube, minval(array_r4_3d_cube), maxval(array_r4_3d_cube), nbits(grid_id), compress_err(i))
-                     end if
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d_cube, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
                else
                   call ESMF_FieldGather(fcstField(i), array_r4_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                   if (mype==0) then
-                     if ((ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) .and. nbits(grid_id) > 0) then
-                        call quantize_array(array_r4_3d, minval(array_r4_3d), maxval(array_r4_3d), nbits(grid_id), compress_err(i))
-                     end if
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
                end if
@@ -706,17 +687,6 @@ module module_write_netcdf
       end if ! end rank
 
     end do ! end fieldCount
-
-    if ((ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) .and. nbits(grid_id) > 0 .and. do_io) then
-       ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-       do i=1, fieldCount
-          if (compress_err(i) > 0) then
-             ncerr = nf90_put_att(ncid, varids(i), 'max_abs_compression_error', compress_err(i)); NC_ERR_STOP(ncerr)
-             ncerr = nf90_put_att(ncid, varids(i), 'nbits', nbits(grid_id)); NC_ERR_STOP(ncerr)
-          end if
-       end do
-       ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
-    end if
 
     if (.not. par) then
        deallocate(array_r4)
@@ -941,78 +911,6 @@ module module_write_netcdf
     call get_grid_attr(grid, dim_name, ncid, dim_varid, rc)
 
   end subroutine add_dim
-
-!----------------------------------------------------------------------------------------
-  subroutine quantize_array_3d(array, dataMin, dataMax, nbits, compress_err)
-
-    real(4), dimension(:,:,:), intent(inout)   :: array
-    real(4), intent(in)                        :: dataMin, dataMax
-    integer, intent(in)                        :: nbits
-    real(4), intent(out)                       :: compress_err
-
-    real(4) :: scale_fact, offset
-    real(4), dimension(:,:,:), allocatable     :: array_save
-    ! Lossy compression if nbits>0.
-    ! The floating point data is quantized to improve compression
-    ! See doi:10.5194/gmd-10-413-2017.  The method employed
-    ! here is identical to the 'scaled linear packing' method in
-    ! that paper, except that the data are scaling into an arbitrary
-    ! range (2**nbits-1 not just 2**16-1) and are stored as
-    ! re-scaled floats instead of short integers.
-    ! The zlib algorithm does almost as
-    ! well packing the re-scaled floats as it does the scaled
-    ! integers, and this avoids the need for the client to apply the
-    ! rescaling (plus it allows the ability to adjust the packing
-    ! range).
-    scale_fact = (dataMax - dataMin) / (2**nbits-1)
-    offset = dataMin
-    if (scale_fact > 0.) then
-       allocate(array_save, source=array)
-       array = scale_fact*(nint((array_save - offset) / scale_fact)) + offset
-       ! compute max abs compression error
-       compress_err = maxval(abs(array_save-array))
-       deallocate(array_save)
-    else
-       ! field is constant
-       compress_err = 0.
-    end if
-  end subroutine quantize_array_3d
-
-  subroutine quantize_array_4d(array, dataMin, dataMax, nbits, compress_err)
-
-    real(4), dimension(:,:,:,:), intent(inout) :: array
-    real(4), intent(in)                        :: dataMin, dataMax
-    integer, intent(in)                        :: nbits
-    real(4), intent(out)                       :: compress_err
-
-    real(4) :: scale_fact, offset
-    real(4), dimension(:,:,:,:), allocatable   :: array_save
-
-    ! Lossy compression if nbits>0.
-    ! The floating point data is quantized to improve compression
-    ! See doi:10.5194/gmd-10-413-2017.  The method employed
-    ! here is identical to the 'scaled linear packing' method in
-    ! that paper, except that the data are scaling into an arbitrary
-    ! range (2**nbits-1 not just 2**16-1) and are stored as
-    ! re-scaled floats instead of short integers.
-    ! The zlib algorithm does almost as
-    ! well packing the re-scaled floats as it does the scaled
-    ! integers, and this avoids the need for the client to apply the
-    ! rescaling (plus it allows the ability to adjust the packing
-    ! range).
-    scale_fact = (dataMax - dataMin) / (2**nbits-1)
-    offset = dataMin
-    if (scale_fact > 0.) then
-       allocate(array_save, source=array)
-       array = scale_fact*(nint((array_save - offset) / scale_fact)) + offset
-       ! compute max abs compression error
-       compress_err = maxval(abs(array_save-array))
-       deallocate(array_save)
-    else
-       ! field is constant
-       compress_err = 0.
-    end if
-  end subroutine quantize_array_4d
 
 !----------------------------------------------------------------------------------------
 end module module_write_netcdf
