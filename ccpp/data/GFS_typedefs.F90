@@ -466,6 +466,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: coef_bb_dc  (:)   => null()  !< instantaneous fire coef_bb
     !--- wildfire heat flux
     real (kind=kind_phys), pointer :: fire_heat_flux_out (:) => null() !< heat flux from wildfire
+    real (kind=kind_phys), pointer :: frac_grid_burned_out (:) => null() !< fraction of grid cell burning
 
     !--- For smoke and dust auxiliary inputs
     real (kind=kind_phys), pointer :: fire_in   (:,:)   => null()  !< fire auxiliary inputs
@@ -2654,6 +2655,7 @@ module GFS_typedefs
        allocate (Sfcprop%acsnow_ice      (IM))
        allocate (Sfcprop%xlaixy   (IM))
        allocate (Sfcprop%fire_heat_flux_out (IM))
+       allocate (Sfcprop%frac_grid_burned_out (IM))
 
        !
        Sfcprop%wetness         = clear_val
@@ -2675,6 +2677,7 @@ module GFS_typedefs
        Sfcprop%acsnow_ice      = clear_val
        Sfcprop%xlaixy          = clear_val
        Sfcprop%fire_heat_flux_out = clear_val
+       Sfcprop%frac_grid_burned_out = clear_val
        !
     end if
 

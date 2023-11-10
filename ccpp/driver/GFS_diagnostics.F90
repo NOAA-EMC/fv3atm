@@ -4548,6 +4548,29 @@ module GFS_diagnostics
     end if thompson_extended_diagnostics
 
     if (Model%rrfs_sd .and. Model%ntsmoke>0) then
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'fire_heat'
+      ExtDiag(idx)%desc = 'surface fire heat flux'
+      ExtDiag(idx)%unit = 'W m-2'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%fire_heat_flux_out
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'burned'
+      ExtDiag(idx)%desc = 'ration of the burnt area to the grid cell area'
+      ExtDiag(idx)%unit = 'frac'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%frac_grid_burned_out
+      enddo
+
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'emdust'
