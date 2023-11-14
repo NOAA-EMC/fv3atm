@@ -288,7 +288,7 @@ module fv3atm_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_ConfigGetAttribute(config=CF,value=quilting_restart, &
-                                 default=.false., label ='quilting_restart:',rc=rc)
+                                 default=.true., label ='quilting_restart:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if (.not.quilting) quilting_restart = .false.
