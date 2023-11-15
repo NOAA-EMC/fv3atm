@@ -1192,6 +1192,9 @@ module GFS_typedefs
     integer              :: seed0           !< random seed for radiation
 
     real(kind=kind_phys) :: rbcr            !< Critical Richardson Number in the PBL scheme
+    real(kind=kind_phys) :: betascu         !< Tuning parameter for prog. closure shallow clouds
+    real(kind=kind_phys) :: betamcu         !< Tuning parameter for prog. closure midlevel clouds 
+    real(kind=kind_phys) :: betadcu         !< Tuning parameter for prog. closure deep clouds 
 
     !--- MYNN parameters/switches
     logical              :: do_mynnedmf
@@ -3072,7 +3075,6 @@ module GFS_typedefs
       Coupling%psurfi_cpl  = clear_val
     endif
 
-    !--prognostic closure - moisture coupling
     if(Model%progsigma)then
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
        Coupling%dqdt_qmicro = clear_val
@@ -3627,6 +3629,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: var_ric           = 1.0
     real(kind=kind_phys) :: coef_ric_l        = 0.16
     real(kind=kind_phys) :: coef_ric_s        = 0.25
+    !Prognostic convective closure
+    real(kind=kind_phys) :: betascu           = 8.0 !< Tuning parameter for prog. closure shallow clouds
+    real(kind=kind_phys) :: betamcu           = 1.0 !< Tuning parameter for prog. closure midlevel clouds
+    real(kind=kind_phys) :: betadcu           = 2.0 !< Tuning parameter for prog. closure deep clouds
     ! *DH
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
     logical              :: do_myjpbl         = .false.               !< flag for MYJ PBL scheme
@@ -3945,8 +3951,8 @@ module GFS_typedefs
                                do_ugwp_v1, do_ugwp_v1_orog_only,  do_ugwp_v1_w_gsldrag,     &
                                ugwp_seq_update, var_ric, coef_ric_l, coef_ric_s, hurr_pbl,  &
                                do_myjsfc, do_myjpbl,                                        &
-                               hwrf_samfdeep, hwrf_samfshal,progsigma,                      &
-                               h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
+                               hwrf_samfdeep, hwrf_samfshal,progsigma,betascu,betamcu,      &
+                               betadcu,h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,&
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
                                do_deep, jcap,                                               &
@@ -4726,11 +4732,15 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
+    !--prognostic closure - moisture coupling                                                                                 
     if ((progsigma .and. imfdeepcnv/=2) .and. (progsigma .and. imfdeepcnv/=5)) then
        write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
        stop
     end if
     Model%progsigma = progsigma
+    Model%betascu = betascu
+    Model%betamcu = betamcu
+    Model%betadcu = betadcu
 
     if (oz_phys .and. oz_phys_2015) then
        write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
@@ -6731,6 +6741,11 @@ module GFS_typedefs
       print *, ' lndp_each_step    : ', Model%lndp_each_step
       print *, ' do_spp            : ', Model%do_spp
       print *, ' n_var_spp         : ', Model%n_var_spp
+      print *, ' '
+      print *, 'convection'
+      print *, 'betascu            : ', Model%betascu
+      print *, 'betamcu            : ', Model%betamcu
+      print *, 'betadcu            : ', Model%betadcu
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
