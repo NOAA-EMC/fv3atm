@@ -2175,6 +2175,28 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%gfluxi(:)
     enddo
 
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'wilt'
+    ExtDiag(idx)%desc = 'wiltimg point (volumetric)'
+    ExtDiag(idx)%unit = 'Proportion'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%smcwlt2(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'fldcp'
+    ExtDiag(idx)%desc = 'Field Capacity (volumetric)'
+    ExtDiag(idx)%unit = 'fraction'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%smcref2(:)
+    enddo
+
     if (Model%lsm == Model%lsm_noahmp) then   
      idx = idx + 1
      ExtDiag(idx)%axes = 2
@@ -2197,28 +2219,6 @@ module GFS_diagnostics
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%epi(:)
-    enddo
-
-    idx = idx + 1
-    ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'wilt'
-    ExtDiag(idx)%desc = 'wiltimg point (volumetric)'
-    ExtDiag(idx)%unit = 'Proportion'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%smcwlt2(:)
-    enddo
-
-    idx = idx + 1
-    ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'fldcp'
-    ExtDiag(idx)%desc = 'Field Capacity (volumetric)'
-    ExtDiag(idx)%unit = 'fraction'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%smcref2(:)
     enddo
 
     idx = idx + 1
@@ -4116,7 +4116,6 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%visdfdi(:)
     enddo
 
-  if (Model%rdlai) then
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'xlaixy'
@@ -4127,7 +4126,6 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%xlaixy(:)
     enddo
-  endif
 
     do num = 1,Model%nvegcat
       write (xtra,'(i2)') num
@@ -4561,6 +4559,29 @@ module GFS_diagnostics
     end if thompson_extended_diagnostics
 
     if (Model%rrfs_sd .and. Model%ntsmoke>0) then
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'fire_heat'
+      ExtDiag(idx)%desc = 'surface fire heat flux'
+      ExtDiag(idx)%unit = 'W m-2'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%fire_heat_flux_out
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'burned'
+      ExtDiag(idx)%desc = 'ration of the burnt area to the grid cell area'
+      ExtDiag(idx)%unit = 'frac'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%frac_grid_burned_out
+      enddo
+
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'emdust'

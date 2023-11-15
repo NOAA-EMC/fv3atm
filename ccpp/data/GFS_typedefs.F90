@@ -464,6 +464,9 @@ module GFS_typedefs
     !--- For fire diurnal cycle
     real (kind=kind_phys), pointer :: fhist       (:)   => null()  !< instantaneous fire coef_bb
     real (kind=kind_phys), pointer :: coef_bb_dc  (:)   => null()  !< instantaneous fire coef_bb
+    !--- wildfire heat flux
+    real (kind=kind_phys), pointer :: fire_heat_flux_out (:) => null() !< heat flux from wildfire
+    real (kind=kind_phys), pointer :: frac_grid_burned_out (:) => null() !< fraction of grid cell burning
 
     !--- For smoke and dust auxiliary inputs
     real (kind=kind_phys), pointer :: fire_in   (:,:)   => null()  !< fire auxiliary inputs
@@ -1049,6 +1052,9 @@ module GFS_typedefs
     integer              :: mosaic_soil=0   !< control for use of fractional soil in RUC land surface model
     integer              :: isncond_opt=1   !< control for soil thermal conductivity option in RUC land surface model
     integer              :: isncovr_opt=1   !< control for snow cover fraction option in RUC land surface model
+
+    ! -- Fire heat flux
+    logical              :: add_fire_heat_flux=.false. !<control to add fireheat flux to RUC LSM
 
     logical              :: use_ufo         !< flag for gcycle surface option
 
@@ -2664,6 +2670,10 @@ module GFS_typedefs
        allocate (Sfcprop%snowfallac_ice  (IM))
        allocate (Sfcprop%acsnow_land     (IM))
        allocate (Sfcprop%acsnow_ice      (IM))
+       allocate (Sfcprop%xlaixy   (IM))
+       allocate (Sfcprop%fire_heat_flux_out (IM))
+       allocate (Sfcprop%frac_grid_burned_out (IM))
+
        !
        Sfcprop%wetness         = clear_val
        Sfcprop%sh2o            = clear_val
@@ -2682,13 +2692,12 @@ module GFS_typedefs
        Sfcprop%snowfallac_ice  = clear_val
        Sfcprop%acsnow_land     = clear_val
        Sfcprop%acsnow_ice      = clear_val
+       Sfcprop%xlaixy          = clear_val
+       Sfcprop%fire_heat_flux_out = clear_val
+       Sfcprop%frac_grid_burned_out = clear_val
        !
-       if (Model%rdlai) then
-          allocate (Sfcprop%xlaixy (IM))
-          Sfcprop%xlaixy = clear_val
-       end if
-
     end if
+
        allocate (Sfcprop%rmol   (IM ))
        allocate (Sfcprop%flhc   (IM ))
        allocate (Sfcprop%flqc   (IM ))
@@ -3472,7 +3481,7 @@ module GFS_typedefs
     integer              :: lsoil_lsm      =  -1             !< number of soil layers internal to land surface model; -1 use lsoil
     integer              :: lsnow_lsm      =  3              !< maximum number of snow layers internal to land surface model
     logical              :: exticeden      = .false.         !< Use variable precip ice density for NOAH LSM if true or original formulation
-    logical              :: rdlai          = .false.         !< read LAI from input file (for RUC LSM or NOAH LSM WRFv4)
+    logical              :: rdlai          = .false.         !< read LAI from input file at cold start (for RUC LSM or NOAH LSM WRFv4)
     logical              :: ua_phys        = .false.         !< flag for using University of Arizona? extension to NOAH LSM WRFv4
     logical              :: usemonalb      = .true.          !< flag to read surface diffused shortwave albedo from input file for NOAH LSM WRFv4
     real(kind=kind_phys) :: aoasis         = 1.0             !< potential evaporation multiplication factor for NOAH LSM WRFv4
@@ -3514,6 +3523,8 @@ module GFS_typedefs
     integer              :: isncovr_opt    =  1  ! 2 - Niu-Yang (2007), 3-updated Niu-Yang similar to Noah MP
 
     logical              :: use_ufo        = .false.                  !< flag for gcycle surface option
+
+    logical              :: add_fire_heat_flux = .false.              !< Flag for fire heat flux
 
     logical              :: lcurr_sf       = .false.                  !< flag for taking ocean currents into account in GFDL surface layer
     logical              :: pert_cd        = .false.                  !< flag for perturbing the surface drag coefficient for momentum in surface layer scheme
@@ -3922,6 +3933,7 @@ module GFS_typedefs
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
                                iopt_trs, iopt_diag,                                         &
                           !    RUC lsm options
+                               add_fire_heat_flux,                                          &
                                mosaic_lu, mosaic_soil, isncond_opt, isncovr_opt,            &
                           !    GFDL surface layer options
                                lcurr_sf, pert_cd, ntsflg, sfenth,                           &
@@ -4698,6 +4710,7 @@ module GFS_typedefs
     Model%mosaic_soil      = mosaic_soil
     Model%isncond_opt      = isncond_opt
     Model%isncovr_opt      = isncovr_opt
+    Model%add_fire_heat_flux = add_fire_heat_flux ! JLS
 
 !--- tuning parameters for physical parameterizations
     Model%ras              = ras
@@ -5658,6 +5671,7 @@ module GFS_typedefs
         print *,' mosaic_soil =  ',mosaic_soil
         print *,' isncond_opt =  ',isncond_opt
         print *,' isncovr_opt =  ',isncovr_opt
+        print *,' add_fire_heat_flux = ',add_fire_heat_flux
       else
         print *,' Unsupported LSM type - job aborted - lsm=',Model%lsm
         stop
