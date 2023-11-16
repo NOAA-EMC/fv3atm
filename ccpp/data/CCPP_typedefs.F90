@@ -8,7 +8,6 @@ module CCPP_typedefs
     use machine,  only: kind_grid, kind_dyn, kind_phys
 
     ! Constants/dimensions needed for interstitial DDTs
-    use ozne_def,                 only: oz_coeff
     use GFS_typedefs,             only: clear_val, LTP
 
     ! Physics type defininitions needed for interstitial DDTs
@@ -881,7 +880,7 @@ contains
     Interstitial%nf_albd          = NF_ALBD
     Interstitial%nspc1            = NSPC1
     if (Model%oz_phys .or. Model%oz_phys_2015) then
-      Interstitial%oz_coeffp5     = oz_coeff+5
+      Interstitial%oz_coeffp5     = Model%oz_coeff+5
     else
       Interstitial%oz_coeffp5     = 5
     endif
@@ -929,6 +928,8 @@ contains
     if (Model%imp_physics == Model%imp_physics_thompson) then
       if (Model%ltaerosol) then
         Interstitial%nvdiff = 12
+     else if (Model%mraerosol) then
+        Interstitial%nvdiff = 10
       else
         Interstitial%nvdiff = 9
       endif
@@ -1018,6 +1019,8 @@ contains
       elseif (Model%imp_physics == Model%imp_physics_thompson) then
         if (Model%ltaerosol) then
           Interstitial%nvdiff = 12
+        else if (Model%mraerosol) then
+          Interstitial%nvdiff = 10
         else
           Interstitial%nvdiff = 9
         endif
@@ -1054,11 +1057,12 @@ contains
       tracers = 2
       do n=2,Model%ntrac
         ltest = ( n /= Model%ntcw  .and. n /= Model%ntiw  .and. n /= Model%ntclamt .and. &
-             n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
-             n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc   .and. &
-             n /= Model%nthl  .and. n /= Model%nthnc .and. n /= Model%ntgv    .and. &
-             n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna .and.  &
-             n /= Model%ntsigma)
+                  n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
+                  n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc   .and. &
+                  n /= Model%nthl  .and. n /= Model%nthnc .and. n /= Model%ntgv    .and. &
+                  n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna  .and. &
+                  n /= Model%ntrz  .and. n /= Model%ntgz  .and. n /= Model%nthz    .and. &
+                  n /= Model%ntsigma)
         Interstitial%otsptflag(n) = ltest
         if ( ltest ) then
           tracers = tracers + 1

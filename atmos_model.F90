@@ -748,7 +748,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call fv3atm_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain_for_read, &
                              Atm(mygrid)%flagstruct%warm_start, ignore_rst_cksum)
    if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
-      call read_ca_restart (Atmos%domain,GFS_control%ncells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
+      call read_ca_restart (Atmos%domain,3,GFS_control%ncells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
    endif
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
@@ -2015,7 +2015,7 @@ end subroutine update_atmos_chemistry
 
 ! get upward LW flux:  for sea ice covered area
 !----------------------------------------------
-          fldname = 'mean_up_lw_flx_ice'
+          fldname = 'lwup_flx_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2042,7 +2042,7 @@ end subroutine update_atmos_chemistry
 
 ! get latent heat flux:  for sea ice covered area
 !------------------------------------------------
-          fldname = 'mean_laten_heat_flx_atm_into_ice'
+          fldname = 'laten_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2062,7 +2062,7 @@ end subroutine update_atmos_chemistry
 
 ! get sensible heat flux:  for sea ice covered area
 !--------------------------------------------------
-          fldname = 'mean_sensi_heat_flx_atm_into_ice'
+          fldname = 'sensi_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2122,7 +2122,7 @@ end subroutine update_atmos_chemistry
 
 ! get sea ice volume:  for sea ice covered area
 !----------------------------------------------
-          fldname = 'mean_ice_volume'
+          fldname = 'sea_ice_volume'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2143,7 +2143,7 @@ end subroutine update_atmos_chemistry
 
 ! get snow volume:  for sea ice covered area
 !-------------------------------------------
-          fldname = 'mean_snow_volume'
+          fldname = 'snow_volume_on_sea_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2251,7 +2251,7 @@ end subroutine update_atmos_chemistry
 
 ! get upward LW flux:  for open ocean
 !----------------------------------------------
-          fldname = 'mean_up_lw_flx_ocn'
+          fldname = 'lwup_flx_ocn'
           if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2271,7 +2271,7 @@ end subroutine update_atmos_chemistry
 
 ! get latent heat flux:  for open ocean
 !------------------------------------------------
-          fldname = 'mean_laten_heat_flx_atm_into_ocn'
+          fldname = 'laten_heat_flx_atm_into_ocn'
           if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2291,7 +2291,7 @@ end subroutine update_atmos_chemistry
 
 ! get sensible heat flux:  for open ocean
 !--------------------------------------------------
-          fldname = 'mean_sensi_heat_flx_atm_into_ocn'
+          fldname = 'sensi_heat_flx_atm_into_ocn'
           if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
@@ -2923,19 +2923,28 @@ end subroutine update_atmos_chemistry
               call block_data_copy(datar82d, GFS_data(nb)%coupling%v10mi_cpl, Atm_block, nb, rc=localrc)
             ! Instantaneous Zonal compt of momentum flux (N/m**2)
             case ('inst_zonal_moment_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfci_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfci_cpl, Atm_block, nb, -one, spval, rc=localrc)
             ! Instantaneous Merid compt of momentum flux (N/m**2)
             case ('inst_merid_moment_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfci_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfci_cpl, Atm_block, nb, -one, spval, rc=localrc)
             ! Instantaneous Sensible heat flux (W/m**2)
             case ('inst_sensi_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfci_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfci_cpl, Atm_block, nb, -one, spval, rc=localrc)
             ! Instantaneous Latent heat flux (W/m**2)
             case ('inst_laten_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, -one, spval, rc=localrc)
             ! Instantaneous Evap flux (kg/m**2/s)
             case ('inst_evap_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, revap, spval, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, -revap, spval, rc=localrc)
+            ! Instantaneous precipitation rate (kg/m2/s)
+            case ('inst_prec_rate')
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%rain_cpl, Atm_block, nb, rtimek, spval, rc=localrc)
+            ! Instantaneous convective precipitation rate (kg/m2/s)
+            case ('inst_prec_rate_conv')
+              call block_data_copy(datar82d, GFS_Data(nb)%Coupling%rainc_cpl, Atm_block, nb, rtimek, spval, rc=localrc)
+            ! Instaneous snow precipitation rate (kg/m2/s)
+            case ('inst_fprec_rate')
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%snow_cpl, Atm_block, nb, rtimek, spval, rc=localrc)
             ! Instantaneous Downward long wave radiation flux (W/m**2)
             case ('inst_down_lw_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dlwsfci_cpl, Atm_block, nb, rc=localrc)
@@ -2993,19 +3002,19 @@ end subroutine update_atmos_chemistry
             !--- Mean quantities
             ! MEAN Zonal compt of momentum flux (N/m**2)
             case ('mean_zonal_moment_flx_atm')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfc_cpl, Atm_block, nb, rtime, spval, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfc_cpl, Atm_block, nb, -rtime, spval, rc=localrc)
             ! MEAN Merid compt of momentum flux (N/m**2)
             case ('mean_merid_moment_flx_atm')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfc_cpl, Atm_block, nb, rtime, spval, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfc_cpl, Atm_block, nb, -rtime, spval, rc=localrc)
             ! MEAN Sensible heat flux (W/m**2)
             case ('mean_sensi_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfc_cpl, Atm_block, nb, rtime, spval, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfc_cpl, Atm_block, nb, -rtime, spval, rc=localrc)
             ! MEAN Latent heat flux (W/m**2)
             case ('mean_laten_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, rtime, spval, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, -rtime, spval, rc=localrc)
             ! MEAN Evap rate (kg/m**2/s)
             case ('mean_evap_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, rtime*revap, rc=localrc)
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, -rtime*revap, spval, rc=localrc)
             ! MEAN Downward LW heat flux (W/m**2)
             case ('mean_down_lw_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%dlwsfc_cpl, Atm_block, nb, rtime, spval, rc=localrc)
@@ -3042,15 +3051,6 @@ end subroutine update_atmos_chemistry
             ! MEAN NET sfc uv+vis diffused flux (W/m**2)
             case ('mean_net_sw_vis_dif_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%nvisdf_cpl, Atm_block, nb, rtime, spval, rc=localrc)
-            ! MEAN precipitation rate (kg/m2/s)
-            case ('mean_prec_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%rain_cpl, Atm_block, nb, rtimek, spval, rc=localrc)
-            ! MEAN convective precipitation rate (kg/m2/s)
-            case ('mean_prec_rate_conv')
-              call block_data_copy(datar82d, GFS_Data(nb)%Coupling%rainc_cpl, Atm_block, nb, rtimek, spval, rc=localrc)
-            ! MEAN snow precipitation rate (kg/m2/s)
-            case ('mean_fprec_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%snow_cpl, Atm_block, nb, rtimek, spval, rc=localrc)
             ! oceanfrac used by atm to calculate fluxes
             case ('openwater_frac_in_atm')
               call block_data_combine_fractions(datar82d, GFS_data(nb)%sfcprop%oceanfrac, GFS_Data(nb)%sfcprop%fice, Atm_block, nb, rc=localrc)

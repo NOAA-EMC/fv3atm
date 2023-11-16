@@ -70,11 +70,14 @@ module fv3atm_cap_mod
   logical, allocatable                        :: is_moving_FB(:)
 
   logical                                     :: profile_memory = .true.
+  logical                                     :: write_runtimelog = .false.
+  logical                                     :: lprint = .false.
 
   integer                                     :: mype = -1
   integer                                     :: dbug = 0
   integer                                     :: frestart(999) = -1
 
+  real(kind=8)                                :: timere, timep2re
 !-----------------------------------------------------------------------
 
   contains
@@ -209,7 +212,7 @@ module fv3atm_cap_mod
     integer                                :: wrttasks_per_group_from_parent, wrtLocalPet, num_threads
     character(len=64)                      :: rh_filename
     logical                                :: use_saved_routehandles, rh_file_exist
-    logical                                :: fieldbundle_is_restart = .false.
+    logical                                :: fieldbundle_uses_redist = .false.
 
     integer                                :: sloc
     type(ESMF_StaggerLoc)                  :: staggerloc
@@ -246,6 +249,11 @@ module fv3atm_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     profile_memory = (trim(value)/="false")
 
+    call ESMF_AttributeGet(gcomp, name="RunTimeLog", value=value, defaultValue="false", &
+                           convention="NUOPC", purpose="Instance", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    write_runtimelog = (trim(value)=="true")
+
     call ESMF_AttributeGet(gcomp, name="DumpFields", value=value, defaultValue="false", &
                            convention="NUOPC", purpose="Instance", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -280,7 +288,7 @@ module fv3atm_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_ConfigGetAttribute(config=CF,value=quilting_restart, &
-                                 default=.false., label ='quilting_restart:',rc=rc)
+                                 default=.true., label ='quilting_restart:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if (.not.quilting) quilting_restart = .false.
@@ -290,7 +298,7 @@ module fv3atm_cap_mod
 
     noutput_fh = ESMF_ConfigGetLen(config=CF, label ='output_fh:',rc=rc)
 
-    if(mype == 0) print *,'af nems config,quilting=',quilting,' calendar=', trim(calendar),' iau_offset=',iau_offset, &
+    if(mype == 0) print *,'af ufs config,quilting=',quilting,' calendar=', trim(calendar),' iau_offset=',iau_offset, &
       ' noutput_fh=',noutput_fh
 !
     nfhout = 0 ; nfhmax_hf = 0 ; nfhout_hf = 0 ; nsout = 0
@@ -312,7 +320,7 @@ module fv3atm_cap_mod
                                    label ='isrcTermProcessing:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      if(mype == 0) print *,'af nems config,quilting=',quilting,' write_groups=', &
+      if(mype == 0) print *,'af ufs config,quilting=',quilting,' write_groups=', &
         write_groups,wrttasks_per_group_from_parent,' isrcTermProcessing=', isrcTermProcessing
 !
       call ESMF_ConfigGetAttribute(config=CF,value=num_files, &
@@ -333,7 +341,7 @@ module fv3atm_cap_mod
       call ESMF_ConfigGetAttribute(config=CF, value=nsout,    label ='nsout:',    default=-1,rc=rc)
       nsout_io = nsout
 !
-      if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout,noutput_fh
+      if(mype==0) print *,'af ufs config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout,noutput_fh
 
       call ESMF_ConfigGetAttribute(config=CF, value=time_unlimited, label ='time_unlimited:', default=.false., rc=rc)
 
@@ -341,12 +349,13 @@ module fv3atm_cap_mod
 !
     call ESMF_ConfigGetAttribute(config=CF, value=dt_atmos, label ='dt_atmos:',   rc=rc)
     call ESMF_ConfigGetAttribute(config=CF, value=nfhmax,   label ='nhours_fcst:',rc=rc)
-    if(mype == 0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax
+    if(mype == 0) print *,'af ufs config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax
 
     call ESMF_TimeIntervalSet(timeStep, s=dt_atmos, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     first_kdt = 1
+    if( mype == 0) lprint = .true.
 !
 !#######################################################################
 ! set up fcst grid component
@@ -486,6 +495,7 @@ module fv3atm_cap_mod
         enddo
         k = k + wrttasks_per_group_from_parent
         last_wrttask(i) = k - 1
+        if( mype == lead_wrttask(i) ) lprint = .true.
 !        if(mype==0)print *,'af wrtComp(i)=',i,'k=',k
 
 ! prepare name of the wrtComp(i)
@@ -698,11 +708,12 @@ module fv3atm_cap_mod
             if(mype == 0) print *,'af get wrtfb=',"output_"//trim(fcstItemNameList(j)),' rc=',rc
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            fieldbundle_is_restart = .false.
+            fieldbundle_uses_redist = .false.
+            ! if (fcstItemNameList(j)(1:8) == "restart_" .or. fcstItemNameList(j)(1:18) == "cubed_sphere_grid_") then
             if (fcstItemNameList(j)(1:8) == "restart_") then
               ! restart output forecast bundles, no need to set regridmethod
               ! Redist will be used instead of Regrid
-              fieldbundle_is_restart = .true.
+              fieldbundle_uses_redist = .true.
             else
               ! history output forecast bundles
               ! determine regridmethod
@@ -739,7 +750,7 @@ module fv3atm_cap_mod
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               else
                 ! this is a Store() for the first wrtComp -> must do the Store()
-                if (fieldbundle_is_restart) then
+                if (fieldbundle_uses_redist) then
                   call ESMF_TraceRegionEnter("ESMF_FieldBundleRedistStore()", rc=rc)
                   call ESMF_FieldBundleRedistStore(fcstFB(j), wrtFB(j,1), &
                                                    routehandle=routehandle(j,1), &
@@ -970,8 +981,7 @@ module fv3atm_cap_mod
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-    if(mype==0) print *,'in fv3_cap, aft import, export fields in atmos'
-    if(mype==0) print *,'in fv3_cap, init time=',MPI_Wtime()-timeis
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap, init time=',MPI_Wtime()-timeis,mype
 !-----------------------------------------------------------------------
 !
   end subroutine InitializeAdvertise
@@ -988,7 +998,10 @@ module fv3atm_cap_mod
     type(ESMF_State)           :: importState, exportState
     integer                    :: urc
 
+    real(8)                   :: MPI_Wtime, timeirs
+
     rc = ESMF_SUCCESS
+    timeirs = MPI_Wtime()
 
     ! query for importState and exportState
     call NUOPC_ModelGet(gcomp, driverClock=clock, importState=importState, exportState=exportState, rc=rc)
@@ -1003,6 +1016,11 @@ module fv3atm_cap_mod
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+    timere = 0.
+    timep2re = 0.
+
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap, initirealz time=',MPI_Wtime()-timeirs,mype
+
   end subroutine InitializeRealize
 
 !-----------------------------------------------------------------------------
@@ -1011,10 +1029,13 @@ module fv3atm_cap_mod
 
     type(ESMF_GridComp)         :: gcomp
     integer, intent(out)        :: rc
+    real(kind=8)                :: MPI_Wtime, timers
 
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+    timers = MPI_Wtime()
+    if(write_runtimelog .and. timere>0. .and. lprint) print *,'in fv3_cap, time between fv3 run step=', timers-timere,mype
 
     if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance: ")
 
@@ -1025,6 +1046,9 @@ module fv3atm_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance: ")
+
+    timere = MPI_Wtime()
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap, time in fv3 run step=', timere-timers, mype
 
   end subroutine ModelAdvance
 
@@ -1040,10 +1064,13 @@ module fv3atm_cap_mod
     logical                     :: fcstpe
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase1)'
     character(240)              :: msgString
+    real(kind=8)                :: MPI_Wtime, timep1rs, timep1re
 
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+    timep1rs = MPI_Wtime()
+    if(write_runtimelog .and. timep2re>0. .and. lprint) print *,'in fv3_cap, time between fv3 run phase2 and phase1 ', timep1rs-timep2re,mype
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase1: ")
 
@@ -1073,6 +1100,8 @@ module fv3atm_cap_mod
          call diagnose_cplFields(gcomp, clock, fcstpe, cplprint_flag, dbug, 'import')
     endif
 
+    timep1re = MPI_Wtime()
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap,modeladvance phase1 time ', timep1re-timep1rs,mype
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance_phase1: ")
 
   end subroutine ModelAdvance_phase1
@@ -1097,10 +1126,14 @@ module fv3atm_cap_mod
     character(240)              :: msgString
 
     type(ESMF_Clock)            :: clock, clock_out
+    integer                     :: fieldCount
+
+    real(kind=8)                :: MPI_Wtime, timep2rs
 
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+    timep2rs = MPI_Wtime()
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase2: ")
 
@@ -1147,11 +1180,16 @@ module fv3atm_cap_mod
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
 
-          ! execute the routehandle from fcstFB -> wrtFB (either Regrid() or Redist())
-          call ESMF_FieldBundleSMM(fcstFB(j), wrtFB(j,n_group),         &
-                                   routehandle=routehandle(j, n_group), &
-                                   termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
+          ! execute the routehandle from fcstFB -> wrtFB (either Regrid() or Redist()), only if there are fields in the bundle
+          call ESMF_FieldBundleGet(fcstFB(j), fieldCount=fieldCount, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          if (fieldCount > 0) then
+            call ESMF_FieldBundleSMM(fcstFB(j), wrtFB(j,n_group),         &
+                                     routehandle=routehandle(j, n_group), &
+                                     termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          end if
 
         enddo
 
@@ -1199,6 +1237,8 @@ module fv3atm_cap_mod
       call diagnose_cplFields(gcomp, clock_out, fcstpe, cplprint_flag, dbug, 'export')
     end if
 
+    timep2re = MPI_Wtime()
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap,modeladvance phase2 time ', timep2re-timep2rs, mype
     if(profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance_phase2: ")
 
   end subroutine ModelAdvance_phase2
@@ -1373,8 +1413,8 @@ module fv3atm_cap_mod
 !-----------------------------------------------------------------------------
 !*** finialize forecast
 
-    timeffs = MPI_Wtime()
     rc = ESMF_SUCCESS
+    timeffs = MPI_Wtime()
 !
     call ESMF_GridCompGet(gcomp,vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1407,7 +1447,7 @@ module fv3atm_cap_mod
     call ESMF_GridCompDestroy(fcstComp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
-    if(mype==0)print *,' wrt grid comp destroy time=',MPI_Wtime()-timeffs
+    if(write_runtimelog .and. lprint) print *,'in fv3_cap, finalize time=',MPI_Wtime()-timeffs, mype
 
   end subroutine ModelFinalize
 !
