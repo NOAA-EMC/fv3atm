@@ -971,6 +971,7 @@ module GFS_typedefs
     logical              :: nssl_hail_on   !<  NSSL flag to activate the hail category
     logical              :: nssl_ccn_on    !<  NSSL flag to activate the CCN category
     logical              :: nssl_invertccn !<  NSSL flag to treat CCN as activated (true) or unactivated (false)
+    logical              :: nssl_3moment   !<  NSSL flag to turn on 3-moment for rain/graupel/hail
 
     !--- Thompson's microphysical parameters
     logical              :: ltaerosol       !< flag for aerosol version
@@ -1191,6 +1192,9 @@ module GFS_typedefs
     integer              :: seed0           !< random seed for radiation
 
     real(kind=kind_phys) :: rbcr            !< Critical Richardson Number in the PBL scheme
+    real(kind=kind_phys) :: betascu         !< Tuning parameter for prog. closure shallow clouds
+    real(kind=kind_phys) :: betamcu         !< Tuning parameter for prog. closure midlevel clouds 
+    real(kind=kind_phys) :: betadcu         !< Tuning parameter for prog. closure deep clouds 
 
     !--- MYNN parameters/switches
     logical              :: do_mynnedmf
@@ -1426,6 +1430,9 @@ module GFS_typedefs
     integer              :: ntccna          !< tracer index for activated CCN
     integer              :: ntgv            !< tracer index for graupel particle volume
     integer              :: nthv            !< tracer index for hail particle volume
+    integer              :: ntrz            !< tracer index for rain reflectivity
+    integer              :: ntgz            !< tracer index for graupel reflectivity
+    integer              :: nthz            !< tracer index for hail reflectivity
     integer              :: ntke            !< tracer index for kinetic energy
     integer              :: ntsigma         !< tracer index for updraft area fraction
     integer              :: nto             !< tracer index for oxygen ion
@@ -3068,7 +3075,6 @@ module GFS_typedefs
       Coupling%psurfi_cpl  = clear_val
     endif
 
-    !--prognostic closure - moisture coupling
     if(Model%progsigma)then
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
        Coupling%dqdt_qmicro = clear_val
@@ -3428,6 +3434,7 @@ module GFS_typedefs
     logical              :: nssl_hail_on    = .false.           !<  NSSL flag to activate the hail category
     logical              :: nssl_ccn_on     = .true.            !<  NSSL flag to activate the CCN category
     logical              :: nssl_invertccn  = .true.            !<  NSSL flag to treat CCN as activated (true) or unactivated (false)
+    logical              :: nssl_3moment    = .false.           !<  NSSL flag to turn on 3-moment for rain/graupel/hail
 
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
@@ -3622,6 +3629,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: var_ric           = 1.0
     real(kind=kind_phys) :: coef_ric_l        = 0.16
     real(kind=kind_phys) :: coef_ric_s        = 0.25
+    !Prognostic convective closure
+    real(kind=kind_phys) :: betascu           = 8.0 !< Tuning parameter for prog. closure shallow clouds
+    real(kind=kind_phys) :: betamcu           = 1.0 !< Tuning parameter for prog. closure midlevel clouds
+    real(kind=kind_phys) :: betadcu           = 2.0 !< Tuning parameter for prog. closure deep clouds
     ! *DH
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
     logical              :: do_myjpbl         = .false.               !< flag for MYJ PBL scheme
@@ -3850,7 +3861,7 @@ module GFS_typedefs
 
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 183
-    character(len=40)  :: fscav_aero(max_scav_factors)
+    character(len=40)  :: fscav_aero(max_scav_factors) = ''
 
     real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
     integer :: itime
@@ -3902,8 +3913,8 @@ module GFS_typedefs
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                                sedi_semi, decfl,                                            &
                                nssl_cccn, nssl_alphah, nssl_alphahl,                        &
-                               nssl_alphar, nssl_ehw0, nssl_ehlw0,                    &
-                               nssl_invertccn, nssl_hail_on, nssl_ccn_on,                   &
+                               nssl_alphar, nssl_ehw0, nssl_ehlw0,                          &
+                               nssl_invertccn, nssl_hail_on, nssl_ccn_on, nssl_3moment,     &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -3940,8 +3951,8 @@ module GFS_typedefs
                                do_ugwp_v1, do_ugwp_v1_orog_only,  do_ugwp_v1_w_gsldrag,     &
                                ugwp_seq_update, var_ric, coef_ric_l, coef_ric_s, hurr_pbl,  &
                                do_myjsfc, do_myjpbl,                                        &
-                               hwrf_samfdeep, hwrf_samfshal,progsigma,                      &
-                               h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
+                               hwrf_samfdeep, hwrf_samfshal,progsigma,betascu,betamcu,      &
+                               betadcu,h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,&
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
                                do_deep, jcap,                                               &
@@ -4512,6 +4523,7 @@ module GFS_typedefs
     Model%nssl_hail_on     = nssl_hail_on
     Model%nssl_ccn_on      = nssl_ccn_on
     Model%nssl_invertccn   = nssl_invertccn
+    Model%nssl_3moment     = nssl_3moment
 
 !--- Thompson MP parameters
     Model%ltaerosol        = ltaerosol
@@ -4720,11 +4732,15 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
+    !--prognostic closure - moisture coupling                                                                                 
     if ((progsigma .and. imfdeepcnv/=2) .and. (progsigma .and. imfdeepcnv/=5)) then
        write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
        stop
     end if
     Model%progsigma = progsigma
+    Model%betascu = betascu
+    Model%betamcu = betamcu
+    Model%betadcu = betadcu
 
     if (oz_phys .and. oz_phys_2015) then
        write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
@@ -5013,6 +5029,9 @@ module GFS_typedefs
     Model%ntccna           = get_tracer_index(Model%tracer_names, 'ccna_nc',    Model%me, Model%master, Model%debug)
     Model%ntgv             = get_tracer_index(Model%tracer_names, 'graupel_vol',Model%me, Model%master, Model%debug)
     Model%nthv             = get_tracer_index(Model%tracer_names, 'hail_vol',   Model%me, Model%master, Model%debug)
+    Model%ntrz             = get_tracer_index(Model%tracer_names, 'rain_ref',   Model%me, Model%master, Model%debug)
+    Model%ntgz             = get_tracer_index(Model%tracer_names, 'graupel_ref',Model%me, Model%master, Model%debug)
+    Model%nthz             = get_tracer_index(Model%tracer_names, 'hail_ref',   Model%me, Model%master, Model%debug)
     Model%ntke             = get_tracer_index(Model%tracer_names, 'sgs_tke',    Model%me, Model%master, Model%debug)
     Model%ntsigma          = get_tracer_index(Model%tracer_names, 'sigmab',     Model%me, Model%master, Model%debug)
     Model%nqrimef          = get_tracer_index(Model%tracer_names, 'q_rimef',    Model%me, Model%master, Model%debug)
@@ -5194,6 +5213,9 @@ module GFS_typedefs
         call label_dtend_tracer(Model,100+Model%ntccn,'ccn_nc','CCN number concentration','kg-1 s-1')
         call label_dtend_tracer(Model,100+Model%ntgv,'graupel_vol','graupel volume','m3 kg-1 s-1')
         call label_dtend_tracer(Model,100+Model%nthv,'hail_vol','hail volume','m3 kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntrz,'rain_ref','rain reflectivity','m3 kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntgz,'graupel_ref','graupel reflectivity','m3 kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%nthz,'hail_ref','hail reflectivity','m3 kg-1 s-1')
         call label_dtend_tracer(Model,100+Model%ntke,'sgs_tke','turbulent kinetic energy','J s-1')
         call label_dtend_tracer(Model,100+Model%nqrimef,'q_rimef','mass weighted rime factor','kg-1 s-1')
         call label_dtend_tracer(Model,100+Model%ntwa,'liq_aero','number concentration of water-friendly aerosols','kg-1 s-1')
@@ -5262,7 +5284,8 @@ module GFS_typedefs
                      itrac /= Model%ntrw  .and. itrac /= Model%ntsw  .and. itrac /= Model%ntrnc   .and. &
                      itrac /= Model%ntsnc .and. itrac /= Model%ntgl  .and. itrac /= Model%ntgnc   .and. &
                      itrac /= Model%nthl  .and. itrac /= Model%nthnc .and. itrac /= Model%nthv    .and. &
-                     itrac /= Model%ntgv ) then
+                     itrac /= Model%ntgv  .and. itrac /= Model%ntrz  .and. itrac /= Model%ntgz    .and. &
+                     itrac /= Model%nthz ) then
                    call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_scnv,have_scnv)
                    call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_dcnv,have_dcnv)
                 else if(Model%ntchs<=0 .or. itrac<Model%ntchs) then
@@ -5393,6 +5416,24 @@ module GFS_typedefs
         Model%nssl_ccn_on = .true.
         if (Model%me == Model%master) then
           write(*,*) 'NSSL micro: CCN is ON'
+        ENDIF
+      ENDIF
+      
+      ! add checks for nssl_3moment
+      IF ( ( Model%nssl_3moment ) ) THEN 
+        IF ( Model%ntrz < 1 ) THEN
+          write(*,*) 'NSSL micro: 3-moment is ON, but rain_ref tracer is missing'
+          stop
+        ENDIF
+        IF ( Model%ntgz < 1 ) THEN
+          write(*,*) 'NSSL micro: 3-moment is ON, but graupel_ref tracer is missing'
+          stop
+        ENDIF
+        IF ( nssl_hail_on ) THEN
+        IF ( Model%nthz < 1 ) THEN
+          write(*,*) 'NSSL micro: 3-moment is ON, but hail_ref tracer is missing'
+          stop
+        ENDIF
         ENDIF
       ENDIF
 
@@ -6701,6 +6742,11 @@ module GFS_typedefs
       print *, ' do_spp            : ', Model%do_spp
       print *, ' n_var_spp         : ', Model%n_var_spp
       print *, ' '
+      print *, 'convection'
+      print *, 'betascu            : ', Model%betascu
+      print *, 'betamcu            : ', Model%betamcu
+      print *, 'betadcu            : ', Model%betadcu
+      print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
       print *, ' ncells            : ', Model%ncells
@@ -6748,6 +6794,9 @@ module GFS_typedefs
       print *, ' ntccna            : ', Model%ntccna
       print *, ' ntgv              : ', Model%ntgv
       print *, ' nthv              : ', Model%nthv
+      print *, ' ntrz              : ', Model%ntrz
+      print *, ' ntgz              : ', Model%ntgz
+      print *, ' nthz              : ', Model%nthz
       print *, ' ntke              : ', Model%ntke
       print *, ' ntsigma           : ', Model%ntsigma
       print *, ' nto               : ', Model%nto
