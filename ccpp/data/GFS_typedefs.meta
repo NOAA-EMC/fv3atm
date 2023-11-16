@@ -5299,6 +5299,27 @@
   units = flag
   dimensions = ()
   type = logical
+[betascu]
+  standard_name = tuning_param_for_shallow_cu
+  long_name = tuning param for shallow cu in case prognostic closure is used
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[betamcu]
+  standard_name = tuning_param_for_midlevel_cu
+  long_name = tuning param for midlevel cu in case prognostic closure is used
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[betadcu]
+  standard_name = tuning_param_for_deep_cu
+  long_name = tuning param for deep cu in case prognostic closure is used
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [isatmedmf]
   standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
   long_name = choice of scale-aware TKE moist EDMF PBL scheme
