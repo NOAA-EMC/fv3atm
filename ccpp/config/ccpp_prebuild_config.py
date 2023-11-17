@@ -20,7 +20,7 @@ VARIABLE_DEFINITION_FILES = [
     'physics/physics/Radiation/RRTMG/radsw_param.f',
     'physics/physics/Radiation/RRTMG/radlw_param.f',
     'physics/physics/photochem/h2o_def.f',
-    'physics/physics/photochem/ozne_def.f',
+    'physics/physics/photochem/module_ozphys.F90',
     'data/CCPP_typedefs.F90',
     'data/GFS_typedefs.F90',
     'data/CCPP_data.F90',
@@ -39,6 +39,10 @@ TYPEDEFS_NEW_METADATA = {
         },
     'module_radlw_parameters' : {
         'module_radlw_parameters' : '',
+        },
+    'module_ozphys' : {
+        'module_ozphys' : '',
+        'ty_ozphys'     : '',
         },
     'CCPP_typedefs' : {
         'GFS_interstitial_type' : 'GFS_Interstitial(cdata%thrd_no)',
@@ -113,7 +117,7 @@ SCHEME_FILES = [
     'physics/physics/Interstitials/UFS_SCM_NEPTUNE/cnvc90.f',
     'physics/physics/Interstitials/UFS_SCM_NEPTUNE/dcyc2t3.f',
     'physics/physics/Interstitials/UFS_SCM_NEPTUNE/maximum_hourly_diagnostics.F90',
-    'physics/physics/Interstitials/UFS_SCM_NEPTUNE/phys_tend.F90',
+    'physics/physics/Interstitials/UFS_SCM_NEPTUNE/GFS_physics_post.F90',
     'physics/physics/Interstitials/UFS_SCM_NEPTUNE/sgscloud_radpre.F90',
     'physics/physics/Interstitials/UFS_SCM_NEPTUNE/sgscloud_radpost.F90',
     'physics/physics/CONV/Chikira_Sugiyama/cs_conv_pre.F90',
@@ -147,8 +151,7 @@ SCHEME_FILES = [
     'physics/physics/GWD/gwdps.f',
     'physics/physics/GWD/rayleigh_damp.f',
     'physics/physics/photochem/h2ophys.f',
-    'physics/physics/photochem/ozphys.f',
-    'physics/physics/photochem/ozphys_2015.f',
+    'physics/physics/photochem/module_ozphys.F90',
     'physics/physics/MP/Ferrier_Aligo/mp_fer_hires.F90',
     'physics/physics/MP/GFDL/gfdl_cloud_microphys.F90',
     'physics/physics/MP/GFDL/fv_sat_adj.F90',

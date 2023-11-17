@@ -278,6 +278,30 @@
   type = real
   kind = kind_phys
   active = (index_of_mass_number_concentration_of_hail_in_tracer_concentration_array > 0)
+[qgrs(:,:,index_of_reflectivity_of_rain_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_rain_in_air
+  long_name = reflectivity of rain
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_reflectivity_of_rain_in_tracer_concentration_array > 0)
+[qgrs(:,:,index_of_reflectivity_of_graupel_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_graupel_in_air
+  long_name = reflectivity of graupel
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_reflectivity_of_graupel_in_tracer_concentration_array > 0)
+[qgrs(:,:,index_of_reflectivity_of_hail_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_hail_in_air
+  long_name = reflectivity of hail
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_reflectivity_of_hail_in_tracer_concentration_array > 0)
 [qgrs(:,:,index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array)]
   standard_name = cloud_condensation_nuclei_number_concentration
   long_name = number concentration of cloud condensation nuclei
@@ -568,6 +592,30 @@
   type = real
   kind = kind_phys
   active = ( index_of_hail_volume_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_reflectivity_of_rain_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_rain_of_new_state
+  long_name = reflectivity of rain updated by physics
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_reflectivity_of_rain_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_reflectivity_of_graupel_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_graupel_of_new_state
+  long_name = reflectivity of graupel updated by physics
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_reflectivity_of_graupel_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_reflectivity_of_hail_in_tracer_concentration_array)]
+  standard_name = reflectivity_of_hail_of_new_state
+  long_name = reflectivity of hail updated by physics
+  units = m6 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_reflectivity_of_hail_in_tracer_concentration_array > 0 )
 [gq0(:,:,index_of_cloud_area_fraction_in_atmosphere_layer_in_tracer_concentration_array)]
   standard_name = cloud_area_fraction_in_atmosphere_layer_of_new_state
   long_name = cloud fraction updated by physics
@@ -918,6 +966,22 @@
 [sncovr_ice]
   standard_name = surface_snow_area_fraction_over_ice
   long_name = surface snow area fraction over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[fire_heat_flux_out]
+  standard_name = surface_fire_heat_flux
+  long_name = heat flux of fire at the surface
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[frac_grid_burned_out]
+  standard_name = fraction_of_grid_cell_burning
+  long_name = ration of the burnt area to the grid cell area
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
@@ -1582,7 +1646,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .and. flag_for_reading_leaf_area_index_from_input))
+  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [xsaixy]
   standard_name = stem_area_index
   long_name = stem area index
@@ -4312,6 +4376,12 @@
   units = flag
   dimensions = ()
   type = logical
+[nssl_3moment]
+  standard_name = nssl_3moment
+  long_name = 3-moment activation flag in NSSL microphysics scheme
+  units = flag
+  dimensions = ()
+  type = logical
 [tf]
   standard_name = all_ice_cloud_threshold_temperature
   long_name = threshold temperature below which all cloud is ice
@@ -4594,6 +4664,12 @@
   units = flag
   dimensions = ()
   type = integer
+[add_fire_heat_flux]
+  standard_name = flag_for_fire_heat_flux
+  long_name = flag to add fire heat flux to LSM
+  units = flag
+  dimensions = ()
+  type = logical
 [isncond_opt]
   standard_name = control_for_soil_thermal_conductivity_option_in_ruc_lsm
   long_name = control for soil thermal conductivity option in RUC land surface model
@@ -5053,6 +5129,12 @@
   units = flag
   dimensions = ()
   type = logical
+[ozphys]
+  standard_name = dataset_for_ozone_physics
+  long_name = dataset for NRL ozone physics
+  units = mixed
+  dimensions = ()
+  type = ty_ozphys
 [h2o_phys]
   standard_name = flag_for_stratospheric_water_vapor_physics
   long_name = flag for stratospheric water vapor physics
@@ -5239,6 +5321,27 @@
   units = flag
   dimensions = ()
   type = logical
+[betascu]
+  standard_name = tuning_param_for_shallow_cu
+  long_name = tuning param for shallow cu in case prognostic closure is used
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[betamcu]
+  standard_name = tuning_param_for_midlevel_cu
+  long_name = tuning param for midlevel cu in case prognostic closure is used
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[betadcu]
+  standard_name = tuning_param_for_deep_cu
+  long_name = tuning param for deep cu in case prognostic closure is used
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [isatmedmf]
   standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
   long_name = choice of scale-aware TKE moist EDMF PBL scheme
@@ -6131,6 +6234,24 @@
   units = index
   dimensions = ()
   type = integer
+[ntrz]
+  standard_name = index_of_reflectivity_of_rain_in_tracer_concentration_array
+  long_name = tracer index for rain reflectivity
+  units = index
+  dimensions = ()
+  type = integer
+[ntgz]
+  standard_name = index_of_reflectivity_of_graupel_in_tracer_concentration_array
+  long_name = tracer index for graupel reflectivity
+  units = index
+  dimensions = ()
+  type = integer
+[nthz]
+  standard_name = index_of_reflectivity_of_hail_in_tracer_concentration_array
+  long_name = tracer index for hail reflectivity
+  units = index
+  dimensions = ()
+  type = integer
 [ntke]
   standard_name = index_of_turbulent_kinetic_energy_in_tracer_concentration_array
   long_name = tracer index for turbulent kinetic energy
@@ -6651,6 +6772,18 @@
   units = flag
   dimensions = ()
   type = logical
+[levozp]
+  standard_name = vertical_dimension_of_ozone_forcing_data
+  long_name = number of vertical layers in ozone forcing data
+  units = count
+  dimensions = ()
+  type = integer
+[oz_coeff]
+  standard_name = number_of_coefficients_in_ozone_data
+  long_name = number of coefficients in ozone forcing data
+  units = count
+  dimensions = ()
+  type = integer
 [ipt]
   standard_name = index_of_horizontal_gridpoint_for_debug_output
   long_name = horizontal index for point used for diagnostic printout
@@ -7410,7 +7543,7 @@
   standard_name = ozone_forcing
   long_name = ozone forcing data
   units = mixed
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_forcing_data)
+  dimensions = (horizontal_loop_extent,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_data)
   type = real
   kind = kind_phys
 [h2opl]
@@ -8856,11 +8989,50 @@
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D)
+[do3_dt_prd]
+  standard_name = ozone_tendency_due_to_production_and_loss_rate
+  long_name = ozone tendency due to production and loss rate
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
+[do3_dt_ozmx]
+  standard_name = ozone_tendency_due_to_ozone_mixing_ratio
+  long_name = ozone tendency due to ozone mixing ratio
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
+[do3_dt_temp]
+  standard_name = ozone_tendency_due_to_temperature
+  long_name = ozone tendency due to temperature
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
+[do3_dt_ohoz]
+  standard_name = ozone_tendency_due_to_overhead_ozone_column
+  long_name = ozone tendency due to overhead ozone column
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
 [refl_10cm]
   standard_name = radar_reflectivity_10cm
   long_name = instantaneous refl_10cm
   units = dBZ
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+[max_hail_diam_sfc]
+  standard_name = max_hail_diameter_sfc
+  long_name = instantaneous maximum hail diameter at lowest model level
+  units = m
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [dkt]
@@ -9046,17 +9218,26 @@
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
-[nupdraft]
-  standard_name = number_of_plumes
-  long_name = number of plumes per grid column
-  units = count
+[maxwidth]
+  standard_name = maximum_width_of_plumes
+  long_name = maximum width of plumes per grid column
+  units = m
   dimensions = (horizontal_loop_extent)
-  type = integer
+  type = real
+  kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
 [maxMF]
   standard_name = maximum_mass_flux
   long_name = maximum mass flux within a column
   units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
+[ztop_plume]
+  standard_name = height_of_tallest_plume_in_a_column
+  long_name = height of tallest plume in a column
+  units = m
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -9617,7 +9798,7 @@
   relative_path = ../physics/physics/
   dependencies = hooks/machine.F,hooks/physcons.F90
   dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f
-  dependencies = photochem/h2o_def.f,photochem/ozne_def.f
+  dependencies = photochem/h2o_def.f,photochem/module_ozphys.F90
   dependencies = MP/GFDL/GFDL_parse_tracers.F90
 
 [ccpp-arg-table]
@@ -9783,6 +9964,13 @@
   standard_name = gravitational_acceleration
   long_name = gravitational acceleration
   units = m s-2
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_1ovg]
+  standard_name = one_divided_by_the_gravitational_acceleration
+  long_name = inverse of gravitational acceleration
+  units = s2 m-1
   dimensions = ()
   type = real
   kind = kind_phys
