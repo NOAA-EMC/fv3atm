@@ -971,6 +971,22 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[fire_heat_flux_out]
+  standard_name = surface_fire_heat_flux
+  long_name = heat flux of fire at the surface
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[frac_grid_burned_out]
+  standard_name = fraction_of_grid_cell_burning
+  long_name = ration of the burnt area to the grid cell area
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [snoalb]
   standard_name = upper_bound_of_max_albedo_assuming_deep_snow
   long_name = maximum snow albedo
@@ -1630,7 +1646,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .and. flag_for_reading_leaf_area_index_from_input))
+  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [xsaixy]
   standard_name = stem_area_index
   long_name = stem area index
@@ -4648,6 +4664,12 @@
   units = flag
   dimensions = ()
   type = integer
+[add_fire_heat_flux]
+  standard_name = flag_for_fire_heat_flux
+  long_name = flag to add fire heat flux to LSM
+  units = flag
+  dimensions = ()
+  type = logical
 [isncond_opt]
   standard_name = control_for_soil_thermal_conductivity_option_in_ruc_lsm
   long_name = control for soil thermal conductivity option in RUC land surface model
@@ -9006,6 +9028,13 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[max_hail_diam_sfc]
+  standard_name = max_hail_diameter_sfc
+  long_name = instantaneous maximum hail diameter at lowest model level
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [dkt]
   standard_name = atmosphere_heat_diffusivity
   long_name = atmospheric heat diffusivity
@@ -9189,17 +9218,26 @@
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
-[nupdraft]
-  standard_name = number_of_plumes
-  long_name = number of plumes per grid column
-  units = count
+[maxwidth]
+  standard_name = maximum_width_of_plumes
+  long_name = maximum width of plumes per grid column
+  units = m
   dimensions = (horizontal_loop_extent)
-  type = integer
+  type = real
+  kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
 [maxMF]
   standard_name = maximum_mass_flux
   long_name = maximum mass flux within a column
   units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
+[ztop_plume]
+  standard_name = height_of_tallest_plume_in_a_column
+  long_name = height of tallest plume in a column
+  units = m
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
