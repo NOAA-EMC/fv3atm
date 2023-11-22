@@ -457,7 +457,7 @@ CONTAINS
           !--- skipping other 3D variables with the following else statement
           !---
 
-          levo_3d = size(Diag(idx)%data(1)%var3,dim=2)
+          levo_3d = hist%levo(idx)
           allocate(var3(nx,ny,levo_3d))
 
           do k=1, levo_3d
@@ -467,15 +467,11 @@ CONTAINS
                 ii = i + Atm_block%isc -1
                 nb = Atm_block%blkno(ii,jj)
                 ix = Atm_block%ixp(ii,jj)
-                if (levo_3d == hist%nsoil_lsm) then
-                  ! do not flip 3d variables with the vertical dimension == nsoil
-                  ! FIXME this is obviously not general enough.
-                  ! The decision whether or not a variable should be flipped vertically
-                  ! should be based on some other property not based on the number
-                  ! of vertical levels, but for now we do just that.
-                  var3(i,j,k) = Diag(idx)%data(nb)%var3(ix,        k  )*lcnvfac
-                else
+                ! flip only 3d variables with vertical dimension == levs (atm model levels)
+                if (levo_3d == levs) then
                   var3(i,j,k) = Diag(idx)%data(nb)%var3(ix,levo_3d-k+1)*lcnvfac
+                else
+                  var3(i,j,k) = Diag(idx)%data(nb)%var3(ix,        k  )*lcnvfac
                 endif
               enddo
             enddo
