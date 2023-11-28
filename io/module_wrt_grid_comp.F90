@@ -36,7 +36,8 @@
                                       n_group, num_files,                       &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,                &
-                                      ichunk3d,jchunk3d,kchunk3d,nbits,         &
+                                      ichunk3d,jchunk3d,kchunk3d,               &
+                                      quantize_mode,quantize_nsd,               &
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
@@ -361,7 +362,8 @@
       allocate(jchunk3d(ngrids))
       allocate(kchunk3d(ngrids))
       allocate(ideflate(ngrids))
-      allocate(nbits(ngrids))
+      allocate(quantize_mode(ngrids))
+      allocate(quantize_nsd(ngrids))
       allocate(zstandard_level(ngrids))
 
       allocate(wrt_int_state%out_grid_info(ngrids))
@@ -472,13 +474,9 @@
         call ESMF_ConfigGetAttribute(config=CF,value=zstandard_level(n),default=0,label ='zstandard_level:',rc=rc)
         if (zstandard_level(n) < 0) zstandard_level(n)=0
 
-        call ESMF_ConfigGetAttribute(config=CF,value=nbits(n),default=0,label ='nbits:',rc=rc)
-
         ! zlib compression flag
         call ESMF_ConfigGetAttribute(config=CF,value=ideflate(n),default=0,label ='ideflate:',rc=rc)
         if (ideflate(n) < 0) ideflate(n)=0
-
-        call ESMF_ConfigGetAttribute(config=CF,value=nbits(n),default=0,label ='nbits:',rc=rc)
 
         if (ideflate(n) > 0 .and. zstandard_level(n) > 0) then
            write(0,*)"wrt_initialize_p1: zlib and zstd compression cannot be both enabled at the same time"
@@ -486,14 +484,23 @@
            call ESMF_Finalize(endflag=ESMF_END_ABORT)
         end if
 
+        ! quantize_mode and quantize_nsd
+        call ESMF_ConfigGetAttribute(config=CF,value=quantize_mode(n),default='quantize_bitgroom',label='quantize_mode:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=quantize_nsd(n),default=0,label='quantize_nsd:',rc=rc)
+
+        if (.NOT. (trim(quantize_mode(n))=='quantize_bitgroom' &
+              .OR. trim(quantize_mode(n))=='quantize_granularbr' &
+              .OR. trim(quantize_mode(n))=='quantize_bitround') ) then
+           write(0,*)"wrt_initialize_p1: unknown quantize_mode ", trim(quantize_mode(n))
+           call ESMF_LogWrite("wrt_initialize_p1: wrt_initialize_p1: unknown quantize_mode "//trim(quantize_mode(n)),ESMF_LOGMSG_ERROR,rc=RC)
+           call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        end if
+
         if (lprnt) then
-            print *,'ideflate=',ideflate(n),' nbits=',nbits(n)
+            print *,'ideflate=',ideflate(n)
+            print *,'quantize_mode=',trim(quantize_mode(n)),' quantize_nsd=',quantize_nsd(n)
             print *,'zstandard_level=',zstandard_level(n)
         end if
-        ! nbits quantization level for lossy compression (must be between 1 and 31)
-        ! 1 is most compression, 31 is least. If outside this range, set to zero
-        ! which means use lossless compression.
-        if (nbits(n) < 1 .or. nbits(n) > 31)  nbits(n)=0  ! lossless compression (no quantization)
 
         if (cf_output_grid /= cf) then
           ! destroy the temporary config object created for nest domains
@@ -2385,11 +2392,6 @@
                 call mask_fields(file_bundle,rc)
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               endif
-
-              if (nbits(grid_id) /= 0) then
-                call ESMF_LogWrite("wrt_run: lossy compression is not supported for regional grids",ESMF_LOGMSG_ERROR,rc=RC)
-                call ESMF_Finalize(endflag=ESMF_END_ABORT)
-              end if
 
               call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
                                 use_parallel_netcdf, wrt_mpi_comm,wrt_int_state%mype, &

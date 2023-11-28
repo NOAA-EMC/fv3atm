@@ -464,6 +464,9 @@ module GFS_typedefs
     !--- For fire diurnal cycle
     real (kind=kind_phys), pointer :: fhist       (:)   => null()  !< instantaneous fire coef_bb
     real (kind=kind_phys), pointer :: coef_bb_dc  (:)   => null()  !< instantaneous fire coef_bb
+    !--- wildfire heat flux
+    real (kind=kind_phys), pointer :: fire_heat_flux_out (:) => null() !< heat flux from wildfire
+    real (kind=kind_phys), pointer :: frac_grid_burned_out (:) => null() !< fraction of grid cell burning
 
     !--- For smoke and dust auxiliary inputs
     real (kind=kind_phys), pointer :: fire_in   (:,:)   => null()  !< fire auxiliary inputs
@@ -1050,6 +1053,9 @@ module GFS_typedefs
     integer              :: isncond_opt=1   !< control for soil thermal conductivity option in RUC land surface model
     integer              :: isncovr_opt=1   !< control for snow cover fraction option in RUC land surface model
 
+    ! -- Fire heat flux
+    logical              :: add_fire_heat_flux=.false. !<control to add fireheat flux to RUC LSM
+
     logical              :: use_ufo         !< flag for gcycle surface option
 
     ! GFDL Surface Layer options
@@ -1192,6 +1198,9 @@ module GFS_typedefs
     integer              :: seed0           !< random seed for radiation
 
     real(kind=kind_phys) :: rbcr            !< Critical Richardson Number in the PBL scheme
+    real(kind=kind_phys) :: betascu         !< Tuning parameter for prog. closure shallow clouds
+    real(kind=kind_phys) :: betamcu         !< Tuning parameter for prog. closure midlevel clouds 
+    real(kind=kind_phys) :: betadcu         !< Tuning parameter for prog. closure deep clouds 
 
     !--- MYNN parameters/switches
     logical              :: do_mynnedmf
@@ -1905,7 +1914,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: det_thl    (:,:)   => null()  !
     real (kind=kind_phys), pointer :: det_sqv    (:,:)   => null()  !
     real (kind=kind_phys), pointer :: maxMF       (:)    => null()  !
-    integer, pointer               :: nupdraft    (:)    => null()  !
+    real (kind=kind_phys), pointer :: maxwidth    (:)    => null()  !
+    real (kind=kind_phys), pointer :: ztop_plume  (:)    => null()  !
     integer, pointer               :: ktop_plume  (:)    => null()  !
     real (kind=kind_phys), pointer :: exch_h     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: exch_m     (:,:)   => null()  !
@@ -1971,6 +1981,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: cldfra (:,:)   => null()  !< instantaneous 3D cloud fraction
     !--- MP quantities for 3D diagnositics
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
+    real (kind=kind_phys), pointer :: max_hail_diam_sfc(:) => null()  !< instantaneous max hail diameter sfc
     real (kind=kind_phys), pointer :: cldfra2d (:)   => null()  !< instantaneous 2D cloud fraction
     real (kind=kind_phys), pointer :: total_albedo (:)   => null()  !< total sky (with cloud) albedo at toa
     real (kind=kind_phys), pointer :: lwp_ex (:)     => null()  !< liquid water path from microphysics
@@ -2662,6 +2673,10 @@ module GFS_typedefs
        allocate (Sfcprop%snowfallac_ice  (IM))
        allocate (Sfcprop%acsnow_land     (IM))
        allocate (Sfcprop%acsnow_ice      (IM))
+       allocate (Sfcprop%xlaixy   (IM))
+       allocate (Sfcprop%fire_heat_flux_out (IM))
+       allocate (Sfcprop%frac_grid_burned_out (IM))
+
        !
        Sfcprop%wetness         = clear_val
        Sfcprop%sh2o            = clear_val
@@ -2680,13 +2695,12 @@ module GFS_typedefs
        Sfcprop%snowfallac_ice  = clear_val
        Sfcprop%acsnow_land     = clear_val
        Sfcprop%acsnow_ice      = clear_val
+       Sfcprop%xlaixy          = clear_val
+       Sfcprop%fire_heat_flux_out = clear_val
+       Sfcprop%frac_grid_burned_out = clear_val
        !
-       if (Model%rdlai) then
-          allocate (Sfcprop%xlaixy (IM))
-          Sfcprop%xlaixy = clear_val
-       end if
-
     end if
+
        allocate (Sfcprop%rmol   (IM ))
        allocate (Sfcprop%flhc   (IM ))
        allocate (Sfcprop%flqc   (IM ))
@@ -3072,7 +3086,6 @@ module GFS_typedefs
       Coupling%psurfi_cpl  = clear_val
     endif
 
-    !--prognostic closure - moisture coupling
     if(Model%progsigma)then
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
        Coupling%dqdt_qmicro = clear_val
@@ -3470,7 +3483,7 @@ module GFS_typedefs
     integer              :: lsoil_lsm      =  -1             !< number of soil layers internal to land surface model; -1 use lsoil
     integer              :: lsnow_lsm      =  3              !< maximum number of snow layers internal to land surface model
     logical              :: exticeden      = .false.         !< Use variable precip ice density for NOAH LSM if true or original formulation
-    logical              :: rdlai          = .false.         !< read LAI from input file (for RUC LSM or NOAH LSM WRFv4)
+    logical              :: rdlai          = .false.         !< read LAI from input file at cold start (for RUC LSM or NOAH LSM WRFv4)
     logical              :: ua_phys        = .false.         !< flag for using University of Arizona? extension to NOAH LSM WRFv4
     logical              :: usemonalb      = .true.          !< flag to read surface diffused shortwave albedo from input file for NOAH LSM WRFv4
     real(kind=kind_phys) :: aoasis         = 1.0             !< potential evaporation multiplication factor for NOAH LSM WRFv4
@@ -3512,6 +3525,8 @@ module GFS_typedefs
     integer              :: isncovr_opt    =  1  ! 2 - Niu-Yang (2007), 3-updated Niu-Yang similar to Noah MP
 
     logical              :: use_ufo        = .false.                  !< flag for gcycle surface option
+
+    logical              :: add_fire_heat_flux = .false.              !< Flag for fire heat flux
 
     logical              :: lcurr_sf       = .false.                  !< flag for taking ocean currents into account in GFDL surface layer
     logical              :: pert_cd        = .false.                  !< flag for perturbing the surface drag coefficient for momentum in surface layer scheme
@@ -3627,6 +3642,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: var_ric           = 1.0
     real(kind=kind_phys) :: coef_ric_l        = 0.16
     real(kind=kind_phys) :: coef_ric_s        = 0.25
+    !Prognostic convective closure
+    real(kind=kind_phys) :: betascu           = 8.0 !< Tuning parameter for prog. closure shallow clouds
+    real(kind=kind_phys) :: betamcu           = 1.0 !< Tuning parameter for prog. closure midlevel clouds
+    real(kind=kind_phys) :: betadcu           = 2.0 !< Tuning parameter for prog. closure deep clouds
     ! *DH
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
     logical              :: do_myjpbl         = .false.               !< flag for MYJ PBL scheme
@@ -3920,6 +3939,7 @@ module GFS_typedefs
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
                                iopt_trs, iopt_diag,                                         &
                           !    RUC lsm options
+                               add_fire_heat_flux,                                          &
                                mosaic_lu, mosaic_soil, isncond_opt, isncovr_opt,            &
                           !    GFDL surface layer options
                                lcurr_sf, pert_cd, ntsflg, sfenth,                           &
@@ -3945,8 +3965,8 @@ module GFS_typedefs
                                do_ugwp_v1, do_ugwp_v1_orog_only,  do_ugwp_v1_w_gsldrag,     &
                                ugwp_seq_update, var_ric, coef_ric_l, coef_ric_s, hurr_pbl,  &
                                do_myjsfc, do_myjpbl,                                        &
-                               hwrf_samfdeep, hwrf_samfshal,progsigma,                      &
-                               h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
+                               hwrf_samfdeep, hwrf_samfshal,progsigma,betascu,betamcu,      &
+                               betadcu,h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,&
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
                                do_deep, jcap,                                               &
@@ -4696,6 +4716,7 @@ module GFS_typedefs
     Model%mosaic_soil      = mosaic_soil
     Model%isncond_opt      = isncond_opt
     Model%isncovr_opt      = isncovr_opt
+    Model%add_fire_heat_flux = add_fire_heat_flux ! JLS
 
 !--- tuning parameters for physical parameterizations
     Model%ras              = ras
@@ -4726,11 +4747,15 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
+    !--prognostic closure - moisture coupling                                                                                 
     if ((progsigma .and. imfdeepcnv/=2) .and. (progsigma .and. imfdeepcnv/=5)) then
        write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
        stop
     end if
     Model%progsigma = progsigma
+    Model%betascu = betascu
+    Model%betamcu = betamcu
+    Model%betadcu = betadcu
 
     if (oz_phys .and. oz_phys_2015) then
        write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
@@ -5656,6 +5681,7 @@ module GFS_typedefs
         print *,' mosaic_soil =  ',mosaic_soil
         print *,' isncond_opt =  ',isncond_opt
         print *,' isncovr_opt =  ',isncovr_opt
+        print *,' add_fire_heat_flux = ',add_fire_heat_flux
       else
         print *,' Unsupported LSM type - job aborted - lsm=',Model%lsm
         stop
@@ -6732,6 +6758,11 @@ module GFS_typedefs
       print *, ' do_spp            : ', Model%do_spp
       print *, ' n_var_spp         : ', Model%n_var_spp
       print *, ' '
+      print *, 'convection'
+      print *, 'betascu            : ', Model%betascu
+      print *, 'betamcu            : ', Model%betamcu
+      print *, 'betadcu            : ', Model%betadcu
+      print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
       print *, ' ncells            : ', Model%ncells
@@ -7685,6 +7716,7 @@ module GFS_typedefs
 
     !--- 3D diagnostics for Thompson MP / GFDL MP
     allocate (Diag%refl_10cm(IM,Model%levs))
+    allocate (Diag%max_hail_diam_sfc(IM))
 
     !--- New PBL Diagnostics
     allocate (Diag%dkt(IM,Model%levs))
@@ -7720,8 +7752,9 @@ module GFS_typedefs
         allocate (Diag%qbuoy     (IM,Model%levs))
         allocate (Diag%qdiss     (IM,Model%levs))
       endif
-      allocate (Diag%nupdraft  (IM))
+      allocate (Diag%maxwidth  (IM))
       allocate (Diag%maxmf     (IM))
+      allocate (Diag%ztop_plume(IM))
       allocate (Diag%ktop_plume(IM))
       allocate (Diag%exch_h    (IM,Model%levs))
       allocate (Diag%exch_m    (IM,Model%levs))
@@ -7744,8 +7777,9 @@ module GFS_typedefs
         Diag%qbuoy         = clear_val
         Diag%qdiss         = clear_val
       endif
-      Diag%nupdraft      = 0
+      Diag%maxwidth      = clear_val
       Diag%maxmf         = clear_val
+      Diag%ztop_plume    = clear_val
       Diag%ktop_plume    = 0
       Diag%exch_h        = clear_val
       Diag%exch_m        = clear_val
@@ -7933,8 +7967,9 @@ module GFS_typedefs
         Diag%det_thl       = clear_val
         Diag%det_sqv       = clear_val
       endif
-      Diag%nupdraft      = 0
+      Diag%maxwidth      = clear_val
       Diag%maxmf         = clear_val
+      Diag%ztop_plume    = clear_val
       Diag%ktop_plume    = 0
       Diag%exch_h        = clear_val
       Diag%exch_m        = clear_val
@@ -8038,6 +8073,7 @@ module GFS_typedefs
 
 ! max hourly diagnostics
     Diag%refl_10cm   = -35.
+    Diag%max_hail_diam_sfc = -999.
     Diag%refdmax     = -35.
     Diag%refdmax263k = -35.
     Diag%t02max      = -999.
