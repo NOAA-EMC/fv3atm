@@ -1366,8 +1366,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           call atmos_model_restart(Atmos, timestamp)
           call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
-          !----- write restart file ------
-          if (mpp_pe() == mpp_root_pe())then
+          !----- write coupler.res file ------
+          if (.not. quilting_restart .and. mpp_pe() == mpp_root_pe()) then
               call get_date (Atmos%Time, date(1), date(2), date(3), date(4), date(5), date(6))
               open( newunit=unit, file='RESTART/'//trim(timestamp)//'.coupler.res' )
               write( unit, '(i6,8x,a)' )calendar_type, &

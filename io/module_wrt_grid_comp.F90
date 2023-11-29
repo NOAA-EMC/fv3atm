@@ -44,7 +44,7 @@
                                       stdlat1, stdlat2, dx, dy, iau_offset,     &
                                       ideflate, zstandard_level, lflname_fulltime
       use module_write_netcdf, only : write_netcdf
-      use module_write_restart_netcdf
+      use module_write_restart_netcdf, only : write_restart_netcdf
       use physcons,            only : pi => con_pi
 #ifdef INLINE_POST
       use post_fv3,            only : post_run_fv3
@@ -1795,7 +1795,7 @@
 
       logical                               :: use_parallel_netcdf
       real, allocatable                     :: output_fh(:)
-      logical                               :: is_restart_bundle
+      logical                               :: is_restart_bundle, restart_written
       integer                               :: tileCount
 !
 !-----------------------------------------------------------------------
@@ -2151,6 +2151,8 @@
 
         ! if (lprnt) write(0,*)'wrt_run: loop over wrt_int_state%FBCount ',wrt_int_state%FBCount, ' nfhour ',  nfhour, ' cdate ', cdate(1:6)
         two_phase_loop: do out_phase = 1, 2
+
+          restart_written = .false.
           file_loop_all: do nbdl=1, wrt_int_state%FBCount
 
             call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), name=wrtFBName, rc=rc)
@@ -2349,6 +2351,8 @@
                                     rc)
               endif ! cubed sphere vs. regional/nest write grid
 
+              restart_written = .true.
+
             else ! history bundle
             if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
 
@@ -2413,13 +2417,26 @@
           enddo file_loop_all
 
           if (out_phase == 1 .and. mype == lead_write_task) then
-            !** write out log file
-            open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED')
+            !** write history log file
+            open(newunit=nolog, file='log.atm.f'//trim(cfhour))
             write(nolog,"('completed: fv3atm')")
             write(nolog,"('forecast hour: ',f10.3)") nfhour
             write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
             close(nolog)
           endif
+
+          if (out_phase == 2 .and. restart_written .and. mype == lead_write_task) then
+            !**  write coupler.res log file
+            open(newunit=nolog, file='RESTART/'//trim(time_restart)//'.coupler.res', status='new')
+            write(nolog,"(i6,8x,a)") 3, & ! hard-code calendar to gregorian for now
+                 '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
+            write(nolog,"(6i6,8x,a)") wrt_int_state%idate(1:6), &
+                 'Model start time:   year, month, day, hour, minute, second'
+            write(nolog,"(6i6,8x,a)") wrt_int_state%fdate(1:6), &
+                 'Current model time: year, month, day, hour, minute, second'
+            close(nolog)
+          endif
+
         enddo two_phase_loop
       endif ! if ( wrt_int_state%output_history )
 
