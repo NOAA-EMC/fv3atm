@@ -186,9 +186,9 @@ SCHEME_FILES = [
     'physics/physics/noahmpdrv.F90',
     'physics/physics/flake_driver.F90',
     'physics/physics/clm_lake.f90',
-    'physics/physics/sfc_nst_pre.f',
-    'physics/physics/sfc_nst.f',
-    'physics/physics/sfc_nst_post.f',
+    'physics/physics/sfc_nst_pre.f90',
+    'physics/physics/sfc_nst.f90',
+    'physics/physics/sfc_nst_post.f90',
     'physics/physics/sfc_ocean.F',
     'physics/physics/sfc_sice.f',
     # HAFS FER_HIRES
