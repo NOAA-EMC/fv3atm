@@ -921,11 +921,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! Add time Attribute to the exportState
       call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
         attrList=(/ "time               ", &
-                      "time:long_name     ", &
-                      "time:units         ", &
-                      "time:cartesian_axis", &
-                      "time:calendar_type ", &
-                      "time:calendar      " /), rc=rc)
+                    "time:long_name     ", &
+                    "time:units         ", &
+                    "time:cartesian_axis", &
+                    "time:calendar_type ", &
+                    "time:calendar      " /), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &

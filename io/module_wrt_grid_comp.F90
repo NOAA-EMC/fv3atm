@@ -72,6 +72,7 @@
       logical,save      :: write_nsflip
       logical,save      :: change_wrtidate=.false.
       integer,save      :: frestart(999) = -1
+      integer,save      :: calendar_type = 3
       logical           :: lprnt
 !
 !-----------------------------------------------------------------------
@@ -1333,8 +1334,27 @@
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+! save calendar_type (as integer) for use in 'coupler.res'
+        if (index(trim(attNameList(i)),'time:calendar') > 0) then
+          select case( uppercase(trim(valueS)) )
+          case( 'JULIAN' )
+              calendar_type = JULIAN
+          case( 'GREGORIAN' )
+              calendar_type = GREGORIAN
+          case( 'NOLEAP' )
+              calendar_type = NOLEAP
+          case( 'THIRTY_DAY' )
+              calendar_type = THIRTY_DAY_MONTHS
+          case( 'NO_CALENDAR' )
+              calendar_type = NO_CALENDAR
+          case default
+              call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
+                                      'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
+          end select
+        endif
+
 ! update the time:units when idate on write grid component is changed
-        if ( index(trim(attNameList(i)),'time:units')>0) then
+        if (index(trim(attNameList(i)),'time:units') > 0) then
           if ( change_wrtidate ) then
             idx = index(trim(valueS),' since ')
             if(lprnt) print *,'in write grid comp, time:unit=',trim(valueS)
@@ -2428,7 +2448,7 @@
           if (out_phase == 2 .and. restart_written .and. mype == lead_write_task) then
             !**  write coupler.res log file
             open(newunit=nolog, file='RESTART/'//trim(time_restart)//'.coupler.res', status='new')
-            write(nolog,"(i6,8x,a)") 3, & ! hard-code calendar to gregorian for now
+            write(nolog,"(i6,8x,a)") calendar_type , &
                  '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
             write(nolog,"(6i6,8x,a)") wrt_int_state%idate(1:6), &
                  'Model start time:   year, month, day, hour, minute, second'
