@@ -1,8 +1,6 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
-  #url = https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
-  #branch = dev/emc
-  url = https://github.com/BrianCurtis-NOAA/GFDL_atmos_cubed_sphere
+  url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
   branch = production/AQM.v7
 [submodule "ccpp/framework"]
   path = ccpp/framework
@@ -10,13 +8,9 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  #url = https://github.com/ufs-community/ccpp-physics
-  #branch = production/AQM.v7
-  url = https://github.com/rmontuoro/ccpp-physics
-  branch = production/ee2
+  url = https://github.com/ufs-community/ccpp-physics
+  branch = production/AQM.v7
 [submodule "upp"]
   path = upp
-  #url = https://github.com/NOAA-EMC/UPP
-  #branch = develop
-  url = https://github.com/BrianCurtis-NOAA/UPP
+  url = https://github.com/NOAA-EMC/UPP
   branch = production/AQM.v7
