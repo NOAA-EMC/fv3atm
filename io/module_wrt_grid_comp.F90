@@ -68,7 +68,7 @@
       integer,save      :: ngrids
 
       integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
-      integer,save      :: idate(7)
+      integer,save      :: idate(7), start_time(7)
       logical,save      :: write_nsflip
       logical,save      :: change_wrtidate=.false.
       integer,save      :: frestart(999) = -1
@@ -841,6 +841,7 @@
                                                         h=idate(4), m=idate(5), s=idate(6),rc=rc)
 !     if (lprnt) write(0,*) 'in wrt initial, io_baseline time=',idate,'rc=',rc
       idate(7) = 1
+      start_time = idate
       wrt_int_state%idate = idate
       wrt_int_state%fdate = idate
 ! update IO-BASETIME and idate on write grid comp when IAU is enabled
@@ -2450,7 +2451,7 @@
             open(newunit=nolog, file='RESTART/'//trim(time_restart)//'.coupler.res', status='new')
             write(nolog,"(i6,8x,a)") calendar_type , &
                  '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
-            write(nolog,"(6i6,8x,a)") wrt_int_state%idate(1:6), &
+            write(nolog,"(6i6,8x,a)") start_time(1:6), &
                  'Model start time:   year, month, day, hour, minute, second'
             write(nolog,"(6i6,8x,a)") wrt_int_state%fdate(1:6), &
                  'Current model time: year, month, day, hour, minute, second'
