@@ -1,3 +1,9 @@
+# Enable CI build & unit testing:
+if(BUILD_TESTING)
+  cmake_minimum_required(VERSION 3.19)
+  project(fv3atm VERSION 1.0 LANGUAGES C CXX Fortran)
+  include(ci/CMakeLists.txt)
+endif()
 
 ###############################################################################
 ### CCPP
@@ -81,7 +87,7 @@ add_library(fv3atm
   fv3_cap.F90
   module_fv3_config.F90
   module_fcst_grid_comp.F90
-  stochastic_physics/stochastic_physics_wrapper.F90
+  stochastic_physics_wrapper/stochastic_physics_wrapper.F90
   cpl/module_block_data.F90
   cpl/module_cplfields.F90
   cpl/module_cap_cpl.F90

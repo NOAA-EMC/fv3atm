@@ -1,0 +1,18 @@
+spack:
+  specs:
+  - w3emc@2.10.0 precision=4,d,8
+  - ip@develop precision=4,d,8
+  - sp@2.4.0 precision=4,d,8
+  - bacio@2.4.1
+  - upp@develop
+  - esmf@8.4.2
+  - fms@2023.04 +gfs_phys +openmp +pic +quad_precision +deprecated_io constants=GFS precision=32,64
+  - netcdf-c ~blosc
+  view: false
+  concretizer:
+    unify: true
+  packages:
+    mpich:
+      require: ['~libxml2 ~hwloc ~pci']
+    yaksa:
+      buildable: false
