@@ -1,3 +1,12 @@
+# This file is used in the CI to define the libraries needed to build fv3atm. It
+# is used by the 'spack env create' command to generate a Spack environment. It
+# is generally preferred to avoid defining settings here that are not shared
+# across CI workflows, such as requiring the use of a specific compiler. Any
+# such modifications should be done in the appropriate CI workflow using the
+# 'spack config add' command, or with search-and-replace.
+# WARNING: Changing this file will automatically cause the cached Spack builds
+# in GitHub Actions to be regenerated, which takes a considerable amount of
+# time.
 spack:
   specs:
   - w3emc@2.10.0 precision=4,d,8
@@ -7,12 +16,12 @@ spack:
   - upp@develop
   - esmf@8.4.2
   - fms@2023.04 +gfs_phys +openmp +pic +quad_precision +deprecated_io constants=GFS precision=32,64
-  - netcdf-c ~blosc
+  - netcdf-c@4.9.2 ~blosc
   view: false
   concretizer:
     unify: true
   packages:
     mpich:
-      require: ['~libxml2 ~hwloc ~pci']
+      require: ['~libxml2 ~hwloc ~pci'] # minimize unneeded dependencies
     yaksa:
-      buildable: false
+      buildable: false # minimize unneeded dependencies
