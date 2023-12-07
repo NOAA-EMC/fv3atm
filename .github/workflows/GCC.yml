@@ -43,6 +43,7 @@ jobs:
         path: ${{ github.workspace }}/spack-develop
         key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-1
 
+    # Building dependencies takes 40+ min
     - name: spack-install
       if: steps.cache-spack.outputs.cache-hit != 'true'
       run: |
