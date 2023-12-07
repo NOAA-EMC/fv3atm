@@ -1,3 +1,8 @@
+# This file is used by fv3atm's root CMakeLists.txt when BUILD_TESTING=ON. It is
+# used for CI runs and is based on the ufs-weather-model root CMakeLists.txt. It
+# cannot be built directly, and should not be used for compiling for general R&D
+# or operations.
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/Modules)
 
 if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
