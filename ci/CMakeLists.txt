@@ -2,6 +2,8 @@
 # used for CI runs and is based on the ufs-weather-model root CMakeLists.txt. It
 # cannot be built directly, and should not be used for compiling for general R&D
 # or operations.
+#
+# Alex Richert, 6 Dec 2023
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/Modules)
 
