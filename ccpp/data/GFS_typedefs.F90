@@ -236,6 +236,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: soiltype_frac(:,:) => null()  !< fractions [0:1] of soil categories
                                                               !< [tsea in gbphys.f]
     real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in K
+    real (kind=kind_phys), pointer :: ssu    (:)   => null()  !< surface zonal current in m s-1
+    real (kind=kind_phys), pointer :: ssv    (:)   => null()  !< surface meridional current in m s-1
     real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in K
     real (kind=kind_phys), pointer :: tisfc  (:)   => null()  !< surface temperature over ice fraction
     real (kind=kind_phys), pointer :: tiice(:,:)   => null()  !< internal ice temperature
@@ -1292,6 +1294,10 @@ module GFS_typedefs
                                             !< 0=no change
                                             !< 6=areodynamical roughness over water with input 10-m wind
                                             !< 7=slightly decrease Cd for higher wind speed compare to 6
+!--- air_sea_flux scheme
+    integer              :: icplocn2atm     !< air_sea flux options over ocean:
+                                            !< 0=no change
+                                            !< l=including ocean current in the computation of air_sea fluxes
 
 !--- potential temperature definition in surface layer physics
     logical              :: thsfc_loc       !< flag for local vs. standard potential temperature
@@ -2292,6 +2298,8 @@ module GFS_typedefs
     endif
 
     allocate (Sfcprop%tsfc     (IM))
+    allocate (Sfcprop%ssu      (IM))
+    allocate (Sfcprop%ssv      (IM))
     allocate (Sfcprop%tsfco    (IM))
     allocate (Sfcprop%tsfcl    (IM))
     allocate (Sfcprop%tisfc    (IM))
@@ -2348,6 +2356,8 @@ module GFS_typedefs
     endif
 
     Sfcprop%tsfc      = clear_val
+    Sfcprop%ssu       = clear_val
+    Sfcprop%ssv       = clear_val
     Sfcprop%tsfco     = clear_val
     Sfcprop%tsfcl     = clear_val
     Sfcprop%tisfc     = clear_val
@@ -3738,6 +3748,9 @@ module GFS_typedefs
                                                              !< 6=areodynamical roughness over water with input 10-m wind
                                                              !< 7=slightly decrease Cd for higher wind speed compare to 6
                                                              !< negative when cplwav2atm=.true. - i.e. two way wave coupling
+    integer              :: icplocn2atm    = 0               !< air_sea_flux options over ocean
+                                                             !< 0=ocean current is not used in the computation of air_sea fluxes
+                                                             !< 1=including ocean current in the computation of air_sea fluxes
 
 !--- potential temperature definition in surface layer physics
     logical              :: thsfc_loc      = .true.          !< flag for local vs. standard potential temperature
@@ -3991,7 +4004,7 @@ module GFS_typedefs
                                frac_grid, min_lakeice, min_seaice, min_lake_height,         &
                                ignore_lake, frac_ice,                                       &
                           !--- surface layer
-                               sfc_z0_type,                                                 &
+                               sfc_z0_type, icplocn2atm,                                    &
                           !--- switch beteeen local and standard potential temperature
                                thsfc_loc,                                                   &
                           !--- switches in 2-m diagnostics
@@ -4908,6 +4921,8 @@ module GFS_typedefs
 !--- surface layer
     Model%sfc_z0_type      = sfc_z0_type
     if (Model%cplwav2atm) Model%sfc_z0_type = -1
+    Model%icplocn2atm      = icplocn2atm
+    if (Model%cplocn2atm) Model%icplocn2atm = 0
 
 !--- potential temperature reference in sfc layer
     Model%thsfc_loc        = thsfc_loc
@@ -6726,6 +6741,7 @@ module GFS_typedefs
       print *, ' '
       print *, 'surface layer options'
       print *, ' sfc_z0_type       : ', Model%sfc_z0_type
+      print *, ' icplocn2atm       : ', Model%icplocn2atm
       print *, ' '
       print *, 'vertical diffusion coefficients'
       print *, ' xkzm_m            : ', Model%xkzm_m
