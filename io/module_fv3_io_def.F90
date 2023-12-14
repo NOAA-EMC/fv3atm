@@ -15,7 +15,7 @@ module module_fv3_io_def
   integer           :: n_group
   integer           :: num_files
   integer           :: nbdlphys
-  integer           :: nsout_io, iau_offset
+  integer           :: iau_offset
   logical           :: lflname_fulltime
   logical           :: time_unlimited
 
