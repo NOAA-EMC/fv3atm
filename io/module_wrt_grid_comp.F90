@@ -2447,7 +2447,7 @@
 
           if (out_phase == 2 .and. restart_written .and. mype == lead_write_task) then
             !**  write coupler.res log file
-            open(newunit=nolog, file='RESTART/'//trim(time_restart)//'.coupler.res', status='new')
+            open(newunit=nolog, file='RESTART/'//trim(time_restart)//'.coupler.res')
             write(nolog,"(i6,8x,a)") calendar_type , &
                  '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
             write(nolog,"(6i6,8x,a)") start_time(1:6), &
