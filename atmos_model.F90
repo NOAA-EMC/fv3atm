@@ -788,6 +788,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    !--- WARNING: For special cases that model needs to restart at non-multiple of fhzero
    !--- the fields in first output files are not accumulated from the beginning of
    !--- the bucket, but the restart time.
+   fhzero_loop: do i=1,size(GFS_Control%fhzero_array)
+     if( sec < GFS_Control%fhzero_fhour(i)*3600. .and. GFS_Control%fhzer_array(i) > 0.) then
+       GFS_Control%fhzero = GFS_Control%fhzero_array(i)
+     endif
+   enddo fhzero_loop
+   if (mpp_pe() == mpp_root_pe()) print *,'in atmos_model, fhzero=',GFS_Control%fhzero, 'fhour=',sec/3600.
+
    if (mod(sec,int(GFS_Control%fhzero*3600.)) /= 0) then
      diag_time = Time - real_to_time_type(mod(int((GFS_Control%kdt - 1)*dt_phys/3600.),int(GFS_Control%fhzero))*3600.0)
      if (mpp_pe() == mpp_root_pe()) print *,'Warning: in atmos_init,start at non multiple of fhzero'
@@ -1000,16 +1007,19 @@ subroutine update_atmos_model_state (Atmos, rc)
                             GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull, &
                             GFS_control%fhswr, GFS_control%fhlwr)
     endif
-    if (nint(GFS_control%fhzero) > 0) then
-      if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-    else
-      if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+
+    !---  find current fhzero
+    fhzero_loop: do i=1,size(GFS_Control%fhzero_array)
+      if( sec < GFS_Control%fhzero_fhour(i)*3600. .and. GFS_Control%fhzer_array(i) > 0.) then
+        GFS_Control%fhzero = GFS_Control%fhzero_array(i)
+      endif
+    enddo fhzero_loop
+    if (mpp_pe() == mpp_root_pe()) print *,'in atmos_model, fhzero=',GFS_Control%fhzero, 'fhour=',sec/3600.
+
+    if (nint(GFS_Control%fhzero) > 0) then
+      if (mod(isec,nint(GFS_Control%fhzero*3600.)) == 0) diag_time = Atmos%Time
     endif
     call diag_send_complete_instant (Atmos%Time)
-
-
-    !--- this may not be necessary once write_component is fully implemented
-    !!!call diag_send_complete_extra (Atmos%Time)
 
     !--- get bottom layer data from dynamical core for coupling
     call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
