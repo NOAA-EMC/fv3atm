@@ -921,11 +921,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! Add time Attribute to the exportState
       call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
         attrList=(/ "time               ", &
-                      "time:long_name     ", &
-                      "time:units         ", &
-                      "time:cartesian_axis", &
-                      "time:calendar_type ", &
-                      "time:calendar      " /), rc=rc)
+                    "time:long_name     ", &
+                    "time:units         ", &
+                    "time:cartesian_axis", &
+                    "time:calendar_type ", &
+                    "time:calendar      " /), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
@@ -1366,8 +1366,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           call atmos_model_restart(Atmos, timestamp)
           call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
-          !----- write restart file ------
-          if (mpp_pe() == mpp_root_pe())then
+          !----- write coupler.res file ------
+          if (.not. quilting_restart .and. mpp_pe() == mpp_root_pe()) then
               call get_date (Atmos%Time, date(1), date(2), date(3), date(4), date(5), date(6))
               open( newunit=unit, file='RESTART/'//trim(timestamp)//'.coupler.res' )
               write( unit, '(i6,8x,a)' )calendar_type, &

@@ -551,7 +551,7 @@ module post_fv3
                              dustpm10, dustcb, bccb, occb, sulfcb, sscb,       &
                              dustallcb, ssallcb, dustpm, sspm, pp25cb, pp10cb, &
                              no3cb, nh4cb, dusmass, ducmass, dusmass25,ducmass25, &
-                             snownc, graupelnc, qrmax
+                             snownc, graupelnc, qrmax, hail_maxhailcast
       use soil,        only: sldpth, sh2o, smc, stc, sllevel
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -992,6 +992,17 @@ module post_fv3
                   ltg3_max(i,j)=arrayr42d(i,j)
                   if(abs(arrayr42d(i,j)-fillValue) < small) ltg3_max(i,j)=spval
                 enddo
+              enddo
+            endif
+
+            ! Maximum hail diameter (mm) since last output
+            if(trim(fieldname)=='hailcast_dhail') then 
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,hail_maxhailcast,arrayr42d,fillValue,spval)
+              do j=jsta,jend 
+                do i=ista, iend
+                  hail_maxhailcast(i,j)=arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillValue) < small) hail_maxhailcast(i,j)=spval
+                enddo        
               enddo
             endif
 
