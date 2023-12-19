@@ -890,7 +890,7 @@
   units = flag
   dimensions = (horizontal_loop_extent)
   type = logical
-[lake_freeze]
+[flag_lakefreeze]
   standard_name = flag_for_lake_water_freeze
   long_name = flag for lake water freeze
   units = flag
