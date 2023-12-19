@@ -11,7 +11,7 @@
   #url = https://github.com/ufs-community/ccpp-physics
   #branch = ufs/dev
   url = https://github.com/binli2337/ccpp-physics
-  branch = hafsv2_basline_with_current
+  branch = feature/hafsv2_basline_with_ssc
 [submodule "upp"]
   path = upp
   url = https://github.com/hafs-community/UPP
