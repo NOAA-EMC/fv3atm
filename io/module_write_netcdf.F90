@@ -7,24 +7,19 @@
 
 module module_write_netcdf
 
+  use mpi
   use esmf
   use netcdf
-  use module_fv3_io_def,only : ideflate, nbits, &
+  use module_fv3_io_def,only : ideflate, quantize_mode, quantize_nsd, zstandard_level, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
                                dx,dy,lon1,lat1,lon2,lat2, &
                                time_unlimited
-  use mpi
 
   implicit none
   private
   public write_netcdf
 
   logical :: par
-
-  interface quantize_array
-     module procedure quantize_array_3d
-     module procedure quantize_array_4d
-  end interface
 
   contains
 
@@ -83,8 +78,11 @@ module module_write_netcdf
     integer :: oldMode
     integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
     integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid, timeiso_varid
-    integer, dimension(:), allocatable :: dimids_2d, dimids_3d
+    integer, dimension(:), allocatable :: dimids_2d, dimids_3d, dimids, chunksizes
     integer, dimension(:), allocatable :: varids
+    integer :: xtype
+    integer :: quant_mode
+    integer :: ishuffle
     logical shuffle
 
     logical :: is_cubed_sphere
@@ -315,86 +313,79 @@ module module_write_netcdf
          call ESMF_FieldGet(fcstField(i), name=fldName, rank=rank, typekind=typekind, rc=rc); ESMF_ERR_RETURN(rc)
 
          par_access = NF90_INDEPENDENT
-         ! define variables
+
          if (rank == 2) then
-           if (typekind == ESMF_TYPEKIND_R4) then
-             if (ideflate(grid_id) > 0) then
-               if (ichunk2d(grid_id) < 0 .or. jchunk2d(grid_id) < 0) then
-                  ! let netcdf lib choose chunksize
-                  ! shuffle filter on for 2d fields (lossless compression)
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                          dimids_2d, varids(i), &
-                          shuffle=.true.,deflate_level=ideflate(grid_id)); NC_ERR_STOP(ncerr)
-               else
-                  if (is_cubed_sphere) then
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_2d, varids(i), &
-                                       shuffle=.true.,deflate_level=ideflate(grid_id),&
-                                       chunksizes=[ichunk2d(grid_id),jchunk2d(grid_id),tileCount,1]); NC_ERR_STOP(ncerr)
-                  else
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_2d, varids(i), &
-                                       shuffle=.true.,deflate_level=ideflate(grid_id),&
-                                       chunksizes=[ichunk2d(grid_id),jchunk2d(grid_id),          1]); NC_ERR_STOP(ncerr)
-                  end if
-               end if
-               ! compression filters require collective access.
-               par_access = NF90_COLLECTIVE
-             else
-               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                    dimids_2d, varids(i)); NC_ERR_STOP(ncerr)
-             end if
-           else if (typekind == ESMF_TYPEKIND_R8) then
-             ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
-                                  dimids_2d, varids(i)); NC_ERR_STOP(ncerr)
-           else
-             if (mype==0) write(0,*)'Unsupported typekind ', typekind
-             call ESMF_Finalize(endflag=ESMF_END_ABORT)
-           end if
+           dimids = dimids_2d
          else if (rank == 3) then
-           if (typekind == ESMF_TYPEKIND_R4) then
-             if (ideflate(grid_id) > 0) then
-               ! shuffle filter off for 3d fields using lossy compression
-               if (nbits(grid_id) > 0) then
-                   shuffle=.false.
-               else
-                   shuffle=.true.
-               end if
-               if (ichunk3d(grid_id) < 0 .or. jchunk3d(grid_id) < 0 .or. kchunk3d(grid_id) < 0) then
-                  ! let netcdf lib choose chunksize
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate(grid_id)); NC_ERR_STOP(ncerr)
-               else
-                  if (is_cubed_sphere) then
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate(grid_id),&
-                                       chunksizes=[ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id),tileCount,1]); NC_ERR_STOP(ncerr)
-                  else
-                  ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                       dimids_3d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate(grid_id),&
-                                       chunksizes=[ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id),          1]); NC_ERR_STOP(ncerr)
-                  end if
-               end if
-               ! compression filters require collective access.
-               par_access = NF90_COLLECTIVE
-             else
-               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                       dimids_3d, varids(i)); NC_ERR_STOP(ncerr)
-             end if
-           else if (typekind == ESMF_TYPEKIND_R8) then
-             ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
-                                  dimids_3d, varids(i)); NC_ERR_STOP(ncerr)
-           else
-             if (mype==0) write(0,*)'Unsupported typekind ', typekind
-             call ESMF_Finalize(endflag=ESMF_END_ABORT)
-           end if
+           dimids = dimids_3d
          else
            if (mype==0) write(0,*)'Unsupported rank ', rank
            call ESMF_Finalize(endflag=ESMF_END_ABORT)
          end if
+
+         if (typekind == ESMF_TYPEKIND_R4) then
+           xtype = NF90_FLOAT
+         else if (typekind == ESMF_TYPEKIND_R8) then
+           xtype = NF90_DOUBLE
+         else
+           if (mype==0) write(0,*)'Unsupported typekind ', typekind
+           call ESMF_Finalize(endflag=ESMF_END_ABORT)
+         end if
+
+         ! define variable
+         ncerr = nf90_def_var(ncid, trim(fldName), xtype, dimids, varids(i)) ; NC_ERR_STOP(ncerr)
+
+         ! compression, shuffling  and chunking
+         if (ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) then
+            par_access = NF90_COLLECTIVE
+            if (rank == 2 .and. ichunk2d(grid_id) > 0 .and. jchunk2d(grid_id) > 0) then
+               if (is_cubed_sphere) then
+                  chunksizes = [im, jm, tileCount, 1]
+               else
+                  chunksizes = [ichunk2d(grid_id), jchunk2d(grid_id),            1]
+               end if
+               ncerr = nf90_def_var_chunking(ncid, varids(i), NF90_CHUNKED, chunksizes) ; NC_ERR_STOP(ncerr)
+            else if (rank == 3 .and. ichunk3d(grid_id) > 0 .and. jchunk3d(grid_id) > 0 .and. kchunk3d(grid_id) > 0) then
+               if (is_cubed_sphere) then
+                  chunksizes = [im, jm, lm, tileCount, 1]
+               else
+                  chunksizes = [ichunk3d(grid_id), jchunk3d(grid_id), kchunk3d(grid_id),            1]
+               end if
+               ncerr = nf90_def_var_chunking(ncid, varids(i), NF90_CHUNKED, chunksizes) ; NC_ERR_STOP(ncerr)
+            end if
+
+            ishuffle = NF90_NOSHUFFLE
+            ! shuffle filter on when using lossy compression
+            if ( quantize_nsd(grid_id) > 0) then
+                ishuffle = NF90_SHUFFLE
+            end if
+            if (ideflate(grid_id) > 0) then
+              ncerr = nf90_def_var_deflate(ncid, varids(i), ishuffle, 1, ideflate(grid_id)) ; NC_ERR_STOP(ncerr)
+            else if (zstandard_level(grid_id) > 0) then
+              ncerr = nf90_def_var_deflate(ncid, varids(i), ishuffle, 0, 0) ; NC_ERR_STOP(ncerr)
+              ncerr = nf90_def_var_zstandard(ncid, varids(i), zstandard_level(grid_id)) ; NC_ERR_STOP(ncerr)
+            end if
+
+            ! turn on quantize only for 3d variables and if requested
+            if (rank == 3 .and. quantize_nsd(grid_id) > 0) then
+              ! nf90_quantize_bitgroom = 1
+              ! nf90_quantize_granularbr = 2
+              ! nf90_quantize_bitround = 3  (nsd is number of bits)
+              if (trim(quantize_mode(grid_id)) == 'quantize_bitgroom') then
+                quant_mode = 1
+              else if (trim(quantize_mode(grid_id)) == 'quantize_granularbr') then
+                quant_mode = 2
+              else if (trim(quantize_mode(grid_id)) == 'quantize_bitround') then
+                quant_mode = 3
+              else
+                if (mype==0) write(0,*)'Unknown quantize_mode ', trim(quantize_mode(grid_id))
+                call ESMF_Finalize(endflag=ESMF_END_ABORT)
+              endif
+
+              ncerr = nf90_def_var_quantize(ncid, varids(i), quant_mode, quantize_nsd(grid_id)) ; NC_ERR_STOP(ncerr)
+            end if
+         end if
+
          if (par) then
              ncerr = nf90_var_par_access(ncid, varids(i), par_access); NC_ERR_STOP(ncerr)
          end if
@@ -649,14 +640,6 @@ module module_write_netcdf
          if (typekind == ESMF_TYPEKIND_R4) then
             if (par) then
                call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4_3d, rc=rc); ESMF_ERR_RETURN(rc)
-               if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
-                  dataMax = maxval(array_r4_3d)
-                  dataMin = minval(array_r4_3d)
-                  call mpi_allreduce(mpi_in_place,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
-                  call mpi_allreduce(mpi_in_place,dataMin,1,mpi_real4,mpi_min,mpi_comm,ierr)
-                  call quantize_array(array_r4_3d, dataMin, dataMax, nbits(grid_id), compress_err(i))
-                  call mpi_allreduce(mpi_in_place,compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
-               end if
                ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
             else
                if (is_cubed_sphere) then
@@ -665,17 +648,11 @@ module module_write_netcdf
                      call ESMF_ArrayGather(array, array_r4_3d_cube(:,:,:,t), rootPet=0, tile=t, rc=rc); ESMF_ERR_RETURN(rc)
                   end do
                   if (mype==0) then
-                     if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
-                        call quantize_array(array_r4_3d_cube, minval(array_r4_3d_cube), maxval(array_r4_3d_cube), nbits(grid_id), compress_err(i))
-                     end if
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d_cube, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
                else
                   call ESMF_FieldGather(fcstField(i), array_r4_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                   if (mype==0) then
-                     if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
-                        call quantize_array(array_r4_3d, minval(array_r4_3d), maxval(array_r4_3d), nbits(grid_id), compress_err(i))
-                     end if
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
                end if
@@ -710,17 +687,6 @@ module module_write_netcdf
       end if ! end rank
 
     end do ! end fieldCount
-
-    if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0 .and. do_io) then
-       ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-       do i=1, fieldCount
-          if (compress_err(i) > 0) then
-             ncerr = nf90_put_att(ncid, varids(i), 'max_abs_compression_error', compress_err(i)); NC_ERR_STOP(ncerr)
-             ncerr = nf90_put_att(ncid, varids(i), 'nbits', nbits(grid_id)); NC_ERR_STOP(ncerr)
-          end if
-       end do
-       ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
-    end if
 
     if (.not. par) then
        deallocate(array_r4)
@@ -945,78 +911,6 @@ module module_write_netcdf
     call get_grid_attr(grid, dim_name, ncid, dim_varid, rc)
 
   end subroutine add_dim
-
-!----------------------------------------------------------------------------------------
-  subroutine quantize_array_3d(array, dataMin, dataMax, nbits, compress_err)
-
-    real(4), dimension(:,:,:), intent(inout)   :: array
-    real(4), intent(in)                        :: dataMin, dataMax
-    integer, intent(in)                        :: nbits
-    real(4), intent(out)                       :: compress_err
-
-    real(4) :: scale_fact, offset
-    real(4), dimension(:,:,:), allocatable     :: array_save
-    ! Lossy compression if nbits>0.
-    ! The floating point data is quantized to improve compression
-    ! See doi:10.5194/gmd-10-413-2017.  The method employed
-    ! here is identical to the 'scaled linear packing' method in
-    ! that paper, except that the data are scaling into an arbitrary
-    ! range (2**nbits-1 not just 2**16-1) and are stored as
-    ! re-scaled floats instead of short integers.
-    ! The zlib algorithm does almost as
-    ! well packing the re-scaled floats as it does the scaled
-    ! integers, and this avoids the need for the client to apply the
-    ! rescaling (plus it allows the ability to adjust the packing
-    ! range).
-    scale_fact = (dataMax - dataMin) / (2**nbits-1)
-    offset = dataMin
-    if (scale_fact > 0.) then
-       allocate(array_save, source=array)
-       array = scale_fact*(nint((array_save - offset) / scale_fact)) + offset
-       ! compute max abs compression error
-       compress_err = maxval(abs(array_save-array))
-       deallocate(array_save)
-    else
-       ! field is constant
-       compress_err = 0.
-    end if
-  end subroutine quantize_array_3d
-
-  subroutine quantize_array_4d(array, dataMin, dataMax, nbits, compress_err)
-
-    real(4), dimension(:,:,:,:), intent(inout) :: array
-    real(4), intent(in)                        :: dataMin, dataMax
-    integer, intent(in)                        :: nbits
-    real(4), intent(out)                       :: compress_err
-
-    real(4) :: scale_fact, offset
-    real(4), dimension(:,:,:,:), allocatable   :: array_save
-
-    ! Lossy compression if nbits>0.
-    ! The floating point data is quantized to improve compression
-    ! See doi:10.5194/gmd-10-413-2017.  The method employed
-    ! here is identical to the 'scaled linear packing' method in
-    ! that paper, except that the data are scaling into an arbitrary
-    ! range (2**nbits-1 not just 2**16-1) and are stored as
-    ! re-scaled floats instead of short integers.
-    ! The zlib algorithm does almost as
-    ! well packing the re-scaled floats as it does the scaled
-    ! integers, and this avoids the need for the client to apply the
-    ! rescaling (plus it allows the ability to adjust the packing
-    ! range).
-    scale_fact = (dataMax - dataMin) / (2**nbits-1)
-    offset = dataMin
-    if (scale_fact > 0.) then
-       allocate(array_save, source=array)
-       array = scale_fact*(nint((array_save - offset) / scale_fact)) + offset
-       ! compute max abs compression error
-       compress_err = maxval(abs(array_save-array))
-       deallocate(array_save)
-    else
-       ! field is constant
-       compress_err = 0.
-    end if
-  end subroutine quantize_array_4d
 
 !----------------------------------------------------------------------------------------
 end module module_write_netcdf

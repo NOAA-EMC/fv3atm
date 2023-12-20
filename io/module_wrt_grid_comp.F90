@@ -29,20 +29,21 @@
       use mpi
       use esmf
       use fms
+      use mpp_mod, only : mpp_init   ! needed for fms 2023.02
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
                                       n_group, num_files,                       &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,                &
-                                      ichunk3d,jchunk3d,kchunk3d,nbits,         &
-                                      nsout => nsout_io,                        &
+                                      ichunk3d,jchunk3d,kchunk3d,               &
+                                      quantize_mode,quantize_nsd,               &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
                                       stdlat1, stdlat2, dx, dy, iau_offset,     &
-                                      ideflate, lflname_fulltime
+                                      ideflate, zstandard_level, lflname_fulltime
       use module_write_netcdf, only : write_netcdf
-      use module_write_restart_netcdf
+      use module_write_restart_netcdf, only : write_restart_netcdf
       use physcons,            only : pi => con_pi
 #ifdef INLINE_POST
       use post_fv3,            only : post_run_fv3
@@ -66,10 +67,11 @@
       integer,save      :: ngrids
 
       integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
-      integer,save      :: idate(7)
+      integer,save      :: idate(7), start_time(7)
       logical,save      :: write_nsflip
       logical,save      :: change_wrtidate=.false.
       integer,save      :: frestart(999) = -1
+      integer,save      :: calendar_type = 3
       logical           :: lprnt
 !
 !-----------------------------------------------------------------------
@@ -360,7 +362,9 @@
       allocate(jchunk3d(ngrids))
       allocate(kchunk3d(ngrids))
       allocate(ideflate(ngrids))
-      allocate(nbits(ngrids))
+      allocate(quantize_mode(ngrids))
+      allocate(quantize_nsd(ngrids))
+      allocate(zstandard_level(ngrids))
 
       allocate(wrt_int_state%out_grid_info(ngrids))
 
@@ -466,18 +470,37 @@
         call ESMF_ConfigGetAttribute(config=CF,value=jchunk3d(n),default=0,label ='jchunk3d:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=kchunk3d(n),default=0,label ='kchunk3d:',rc=rc)
 
+        ! zstandard compression flag
+        call ESMF_ConfigGetAttribute(config=CF,value=zstandard_level(n),default=0,label ='zstandard_level:',rc=rc)
+        if (zstandard_level(n) < 0) zstandard_level(n)=0
+
         ! zlib compression flag
         call ESMF_ConfigGetAttribute(config=CF,value=ideflate(n),default=0,label ='ideflate:',rc=rc)
         if (ideflate(n) < 0) ideflate(n)=0
 
-        call ESMF_ConfigGetAttribute(config=CF,value=nbits(n),default=0,label ='nbits:',rc=rc)
-        if (lprnt) then
-            print *,'ideflate=',ideflate(n),' nbits=',nbits(n)
+        if (ideflate(n) > 0 .and. zstandard_level(n) > 0) then
+           write(0,*)"wrt_initialize_p1: zlib and zstd compression cannot be both enabled at the same time"
+           call ESMF_LogWrite("wrt_initialize_p1: zlib and zstd compression cannot be both enabled at the same time",ESMF_LOGMSG_ERROR,rc=RC)
+           call ESMF_Finalize(endflag=ESMF_END_ABORT)
         end if
-        ! nbits quantization level for lossy compression (must be between 1 and 31)
-        ! 1 is most compression, 31 is least. If outside this range, set to zero
-        ! which means use lossless compression.
-        if (nbits(n) < 1 .or. nbits(n) > 31)  nbits(n)=0  ! lossless compression (no quantization)
+
+        ! quantize_mode and quantize_nsd
+        call ESMF_ConfigGetAttribute(config=CF,value=quantize_mode(n),default='quantize_bitgroom',label='quantize_mode:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=quantize_nsd(n),default=0,label='quantize_nsd:',rc=rc)
+
+        if (.NOT. (trim(quantize_mode(n))=='quantize_bitgroom' &
+              .OR. trim(quantize_mode(n))=='quantize_granularbr' &
+              .OR. trim(quantize_mode(n))=='quantize_bitround') ) then
+           write(0,*)"wrt_initialize_p1: unknown quantize_mode ", trim(quantize_mode(n))
+           call ESMF_LogWrite("wrt_initialize_p1: wrt_initialize_p1: unknown quantize_mode "//trim(quantize_mode(n)),ESMF_LOGMSG_ERROR,rc=RC)
+           call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        end if
+
+        if (lprnt) then
+            print *,'ideflate=',ideflate(n)
+            print *,'quantize_mode=',trim(quantize_mode(n)),' quantize_nsd=',quantize_nsd(n)
+            print *,'zstandard_level=',zstandard_level(n)
+        end if
 
         if (cf_output_grid /= cf) then
           ! destroy the temporary config object created for nest domains
@@ -817,6 +840,7 @@
                                                         h=idate(4), m=idate(5), s=idate(6),rc=rc)
 !     if (lprnt) write(0,*) 'in wrt initial, io_baseline time=',idate,'rc=',rc
       idate(7) = 1
+      start_time = idate
       wrt_int_state%idate = idate
       wrt_int_state%fdate = idate
 ! update IO-BASETIME and idate on write grid comp when IAU is enabled
@@ -1310,8 +1334,27 @@
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+! save calendar_type (as integer) for use in 'coupler.res'
+        if (index(trim(attNameList(i)),'time:calendar') > 0) then
+          select case( uppercase(trim(valueS)) )
+          case( 'JULIAN' )
+              calendar_type = JULIAN
+          case( 'GREGORIAN' )
+              calendar_type = GREGORIAN
+          case( 'NOLEAP' )
+              calendar_type = NOLEAP
+          case( 'THIRTY_DAY' )
+              calendar_type = THIRTY_DAY_MONTHS
+          case( 'NO_CALENDAR' )
+              calendar_type = NO_CALENDAR
+          case default
+              call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
+                                      'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
+          end select
+        endif
+
 ! update the time:units when idate on write grid component is changed
-        if ( index(trim(attNameList(i)),'time:units')>0) then
+        if (index(trim(attNameList(i)),'time:units') > 0) then
           if ( change_wrtidate ) then
             idx = index(trim(valueS),' since ')
             if(lprnt) print *,'in write grid comp, time:unit=',trim(valueS)
@@ -1772,7 +1815,7 @@
 
       logical                               :: use_parallel_netcdf
       real, allocatable                     :: output_fh(:)
-      logical                               :: is_restart_bundle
+      logical                               :: is_restart_bundle, restart_written
       integer                               :: tileCount
 !
 !-----------------------------------------------------------------------
@@ -1832,7 +1875,7 @@
 
       if (nf_hours < 0) return
 
-      if (nsout > 0 .or. lflname_fulltime) then
+      if (lflname_fulltime) then
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,",A1,I2.2,A1,I2.2)")') ndig, ndig
         write(cfhour, cform) nf_hours,'-',nf_minutes,'-',nf_seconds
@@ -2128,6 +2171,8 @@
 
         ! if (lprnt) write(0,*)'wrt_run: loop over wrt_int_state%FBCount ',wrt_int_state%FBCount, ' nfhour ',  nfhour, ' cdate ', cdate(1:6)
         two_phase_loop: do out_phase = 1, 2
+
+          restart_written = .false.
           file_loop_all: do nbdl=1, wrt_int_state%FBCount
 
             call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), name=wrtFBName, rc=rc)
@@ -2326,6 +2371,8 @@
                                     rc)
               endif ! cubed sphere vs. regional/nest write grid
 
+              restart_written = .true.
+
             else ! history bundle
             if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
 
@@ -2370,11 +2417,6 @@
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               endif
 
-              if (nbits(grid_id) /= 0) then
-                call ESMF_LogWrite("wrt_run: lossy compression is not supported for regional grids",ESMF_LOGMSG_ERROR,rc=RC)
-                call ESMF_Finalize(endflag=ESMF_END_ABORT)
-              end if
-
               call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
                                 use_parallel_netcdf, wrt_mpi_comm,wrt_int_state%mype, &
                                 grid_id,rc)
@@ -2395,13 +2437,26 @@
           enddo file_loop_all
 
           if (out_phase == 1 .and. mype == lead_write_task) then
-            !** write out log file
-            open(newunit=nolog,file='log.atm.f'//trim(cfhour),form='FORMATTED')
+            !** write history log file
+            open(newunit=nolog, file='log.atm.f'//trim(cfhour))
             write(nolog,"('completed: fv3atm')")
             write(nolog,"('forecast hour: ',f10.3)") nfhour
             write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
             close(nolog)
           endif
+
+          if (out_phase == 2 .and. restart_written .and. mype == lead_write_task) then
+            !**  write coupler.res log file
+            open(newunit=nolog, file='RESTART/'//trim(time_restart)//'.coupler.res')
+            write(nolog,"(i6,8x,a)") calendar_type , &
+                 '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
+            write(nolog,"(6i6,8x,a)") start_time(1:6), &
+                 'Model start time:   year, month, day, hour, minute, second'
+            write(nolog,"(6i6,8x,a)") wrt_int_state%fdate(1:6), &
+                 'Current model time: year, month, day, hour, minute, second'
+            close(nolog)
+          endif
+
         enddo two_phase_loop
       endif ! if ( wrt_int_state%output_history )
 

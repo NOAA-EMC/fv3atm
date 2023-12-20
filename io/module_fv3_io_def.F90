@@ -15,7 +15,7 @@ module module_fv3_io_def
   integer           :: n_group
   integer           :: num_files
   integer           :: nbdlphys
-  integer           :: nsout_io, iau_offset
+  integer           :: iau_offset
   logical           :: lflname_fulltime
   logical           :: time_unlimited
 
@@ -29,7 +29,8 @@ module module_fv3_io_def
   real,dimension(:),allocatable     :: cen_lon, cen_lat
   real,dimension(:),allocatable     :: lon1, lat1, lon2, lat2, dlon, dlat
   real,dimension(:),allocatable     :: stdlat1, stdlat2, dx, dy
-  integer,dimension(:),allocatable  :: ideflate, nbits
+  integer,dimension(:),allocatable  :: ideflate, quantize_nsd, zstandard_level
+  character(len=esmf_maxstr),dimension(:),allocatable :: quantize_mode
   integer,dimension(:),allocatable  :: ichunk2d, jchunk2d, ichunk3d, jchunk3d, kchunk3d
 
 end module module_fv3_io_def
