@@ -4005,12 +4005,12 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'snodi'
-    ExtDiag(idx)%desc = 'water equivalent snow depth over ice'
+    ExtDiag(idx)%desc = 'snow depth over ice'
     ExtDiag(idx)%unit = 'mm'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%weasdi(:)
+      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%snodi(:)
     enddo
 
     idx = idx + 1
