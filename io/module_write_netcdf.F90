@@ -190,6 +190,9 @@ module module_write_netcdf
     if (lsoil > 0 .and. (.not. any(fldlev(:) == lsoil))) then
        lsoil = 0
     end if
+    if (lsoil > 0 .and. (.not. any(fldlev(:) > 1 .and. fldlev(:) /= lsoil))) then
+       lm = 1
+    end if
 
     ! for serial output allocate 'global' arrays
     if (.not. par) then
