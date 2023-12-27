@@ -12,7 +12,7 @@
   path = ccpp/physics
   #url = https://github.com/ufs-community/ccpp-physics
   #branch = ufs/dev
-  url = https://github.com/cimbfuji/ccpp-physics
+  url = https://github.com/climbfuji/ccpp-physics
   branch = bugfix/ozphys_ccpp_compliant
 [submodule "upp"]
   path = upp
