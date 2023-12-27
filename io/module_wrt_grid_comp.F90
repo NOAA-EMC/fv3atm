@@ -28,8 +28,9 @@
 !
       use mpi
       use esmf
+      use fms_mod, only : uppercase  ! needed for fms 2023.04
       use fms
-      use mpp_mod, only : mpp_init   ! needed for fms 2023.02
+      use mpp_mod, only : mpp_init,mpp_error   ! needed for fms 2023.02
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
