@@ -10,8 +10,10 @@
   branch = feature/ccpp_prebuild_chunked_array_support
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/ufs-community/ccpp-physics
-  branch = ufs/dev
+  #url = https://github.com/ufs-community/ccpp-physics
+  #branch = ufs/dev
+  url = https://github.com/cimbfuji/ccpp-physics
+  branch = bugfix/ozphys_ccpp_compliant
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
