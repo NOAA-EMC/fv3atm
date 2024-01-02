@@ -158,7 +158,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 50
+  integer,          public, parameter :: NimportFields = 51
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -218,7 +218,8 @@ module module_cplfields
     FieldInfo("zorl                                     ", "s"), &
     FieldInfo("t2m                                      ", "s"), &
     FieldInfo("hflx_fire                                ", "s"), &
-    FieldInfo("evap_fire                                ", "s") ]
+    FieldInfo("evap_fire                                ", "s"), &
+    FieldInfo("smoke_fire                               ", "s") ]
 
 ! Fields exported exclusively for coupling with chemistry
   character(*), public, parameter :: chemistryFieldNames(*) = [ &

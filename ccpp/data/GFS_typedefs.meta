@@ -2334,6 +2334,14 @@
   type = real
   kind = kind_phys
   active = (do_fire_coupling)
+[smoke_fire]
+  standard_name = smoke_emission_of_fire
+  long_name = smoke emission of fire
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_fire_coupling)
 
 ########################################################################
 [ccpp-table-properties]
@@ -6228,6 +6236,12 @@
 [ntsmoke]
   standard_name = index_for_smoke_in_tracer_concentration_array
   long_name = tracer index for smoke
+  units = index
+  dimensions = ()
+  type = integer
+[ntfsmoke]
+  standard_name = index_for_fire_smoke_in_tracer_concentration_array
+  long_name = tracer index for fire smoke
   units = index
   dimensions = ()
   type = integer
