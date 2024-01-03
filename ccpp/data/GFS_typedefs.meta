@@ -9863,9 +9863,11 @@
 [ccpp-table-properties]
   name = GFS_typedefs
   type = module
-  relative_path = ../physics/physics
-  dependencies = machine.F,physcons.F90,radlw_param.f,radsw_param.f
-  dependencies = GFDL_parse_tracers.F90,h2o_def.f,module_ozphys.F90
+  relative_path = ../physics/physics/
+  dependencies = hooks/machine.F,hooks/physcons.F90
+  dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f
+  dependencies = photochem/h2o_def.f,photochem/module_ozphys.F90
+  dependencies = MP/GFDL/GFDL_parse_tracers.F90
 
 [ccpp-arg-table]
   name = GFS_typedefs
