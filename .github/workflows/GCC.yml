@@ -49,10 +49,6 @@ jobs:
       run: |
         wget --no-verbose https://github.com/spack/spack/archive/refs/heads/develop.zip
         unzip develop.zip -d ${GITHUB_WORKSPACE}/ &> unzip.out
-        # temporary fix (https://github.com/spack/spack/pull/41475)
-        wget https://raw.githubusercontent.com/AlexanderRichert-NOAA/spack/e9b6ada157a65a486eb1e039fdbfe66c9eebb842/var/spack/repos/builtin/packages/fms/package.py
-        mv package.py ${GITHUB_WORKSPACE}/spack-develop/var/spack/repos/builtin/packages/fms/package.py
-        #
         . ${GITHUB_WORKSPACE}/spack-develop/share/spack/setup-env.sh
         spack env create gcc${{ matrix.gcc_ver }} ${GITHUB_WORKSPACE}/fv3atm/ci/spack.yaml
         spack env activate gcc${{ matrix.gcc_ver }}
