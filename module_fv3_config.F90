@@ -14,7 +14,7 @@
 
   implicit none
 !
-  integer                  :: nfhout, nfhout_hf, nsout, dt_atmos
+  integer                  :: dt_atmos
   integer                  :: first_kdt
   integer                  :: fcst_ntasks
   type(MPI_Comm)           :: fcst_mpi_comm
