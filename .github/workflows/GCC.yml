@@ -26,10 +26,6 @@ jobs:
 
     steps:
 
-    - name: install-mpi
-      run: |
-        sudo apt-get install lib${{ matrix.mpi }}-dev
-
     - name: checkout-fv3atm
       uses: actions/checkout@v3
       with:
