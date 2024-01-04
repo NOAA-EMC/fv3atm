@@ -653,8 +653,6 @@ contains
       endif
     endif
 
-    print*,'^^^^ process sfc file ',sfc%is_v2_file
-
     if(sfc%allocate_arrays(Model, Atm_block, .true., warm_start)) then
       if (sfc%is_v2_file) then
         call sfc%fill_2d_names_v2(Model, warm_start)

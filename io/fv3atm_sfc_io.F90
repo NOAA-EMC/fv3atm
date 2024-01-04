@@ -1528,9 +1528,6 @@ contains
           else
             Sfcprop(nb)%snowd(ix)  = zero
           endif
-          if (Sfcprop(nb)%snowd(ix) > 10000. .or. Sfcprop(nb)%snowd(ix) < 0.0) then
-            print*,'cggg bad snowd pt ',nb,ix,Sfcprop(nb)%snowd(ix)
-          endif
         enddo
       enddo
     endif
@@ -1547,15 +1544,12 @@ contains
           else
             Sfcprop(nb)%weasd(ix) = zero
           endif
-          if (Sfcprop(nb)%weasd(ix) > 10000. .or. Sfcprop(nb)%weasd(ix) < 0.0) then
-            print*,'cggg bad weasd pt ',nb,ix,Sfcprop(nb)%weasd(ix)
-          endif
         enddo
       enddo
     endif
 
-!cggg Needed for first time step in radiation before Noah/NoahMP sets it from look up table.
-!cggg Just use a nominal value.
+! Needed for first time step in radiation before Noah/NoahMP sets it from look up table.
+! Just use a nominal value.
     if (sfc%var2(i,j,39) < -9990.0_kind_phys) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
       !$omp parallel do default(shared) private(nb, ix)
@@ -1579,9 +1573,6 @@ contains
             Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix)
           else
             Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorlw(ix)
-          endif
-          if (Sfcprop(nb)%zorl(ix) > 10000. .or. Sfcprop(nb)%zorl(ix) < 0.0) then
-            print*,'cggg bad zorl pt ',nb,ix,Sfcprop(nb)%zorl(ix)
           endif
         enddo
       enddo
@@ -1639,9 +1630,6 @@ contains
             Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
                  + Sfcprop(nb)%tisfc(ix) * tem                      &
                  + Sfcprop(nb)%tsfco(ix) * (tem1-tem)
-            if (Sfcprop(nb)%tsfc(ix) > 10000. .or. Sfcprop(nb)%tsfc(ix) < 0.0) then
-              print*,'cggg bad tsfc pt ',nb,ix,Sfcprop(nb)%tsfc(ix)
-            endif
           enddo
         enddo
       else
@@ -1658,23 +1646,10 @@ contains
               Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfco(ix)
               if (Sfcprop(nb)%tsfc(ix) < -99 .or. Sfcprop(nb)%tsfc(ix) > 999.) print*,'bad tsfc water ',nb,ix,Sfcprop(nb)%tsfco(ix)
             endif
-            if (Sfcprop(nb)%tsfc(ix) > 10000. .or. Sfcprop(nb)%tsfc(ix) < 0.0) then
-              print*,'cggg bad tsfc pt ',nb,ix,Sfcprop(nb)%tsfc(ix)
-            endif
           enddo
         enddo
       endif
     endif compute_tsfc_for_coldstart
-
-        do nb = 1, Atm_block%nblks
-          do ix = 1, Atm_block%blksz(nb)
-
-            if (Sfcprop(nb)%tsfc(ix) > 375. .or. Sfcprop(nb)%tsfc(ix) < 50.0) then
-              print*,'cggg2 bad tsfc pt ',nb,ix,Sfcprop(nb)%tsfc(ix)
-            endif
-
-          enddo
-        enddo
 
     if (sfc%var2(i,j,sfc%nvar2m) < -9990.0_kind_phys) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlwav')
