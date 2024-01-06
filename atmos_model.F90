@@ -1988,18 +1988,18 @@ end subroutine update_atmos_chemistry
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  GFS_Data(nb)%Sfcprop%ssu(ix) = zero
+                  GFS_Data(nb)%Sfcprop%usfco(ix) = zero
                   if (GFS_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then  ! ocean points
                     if(mergeflg(i,j)) then
-                     GFS_Data(nb)%Sfcprop%ssu(ix)       =  zero
+                     GFS_Data(nb)%Sfcprop%usfco(ix)       =  zero
                       datar8(i,j) = zero
                     else
-                      GFS_Data(nb)%Sfcprop%ssu(ix)       = datar8(i,j)
+                      GFS_Data(nb)%Sfcprop%usfco(ix)       = datar8(i,j)
                     endif
                   endif
                 enddo
               enddo
-              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get ssu from mediator'
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get usfco from mediator'
             endif
           endif
 
@@ -2014,18 +2014,18 @@ end subroutine update_atmos_chemistry
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  GFS_Data(nb)%Sfcprop%ssv(ix) = zero
+                  GFS_Data(nb)%Sfcprop%vsfco(ix) = zero
                   if (GFS_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then  ! ocean points
                     if(mergeflg(i,j)) then
-                     GFS_Data(nb)%Sfcprop%ssv(ix)       =  zero
+                     GFS_Data(nb)%Sfcprop%vsfco(ix)       =  zero
                       datar8(i,j) = zero
                     else
-                      GFS_Data(nb)%Sfcprop%ssv(ix)       = datar8(i,j)
+                      GFS_Data(nb)%Sfcprop%vsfco(ix)       = datar8(i,j)
                     endif
                   endif
                 enddo
               enddo
-              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get ssv from mediator'
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get vsfco from mediator'
             endif
           endif
 

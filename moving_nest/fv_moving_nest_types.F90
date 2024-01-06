@@ -140,8 +140,8 @@ module fv_moving_nest_types_mod
     real (kind=kind_phys), _ALLOCATABLE :: zorlw (:,:)      _NULL   !< wave surface roughness length
     real (kind=kind_phys), _ALLOCATABLE :: zorlwav (:,:)    _NULL   !< wave surface roughness in cm derived from wave model
 
-    real (kind=kind_phys), _ALLOCATABLE :: ssu (:,:)        _NULL   !< sea surface current (zonal)
-    real (kind=kind_phys), _ALLOCATABLE :: ssv (:,:)        _NULL   !< sea surface current (meridional)
+    real (kind=kind_phys), _ALLOCATABLE :: usfco (:,:)      _NULL   !< sea surface current (zonal)
+    real (kind=kind_phys), _ALLOCATABLE :: vsfco (:,:)      _NULL   !< sea surface current (meridional)
 
     real (kind=kind_phys), _ALLOCATABLE :: sfalb_lnd(:,:)   _NULL   !< surface albedo over land for LSM
     real (kind=kind_phys), _ALLOCATABLE :: emis_lnd(:,:)    _NULL   !< surface emissivity over land for LSM
@@ -387,8 +387,8 @@ contains
       allocate ( mn_phys%zorlwav(isd:ied, jsd:jed) )
       allocate ( mn_phys%zorlw(isd:ied, jsd:jed) )
 
-      allocate ( mn_phys%ssu(isd:ied, jsd:jed) )
-      allocate ( mn_phys%ssv(isd:ied, jsd:jed) )
+      allocate ( mn_phys%usfco(isd:ied, jsd:jed) )
+      allocate ( mn_phys%vsfco(isd:ied, jsd:jed) )
 
       allocate ( mn_phys%alvsf(isd:ied, jsd:jed) )
       allocate ( mn_phys%alvwf(isd:ied, jsd:jed) )
@@ -474,8 +474,8 @@ contains
       mn_phys%zorlwav = +99999.9
       mn_phys%zorlw = +99999.9
 
-      mn_phys%ssu = +99999.9
-      mn_phys%ssv = +99999.9
+      mn_phys%usfco = +99999.9
+      mn_phys%vsfco = +99999.9
 
       mn_phys%alvsf = +99999.9
       mn_phys%alvwf = +99999.9
@@ -573,8 +573,8 @@ contains
       deallocate( mn_phys%zorlwav )
       deallocate( mn_phys%zorlw )
 
-      deallocate( mn_phys%ssu )
-      deallocate( mn_phys%ssv )
+      deallocate( mn_phys%usfco )
+      deallocate( mn_phys%vsfco )
 
       deallocate( mn_phys%alvsf )
       deallocate( mn_phys%alvwf )

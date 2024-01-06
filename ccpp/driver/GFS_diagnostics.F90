@@ -3922,24 +3922,24 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'ssu'
+    ExtDiag(idx)%name = 'usfco'
     ExtDiag(idx)%desc = 'surface zonal current'
     ExtDiag(idx)%unit = 'm/s'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ssu(:)
+      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%usfco(:)
     enddo
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'ssv'
+    ExtDiag(idx)%name = 'vsfco'
     ExtDiag(idx)%desc = 'surface meridional current'
     ExtDiag(idx)%unit = 'm/s'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ssv(:)
+      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%vsfco(:)
     enddo
 
     if (Model%frac_grid) then
