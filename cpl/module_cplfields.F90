@@ -191,14 +191,14 @@ module module_cplfields
     FieldInfo("land_fraction                            ", "s"), &
     FieldInfo("inst_snow_area_fraction_lnd              ", "s"), &
     FieldInfo("inst_spec_humid_lnd                      ", "s"), &      
-    FieldInfo("mean_laten_heat_flx_lnd                  ", "s"), &
-    FieldInfo("mean_sensi_heat_flx_lnd                  ", "s"), &
-    FieldInfo("mean_potential_laten_heat_flx_lnd        ", "s"), &
+    FieldInfo("inst_laten_heat_flx_lnd                  ", "s"), &
+    FieldInfo("inst_sensi_heat_flx_lnd                  ", "s"), &
+    FieldInfo("inst_potential_laten_heat_flx_lnd        ", "s"), &
     FieldInfo("inst_temp_height2m_lnd                   ", "s"), &
     FieldInfo("inst_spec_humid_height2m_lnd             ", "s"), &
-    FieldInfo("mean_upward_heat_flux_lnd                ", "s"), &
-    FieldInfo("mean_runoff_rate_lnd                     ", "s"), &
-    FieldInfo("mean_subsurface_runoff_rate_lnd          ", "s"), &
+    FieldInfo("inst_upward_heat_flux_lnd                ", "s"), &
+    FieldInfo("inst_runoff_rate_lnd                     ", "s"), &
+    FieldInfo("inst_subsurface_runoff_rate_lnd          ", "s"), &
     FieldInfo("inst_drag_wind_speed_for_momentum        ", "s"), &
     FieldInfo("inst_drag_mass_flux_for_heat_and_moisture", "s"), &
     FieldInfo("inst_func_of_roughness_length_and_vfrac  ", "s"), &

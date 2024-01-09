@@ -2371,7 +2371,7 @@ end subroutine update_atmos_chemistry
 
 ! get latent heat flux: over land (if cpllnd=true and cpllnd2atm=true)
 !------------------------------------------------
-          fldname = 'mean_laten_heat_flx_lnd'
+          fldname = 'inst_laten_heat_flx_lnd'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
@@ -2391,7 +2391,7 @@ end subroutine update_atmos_chemistry
 
 ! get sensible heat flux: over land (if cpllnd=true and cpllnd2atm=true)
 !--------------------------------------------------
-          fldname = 'mean_sensi_heat_flx_lnd'
+          fldname = 'inst_sensi_heat_flx_lnd'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
@@ -2411,7 +2411,7 @@ end subroutine update_atmos_chemistry
 
 ! get surface upward potential latent heat flux: over land (if cpllnd=true and cpllnd2atm=true)
 !------------------------------------------------
-          fldname = 'mean_potential_laten_heat_flx_lnd'
+          fldname = 'inst_potential_laten_heat_flx_lnd'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
@@ -2491,7 +2491,7 @@ end subroutine update_atmos_chemistry
 
 ! get upward heat flux in soil (if cpllnd=true and cpllnd2atm=true)
 !------------------------------------------------
-          fldname = 'mean_upward_heat_flux_lnd'
+          fldname = 'inst_upward_heat_flux_lnd'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
@@ -2511,7 +2511,7 @@ end subroutine update_atmos_chemistry
 
 ! get surface runoff in soil (if cpllnd=true and cpllnd2atm=true)
 !------------------------------------------------
-          fldname = 'mean_runoff_rate_lnd'
+          fldname = 'inst_runoff_rate_lnd'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
@@ -2531,7 +2531,7 @@ end subroutine update_atmos_chemistry
 
 ! get subsurface runoff in soil (if cpllnd=true and cpllnd2atm=true)
 !------------------------------------------------
-          fldname = 'mean_subsurface_runoff_rate_lnd'
+          fldname = 'inst_subsurface_runoff_rate_lnd'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
