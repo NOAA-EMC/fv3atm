@@ -2351,7 +2351,7 @@ end subroutine update_atmos_chemistry
 
 ! get surface snow area fraction: over land (if cpllnd=true and cpllnd2atm=true)
 !------------------------------------------------
-          fldname = 'mean_snow_area_fraction_lnd'
+          fldname = 'inst_snow_area_fraction_lnd'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then

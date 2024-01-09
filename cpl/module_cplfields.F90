@@ -189,7 +189,7 @@ module module_cplfields
 
     ! For receiving fluxes from external land component
     FieldInfo("land_fraction                            ", "s"), &
-    FieldInfo("mean_snow_area_fraction_lnd              ", "s"), &
+    FieldInfo("inst_snow_area_fraction_lnd              ", "s"), &
     FieldInfo("inst_spec_humid_lnd                      ", "s"), &      
     FieldInfo("mean_laten_heat_flx_lnd                  ", "s"), &
     FieldInfo("mean_sensi_heat_flx_lnd                  ", "s"), &
