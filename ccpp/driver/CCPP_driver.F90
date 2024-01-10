@@ -81,9 +81,10 @@ module CCPP_driver
         nthrdsX = nthrds
       end if
 
-      ! For physics running over the entire domain, block and thread
-      ! number are not used; set to safe values
+      ! For physics running over the entire domain, block, chunk and thread
+      ! numbers are not used; set to safe values
       cdata_domain%blk_no = 1
+      cdata_domain%chunk_no = 1
       cdata_domain%thrd_no = 1
 
       ! Allocate cdata structures for blocks and threads
@@ -92,8 +93,10 @@ module CCPP_driver
       ! Loop over all blocks and threads
       do nt=1,nthrdsX
         do nb=1,nblks
-          ! Assign the correct block and thread numbers
+          ! Assign the correct block, chunk and thread numbers
+          ! Note that we can use block number as chunk number
           cdata_block(nb,nt)%blk_no = nb
+          cdata_block(nb,nt)%chunk_no = nb
           cdata_block(nb,nt)%thrd_no = nt
         end do
       end do
@@ -177,8 +180,8 @@ module CCPP_driver
 #endif
 !$OMP do schedule (dynamic,1)
       do nb = 1,nblks
-        ! For non-uniform blocks, the last block has a different (shorter)
-        ! length than the other blocks; use special CCPP_Interstitial(nthrdsX)
+        ! For non-uniform blocks/chunks, the last block/chunk has a different (shorter)
+        ! length than the other blocks/chunks; use special CCPP_Interstitial(nthrdsX)
         if (non_uniform_blocks .and. nb==nblks) then
             ntX = nthrdsX
         else
@@ -188,7 +191,7 @@ module CCPP_driver
         call ccpp_physics_run(cdata_block(nb,ntX), suite_name=trim(ccpp_suite), group_name=trim(step), ierr=ierr2)
         if (ierr2/=0) then
            write(0,'(2a,3(a,i4),a)') "An error occurred in ccpp_physics_run for group ", trim(step), &
-                                     ", block ", nb, " and thread ", nt, " (ntX=", ntX, "):"
+                                     ", block/chunk ", nb, " and thread ", nt, " (ntX=", ntX, "):"
            write(0,'(a)') trim(cdata_block(nb,ntX)%errmsg)
            ierr = ierr + ierr2
         end if

@@ -729,7 +729,11 @@ module GFS_typedefs
     integer              :: nblks           !< for explicit data blocking: number of blocks
     integer,     pointer :: blksz(:)        !< for explicit data blocking: block sizes of all blocks
     integer              :: ncols           !< total number of columns for all blocks
-
+    !
+    integer              :: nchunks         !< number of chunks of an array that are used in the CCPP run phase
+    integer, allocatable :: chunk_begin(:)  !< first indices of chunks of an array for the CCPP run phase
+    integer, allocatable :: chunk_end(:)    !< last indices of chunks of an array for the CCPP run phase
+    !
     integer              :: fire_aux_data_levels !< vertical levels of fire auxiliary data
 
 !--- coupling parameters
@@ -4242,6 +4246,21 @@ module GFS_typedefs
     allocate(Model%blksz(1:Model%nblks))
     Model%blksz            = blksz
     Model%ncols            = sum(Model%blksz)
+    ! DH*
+    Model%nchunks          = size(blksz)
+    allocate(Model%chunk_begin(Model%nchunks))
+    allocate(Model%chunk_end(Model%nchunks))
+    Model%chunk_begin(1) = 1
+    Model%chunk_end(1) = Model%chunk_begin(1) + blksz(1) - 1
+    do i=2,Model%nchunks
+        Model%chunk_begin(i) = Model%chunk_end(i-1) + 1
+        Model%chunk_end(i) = Model%chunk_begin(i) + blksz(i) - 1
+    end do
+    do i=1,Model%nchunks
+        print *, "DH DEBUG:", i, blksz(i), Model%chunk_begin(i), Model%chunk_end(i)
+    end do
+    stop
+    ! *DH
 
 !--- coupling parameters
     Model%cplflx           = cplflx
