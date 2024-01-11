@@ -64,6 +64,7 @@ endif()
 find_package(bacio 2.4.0 REQUIRED)
 find_package(sp 2.3.3 REQUIRED)
 find_package(w3emc 2.9.2 REQUIRED)
+find_package(PIO REQUIRED)
 
 find_package(Python 3.6 REQUIRED COMPONENTS Interpreter)
 

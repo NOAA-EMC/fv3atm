@@ -1,11 +1,10 @@
 # This is a CI workflow for the fv3atm project.
 #
-# This workflow builds and tests the fv3atm library using GCC, and it tests
-# different CMake build options.
+# This workflow checks code coverage and will build documentation.
 #
-# Alex Richert, 6 Dec 2023
+# Alex Richert, 11 Jan 2024
 
-name: GCC
+name: developer
 on:
   push:
     branches:
@@ -15,16 +14,14 @@ on:
     - develop
 
 jobs:
-  GCC:
+  developer:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        cmake_opts: ["-D32BIT=ON", "-D32BIT=OFF"]
-        gcc_ver: ["11"]
-        mpi: ["mpich"]
-
     steps:
+
+    - name: apt-install
+      run: |
+        sudo apt install gcovr
 
     - name: checkout-fv3atm
       uses: actions/checkout@v3
@@ -37,7 +34,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{ github.workspace }}/spack-develop
-        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-2
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc11-2
 
     # Building dependencies takes 40+ min
     - name: spack-install
@@ -46,12 +43,12 @@ jobs:
         wget --no-verbose https://github.com/spack/spack/archive/refs/heads/develop.zip
         unzip develop.zip -d ${GITHUB_WORKSPACE}/ &> unzip.out
         . ${GITHUB_WORKSPACE}/spack-develop/share/spack/setup-env.sh
-        spack env create gcc${{ matrix.gcc_ver }} ${GITHUB_WORKSPACE}/fv3atm/ci/spack.yaml
-        spack env activate gcc${{ matrix.gcc_ver }}
-        spack compiler find | grep gcc@${{ matrix.gcc_ver }}
-        spack external find gmake cmake git git-lfs perl python ${{ matrix.mpi }}
-        spack config add "packages:all:require:['%gcc@${{ matrix.gcc_ver }}']"
-        spack config add "packages:mpi:require:'${{ matrix.mpi }}'"
+        spack env create gcc11 ${GITHUB_WORKSPACE}/fv3atm/ci/spack.yaml
+        spack env activate gcc11
+        spack compiler find | grep gcc@11
+        spack external find gmake cmake git git-lfs perl python mpich
+        spack config add "packages:all:require:['%gcc@11']"
+        spack config add "packages:mpi:require:'mpich'"
         spack concretize |& tee ${SPACK_ENV}/log.concretize
         spack install -j2 --fail-fast
 
@@ -60,25 +57,39 @@ jobs:
       if: ${{ always() }}
       with:
         path: ${{ github.workspace }}/spack-develop
-        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-2
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc11-2
 
     - name: build-fv3atm
       run: |
         . ${GITHUB_WORKSPACE}/spack-develop/share/spack/setup-env.sh
-        spack env activate gcc${{ matrix.gcc_ver }}
+        spack env activate gcc11
         spack load $(spack find --format "{name}")
         cd ${GITHUB_WORKSPACE}/fv3atm
         git clone https://github.com/NOAA-EMC/CMakeModules
         git clone --recurse-submodules https://github.com/NOAA-PSL/stochastic_physics stochastic_physics_repo
         mkdir ${GITHUB_WORKSPACE}/fv3atm/build
         cd ${GITHUB_WORKSPACE}/fv3atm/build
-        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }}
+        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON -DCMAKE_Fortran_FLAGS="-fprofile-abs-path -fprofile-arcs -ftest-coverage -O0"
         make -j2
 
     - name: run-tests
       run: |
-        cd $GITHUB_WORKSPACE/build
+        cd $GITHUB_WORKSPACE/fv3atm/build
         ctest -j2 --output-on-failure --rerun-failed
+
+    - name: get-test-coverage
+      run: |
+        f=${GITHUB_WORKSPACE}/fv3atm
+        cd $f/build
+        gcovr -r .. -v --html-details --exclude ${f}/tests --exclude $f/stochastic_physics_repo --exclude $f/build/ccpp --exclude $f/ccpp/physics --exclude $f/ccpp/framework --exclude $f/atmos_cubed_sphere  --exclude CMakeFiles --print-summary -o test-coverage.html
+
+    - name: upload-test-coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-coverage-fv3atm-${{ github.sha }}
+        path: |
+              ${{ github.workspace }}/fv3atm/build/*.html 
+              ${{ github.workspace }}/fv3atm/build/*.css
 
     - name: debug-artifacts
       uses: actions/upload-artifact@v4
