@@ -67,4 +67,4 @@ find_package(w3emc 2.9.2 REQUIRED)
 
 find_package(Python 3.6 REQUIRED COMPONENTS Interpreter)
 
-add_subdirectory(stochastic_physics)
+add_subdirectory(stochastic_physics_repo)
