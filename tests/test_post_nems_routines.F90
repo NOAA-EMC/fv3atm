@@ -20,7 +20,7 @@ program test_post_nems_routines
   if (kpo.ne.0) stop 1
   if (kth.ne.6) stop 2
   if (kpv.ne.8) stop 3
-  if (.not.all(po.eq.0.0)) stop 4
+  if (any(po.ne.0.0)) stop 4
   if (any(abs(th(1:6)-(/310.,320.,350.,450.,550.,650./)).gt.tini)) stop 5
   if (any(abs(pv(1:8)-(/0.5,-0.5,1.0,-1.0,1.5,-1.5,2.0,-2.0/)).gt.tini)) stop 6
   if (.not.hyb_sigp) stop 7
@@ -37,7 +37,8 @@ program test_post_nems_routines
   if (kpo.ne.5) stop 101
   if (kth.ne.7) stop 102
   if (kpv.ne.9) stop 103
-  if (.not.all(po.eq.1.0)) stop 104
+  if (po(1).ne.0.5) stop 104
+  if (any(po(2:komax).ne.1.0)) stop 104
   if (any(abs(th(1:7)-(/1.,2.,3.,4.,5.,6.,7./)).gt.tini)) stop 105
   if (any(abs(pv(1:9)-(/11.,12.,13.,14.,15.,16.,17.,18.,19./)).gt.tini)) stop 106
   if (hyb_sigp) stop 107
