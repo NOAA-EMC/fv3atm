@@ -72,7 +72,7 @@ jobs:
         git clone --recurse-submodules https://github.com/NOAA-PSL/stochastic_physics stochastic_physics_repo
         mkdir ${GITHUB_WORKSPACE}/build
         cd ${GITHUB_WORKSPACE}/build
-        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }}
+        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON
         make -j2
 
     - name: debug-artifacts
