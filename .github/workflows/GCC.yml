@@ -81,9 +81,16 @@ jobs:
         cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON
         make -j2
 
+    - uses: actions/upload-artifact@v3
+      with:
+        name: docs
+        path: |
+          fv3atm/build/docs/html
+          
     - name: debug-artifacts
       uses: actions/upload-artifact@v3
       if: ${{ failure() }}
       with:
         name: ccpp_prebuild_logs
         path: ${{ github.workspace }}/build/ccpp/ccpp_prebuild.*
+
