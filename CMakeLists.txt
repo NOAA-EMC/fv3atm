@@ -1,3 +1,9 @@
+# Enable CI build & unit testing:
+if(BUILD_TESTING)
+  cmake_minimum_required(VERSION 3.19)
+  project(fv3atm VERSION 1.0 LANGUAGES C CXX Fortran)
+  include(ci/CMakeLists.txt)
+endif()
 
 ###############################################################################
 ### CCPP
