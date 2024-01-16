@@ -28,7 +28,7 @@ jobs:
 
     - name: install-doxygen
       run: |
-        sudo apt-get install doxygen dot
+        sudo apt-get install doxygen graphviz
         
     - name: checkout-fv3atm
       uses: actions/checkout@v3
