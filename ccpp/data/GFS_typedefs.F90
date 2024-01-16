@@ -3240,8 +3240,8 @@ module GFS_typedefs
 
 !--- BEGIN NAMELIST VARIABLES
     real(kind=kind_phys) :: fhzero         = 0.0             !< hours between clearing of diagnostic buckets
-    real(kind=kind_phys) :: fhzero_array(1:2)    = 0.0       !< array with hours between clearing of diagnostic buckets
-    real(kind=kind_phys) :: fhzero_fhour(1:2)    = 0.0       !< the maximum forecast length for the hours between clearing of diagnostic buckets
+    real(kind=kind_phys) :: fhzero_array(1:2)  = 0.0         !< array with hours between clearing of diagnostic buckets
+    real(kind=kind_phys) :: fhzero_fhour(1:2)  = 0.0         !< the maximum forecast length for the hours between clearing of diagnostic buckets
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: qdiag3d        = .false.         !< flag for 3d tracer diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
@@ -3890,7 +3890,7 @@ module GFS_typedefs
                           !--- general parameters
                                fhzero, fhzero_array, fhzero_fhour, ldiag3d, qdiag3d, lssav, &
                                naux2d, dtend_select, naux3d, aux2d_time_avg,                &
-                               aux3d_time_avg, thermodyn_id, sfcpress_id,                   &
+                               aux3d_time_avg, fhcyc, thermodyn_id, sfcpress_id,            &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
                                cplchm, cpllnd, cpl_imp_mrg, cpl_imp_dbg, rrfs_sd,           &
