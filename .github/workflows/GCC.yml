@@ -80,6 +80,8 @@ jobs:
         cd ${GITHUB_WORKSPACE}/build
         cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON
         make -j2
+        ls -l ${GITHUB_WORKSPACE}/build
+        ls -l ${GITHUB_WORKSPACE}/build/docs
 
     - uses: actions/upload-artifact@v3
       with:
