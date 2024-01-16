@@ -29,7 +29,6 @@
       use mpi_f08
       use esmf
       use fms
-      use mpp_mod, only : mpp_init   ! needed for fms 2023.02
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
@@ -253,7 +252,6 @@
       lprnt = lead_write_task == wrt_int_state%mype
 
       call fms_init(wrt_mpi_comm%mpi_val)
-      call mpp_init()
 
 !      print *,'in wrt, lead_write_task=', &
 !         lead_write_task,'last_write_task=',last_write_task, &
@@ -1342,7 +1340,7 @@
 
 ! save calendar_type (as integer) for use in 'coupler.res'
         if (index(trim(attNameList(i)),'time:calendar') > 0) then
-          select case( uppercase(trim(valueS)) )
+          select case( fms_mpp_uppercase(trim(valueS)) )
           case( 'JULIAN' )
               calendar_type = JULIAN
           case( 'GREGORIAN' )
@@ -1354,7 +1352,7 @@
           case( 'NO_CALENDAR' )
               calendar_type = NO_CALENDAR
           case default
-              call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
+              call fms_mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
                                       'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
           end select
         endif
