@@ -82,12 +82,19 @@ jobs:
         make -j2
         ls -l ${GITHUB_WORKSPACE}/build
         ls -l ${GITHUB_WORKSPACE}/build/docs
+        ls -l ${GITHUB_WORKSPACE}/build/docs/html        
 
     - uses: actions/upload-artifact@v3
       with:
         name: docs
         path: |
           ${GITHUB_WORKSPACE}/build/docs/html
+          
+    - uses: actions/upload-artifact@v3
+      with:
+        name: docs2
+        path: |
+          ${GITHUB_WORKSPACE}/build/docs/html/*
           
     - name: debug-artifacts
       uses: actions/upload-artifact@v3
