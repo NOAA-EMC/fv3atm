@@ -85,7 +85,7 @@ jobs:
       with:
         name: docs
         path: |
-          fv3atm/build/docs/html
+          ${GITHUB_WORKSPACE}/build/docs/html
           
     - name: debug-artifacts
       uses: actions/upload-artifact@v3
