@@ -2,7 +2,7 @@
 !> @brief fv3 configure variables from model_configure.
 !> @author Jun Wang @date 01/2017
 
-!> fv3 configure variables from model_configure.
+!> @brief fv3 configure variables from model_configure.
 !>
 !> @author Jun Wang @date 01/2017
   module module_fv3_config

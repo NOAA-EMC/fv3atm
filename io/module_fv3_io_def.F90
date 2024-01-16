@@ -2,7 +2,7 @@
 !> @brief fv3 I/O related configration variables.
 !> @author Jun Wang @date 01/2017
 
-!> fv3 I/O related configration variables.
+!> @brief fv3 I/O related configration variables.
 !>
 !> @author Jun Wang @date 01/2017
 module module_fv3_io_def
