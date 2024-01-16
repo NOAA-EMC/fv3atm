@@ -41,7 +41,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{ github.workspace }}/spack-develop
-        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-2
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-2-${{ matrix.cmake_opts }}-${{ matrix.mpich }}
 
     # Building dependencies takes 40+ min
     - name: spack-install
