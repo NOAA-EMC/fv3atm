@@ -28,7 +28,7 @@ jobs:
 
     - name: install-doxygen
       run: |
-        sudo apt-get install doxygen
+        sudo apt-get install doxygen dot
         
     - name: checkout-fv3atm
       uses: actions/checkout@v3
@@ -76,26 +76,16 @@ jobs:
         git clone --recurse-submodules https://github.com/NOAA-PSL/stochastic_physics stochastic_physics_repo
         mkdir ${GITHUB_WORKSPACE}/build
         sed -i 's/doc /upp_doc /' upp/docs/CMakeLists.txt
-        cat upp/docs/CMakeLists.txt
         cd ${GITHUB_WORKSPACE}/build
         cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON
         make -j2
-        ls -l ${GITHUB_WORKSPACE}/build
-        ls -l ${GITHUB_WORKSPACE}/build/docs
-        ls -l ${GITHUB_WORKSPACE}/build/docs/html
-        echo ${GITHUB_WORKSPACE}
+        ls -l /home/runner/work/fv3atm/fv3atm/fv3atm/io
 
     - uses: actions/upload-artifact@v3
       with:
         name: docs
         path: |
           build/docs/html
-          
-    - uses: actions/upload-artifact@v3
-      with:
-        name: docs2
-        path: |
-          build/docs/html/*
           
     - name: debug-artifacts
       uses: actions/upload-artifact@v3
