@@ -1,8 +1,10 @@
 !> @file
 !> @brief The internal state of the write component.
 !> @author Jun Wang @date Feb, 2017 
-!-----------------------------------------------------------------------
-      module write_internal_state
+
+!> @brief The internal state of the write component.
+!> @author Jun Wang @date Feb, 2017 
+module write_internal_state
       use esmf
 !
 !-----------------------------------------------------------------------
