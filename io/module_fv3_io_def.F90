@@ -9,7 +9,7 @@ module module_fv3_io_def
   use esmf, only     : esmf_maxstr
   implicit none
 
-  !> Number of processors used inr the forecast grid component
+  !> Number of processors used in the forecast grid component
   integer           :: num_pes_fcst
 
   !> Number of write tasks per write group.  
