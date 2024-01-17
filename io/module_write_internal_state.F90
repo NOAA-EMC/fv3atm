@@ -1,16 +1,8 @@
+!> @file
+!> @brief The internal state of the write component.
+!> @author Jun Wang @date Feb, 2017 
 !-----------------------------------------------------------------------
       module write_internal_state
-!
-!-----------------------------------------------------------------------
-!***  the internal state of the write component.
-!-----------------------------------------------------------------------
-!***
-!***  revision history
-!***
-!       Feb 2017:  J. Wang - Initial code
-!
-!-----------------------------------------------------------------------
-!
       use esmf
 !
 !-----------------------------------------------------------------------
@@ -20,12 +12,27 @@
 !-----------------------------------------------------------------------
 !
       type output_grid_info
-        integer :: im, jm, lm
-        integer :: i_start,i_end, j_start,j_end
-        real,dimension(:,:),allocatable  :: lonPtr, latPtr
-        integer,dimension(:),allocatable :: i_start_wrtgrp, i_end_wrtgrp, j_start_wrtgrp, j_end_wrtgrp
-        real    :: latse, latnw, lonse, lonnw
-        real    :: latstart, latlast, lonstart, lonlast
+        integer :: im !< ???
+        integer :: jm !< ???
+        integer :: lm !< ???
+        integer :: i_start !< ???
+        integer :: i_end !< ???
+        integer :: j_start !< ???
+        integer :: j_end !< ???
+        real,dimension(:,:),allocatable  :: lonPtr !< ???
+        real,dimension(:,:),allocatable  :: latPtr !< ???
+        integer,dimension(:),allocatable :: i_start_wrtgrp !< ???
+        integer,dimension(:),allocatable :: i_end_wrtgrp !< ???
+        integer,dimension(:),allocatable :: j_start_wrtgrp !< ???
+        integer,dimension(:),allocatable :: j_end_wrtgrp !< ???
+        real    :: latse !< ???
+        real    :: latnw !< ???
+        real    :: lonse !< ???
+        real    :: lonnw !< ???
+        real    :: latstart !< ???
+        real    :: latlast !< ???
+        real    :: lonstart !< ???
+        real    :: lonlast !< ???
       end type output_grid_info
 
       type wrt_internal_state
@@ -34,61 +41,62 @@
 ! pe information and task layout
 !--------------------------------
 !
-      integer :: mype
-      integer :: petcount
+      integer :: mype !< ???
+      integer :: petcount !< Number of PEs.
 !
 !--------------------
 !*** grid information
 !--------------------
-      type(esmf_grid) :: wrtgrid
+      type(esmf_grid) :: wrtgrid !< ???
 
-      type(output_grid_info) ,dimension(:), allocatable :: out_grid_info
+      type(output_grid_info) ,dimension(:), allocatable :: out_grid_info !< ???
 !
 !--------------------------
 !*** file bundle for output
 !--------------------------
-      integer :: FBCount
+      integer :: FBCount !< ???
 !
 !-----------------------------------------------------------------------
 !***  THE OUTPUT FILE
 !-----------------------------------------------------------------------
 !
-      integer                 :: num_files
+      integer                 :: num_files !< ???
 !
 !-----------------------------------------------------------------------
 !***  THE OUTPUT FILE
 !-----------------------------------------------------------------------
 !
-      type(ESMF_FieldBundle),dimension(:),allocatable  :: wrtFB
+      type(ESMF_FieldBundle),dimension(:),allocatable  :: wrtFB !< ???
 !
 !-------------------------------------
 !***  Times used in history filenames
 !-------------------------------------
 !
-      type(ESMF_Time)         :: io_basetime
-      integer                 :: idate(7)
-      integer                 :: fdate(7)
+      type(ESMF_Time)         :: io_basetime !< ???
+      integer                 :: idate(7) !< ???
+      integer                 :: fdate(7) !< ???
 !
 !-----------------------------------------
 !***  I/O direction flags (Read or Write)
 !-----------------------------------------
 !
-      logical :: output_history
+      logical :: output_history !< ???
 !
 !-----------------------------------------
 !***  POST flags and required variables
 !-----------------------------------------
 !
-      logical                  :: write_dopost
-      character(80)            :: post_namelist
+      logical                  :: write_dopost !< ???
+      character(80)            :: post_namelist !< ???
 !
-      integer                  :: fhzero
-      integer                  :: ntrac
-      integer                  :: ncld
-      integer                  :: nsoil
-      integer                  :: imp_physics
-      integer                  :: dtp
-      real,dimension(:),allocatable :: ak,bk
+      integer                  :: fhzero !< ???
+      integer                  :: ntrac !< ???
+      integer                  :: ncld !< ???
+      integer                  :: nsoil !< ???
+      integer                  :: imp_physics !< ???
+      integer                  :: dtp !< ???
+      real,dimension(:),allocatable :: ak !< ???
+      real,dimension(:),allocatable :: bk !< ???
 !-----------------------------------------------------------------------
 !
       end type wrt_internal_state
@@ -99,7 +107,7 @@
 !-----------------------------------------------------------
 !
       type write_wrap
-        type(wrt_internal_state),pointer :: write_int_state
+        type(wrt_internal_state),pointer :: write_int_state  !< ???
       end type write_wrap
 
 !-----------------------------------------------------------
