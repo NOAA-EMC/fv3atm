@@ -26,7 +26,7 @@ module module_cplfields
   !  l : model levels (3D)
   !  s : surface (2D)
   !  t : tracers (4D)
-  integer,          public, parameter :: NexportFields = 119
+  integer,          public, parameter :: NexportFields = 121
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
@@ -61,13 +61,15 @@ module module_cplfields
     FieldInfo("mean_merid_moment_flx_atm                ", "s"), &
     FieldInfo("mean_sensi_heat_flx                      ", "s"), &
     FieldInfo("mean_laten_heat_flx                      ", "s"), &
+    FieldInfo("mean_evap_rate                           ", "s"), &
     FieldInfo("mean_down_lw_flx                         ", "s"), &
     FieldInfo("mean_down_sw_flx                         ", "s"), &
-    FieldInfo("mean_prec_rate                           ", "s"), &
+    FieldInfo("inst_prec_rate                           ", "s"), &
     FieldInfo("inst_zonal_moment_flx                    ", "s"), &
     FieldInfo("inst_merid_moment_flx                    ", "s"), &
     FieldInfo("inst_sensi_heat_flx                      ", "s"), &
     FieldInfo("inst_laten_heat_flx                      ", "s"), &
+    FieldInfo("inst_evap_rate                           ", "s"), &
     FieldInfo("inst_down_lw_flx                         ", "s"), &
     FieldInfo("inst_down_sw_flx                         ", "s"), &
     FieldInfo("inst_temp_height2m                       ", "s"), &
@@ -104,7 +106,7 @@ module module_cplfields
     FieldInfo("inst_merid_wind_height_lowest            ", "s"), &
     FieldInfo("inst_pres_height_lowest                  ", "s"), &
     FieldInfo("inst_height_lowest                       ", "s"), &
-    FieldInfo("mean_fprec_rate                          ", "s"), &
+    FieldInfo("inst_fprec_rate                          ", "s"), &
     FieldInfo("openwater_frac_in_atm                    ", "s"), &
     FieldInfo("ice_fraction_in_atm                      ", "s"), &
     FieldInfo("lake_fraction                            ", "s"), &
@@ -120,7 +122,7 @@ module module_cplfields
     FieldInfo("inst_merid_wind_height_lowest_from_phys  ", "s"), &
     FieldInfo("inst_pres_height_lowest_from_phys        ", "s"), &
     FieldInfo("inst_spec_humid_height_lowest_from_phys  ", "s"), &
-    FieldInfo("mean_prec_rate_conv                      ", "s"), &
+    FieldInfo("inst_prec_rate_conv                      ", "s"), &
     FieldInfo("inst_temp_height_lowest_from_phys        ", "s"), &
     FieldInfo("inst_exner_function_height_lowest        ", "s"), &
     FieldInfo("surface_friction_velocity                ", "s"), &
@@ -166,13 +168,13 @@ module module_cplfields
     FieldInfo("sea_ice_surface_temperature              ", "s"), &
     FieldInfo("sea_surface_temperature                  ", "s"), &
     FieldInfo("ice_fraction                             ", "s"), &
-    FieldInfo("mean_up_lw_flx_ice                       ", "s"), &
-    FieldInfo("mean_laten_heat_flx_atm_into_ice         ", "s"), &
-    FieldInfo("mean_sensi_heat_flx_atm_into_ice         ", "s"), &
+    FieldInfo("lwup_flx_ice                             ", "s"), &
+    FieldInfo("laten_heat_flx_atm_into_ice              ", "s"), &
+    FieldInfo("sensi_heat_flx_atm_into_ice              ", "s"), &
     FieldInfo("stress_on_air_ice_zonal                  ", "s"), &
     FieldInfo("stress_on_air_ice_merid                  ", "s"), &
-    FieldInfo("mean_ice_volume                          ", "s"), &
-    FieldInfo("mean_snow_volume                         ", "s"), &
+    FieldInfo("sea_ice_volume                           ", "s"), &
+    FieldInfo("snow_volume_on_sea_ice                   ", "s"), &
     FieldInfo("inst_ice_ir_dif_albedo                   ", "s"), &
     FieldInfo("inst_ice_ir_dir_albedo                   ", "s"), &
     FieldInfo("inst_ice_vis_dif_albedo                  ", "s"), &
@@ -183,9 +185,9 @@ module module_cplfields
     ! For receiving fluxes from mediator
     FieldInfo("stress_on_air_ocn_zonal                  ", "s"), &
     FieldInfo("stress_on_air_ocn_merid                  ", "s"), &
-    FieldInfo("mean_laten_heat_flx_atm_into_ocn         ", "s"), &
-    FieldInfo("mean_sensi_heat_flx_atm_into_ocn         ", "s"), &
-    FieldInfo("mean_up_lw_flx_ocn                       ", "s"), &
+    FieldInfo("laten_heat_flx_atm_into_ocn              ", "s"), &
+    FieldInfo("sensi_heat_flx_atm_into_ocn              ", "s"), &
+    FieldInfo("lwup_flx_ocn                             ", "s"), &
 
     !  For JEDI
     ! dynamics

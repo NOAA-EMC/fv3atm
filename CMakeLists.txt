@@ -1,3 +1,9 @@
+# Enable CI build & unit testing:
+if(BUILD_TESTING)
+  cmake_minimum_required(VERSION 3.19)
+  project(fv3atm VERSION 1.0 LANGUAGES C CXX Fortran)
+  include(ci/CMakeLists.txt)
+endif()
 
 ###############################################################################
 ### CCPP
@@ -85,9 +91,13 @@ add_library(fv3atm
   cpl/module_block_data.F90
   cpl/module_cplfields.F90
   cpl/module_cap_cpl.F90
-  io/clm_lake_io.F90
-  io/FV3GFS_io.F90
-  io/FV3GFS_restart_io.F90
+  io/fv3atm_common_io.F90
+  io/fv3atm_clm_lake_io.F90
+  io/fv3atm_rrfs_sd_io.F90
+  io/fv3atm_sfc_io.F90
+  io/fv3atm_oro_io.F90
+  io/fv3atm_history_io.F90
+  io/fv3atm_restart_io.F90
   io/module_write_netcdf.F90
   io/module_write_restart_netcdf.F90
   io/module_fv3_io_def.F90
