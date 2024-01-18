@@ -16,5 +16,5 @@
   branch = feature/hafsv2_basline_with_ssc
 [submodule "upp"]
   path = upp
-  url = https://github.com/hafs-community/UPP
-  branch = feature/hafsv2_baseline
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
