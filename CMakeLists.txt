@@ -1,6 +1,6 @@
 # This is the main CMake file for fv3atm.
 #
-# Mark Potts, Kyle Gerheiser, Alex Richert
+# Dusan Jovic, Alex Richert
 cmake_minimum_required(VERSION 3.19)
 
 # Handle user build options.
