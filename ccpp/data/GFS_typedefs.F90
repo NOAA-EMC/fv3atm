@@ -4488,10 +4488,14 @@ module GFS_typedefs
     if (Model%naux2d>0) then
         allocate(Model%aux2d_time_avg(1:naux2d))
         Model%aux2d_time_avg(1:naux2d) = aux2d_time_avg(1:naux2d)
+    else
+        allocate(Model%aux2d_time_avg(0))
     end if
     if (Model%naux3d>0) then
         allocate(Model%aux3d_time_avg(1:naux3d))
         Model%aux3d_time_avg(1:naux3d) = aux3d_time_avg(1:naux3d)
+    else
+        allocate(Model%aux3d_time_avg(0))
     end if
     !
     Model%fhcyc            = fhcyc
@@ -4719,6 +4723,8 @@ module GFS_typedefs
       do ipat=1,Model%nGases
         Model%active_gases_array(ipat) = ''
       enddo
+    else
+      allocate (Model%active_gases_array(0))
     endif
     Model%rrtmgp_root         = rrtmgp_root
     Model%lw_file_gas         = lw_file_gas
@@ -5267,6 +5273,9 @@ module GFS_typedefs
       allocate(Model%lndp_prt_list(Model%n_var_lndp))
       Model%lndp_var_list(:) = ''
       Model%lndp_prt_list(:) = clear_val
+    else
+      allocate(Model%lndp_var_list(0))
+      allocate(Model%lndp_prt_list(0))
     end if
 
     if (Model%do_spp) then
@@ -5276,6 +5285,10 @@ module GFS_typedefs
       Model%spp_var_list(:) = ''
       Model%spp_prt_list(:) = clear_val
       Model%spp_stddev_cutoff(:) = clear_val
+    else
+      allocate(Model%spp_var_list(0))
+      allocate(Model%spp_prt_list(0))
+      allocate(Model%spp_stddev_cutoff(0))
     end if
 
     !--- cellular automata options
@@ -5473,8 +5486,6 @@ module GFS_typedefs
             .and. Model%flag_for_dcnv_generic_tend
 
        ! Increment idtend and fill dtidx:
-        allocate(Model%dtend_var_labels(Model%ntracp100))
-        allocate(Model%dtend_process_labels(Model%nprocess))
 
         call allocate_dtend_labels_and_causes(Model)
 
@@ -5660,6 +5671,9 @@ module GFS_typedefs
              endif
           enddo
        endif
+    else
+      allocate(Model%dtend_var_labels(0))
+      allocate(Model%dtend_process_labels(0))
     end if
 
     IF ( Model%imp_physics == Model%imp_physics_nssl2mccn ) THEN ! recognize this option for compatibility
