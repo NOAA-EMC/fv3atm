@@ -1,8 +1,21 @@
 !> @file 
-!> @brief write gridded component.
+!> @brief Write grid component module.
 !> @author J. Wang/G. Theurich @date Jul, 2017
 
-!> @brief Run post on write grid comp.
+!> @brief Write grid component.
+!>
+!> At initialization step, write grid is defined. The forecast field
+!> bundle is mirrored and output field information inside the field
+!> bundle is used to create ESMF field on the write grid and added in
+!> the output field bundle on write grid component. Also the IO_BaseTime
+!> is set to the initial clock time.
+!>
+!> At the run step, output time is set from the write grid comp clock
+!> the ESMF field bundles that contains the data on write grid are
+!> written out through ESMF field bundle write to netcdf files.
+!> The ESMF field bundle write uses parallel write, so if output grid
+!> is cubed sphere grid, the  six tiles file will be written out at
+!> same time.
 !>
 !> ## Module History
 !>
@@ -14,28 +27,6 @@
 !>
 !> @author Jun Wang @date Jul, 2019
     module module_wrt_grid_comp
-!
-!-----------------------------------------------------------------------
-!***  This module includes the functionality of write gridded component.
-!-----------------------------------------------------------------------
-!***  At initialization step, write grid is defined. The forecast field
-!***  bundle is mirrored and output field information inside the field
-!***  bundle is used to create ESMF field on the write grid and added in
-!***  the output field bundle on write grid component. Also the IO_BaseTime
-!***  is set to the initial clock time.
-!***  At the run step, output time is set from the write grid comp clock
-!***  the ESMF field bundles that contains the data on write grid are
-!***  written out through ESMF field bundle write to netcdf files.
-!***  The ESMF field bundle write uses parallel write, so if output grid
-!***  is cubed sphere grid, the  six tiles file will be written out at
-!***  same time.
-!-----------------------------------------------------------------------
-!***
-!***  Revision history
-!***
-!
-!---------------------------------------------------------------------------------
-!
       use mpi
       use esmf
       use fms
@@ -69,31 +60,34 @@
 !-----------------------------------------------------------------------
 !
 !
-      integer,save      :: lead_write_task                                !<-- Rank of the first write task in the write group
-      integer,save      :: last_write_task                                !<-- Rank of the last write task in the write group
-      integer,save      :: ntasks                                         !<-- # of write tasks in the current group
-      integer,save      :: itasks, jtasks                                 !<-- # of write tasks in i/j direction in the current group
-      integer,save      :: ngrids
+      integer,save      :: lead_write_task                                !< Rank of the first write task in the write group.
+      integer,save      :: last_write_task                                !< Rank of the last write task in the write group.
+      integer,save      :: ntasks                                         !< Number of write tasks in the current group.
+      integer,save      :: itasks                                         !< Number of write tasks in i direction in the current group.
+      integer,save      :: jtasks                                         !< Number of write tasks in j direction in the current group.
+      integer,save      :: ngrids                                         !< ???
 
-      integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
-      integer,save      :: idate(7), start_time(7)
-      logical,save      :: write_nsflip
-      logical,save      :: change_wrtidate=.false.
-      integer,save      :: frestart(999) = -1
-      integer,save      :: calendar_type = 3
-      logical           :: lprnt
+      integer,save      :: wrt_mpi_comm                                   !< The mpi communicator in the write comp.
+      integer,save      :: idate(7)                                       !< ???
+      integer,save      :: start_time(7)                                  !< ???
+      logical,save      :: write_nsflip                                   !< ???
+      logical,save      :: change_wrtidate=.false.                        !< ???
+      integer,save      :: frestart(999) = -1                             !< ???
+      integer,save      :: calendar_type = 3                              !< ???
+      logical           :: lprnt                                          !< ???
 !
 !-----------------------------------------------------------------------
 !
-      type(ESMF_FieldBundle)           :: gridFB
-      integer                          :: FBCount
-      character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)
-      logical                                   :: top_parent_is_global
+      type(ESMF_FieldBundle)           :: gridFB                        !< ???
+      integer                          :: FBCount                       !< ???
+      character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)  !< ???
+      logical                                   :: top_parent_is_global !< ???
 !
 !-----------------------------------------------------------------------
-      REAL(KIND=8)             :: btim,btim0
-      REAL(KIND=8),PUBLIC,SAVE :: write_init_tim, write_run_tim
-      REAL(KIND=8), parameter  :: radi=180.0d0/pi
+      REAL(KIND=8)             :: btim,btim0           !< ???
+      REAL(KIND=8),PUBLIC,SAVE :: write_init_tim       !< ???
+      REAL(KIND=8),PUBLIC,SAVE :: write_run_tim        !< ???
+      REAL(KIND=8), parameter  :: radi=180.0d0/pi      !< ???
 !-----------------------------------------------------------------------
 !
       public SetServices
@@ -104,16 +98,18 @@
       end interface splat
 !
       type optimizeT
-        type(ESMF_State)                   :: state
-        type(ESMF_GridComp), allocatable   :: comps(:)
+        type(ESMF_State)                   :: state     !< ???
+        type(ESMF_GridComp), allocatable   :: comps(:)  !< ???
       end type
 
       contains
-!
-!-----------------------------------------------------------------------
-!#######################################################################
-!-----------------------------------------------------------------------
-!
+
+      !> ???
+      !>
+      !> @param wrt_comp ???
+      !> @param rc Return code.
+      !>
+      !> @author J. Wang/G. Theurich @date Jul, 2017        
       subroutine SetServices(wrt_comp, rc)
         type(ESMF_GridComp)  :: wrt_comp
         integer, intent(out) :: rc
@@ -141,11 +137,16 @@
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       end subroutine SetServices
-!
-!-----------------------------------------------------------------------
-!#######################################################################
-!-----------------------------------------------------------------------
-!
+
+      !> ???
+      !>
+      !> @param wrt_comp ???
+      !> @param imp_state_write ???
+      !> @param exp_state_write ???
+      !> @param clock ???
+      !> @param[out] rc Return code.
+      !>
+      !> @author J. Wang/G. Theurich @date Jul, 2017        
       subroutine wrt_initialize_p1(wrt_comp, imp_state_write, exp_state_write, clock, rc)
 !
 !-----------------------------------------------------------------------
@@ -1549,6 +1550,15 @@
 !#######################################################################
 !-----------------------------------------------------------------------
 !
+      !> ???
+      !>
+      !> @param wrt_comp ???
+      !> @param imp_state_write ???
+      !> @param exp_state_write ???
+      !> @param clock ???
+      !> @param[out] rc Return code.
+      !>
+      !> @author J. Wang/G. Theurich @date Jul, 2017        
       subroutine wrt_initialize_p2(wrt_comp, imp_state_write, exp_state_write, clock, rc)
 !
 !-----------------------------------------------------------------------
@@ -1644,11 +1654,16 @@
 !-----------------------------------------------------------------------
 !
       end subroutine wrt_initialize_p2
-!
-!-----------------------------------------------------------------------
-!#######################################################################
-!-----------------------------------------------------------------------
-!
+
+      !> ???
+      !>
+      !> @param wrt_comp ???
+      !> @param imp_state_write ???
+      !> @param exp_state_write ???
+      !> @param clock ???
+      !> @param[out] rc Return code.
+      !>
+      !> @author J. Wang/G. Theurich @date Jul, 2017        
       subroutine wrt_initialize_p3(wrt_comp, imp_state_write, exp_state_write, clock, rc)
 !
 !-----------------------------------------------------------------------
@@ -1743,11 +1758,16 @@
 !-----------------------------------------------------------------------
 !
       end subroutine wrt_initialize_p3
-!
-!-----------------------------------------------------------------------
-!#######################################################################
-!-----------------------------------------------------------------------
-!
+
+      !> ???
+      !>
+      !> @param wrt_comp ???
+      !> @param imp_state_write ???
+      !> @param exp_state_write ???
+      !> @param clock ???
+      !> @param[out] rc Return code.
+      !>
+      !> @author J. Wang/G. Theurich @date Jul, 2017        
       subroutine wrt_run(wrt_comp, imp_state_write, exp_state_write,clock,rc)
 !
 !-----------------------------------------------------------------------
@@ -2481,11 +2501,16 @@
 !-----------------------------------------------------------------------
 !
       END SUBROUTINE wrt_run
-!
-!-----------------------------------------------------------------------
-!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-!-----------------------------------------------------------------------
-!
+
+      !> ???
+      !>
+      !> @param wrt_comp ???
+      !> @param imp_state_write ???
+      !> @param exp_state_write ???
+      !> @param clock ???
+      !> @param[out] rc Return code.
+      !>
+      !> @author J. Wang/G. Theurich @date Jul, 2017        
       subroutine wrt_finalize(wrt_comp, imp_state_write, exp_state_write, clock, rc)
 !
 !-----------------------------------------------------------------------
@@ -2534,6 +2559,12 @@
 !
 !-----------------------------------------------------------------------
 !
+   !> ???
+   !>
+   !> @param[in] file_bundle ???
+   !> @param[out] rc Return code.
+   !>
+   !> @author J. Wang/G. Theurich @date Jul, 2017        
    subroutine recover_fields(file_bundle,rc)
 
      type(ESMF_FieldBundle), intent(in)              :: file_bundle
@@ -2773,6 +2804,12 @@
 !
 !-----------------------------------------------------------------------
 !
+   !> ???
+   !>
+   !> @param[in] file_bundle ???
+   !> @param[out] rc Return code.
+   !>
+   !> @author J. Wang/G. Theurich @date Jul, 2017        
    subroutine mask_fields(file_bundle,rc)
 
      type(ESMF_FieldBundle), intent(in)              :: file_bundle
@@ -3031,6 +3068,19 @@
 !-----------------------------------------------------------------------
 !
 
+  !> ???
+  !>
+  !> @param[in] file_bundle ???
+  !> @param[in] fileName ???
+  !> @param[in] convention ???
+  !> @param[in] purpose ???
+  !> @param[in] status ???
+  !> @param[in] timeslice ???
+  !> @param[in] state ???
+  !> @param[in] comps ???
+  !> @param[out] rc Return code.
+  !>
+  !> @author J. Wang/G. Theurich @date Jul, 2017        
   subroutine ESMFproto_FieldBundleWrite(fieldbundle, fileName, &
     convention, purpose, status, timeslice, state, comps, rc)
     type(ESMF_FieldBundle),     intent(in)              :: fieldbundle
@@ -3339,6 +3389,12 @@
 
   !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param[in] comp ???
+  !> @param[out] rc Return code.
+  !>
+  !> @author J. Wang/G. Theurich @date Jul, 2017        
   subroutine ioCompSS(comp, rc)
     type(ESMF_GridComp)   :: comp
     integer, intent(out)  :: rc
@@ -3354,6 +3410,15 @@
 
   !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param comp ???
+  !> @param importState ???
+  !> @param exportState ???
+  !> @param clock ???
+  !> @param[out] rc Return code.
+  !>
+  !> @author J. Wang/G. Theurich @date Jul, 2017        
   subroutine ioCompRun(comp, importState, exportState, clock, rc)
     use netcdf
 
@@ -3729,6 +3794,12 @@
 
   contains
 
+    !> ???
+    !>
+    !> @param[in] dimLablel ???
+    !> @param[out] rc Return code.
+    !>
+    !> @author J. Wang/G. Theurich @date Jul, 2017        
     subroutine write_out_ungridded_dim_atts(dimLabel, rc)
       character(len=*)      :: dimLabel
       integer, intent(out)  :: rc
@@ -3872,6 +3943,13 @@
       endif
     end subroutine write_out_ungridded_dim_atts
 
+    !> ???
+    !>
+    !> @param[in] field ???
+    !> @param[in] dimLablel ???
+    !> @param[out] rc Return code.
+    !>
+    !> @author J. Wang/G. Theurich @date Jul, 2017        
     subroutine write_out_ungridded_dim_atts_from_field(field, dimLabel, rc)
 
       type(ESMF_Field),intent(in) :: field
@@ -4017,6 +4095,15 @@
 
   !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param[in] field ???
+  !> @param[in] tile ???
+  !> @param[in] tileField ???
+  !> @param[in] petList ???
+  !> @param[out] rc Return code.
+  !>
+  !> @author J. Wang/G. Theurich @date Jul, 2017        
   subroutine ESMFproto_FieldMakeSingleTile(field, tile, tileField, petList, rc)
     type(ESMF_Field),     intent(in)              :: field
     integer,              intent(in)              :: tile
@@ -4216,8 +4303,13 @@
 
   end subroutine ESMFproto_FieldMakeSingleTile
 
-!
-!-----------------------------------------------------------------------
+  !> ???
+  !>
+  !> @param[in] idrt ???
+  !> @param[in] jmax ???
+  !> @param[out] aslat ???
+  !>
+  !> @author J. Wang/G. Theurich @date Jul, 2017        
   subroutine splat4(idrt,jmax,aslat)
 
       implicit none
@@ -4327,7 +4419,14 @@
       ENDIF
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      end subroutine splat4
-!----------------------------------------------------------------------
+
+     !> ???
+     !>
+     !> @param[in] idrt ???
+     !> @param[in] jmax ???
+     !> @param[out] aslat ???
+     !>
+     !> @author J. Wang/G. Theurich @date Jul, 2017        
      subroutine splat8(idrt,jmax,aslat)
 !$$$
       implicit none
@@ -4436,8 +4535,17 @@
       ENDIF
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      end subroutine splat8
-!
-!
+
+   !> ???
+   !>
+   !> @param[in] tlmd ???
+   !> @param[in] tphd ???
+   !> @param[in] almd ???
+   !> @param[in] aphd ???
+   !> @param[in] tlm0d ???
+   !> @param[in] tph0d ???
+   !>
+   !> @author J. Wang/G. Theurich @date Jul, 2017        
    subroutine rtll(tlmd,tphd,almd,aphd,tlm0d,tph0d)
 !-------------------------------------------------------------------------------
       real(ESMF_KIND_R8), intent(in) :: tlmd, tphd
@@ -4488,9 +4596,20 @@
       return
 !
      end subroutine rtll
-!
-!-----------------------------------------------------------------------
-!
+
+     !> ???
+     !>
+     !> @param[in] stlat1 ???
+     !> @param[in] stlat2 ???
+     !> @param[in] c_lat ???
+     !> @param[in] c_lon ???
+     !> @param[inout] glon ???
+     !> @param[inout] glat ???
+     !> @param[inout] x ???
+     !> @param[inout] y ???
+     !> @param[in] inv ???
+     !>
+     !> @author J. Wang/G. Theurich @date Jul, 2017        
      subroutine lambert(stlat1,stlat2,c_lat,c_lon,glon,glat,x,y,inv)
 
 !-------------------------------------------------------------------------------
@@ -4550,9 +4669,15 @@
 
       return
      end subroutine lambert
-!
-!-----------------------------------------------------------------------
-!
+
+     !> ???
+     !>
+     !> @param[in] nfl ???
+     !> @param[in] filename ???
+     !> @param[in] outfile_name ???
+     !> @param[in] noutfile ???
+     !>
+     !> @author J. Wang/G. Theurich @date Jul, 2017        
      subroutine get_outfile(nfl, filename, outfile_name, noutfile)
        integer, intent(in)          :: nfl
        character(*), intent(in)     :: filename(:,:)
