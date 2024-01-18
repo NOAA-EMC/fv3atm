@@ -51,7 +51,8 @@ module write_internal_state
 !--------------------
       type(esmf_grid) :: wrtgrid !< ESMF output grid.
 
-      type(output_grid_info) ,dimension(:), allocatable :: out_grid_info !< Array of output_grid_info for all domains
+      !> Array of output_grid_info for all domains.
+      type(output_grid_info) ,dimension(:), allocatable :: out_grid_info 
 !
 !--------------------------
 !*** file bundle for output
@@ -68,7 +69,8 @@ module write_internal_state
 !***  THE OUTPUT FILE
 !-----------------------------------------------------------------------
 !
-      type(ESMF_FieldBundle),dimension(:),allocatable  :: wrtFB !< ESMF write field bundles.
+      !> ESMF write field bundles.      
+      type(ESMF_FieldBundle),dimension(:),allocatable  :: wrtFB 
 !
 !-------------------------------------
 !***  Times used in history filenames
@@ -102,14 +104,12 @@ module write_internal_state
 !-----------------------------------------------------------------------
 !
       end type wrt_internal_state
-!
-!-----------------------------------------------------------------------
-!***  THIS STATE IS SUPPORTED BY C POINTERS BUT NOT F90 POINTERS
-!***  THEREFORE WE NEED THIS WRAP.
-!-----------------------------------------------------------
-!
+
+      !> This state is supported by c pointers but not f90 pointers
+      !> therefore we need this wrap.
       type write_wrap
-        type(wrt_internal_state),pointer :: write_int_state  !< Write grid component internal state.
+        !> Write grid component internal state.         
+        type(wrt_internal_state),pointer :: write_int_state  
       end type write_wrap
 
 !-----------------------------------------------------------
