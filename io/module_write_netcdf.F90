@@ -34,13 +34,13 @@ contains
 
   !> Write netCDF file.
   !>
-  !> @param[in] wrtfb ESMF write field bundle
+  !> @param[in] wrtfb ESMF write field bundle.
   !> @param[in] filename NetCDF filename.
   !> @param[in] use_parallel_netcdf True if parallel I/O should be used.
   !> @param[in] mpi_comm MPI communicator for parallel I/O.
-  !> @param[in] mype MPI rank
-  !> @param[in] grid_id Output grid identifier
-  !> @param[out] rc Return code: return code
+  !> @param[in] mype MPI rank.
+  !> @param[in] grid_id Output grid identifier.
+  !> @param[out] rc Return code.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine write_netcdf(wrtfb, filename, &
@@ -737,10 +737,10 @@ contains
 
   !> Get global attribute.
   !>
-  !> @param[in] fldbundle ESMF field bundle
+  !> @param[in] fldbundle ESMF field bundle.
   !> @param[in] ncid NetCDF file ID.
-  !> @param[in] mype MPI rank
-  !> @param[out] rc Return code: return code
+  !> @param[in] mype MPI rank.
+  !> @param[out] rc Return code.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine get_global_attr(fldbundle, ncid, mype, rc)
@@ -813,11 +813,11 @@ contains
 
   !> Get grid attribute.
   !>
-  !> @param[in] grid ESMF output grid
-  !> @param[in] prefix grid attribute prefix
+  !> @param[in] grid ESMF output grid.
+  !> @param[in] prefix grid attribute prefix.
   !> @param[in] ncid NetCDF file ID.
   !> @param[in] varid NetCDF variable ID.
-  !> @param[out] rc Return code: return code
+  !> @param[out] rc Return code.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine get_grid_attr(grid, prefix, ncid, varid, rc)
@@ -889,9 +889,9 @@ contains
   !> @param[in] dim_name Dimension name.
   !> @param[in] dimid Dimension ID.
   !> @param[in] grpid Group ID.
-  !> @param[in] grid ESMF output grid
-  !> @param[in] mype MPI rank
-  !> @param[out] rc Return code: retrun code
+  !> @param[in] grid ESMF output grid.
+  !> @param[in] mype MPI rank.
+  !> @param[out] rc Return code.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine add_dim(ncid, dim_name, dimid, grid, mype, rc)
