@@ -40,7 +40,7 @@ contains
   !> @param[in] mpi_comm MPI communicator for parallel I/O.
   !> @param[in] mype MPI rank.
   !> @param[in] grid_id Output grid identifier.
-  !> @param[out] rc Return code.
+  !> @param[out] rc Return code - 0 for success, ESMF error code otherwise.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine write_netcdf(wrtfb, filename, &
@@ -740,7 +740,7 @@ contains
   !> @param[in] fldbundle ESMF field bundle.
   !> @param[in] ncid NetCDF file ID.
   !> @param[in] mype MPI rank.
-  !> @param[out] rc Return code.
+  !> @param[out] rc Return code - 0 for success, ESMF error code otherwise.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine get_global_attr(fldbundle, ncid, mype, rc)
@@ -817,7 +817,7 @@ contains
   !> @param[in] prefix grid attribute prefix.
   !> @param[in] ncid NetCDF file ID.
   !> @param[in] varid NetCDF variable ID.
-  !> @param[out] rc Return code.
+  !> @param[out] rc Return code - 0 for success, ESMF error code otherwise.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine get_grid_attr(grid, prefix, ncid, varid, rc)
@@ -891,7 +891,7 @@ contains
   !> @param[in] grpid Group ID.
   !> @param[in] grid ESMF output grid.
   !> @param[in] mype MPI rank.
-  !> @param[out] rc Return code.
+  !> @param[out] rc Return code - 0 for success, ESMF error code otherwise.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine add_dim(ncid, dim_name, dimid, grid, mype, rc)
