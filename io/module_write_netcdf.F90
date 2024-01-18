@@ -1,5 +1,5 @@
 !> @file
-!> @brief Module containing history files output routines
+!> @brief Module containing history files output routines.
 !> @author Dusan Jovic @date Nov 1, 2017
 
 !> Return error to ESMF and finalize it.
@@ -11,7 +11,7 @@
     if (status /= nf90_noerr) write(0,*) "file: ", __FILE__, " line: ", __LINE__, trim(nf90_strerror(status)); \
     if (status /= nf90_noerr) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-!> @brief Module containing history files output routines
+!> @brief Output routines for writing history files.
 !>
 !> @author Dusan Jovic @date Nov 1, 2017
 module module_write_netcdf
