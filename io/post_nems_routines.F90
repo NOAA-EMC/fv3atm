@@ -5,7 +5,9 @@
 !> Allocate post variables.
 !>
 !> ## Subroutine History
+!>
 !> Date | Programmer | Modification
+!> -----|------------|-------------
 !> Jul 2019 | Jun Wang | allocate arrays for post processing
 !> Feb 2022 | J. Meng/B. Cui | create interface to run inline post with post_2d_decomp
 !>
@@ -353,7 +355,7 @@ subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
 
       end subroutine read_postnmlt
 
-    !> ???
+    !> Finalize post step.
     !>
     !> @param[in] post_gribversion ???
     !>
