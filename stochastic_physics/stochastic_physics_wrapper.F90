@@ -158,6 +158,7 @@ module stochastic_physics_wrapper_mod
       else
          allocate(spp_wts(0,0,0,0))
       end if
+
       if ( GFS_Control%lndp_type == 2 ) then
           allocate(sfc_wts(1:nblks,maxblk,1:GFS_Control%n_var_lndp))
           if ( (GFS_Control%lsm == GFS_Control%lsm_noah) .or. (GFS_Control%lsm == GFS_Control%lsm_noahmp)) then
@@ -247,6 +248,29 @@ module stochastic_physics_wrapper_mod
               allocate(semis (0,0))
             endselect 
           enddo 
+      elseif ( GFS_Control%lndp_type == 1 ) then ! this scheme sets perts once
+         allocate(sfc_wts(1:nblks, maxblk, GFS_Control%n_var_lndp))
+         call run_stochastic_physics(levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz,       &
+                                     sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts,         &
+                                     skebv_wts=skebv_wts, sfc_wts=sfc_wts,                              &
+                                     spp_wts=spp_wts, nthreads=nthreads)
+         ! Copy contiguous data back
+         do nb=1,nblks
+            GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
+         end do
+         !deallocate(sfc_wts)
+         
+         allocate(smc    (0,0,0))
+         
+         allocate(slc   (0,0,0))
+         allocate(stype (0,0))
+         allocate(stc   (0,0,0))
+         allocate(vfrac (0,0))
+         allocate(alnsf (0,0))
+         allocate(alnwf (0,0))
+         allocate(snoalb(0,0))
+         allocate(semis (0,0))
+         allocate(zorll (0,0))
       else
          allocate(sfc_wts(0,0,0))
          allocate(smc    (0,0,0))
@@ -261,22 +285,7 @@ module stochastic_physics_wrapper_mod
          allocate(semis (0,0))
          allocate(zorll (0,0))
       endif
-
-
-      if ( GFS_Control%lndp_type == 1 ) then ! this scheme sets perts once
-         allocate(sfc_wts(1:nblks, maxblk, GFS_Control%n_var_lndp))
-         call run_stochastic_physics(levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz,       &
-                                     sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts,         &
-                                     skebv_wts=skebv_wts, sfc_wts=sfc_wts,                              &
-                                     spp_wts=spp_wts, nthreads=nthreads)
-         ! Copy contiguous data back
-         do nb=1,nblks
-            GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
-         end do
-         deallocate(sfc_wts)
-      else
-         allocate(sfc_wts(0,0,0))
-      end if
+      
       ! Consistency check for cellular automata
       if(GFS_Control%do_ca)then
         if(GFS_Control%ca_sgs)then
