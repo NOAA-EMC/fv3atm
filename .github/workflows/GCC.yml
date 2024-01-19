@@ -26,6 +26,12 @@ jobs:
 
     steps:
 
+    - name: decide-doc-build
+      run: |
+        if [[ "${{ matrix.cmake_opts }}" == "-D32BIT=ON" && "${{ matrix.gcc_ver }}" == 11 && "${{ matrix.mpi }}" == mpich ]]; then
+          echo 'builddocs=ON' >> ${GITHUB_ENV}
+        fi
+
     - name: apt-install
       run: |
         sudo apt-get install gcovr doxygen graphviz
@@ -62,7 +68,7 @@ jobs:
 
     - name: cache-save
       uses: actions/cache/save@v3
-      if: ${{ ${{ env.spackrc }} == 0 }}
+      if: ${{ (env.spackrc) == 0 }}
       with:
         path: ${{ github.workspace }}/spack-develop
         key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc11-2
@@ -78,7 +84,7 @@ jobs:
         sed -i 's/doc /upp_doc /' upp/docs/CMakeLists.txt
         mkdir ${GITHUB_WORKSPACE}/fv3atm/build
         cd ${GITHUB_WORKSPACE}/fv3atm/build
-        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON
+        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=${{ env.builddocs }}
         make -j2
         ls -l /home/runner/work/fv3atm/fv3atm/fv3atm/io
 
@@ -102,6 +108,7 @@ jobs:
               ${{ github.workspace }}/fv3atm/build/*.css
 
     - uses: actions/upload-artifact@v4
+      if: ${{ env.builddocs == 'ON' }}
       with:
         name: docs
         path: |
