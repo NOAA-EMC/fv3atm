@@ -1,0 +1,99 @@
+# This is a CI workflow for the fv3atm project.
+#
+# This workflow checks code coverage and will build documentation.
+#
+# Alex Richert, 11 Jan 2024
+
+name: developer
+on:
+  push:
+    branches:
+    - develop
+  pull_request:
+    branches:
+    - develop
+
+jobs:
+  developer:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: apt-install
+      run: |
+        sudo apt install gcovr
+
+    - name: checkout-fv3atm
+      uses: actions/checkout@v3
+      with:
+        path: ${{ github.workspace }}/fv3atm
+        submodules: recursive
+
+    - name: cache-spack
+      id: cache-spack
+      uses: actions/cache@v3
+      with:
+        path: ${{ github.workspace }}/spack-develop
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc11-2
+
+    # Building dependencies takes 40+ min
+    - name: spack-install
+      if: steps.cache-spack.outputs.cache-hit != 'true'
+      run: |
+        wget --no-verbose https://github.com/spack/spack/archive/refs/heads/develop.zip
+        unzip develop.zip -d ${GITHUB_WORKSPACE}/ &> unzip.out
+        . ${GITHUB_WORKSPACE}/spack-develop/share/spack/setup-env.sh
+        spack env create gcc11 ${GITHUB_WORKSPACE}/fv3atm/ci/spack.yaml
+        spack env activate gcc11
+        spack compiler find | grep gcc@11
+        spack external find gmake cmake git git-lfs perl python mpich
+        spack config add "packages:all:require:['%gcc@11']"
+        spack config add "packages:mpi:require:'mpich'"
+        spack concretize |& tee ${SPACK_ENV}/log.concretize
+        spack install -j2 --fail-fast
+
+    - name: cache-save
+      uses: actions/cache/save@v3
+      if: ${{ always() }}
+      with:
+        path: ${{ github.workspace }}/spack-develop
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc11-2
+
+    - name: build-fv3atm
+      run: |
+        . ${GITHUB_WORKSPACE}/spack-develop/share/spack/setup-env.sh
+        spack env activate gcc11
+        spack load $(spack find --format "{name}")
+        cd ${GITHUB_WORKSPACE}/fv3atm
+        git clone https://github.com/NOAA-EMC/CMakeModules
+        git clone --recurse-submodules https://github.com/NOAA-PSL/stochastic_physics stochastic_physics_repo
+        mkdir ${GITHUB_WORKSPACE}/fv3atm/build
+        cd ${GITHUB_WORKSPACE}/fv3atm/build
+        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON -DCMAKE_Fortran_FLAGS="-fprofile-abs-path -fprofile-arcs -ftest-coverage -O0"
+        make -j2
+
+    - name: run-tests
+      run: |
+        cd $GITHUB_WORKSPACE/fv3atm/build
+        ctest -j2 --output-on-failure --rerun-failed
+
+    - name: get-test-coverage
+      run: |
+        f=${GITHUB_WORKSPACE}/fv3atm
+        cd $f/build
+        gcovr -r .. -v --html-details --exclude ${f}/tests --exclude $f/stochastic_physics_repo --exclude $f/build/ccpp --exclude $f/ccpp/physics --exclude $f/ccpp/framework --exclude $f/atmos_cubed_sphere  --exclude CMakeFiles --print-summary -o test-coverage.html
+
+    - name: upload-test-coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-coverage-fv3atm-${{ github.sha }}
+        path: |
+              ${{ github.workspace }}/fv3atm/build/*.html 
+              ${{ github.workspace }}/fv3atm/build/*.css
+
+    - name: debug-artifacts
+      uses: actions/upload-artifact@v4
+      if: ${{ failure() }}
+      with:
+        name: ccpp_prebuild_logs
+        path: ${{ github.workspace }}/fv3atm/build/ccpp/ccpp_prebuild.*
