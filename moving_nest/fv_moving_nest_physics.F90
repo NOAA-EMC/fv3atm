@@ -123,6 +123,29 @@ module fv_moving_nest_physics_mod
 
 contains
 
+
+  subroutine mn_phys_set_slmsk(Atm, n, mn_static, ioffset, joffset, refine)
+    type(fv_atmos_type), intent(inout),allocatable   :: Atm(:)              !< Array of atmospheric data
+    integer, intent(in)                              :: n                   !< Current grid number
+    type(mn_surface_grids), intent(in)               :: mn_static           !< Static surface data
+    integer, intent(in)                              :: ioffset, joffset    !< Current nest offset in i,j direction
+    integer, intent(in)                              :: refine              !< Nest refinement ratio
+
+    integer                 :: i_pe, j_pe, i_idx, j_idx
+
+    !print '("[INFO] MASK inside mn_phys_set_slmsk npe=",I0)', mpp_pe()
+    ! Setup local land sea mask grid for masked interpolations
+    do i_pe = Atm(n)%bd%isd, Atm(n)%bd%ied
+      do j_pe = Atm(n)%bd%jsd, Atm(n)%bd%jed
+        i_idx = (ioffset-1)*refine + i_pe
+        j_idx = (joffset-1)*refine + j_pe
+
+        Moving_nest(n)%mn_phys%slmsk(i_pe, j_pe) = mn_static%fp_ls%ls_mask_grid(i_idx, j_idx)
+      enddo
+    enddo
+  end subroutine mn_phys_set_slmsk
+
+
   !>@brief The subroutine 'mn_phys_reset_sfc_props' sets the static surface parameters from the high-resolution input file data
   !>@details This subroutine relies on earlier code reading the data from files into the mn_static data structure
   !!  This subroutine does not yet handle ice points or frac_grid - fractional landfrac/oceanfrac values
@@ -139,15 +162,8 @@ contains
     integer                 :: nb, blen, ix, i_pe, j_pe, i_idx, j_idx
     real(kind=kind_phys)    :: phys_oro
 
-    ! Setup local land sea mask grid for masked interpolations
-    do i_pe = Atm(n)%bd%isd, Atm(n)%bd%ied
-      do j_pe = Atm(n)%bd%jsd, Atm(n)%bd%jed
-        i_idx = (ioffset-1)*refine + i_pe
-        j_idx = (joffset-1)*refine + j_pe
-
-        Moving_nest(n)%mn_phys%slmsk(i_pe, j_pe) = mn_static%ls_mask_grid(i_idx, j_idx)
-      enddo
-    enddo
+    !print '("[INFO] MASK inside mn_phys_reset_sfc_props npe=",I0)', mpp_pe()
+    call mn_phys_set_slmsk(Atm, n, mn_static, ioffset, joffset, refine)
 
     !  Reset the variables from the fix_sfc files
     do nb = 1,Atm_block%nblks
@@ -160,12 +176,12 @@ contains
         j_idx = (joffset-1)*refine + j_pe
 
         ! Reset the land sea mask from the hires parent data
-        IPD_data(nb)%Sfcprop%slmsk(ix) = mn_static%ls_mask_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%slmsk(ix) = mn_static%fp_ls%ls_mask_grid(i_idx, j_idx)
 
         !  IFD values are 0 for land, and 1 for oceans/lakes -- reverse of the land sea mask
         !  Land Sea Mask has values of 0 for oceans/lakes, 1 for land, 2 for sea ice
         !  TODO figure out what ifd should be for sea ice
-        if (mn_static%ls_mask_grid(i_idx, j_idx) .eq. 1 ) then
+        if (mn_static%fp_ls%ls_mask_grid(i_idx, j_idx) .eq. 1 ) then
           if (move_nsst) IPD_data(nb)%Sfcprop%ifd(ix) = 0         ! Land
           IPD_data(nb)%Sfcprop%oceanfrac(ix) = 0   ! Land -- TODO permit fractions
           IPD_data(nb)%Sfcprop%landfrac(ix) = 1    ! Land -- TODO permit fractions
@@ -175,16 +191,16 @@ contains
           IPD_data(nb)%Sfcprop%landfrac(ix) = 0    ! Ocean -- TODO permit fractions
         endif
 
-        IPD_data(nb)%Sfcprop%tg3(ix) = mn_static%deep_soil_temp_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%tg3(ix) = mn_static%fp_fix%deep_soil_temp_grid(i_idx, j_idx)
 
-        ! Follow logic from FV3/io/fv3atm_sfc_io.F90
+        ! Follow logic from FV3/io/FV3GFS_io.F90 line 1187
         ! TODO this will need to be more complicated if we support frac_grid
         !if (nint(mn_static%soil_type_grid(i_idx, j_idx)) == 14 .or. int(mn_static%soil_type_grid(i_idx, j_idx)+0.5) <= 0) then
         !if (nint(mn_static%soil_type_grid(i_idx, j_idx)) == 14 .or.
 
         !if ( (mn_static%ls_mask_grid(i_idx, j_idx) .eq. 1 .and. nint(mn_static%land_frac_grid(i_idx, j_idx)) == 0) .or. &
         !    mn_static%soil_type_grid(i_idx, j_idx) < 0.5) then
-        if (mn_static%ls_mask_grid(i_idx, j_idx) .eq. 1 .and. nint(mn_static%land_frac_grid(i_idx, j_idx)) == 0 ) then
+        if (mn_static%fp_ls%ls_mask_grid(i_idx, j_idx) .eq. 1 .and. nint(mn_static%fp_ls%land_frac_grid(i_idx, j_idx)) == 0 ) then
           ! Water soil type == lake, etc. -- override the other variables and make this water
           !!print '("mn_phys_reset_sfc_props LAKE SOIL npe=",I0," x,y=",I0,",",I0," lat=",F10.3," lon=",F10.3)', mpp_pe(), i_idx, j_idx, IPD_data(nb)%Grid%xlat_d(ix), IPD_data(nb)%Grid%xlon_d(ix)-360.0
 
@@ -195,21 +211,21 @@ contains
           IPD_data(nb)%Sfcprop%stype(ix) = 0
           IPD_data(nb)%Sfcprop%slmsk(ix) = 0
         else
-          IPD_data(nb)%Sfcprop%stype(ix) = nint(mn_static%soil_type_grid(i_idx, j_idx))
+          IPD_data(nb)%Sfcprop%stype(ix) = nint(mn_static%fp_ls%soil_type_grid(i_idx, j_idx))
         endif
 
         !IPD_data(nb)%Sfcprop%vfrac(ix) = mn_static%veg_frac_grid(i_idx, j_idx)
-        IPD_data(nb)%Sfcprop%vtype(ix) = nint(mn_static%veg_type_grid(i_idx, j_idx))
-        IPD_data(nb)%Sfcprop%slope(ix) = nint(mn_static%slope_type_grid(i_idx, j_idx))
-        IPD_data(nb)%Sfcprop%snoalb(ix) = mn_static%max_snow_alb_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%vtype(ix) = nint(mn_static%fp_fix%veg_type_grid(i_idx, j_idx))
+        IPD_data(nb)%Sfcprop%slope(ix) = nint(mn_static%fp_fix%slope_type_grid(i_idx, j_idx))
+        IPD_data(nb)%Sfcprop%snoalb(ix) = mn_static%fp_fix%max_snow_alb_grid(i_idx, j_idx)
 
-        IPD_data(nb)%Sfcprop%facsf(ix) = mn_static%facsf_grid(i_idx, j_idx)
-        IPD_data(nb)%Sfcprop%facwf(ix) = mn_static%facwf_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%facsf(ix) = mn_static%fp_fix%facsf_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%facwf(ix) = mn_static%fp_fix%facwf_grid(i_idx, j_idx)
 
-        IPD_data(nb)%Sfcprop%alvsf(ix) = mn_static%alvsf_grid(i_idx, j_idx)
-        IPD_data(nb)%Sfcprop%alvwf(ix) = mn_static%alvwf_grid(i_idx, j_idx)
-        IPD_data(nb)%Sfcprop%alnsf(ix) = mn_static%alnsf_grid(i_idx, j_idx)
-        IPD_data(nb)%Sfcprop%alnwf(ix) = mn_static%alnwf_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%alvsf(ix) = mn_static%fp_fix%alvsf_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%alvwf(ix) = mn_static%fp_fix%alvwf_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%alnsf(ix) = mn_static%fp_fix%alnsf_grid(i_idx, j_idx)
+        IPD_data(nb)%Sfcprop%alnwf(ix) = mn_static%fp_fix%alnwf_grid(i_idx, j_idx)
 
         ! Reset the orography in the physics arrays, using the smoothed values from above
         phys_oro =  Atm(n)%phis(i_pe, j_pe) / grav
@@ -313,6 +329,7 @@ contains
 
     integer :: nb, blen, i, j, k, ix, nv
     type(fv_moving_nest_physics_type), pointer       :: mn_phys
+    integer :: err_field = 0
 
     this_pe = mpp_pe()
 
@@ -438,7 +455,7 @@ contains
   !>@brief The subroutine 'mn_phys_apply_temp_variables' copies moved 2D data back into 1D physics arryas for nest motion
   !>@details This subroutine fills the 1D physics arrays from the mn_phys structure on the Atm object
   !!  Note that ice variables are not yet handled.
-  subroutine mn_phys_apply_temp_variables(Atm, Atm_block, IPD_Control, IPD_Data, n, child_grid_num, is_fine_pe, npz)
+  subroutine mn_phys_apply_temp_variables(Atm, Atm_block, IPD_Control, IPD_Data, n, child_grid_num, is_fine_pe, npz, a_step)
     type(fv_atmos_type), allocatable, target, intent(inout)  :: Atm(:)            !< Array of atmospheric data
     type (block_control_type), intent(in)                    :: Atm_block         !< Physics block layout
     type(IPD_control_type), intent(in)                       :: IPD_Control       !< Physics metadata
@@ -446,6 +463,7 @@ contains
     integer, intent(in)                                      :: n, child_grid_num !< Current grid number, child grid number
     logical, intent(in)                                      :: is_fine_pe        !< Is this a nest PE?
     integer, intent(in)                                      :: npz               !< Number of vertical levels
+    integer, intent(in)                                      :: a_step            !< Timestep for logging
 
     integer :: is, ie, js, je
     integer :: this_pe
@@ -474,7 +492,13 @@ contains
 
           if (move_physics) then
             ! Surface properties
+            !print '("[INFO] WDR smc set npe=",I0," smc(",I0,",",I0,",",I0,")=",E18.10," slmsk=",I0)', this_pe, i, j, 1, mn_phys%smc(i,j,1), int(mn_phys%slmsk(i,j))
             do k = 1, IPD_Control%lsoil
+              !if ( int(mn_phys%slmsk(i,j)) .eq. 1 .and. mn_phys%smc(i,j,k) .ge. 100) then
+              !  IPD_Data(nb)%Sfcprop%smc(ix,k) = 0.3
+              !else
+              !  IPD_Data(nb)%Sfcprop%smc(ix,k) = mn_phys%smc(i,j,k)
+              !endif
               IPD_Data(nb)%Sfcprop%smc(ix,k) = mn_phys%smc(i,j,k)
               IPD_Data(nb)%Sfcprop%stc(ix,k) = mn_phys%stc(i,j,k)
               IPD_Data(nb)%Sfcprop%slc(ix,k) = mn_phys%slc(i,j,k)
@@ -610,26 +634,6 @@ contains
             IPD_Data(nb)%Sfcprop%dt_cool(ix) = mn_phys%dt_cool(i,j)
             IPD_Data(nb)%Sfcprop%qrain(ix)   = mn_phys%qrain(i,j)
           endif
-
-          ! Check if stype and vtype are properly set for land points.  Set to reasonable values if they have fill values.
-          if ( (int(IPD_data(nb)%Sfcprop%slmsk(ix)) .eq. 1) )  then
-
-            if (IPD_data(nb)%Sfcprop%vtype(ix) .lt. 0.5) then
-              IPD_data(nb)%Sfcprop%vtype(ix) = 7    ! Force to grassland
-            endif
-
-            if (IPD_data(nb)%Sfcprop%stype(ix) .lt. 0.5) then
-              IPD_data(nb)%Sfcprop%stype(ix) = 3    ! Force to sandy loam
-            endif
-
-            if (IPD_data(nb)%Sfcprop%vtype_save(ix) .lt. 0.5) then
-              IPD_data(nb)%Sfcprop%vtype_save(ix) = 7    ! Force to grassland
-            endif
-            if (IPD_data(nb)%Sfcprop%stype_save(ix) .lt. 0.5) then
-              IPD_data(nb)%Sfcprop%stype_save(ix) = 3    ! Force to sandy loam
-            endif
-
-          endif
         enddo
       enddo
     endif
@@ -654,6 +658,8 @@ contains
     integer  :: x_refine, y_refine
     type(fv_moving_nest_physics_type), pointer :: mn_phys
 
+    integer, parameter :: M_WATER = 0, M_LAND = 1, M_SEAICE = 2
+
     interp_type = 1        ! cell-centered A-grid
     interp_type_u = 4      ! D-grid
     interp_type_v = 4      ! D-grid
@@ -676,18 +682,22 @@ contains
         is_fine_pe, nest_domain, position)
 
     if (move_physics) then
-      call fill_nest_halos_from_parent("smc", mn_phys%smc, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
+      ! Default - Arbitrary value 0.3
+      call fill_nest_halos_from_parent_masked("smc", mn_phys%smc, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, IPD_Control%lsoil)
-      call fill_nest_halos_from_parent("stc", mn_phys%stc, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
+          is_fine_pe, nest_domain, position, 1, IPD_Control%lsoil, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.3D0)
+      ! Defaults - use surface temperature to set soil temperature at each level
+      call fill_nest_halos_from_parent_masked("stc", mn_phys%stc, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, IPD_Control%lsoil)
-      call fill_nest_halos_from_parent("slc", mn_phys%slc, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
+          is_fine_pe, nest_domain, position, 1, IPD_Control%lsoil, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, mn_phys%ts)
+      ! Default - Arbitrary value 0.3
+      call fill_nest_halos_from_parent_masked("slc", mn_phys%slc, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, IPD_Control%lsoil)
+          is_fine_pe, nest_domain, position, 1, IPD_Control%lsoil, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.3D0)
+
 
       call fill_nest_halos_from_parent("phy_f2d", mn_phys%phy_f2d, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
@@ -707,21 +717,22 @@ contains
       !     is_fine_pe, nest_domain, position)
 
       ! sea/land mask array (sea:0,land:1,sea-ice:2)
+      !integer, parameter :: M_WATER = 0, M_LAND = 1, M_SEAICE = 2
 
       call fill_nest_halos_from_parent_masked("emis_lnd", mn_phys%emis_lnd, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 1, 0.5D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.5D0)
 
       call fill_nest_halos_from_parent_masked("emis_ice", mn_phys%emis_ice, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 2, 0.5D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_SEAICE, 0.5D0)
 
       call fill_nest_halos_from_parent_masked("emis_wat", mn_phys%emis_wat, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 0.5D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_WATER, 0.5D0)
 
       !call fill_nest_halos_from_parent("sfalb_lnd_bck", mn_phys%sfalb_lnd_bck, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
       !     Atm(child_grid_num)%neststruct%ind_h, &
@@ -770,14 +781,23 @@ contains
           x_refine, y_refine, &
           is_fine_pe, nest_domain, position)
 
-      call fill_nest_halos_from_parent("canopy", mn_phys%canopy, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
-          Atm(child_grid_num)%neststruct%ind_h, &
-          x_refine, y_refine, &
-          is_fine_pe, nest_domain, position)
-      call fill_nest_halos_from_parent("vegfrac", mn_phys%vegfrac, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
-          Atm(child_grid_num)%neststruct%ind_h, &
-          x_refine, y_refine, &
-          is_fine_pe, nest_domain, position)
+!      call fill_nest_halos_from_parent("canopy", mn_phys%canopy, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
+!          Atm(child_grid_num)%neststruct%ind_h, &
+!          x_refine, y_refine, &
+!          is_fine_pe, nest_domain, position)
+!      call fill_nest_halos_from_parent("vegfrac", mn_phys%vegfrac, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
+!          Atm(child_grid_num)%neststruct%ind_h, &
+!          x_refine, y_refine, &
+!          is_fine_pe, nest_domain, position)
+      call fill_nest_halos_from_parent_masked("canopy", mn_phys%canopy, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
+          Atm(child_grid_num)%neststruct%ind_h, x_refine, y_refine, &
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.0D0)
+      call fill_nest_halos_from_parent_masked("vegfrac", mn_phys%vegfrac, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
+          Atm(child_grid_num)%neststruct%ind_h, x_refine, y_refine, &
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.50D0)
+
+
+
       call fill_nest_halos_from_parent("uustar", mn_phys%uustar, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
@@ -798,15 +818,15 @@ contains
       call fill_nest_halos_from_parent_masked("zorll", mn_phys%zorll, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 1, 86.0D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, 1, 86.0D0)
       call fill_nest_halos_from_parent_masked("zorlwav", mn_phys%zorlwav, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 77.0D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, 0, 77.0D0)
       call fill_nest_halos_from_parent_masked("zorlw", mn_phys%zorlw, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 78.0D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, 0, 78.0D0)
 
       call fill_nest_halos_from_parent("tsfco", mn_phys%tsfco, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
@@ -824,19 +844,19 @@ contains
       call fill_nest_halos_from_parent_masked("albdirvis_lnd", mn_phys%albdirvis_lnd, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 1, 0.5D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.5D0)
       call fill_nest_halos_from_parent_masked("albdirnir_lnd", mn_phys%albdirnir_lnd, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 1, 0.5D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.5D0)
       call fill_nest_halos_from_parent_masked("albdifvis_lnd", mn_phys%albdifvis_lnd, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 1, 0.5D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.5D0)
       call fill_nest_halos_from_parent_masked("albdifnir_lnd", mn_phys%albdifnir_lnd, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
-          is_fine_pe, nest_domain, position, mn_phys%slmsk, 1, 0.5D0)
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, mn_static%parent_ls%ls_mask_grid, M_LAND, 0.5D0)
 
 
 
@@ -1211,6 +1231,7 @@ contains
     real, allocatable :: lakefrac_pr_local (:,:)  !< lake fraction
     real, allocatable :: landfrac_pr_local (:,:)  !< land fraction
     real, allocatable :: emis_lnd_pr_local (:,:)  !< emissivity land
+    real, allocatable :: snowxy_pr_local (:,:)     !< number of snow layers
 
     this_pe = mpp_pe()
 
@@ -1301,6 +1322,9 @@ contains
       xu_pr_local = +99999.9
       xv_pr_local = +99999.9
       ifd_pr_local = +99999.9
+    endif
+    if (move_nsst) then
+      snowxy_pr_local = +99999.9
     endif
 
     do nb = 1,Atm_block%nblks
