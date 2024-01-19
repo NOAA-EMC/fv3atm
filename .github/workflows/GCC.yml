@@ -58,10 +58,11 @@ jobs:
         spack config add "packages:mpi:require:'${{ matrix.mpi }}'"
         spack concretize |& tee ${SPACK_ENV}/log.concretize
         spack install -j2 --fail-fast
+        echo "spackrc=$?" >> ${GITHUB_ENV}
 
     - name: cache-save
       uses: actions/cache/save@v3
-      if: ${{ always() }}
+      if: ${{ ${{ env.spackrc }} == 0 }}
       with:
         path: ${{ github.workspace }}/spack-develop
         key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc11-2
