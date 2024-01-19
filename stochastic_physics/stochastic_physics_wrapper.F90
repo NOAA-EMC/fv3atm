@@ -116,16 +116,26 @@ module stochastic_physics_wrapper_mod
                     write(6,*) 'call to init_stochastic_physics failed'
                     return
             endif
+      else
+         allocate(xlat(0,0))
+         allocate(xlon(0,0))
       end if
       if (GFS_Control%do_sppt) then
          allocate(sppt_wts(1:nblks,maxblk,1:levs))
+      else
+         allocate(sppt_wts(0,0,0))
       end if
       if (GFS_Control%do_shum) then
          allocate(shum_wts(1:nblks,maxblk,1:levs))
+      else
+         allocate(shum_wts(0,0,0))
       end if
       if (GFS_Control%do_skeb) then
          allocate(skebu_wts(1:nblks,maxblk,1:levs))
          allocate(skebv_wts(1:nblks,maxblk,1:levs))
+      else
+         allocate(skebu_wts(0,0,0))
+         allocate(skebv_wts(0,0,0))
       end if
       if ( GFS_Control%do_spp ) then
          allocate(spp_wts(1:nblks,maxblk,1:levs,1:GFS_Control%n_var_spp))
@@ -145,6 +155,8 @@ module stochastic_physics_wrapper_mod
              GFS_Control%spp_cu_deep = 1
            end select
          end do
+      else
+         allocate(spp_wts(0,0,0,0))
       end if
       if ( GFS_Control%lndp_type == 2 ) then
           allocate(sfc_wts(1:nblks,maxblk,1:GFS_Control%n_var_lndp))
@@ -159,21 +171,95 @@ module stochastic_physics_wrapper_mod
             case('smc')
               allocate(slc   (1:nblks, maxblk, lsoil))
               allocate(stype (1:nblks, maxblk))
+              
+              allocate(stc   (0,0,0))
+              allocate(vfrac (0,0))
+              allocate(alnsf (0,0))
+              allocate(alnwf (0,0))
+              allocate(snoalb(0,0))
+              allocate(semis (0,0))
+              allocate(zorll (0,0))
             case('stc')
               allocate(stc   (1:nblks, maxblk, lsoil))
+              
+              allocate(slc   (0,0,0))
+              allocate(stype (0,0))
+              allocate(vfrac (0,0))
+              allocate(alnsf (0,0))
+              allocate(alnwf (0,0))
+              allocate(snoalb(0,0))
+              allocate(semis (0,0))
+              allocate(zorll (0,0))
             case('vgf') 
               allocate(vfrac (1:nblks, maxblk))
+              
+              allocate(slc   (0,0,0))
+              allocate(stype (0,0))
+              allocate(stc   (0,0,0))
+              allocate(alnsf (0,0))
+              allocate(alnwf (0,0))
+              allocate(snoalb(0,0))
+              allocate(semis (0,0))
+              allocate(zorll (0,0))
             case('alb') 
               allocate(alnsf (1:nblks, maxblk))
               allocate(alnwf (1:nblks, maxblk))
+              
+              allocate(slc   (0,0,0))
+              allocate(stype (0,0))
+              allocate(stc   (0,0,0))
+              allocate(vfrac (0,0))
+              allocate(snoalb(0,0))
+              allocate(semis (0,0))
+              allocate(zorll (0,0))
             case('sal') 
               allocate(snoalb(1:nblks, maxblk))
+              
+              allocate(slc   (0,0,0))
+              allocate(stype (0,0))
+              allocate(stc   (0,0,0))
+              allocate(vfrac (0,0))
+              allocate(alnsf (0,0))
+              allocate(alnwf (0,0))
+              allocate(semis (0,0))
+              allocate(zorll (0,0))
             case('emi') 
               allocate(semis (1:nblks, maxblk))
+              
+              allocate(slc   (0,0,0))
+              allocate(stype (0,0))
+              allocate(stc   (0,0,0))
+              allocate(vfrac (0,0))
+              allocate(alnsf (0,0))
+              allocate(alnwf (0,0))
+              allocate(snoalb(0,0))
+              allocate(zorll (0,0))
             case('zol') 
               allocate(zorll (1:nblks, maxblk))
+              
+              allocate(slc   (0,0,0))
+              allocate(stype (0,0))
+              allocate(stc   (0,0,0))
+              allocate(vfrac (0,0))
+              allocate(alnsf (0,0))
+              allocate(alnwf (0,0))
+              allocate(snoalb(0,0))
+              allocate(semis (0,0))
             endselect 
           enddo 
+      else
+         allocate(sfc_wts(0,0,0))
+         allocate(smc    (0,0,0))
+         
+         allocate(slc   (0,0,0))
+         allocate(stype (0,0))
+         allocate(stc   (0,0,0))
+         allocate(vfrac (0,0))
+         allocate(alnsf (0,0))
+         allocate(alnwf (0,0))
+         allocate(snoalb(0,0))
+         allocate(semis (0,0))
+         allocate(zorll (0,0))
       endif
 
 
@@ -188,6 +274,8 @@ module stochastic_physics_wrapper_mod
             GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
          end do
          deallocate(sfc_wts)
+      else
+         allocate(sfc_wts(0,0,0))
       end if
       ! Consistency check for cellular automata
       if(GFS_Control%do_ca)then
@@ -203,13 +291,45 @@ module stochastic_physics_wrapper_mod
            allocate(ca_deep_cpl (1:nblks, maxblk))
            allocate(ca_turb_cpl (1:nblks, maxblk))
            allocate(ca_shal_cpl (1:nblks, maxblk))
+        else
+           allocate(sst         (0,0))
+           allocate(lmsk        (0,0))
+           allocate(lake        (0,0))
+           allocate(uwind       (0,0,0))
+           allocate(vwind       (0,0,0))
+           allocate(height      (0,0,0))
+           allocate(condition   (0,0))
+           allocate(dx          (0,0))
+           allocate(ca_deep_cpl (0,0))
+           allocate(ca_turb_cpl (0,0))
+           allocate(ca_shal_cpl (0,0))
         endif
         if(GFS_Control%ca_global)then
           ! Allocate contiguous arrays; no need to copy in (intent out)
           allocate(ca1_cpl (1:nblks, maxblk))
           allocate(ca2_cpl (1:nblks, maxblk))
           allocate(ca3_cpl (1:nblks, maxblk))
+        else
+          allocate(ca1_cpl (0,0))
+          allocate(ca2_cpl (0,0))
+          allocate(ca3_cpl (0,0))
         endif
+      else
+         allocate(sst         (0,0))
+         allocate(lmsk        (0,0))
+         allocate(lake        (0,0))
+         allocate(uwind       (0,0,0))
+         allocate(vwind       (0,0,0))
+         allocate(height      (0,0,0))
+         allocate(condition   (0,0))
+         allocate(dx          (0,0))
+         allocate(ca_deep_cpl (0,0))
+         allocate(ca_turb_cpl (0,0))
+         allocate(ca_shal_cpl (0,0))
+         
+         allocate(ca1_cpl (0,0))
+         allocate(ca2_cpl (0,0))
+         allocate(ca3_cpl (0,0))
       endif
 
       is_initialized = .true.
@@ -440,60 +560,46 @@ module stochastic_physics_wrapper_mod
 
   type(GFS_control_type),   intent(inout) :: GFS_Control
 
+  if (allocated(xlat)) deallocate(xlat)
+  if (allocated(xlon)) deallocate(xlon)
+  if (allocated(sppt_wts)) deallocate(sppt_wts)
+  if (allocated(shum_wts)) deallocate(shum_wts)
+  if (allocated(skebu_wts)) deallocate(skebu_wts)
+  if (allocated(skebv_wts)) deallocate(skebv_wts)
+  if (allocated(spp_wts)) deallocate(spp_wts)
+  if (allocated(sfc_wts)) deallocate(sfc_wts)
+  if (allocated(smc))    deallocate(smc)
+  if (allocated(slc))    deallocate(slc)
+  if (allocated(stc))    deallocate(stc)
+  if (allocated(stype))  deallocate(stype)
+  if (allocated(vfrac))  deallocate(vfrac)
+  if (allocated(snoalb)) deallocate(snoalb)
+  if (allocated(alnsf))  deallocate(alnsf)
+  if (allocated(alnwf))  deallocate(alnwf)
+  if (allocated(semis))  deallocate(semis)
+  if (allocated(zorll))  deallocate(zorll)
+  if (allocated(sst))    deallocate(sst         )
+  if (allocated(lmsk))   deallocate(lmsk        )
+  if (allocated(lake))   deallocate(lake        )
+  if (allocated(uwind))  deallocate(uwind       )
+  if (allocated(vwind))  deallocate(vwind       )
+  if (allocated(height)) deallocate(height      )
+  if (allocated(dx))     deallocate(dx          )
+  if (allocated(condition))   deallocate(condition   )
+  if (allocated(ca_deep_cpl)) deallocate(ca_deep_cpl )
+  if (allocated(ca_turb_cpl)) deallocate(ca_turb_cpl )
+  if (allocated(ca_shal_cpl)) deallocate(ca_shal_cpl )
+  if (allocated(ca1_cpl)) deallocate(ca1_cpl )
+  if (allocated(ca2_cpl)) deallocate(ca2_cpl )
+  if (allocated(ca3_cpl)) deallocate(ca3_cpl )
+  
   if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type > 0) .OR. GFS_Control%do_spp) then
-      if (allocated(xlat)) deallocate(xlat)
-      if (allocated(xlon)) deallocate(xlon)
-      if (GFS_Control%do_sppt) then
-         if (allocated(sppt_wts)) deallocate(sppt_wts)
-      end if
-      if (GFS_Control%do_shum) then
-         if (allocated(shum_wts)) deallocate(shum_wts)
-      end if
-      if (GFS_Control%do_skeb) then
-         if (allocated(skebu_wts)) deallocate(skebu_wts)
-         if (allocated(skebv_wts)) deallocate(skebv_wts)
-      end if
-      if (GFS_Control%do_spp) then
-         if (allocated(spp_wts)) deallocate(spp_wts)
-      end if
       if ( GFS_Control%lndp_type == 2 ) then
          lsoil = -999
-         if (allocated(sfc_wts)) deallocate(sfc_wts)
       end if
-      if (GFS_Control%lndp_type == 2) then
-          if (allocated(smc))    deallocate(smc)
-          if (allocated(slc))    deallocate(slc)
-          if (allocated(stc))    deallocate(stc)
-          if (allocated(stype))  deallocate(stype)
-          if (allocated(vfrac))  deallocate(vfrac)
-          if (allocated(snoalb)) deallocate(snoalb)
-          if (allocated(alnsf))  deallocate(alnsf)
-          if (allocated(alnwf))  deallocate(alnwf)
-          if (allocated(semis))  deallocate(semis)
-          if (allocated(zorll))  deallocate(zorll)
-      endif
       call finalize_stochastic_physics()
-   endif
-   if(GFS_Control%do_ca)then
-        if(GFS_Control%ca_sgs)then
-           deallocate(sst         )
-           deallocate(lmsk        )
-           deallocate(lake        )
-           deallocate(uwind       )
-           deallocate(vwind       )
-           deallocate(height      )
-           deallocate(dx          )
-           deallocate(condition   )
-           deallocate(ca_deep_cpl )
-           deallocate(ca_turb_cpl )
-           deallocate(ca_shal_cpl )
-        endif
-        if(GFS_Control%ca_global)then
-            deallocate(ca1_cpl )
-            deallocate(ca2_cpl )
-            deallocate(ca3_cpl )
-        endif
-   endif
+  endif
+   
   end subroutine stochastic_physics_wrapper_end
 
 end module stochastic_physics_wrapper_mod
