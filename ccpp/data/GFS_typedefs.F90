@@ -1618,50 +1618,50 @@ module GFS_typedefs
 !!
   type GFS_grid_type
 
-    real (kind=kind_phys), pointer :: xlon   (:)    => null()   !< grid longitude in radians, ok for both 0->2pi
-                                                                !! or -pi -> +pi ranges
-    real (kind=kind_phys), pointer :: xlat   (:)    => null()   !< grid latitude in radians, default to pi/2 ->
-                                                                !! -pi/2 range, otherwise adj in subr called
-    real (kind=kind_phys), pointer :: xlat_d (:)    => null()   !< grid latitude in degrees, default to 90 ->
-                                                                !! -90 range, otherwise adj in subr called
-    real (kind=kind_phys), pointer :: xlon_d (:)    => null()   !< grid longitude in degrees, default to 0 ->
-                                                                !! 360 range, otherwise adj in subr called
-    real (kind=kind_phys), pointer :: sinlat (:)    => null()   !< sine of the grids corresponding latitudes
-    real (kind=kind_phys), pointer :: coslat (:)    => null()   !< cosine of the grids corresponding latitudes
-    real (kind=kind_phys), pointer :: area   (:)    => null()   !< area of the grid cell
-    real (kind=kind_phys), pointer :: dx     (:)    => null()   !< relative dx for the grid cell
+    real (kind=kind_phys), allocatable :: xlon   (:)        !< grid longitude in radians, ok for both 0->2pi
+                                                            !! or -pi -> +pi ranges
+    real (kind=kind_phys), allocatable :: xlat   (:)        !< grid latitude in radians, default to pi/2 ->
+                                                            !! -pi/2 range, otherwise adj in subr called
+    real (kind=kind_phys), allocatable :: xlat_d (:)        !< grid latitude in degrees, default to 90 ->
+                                                            !! -90 range, otherwise adj in subr called
+    real (kind=kind_phys), allocatable :: xlon_d (:)        !< grid longitude in degrees, default to 0 ->
+                                                            !! 360 range, otherwise adj in subr called
+    real (kind=kind_phys), allocatable :: sinlat (:)        !< sine of the grids corresponding latitudes
+    real (kind=kind_phys), allocatable :: coslat (:)        !< cosine of the grids corresponding latitudes
+    real (kind=kind_phys), allocatable :: area   (:)        !< area of the grid cell
+    real (kind=kind_phys), allocatable :: dx     (:)        !< relative dx for the grid cell
 
 !--- grid-related interpolation data for prognostic ozone
-    real (kind=kind_phys), pointer :: ddy_o3    (:) => null()   !< interpolation     weight for ozone
-    integer,               pointer :: jindx1_o3 (:) => null()   !< interpolation  low index for ozone
-    integer,               pointer :: jindx2_o3 (:) => null()   !< interpolation high index for ozone
+    real (kind=kind_phys), allocatable :: ddy_o3    (:)     !< interpolation     weight for ozone
+    integer,               allocatable :: jindx1_o3 (:)     !< interpolation  low index for ozone
+    integer,               allocatable :: jindx2_o3 (:)     !< interpolation high index for ozone
 
 !--- grid-related interpolation data for stratosphere water
-    real (kind=kind_phys), pointer :: ddy_h     (:) => null()   !< interpolation     weight for h2o
-    integer,               pointer :: jindx1_h  (:) => null()   !< interpolation  low index for h2o
-    integer,               pointer :: jindx2_h  (:) => null()   !< interpolation high index for h2o
+    real (kind=kind_phys), allocatable :: ddy_h     (:)     !< interpolation     weight for h2o
+    integer,               allocatable :: jindx1_h  (:)     !< interpolation  low index for h2o
+    integer,               allocatable :: jindx2_h  (:)     !< interpolation high index for h2o
 
 !--- grid-related interpolation data for prognostic iccn
-    real (kind=kind_phys), pointer :: ddy_ci    (:) => null()   !< interpolation     weight for iccn
-    integer,               pointer :: jindx1_ci (:) => null()   !< interpolation  low index for iccn
-    integer,               pointer :: jindx2_ci (:) => null()   !< interpolation high index for iccn
-    real (kind=kind_phys), pointer :: ddx_ci    (:) => null()   !< interpolation     weight for iccn
-    integer,               pointer :: iindx1_ci (:) => null()   !< interpolation  low index for iccn
-    integer,               pointer :: iindx2_ci (:) => null()   !< interpolation high index for iccn
+    real (kind=kind_phys), allocatable :: ddy_ci    (:)     !< interpolation     weight for iccn
+    integer,               allocatable :: jindx1_ci (:)     !< interpolation  low index for iccn
+    integer,               allocatable :: jindx2_ci (:)     !< interpolation high index for iccn
+    real (kind=kind_phys), allocatable :: ddx_ci    (:)     !< interpolation     weight for iccn
+    integer,               allocatable :: iindx1_ci (:)     !< interpolation  low index for iccn
+    integer,               allocatable :: iindx2_ci (:)     !< interpolation high index for iccn
 
 !--- grid-related interpolation data for prescribed aerosols
-    real (kind=kind_phys), pointer :: ddy_aer    (:) => null()   !< interpolation     weight for iaerclm
-    integer,               pointer :: jindx1_aer (:) => null()   !< interpolation  low index for iaerclm
-    integer,               pointer :: jindx2_aer (:) => null()   !< interpolation high index for iaerclm
-    real (kind=kind_phys), pointer :: ddx_aer    (:) => null()   !< interpolation     weight for iaerclm
-    integer,               pointer :: iindx1_aer (:) => null()   !< interpolation  low index for iaerclm
-    integer,               pointer :: iindx2_aer (:) => null()   !< interpolation high index for iaerclm
+    real (kind=kind_phys), allocatable :: ddy_aer    (:)    !< interpolation     weight for iaerclm
+    integer,               allocatable :: jindx1_aer (:)    !< interpolation  low index for iaerclm
+    integer,               allocatable :: jindx2_aer (:)    !< interpolation high index for iaerclm
+    real (kind=kind_phys), allocatable :: ddx_aer    (:)    !< interpolation     weight for iaerclm
+    integer,               allocatable :: iindx1_aer (:)    !< interpolation  low index for iaerclm
+    integer,               allocatable :: iindx2_aer (:)    !< interpolation high index for iaerclm
 
 !--- grid-related interpolation data for cires_ugwp_v1
-    real (kind=kind_phys), pointer :: ddy_j1tau  (:) => null()   !< interpolation     weight for  tau_ugwp
-    real (kind=kind_phys), pointer :: ddy_j2tau  (:) => null()   !< interpolation     weight for  tau_ugwp
-    integer,               pointer :: jindx1_tau (:) => null()   !< interpolation  low index for tau_ugwp
-    integer,               pointer :: jindx2_tau (:) => null()   !< interpolation high index for tau_ugwp
+    real (kind=kind_phys), allocatable :: ddy_j1tau  (:)    !< interpolation     weight for  tau_ugwp
+    real (kind=kind_phys), allocatable :: ddy_j2tau  (:)    !< interpolation     weight for  tau_ugwp
+    integer,               allocatable :: jindx1_tau (:)    !< interpolation  low index for tau_ugwp
+    integer,               allocatable :: jindx2_tau (:)    !< interpolation high index for tau_ugwp
 
     contains
       procedure :: create   => grid_create   !<   allocate array data
@@ -2157,7 +2157,6 @@ module GFS_typedefs
      type(GFS_stateout_type) :: Stateout
      type(GFS_sfcprop_type)  :: Sfcprop
      type(GFS_coupling_type) :: Coupling
-     type(GFS_grid_type)     :: Grid
      type(GFS_tbd_type)      :: Tbd
      type(GFS_cldprop_type)  :: Cldprop
      type(GFS_radtend_type)  :: Radtend
@@ -4256,10 +4255,10 @@ module GFS_typedefs
         Model%chunk_begin(i) = Model%chunk_end(i-1) + 1
         Model%chunk_end(i) = Model%chunk_begin(i) + blksz(i) - 1
     end do
+    ! DH* for debugging, remove before submit
     do i=1,Model%nchunks
         print *, "DH DEBUG:", i, blksz(i), Model%chunk_begin(i), Model%chunk_end(i)
     end do
-    stop
     ! *DH
 
 !--- coupling parameters
@@ -6938,14 +6937,15 @@ module GFS_typedefs
 !----------------
 ! GFS_grid%create
 !----------------
-  subroutine grid_create (Grid, IM, Model)
+  subroutine grid_create (Grid, Model)
 
     implicit none
 
     class(GFS_grid_type)               :: Grid
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
 
+    IM = Model%ncols
     allocate (Grid%xlon   (IM))
     allocate (Grid%xlat   (IM))
     allocate (Grid%xlat_d (IM))

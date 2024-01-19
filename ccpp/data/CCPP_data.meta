@@ -24,11 +24,23 @@
   units = DDT
   dimensions = ()
   type = GFS_control_type
+[GFS_Grid]
+  standard_name = GFS_grid_type_instance
+  long_name = instance of derived type GFS_grid_type
+  units = DDT
+  dimensions = ()
+  type = GFS_grid_type
 [GFS_Data(ccpp_block_number)]
   standard_name = GFS_data_type_instance
   long_name = instance of derived type GFS_data_type
   units = DDT
   dimensions = ()
+  type = GFS_data_type
+[GFS_Data]
+  standard_name = GFS_data_type_instance_all_blocks
+  long_name = instance of derived type GFS_data_type
+  units = DDT
+  dimensions = (ccpp_block_count)
   type = GFS_data_type
 [GFS_Interstitial(ccpp_thread_number)]
   standard_name = GFS_interstitial_type_instance
@@ -36,12 +48,6 @@
   units = DDT
   dimensions = ()
   type = GFS_interstitial_type
-[GFS_Data]
-  standard_name = GFS_data_type_instance_all_blocks
-  long_name = instance of derived type GFS_data_type
-  units = DDT
-  dimensions = (ccpp_block_count)
-  type = GFS_data_type
 [GFS_Interstitial]
   standard_name = GFS_interstitial_type_instance_all_threads
   long_name = instance of derived type GFS_interstitial_type

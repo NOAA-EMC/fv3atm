@@ -54,6 +54,7 @@ TYPEDEFS_NEW_METADATA = {
         },
     'GFS_typedefs' : {
         'GFS_control_type'      : 'GFS_Control',
+        'GFS_grid_type'         : 'GFS_Grid',
         'GFS_data_type'         : 'GFS_Data(cdata%blk_no)',
         'GFS_diag_type'         : 'GFS_Data(cdata%blk_no)%Intdiag',
         'GFS_tbd_type'          : 'GFS_Data(cdata%blk_no)%Tbd',
@@ -62,7 +63,6 @@ TYPEDEFS_NEW_METADATA = {
         'GFS_statein_type'      : 'GFS_Data(cdata%blk_no)%Statein',
         'GFS_cldprop_type'      : 'GFS_Data(cdata%blk_no)%Cldprop',
         'GFS_radtend_type'      : 'GFS_Data(cdata%blk_no)%Radtend',
-        'GFS_grid_type'         : 'GFS_Data(cdata%blk_no)%Grid',
         'GFS_stateout_type'     : 'GFS_Data(cdata%blk_no)%Stateout',
         'GFS_typedefs' : '',
         },

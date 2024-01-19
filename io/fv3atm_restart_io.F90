@@ -6,7 +6,8 @@ module fv3atm_restart_io_mod
 
   use block_control_mod,  only: block_control_type
   use mpp_mod,            only: mpp_error, mpp_chksum, NOTE,   FATAL
-  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys, GFS_data_type
+  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
+  use GFS_typedefs,       only: GFS_grid_type, GFS_data_type
   use GFS_restart,        only: GFS_restart_type
   use fms_mod,            only: stdout
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited,      &
@@ -139,10 +140,11 @@ contains
   !----------------
   ! fv3atm_checksum
   !----------------
-  subroutine fv3atm_checksum (Model, GFS_Data, Atm_block)
+  subroutine fv3atm_checksum (Model, GFS_Grid, GFS_Data, Atm_block)
     implicit none
     !--- interface variables
     type(GFS_control_type),    intent(in) :: Model
+    type(GFS_grid_type),       intent(in) :: GFS_Grid
     type(GFS_data_type),       intent(in) :: GFS_Data(:)
     type (block_control_type), intent(in) :: Atm_block
     !--- local variables
@@ -284,19 +286,21 @@ contains
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcdsw)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcnsw)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcdlw)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%xlon)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%xlat)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%xlat_d)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%sinlat)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%coslat)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%area)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%dx)
+      ! DH* cleam this up - create a new/replacement copy_from_GFS_data
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%xlon, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%xlat, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%xlat_d, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%sinlat, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%coslat, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%area, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%dx, (/iec-isc+1, jec-jsc+1/))
       if (Model%ntoz > 0) then
-        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%ddy_o3)
+        nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%ddy_o3, (/iec-isc+1, jec-jsc+1/))
       endif
       if (Model%h2o_phys) then
-        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%ddy_h)
+        nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%ddy_h, (/iec-isc+1, jec-jsc+1/))
       endif
+      ! *DH
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Cldprop%cv)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Cldprop%cvt)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Cldprop%cvb)

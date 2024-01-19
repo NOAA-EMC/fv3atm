@@ -8,6 +8,7 @@ module CCPP_data
     use CCPP_typedefs, only: GFS_interstitial_type,  &
                              GFDL_interstitial_type
     use GFS_typedefs,  only: GFS_control_type,       &
+                             GFS_grid_type,          &
                              GFS_data_type
 
     implicit none
@@ -20,6 +21,7 @@ module CCPP_data
            ccpp_suite,             &
            GFDL_interstitial,      &
            GFS_control,            &
+           GFS_grid,               &
            GFS_data,               &
            GFS_interstitial
 
@@ -28,6 +30,7 @@ module CCPP_data
     !  and GFS_Interstitial has dimension nthreads          !
     !-------------------------------------------------------!
     type(GFS_control_type),                                    save, target :: GFS_control
+    type(GFS_grid_type),                                       save, target :: GFS_grid
     type(GFS_data_type),          dimension(:),   allocatable, save, target :: GFS_data
     type(GFS_interstitial_type),  dimension(:),   allocatable, save, target :: GFS_interstitial
 

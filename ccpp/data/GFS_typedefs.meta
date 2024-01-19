@@ -7385,77 +7385,77 @@
   standard_name = cell_area
   long_name = area of the grid cell
   units = m2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dx]
   standard_name = characteristic_grid_lengthscale
   long_name = relative dx for the grid cell
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [xlat]
   standard_name = latitude
   long_name = latitude
   units = radian
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [xlon]
   standard_name = longitude
   long_name = longitude
   units = radian
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [coslat]
   standard_name = cosine_of_latitude
   long_name = cosine of latitude
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sinlat]
   standard_name = sine_of_latitude
   long_name = sine of latitude
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [xlat_d]
   standard_name = latitude_in_degree
   long_name = latitude in degree north
   units = degree_north
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [xlon_d]
   standard_name = longitude_in_degree
   long_name = longitude in degree east
   units = degree_east
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [jindx1_o3]
   standard_name = lower_latitude_index_of_ozone_forcing_for_interpolation
   long_name = interpolation low index for ozone
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (index_of_ozone_mixing_ratio_in_tracer_concentration_array>0)
 [jindx2_o3]
   standard_name = upper_latitude_index_of_ozone_forcing_for_interpolation
   long_name = interpolation high index for ozone
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (index_of_ozone_mixing_ratio_in_tracer_concentration_array>0)
 [ddy_o3]
   standard_name = latitude_interpolation_weight_for_ozone_forcing
   long_name = interpolation high index for ozone
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (index_of_ozone_mixing_ratio_in_tracer_concentration_array>0)
@@ -7463,21 +7463,21 @@
   standard_name = lower_latitude_index_of_stratospheric_water_vapor_forcing_for_interpolation
   long_name = interpolation low index for stratospheric water vapor
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_stratospheric_water_vapor_physics)
 [jindx2_h]
   standard_name = upper_latitude_index_of_stratospheric_water_vapor_forcing_for_interpolation
   long_name = interpolation high index for stratospheric water vapor
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_stratospheric_water_vapor_physics)
 [ddy_h]
   standard_name = latitude_interpolation_weight_for_stratospheric_water_vapor_forcing
   long_name = interpolation high index for stratospheric water vapor
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stratospheric_water_vapor_physics)
@@ -7485,21 +7485,21 @@
   standard_name = lower_latitude_index_of_aerosol_forcing_for_interpolation
   long_name = interpolation low index for prescribed aerosols in the y direction
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_aerosol_input_MG_radiation)
 [jindx2_aer]
   standard_name = upper_latitude_index_of_aerosol_forcing_for_interpolation
   long_name = interpolation high index for prescribed aerosols in the y direction
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_aerosol_input_MG_radiation)
 [ddy_aer]
   standard_name = latitude_interpolation_weight_for_aerosol_forcing
   long_name = interpolation high index for prescribed aerosols in the y direction
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_aerosol_input_MG_radiation)
@@ -7507,21 +7507,21 @@
   standard_name = lower_longitude_index_of_aerosol_forcing_for_interpolation
   long_name = interpolation low index for prescribed aerosols in the x direction
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_aerosol_input_MG_radiation)
 [iindx2_aer]
   standard_name = upper_longitude_index_of_aerosol_forcing_for_interpolation
   long_name = interpolation high index for prescribed aerosols in the x direction
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_aerosol_input_MG_radiation)
 [ddx_aer]
   standard_name = longitude_interpolation_weight_for_aerosol_forcing
   long_name = interpolation high index for prescribed aerosols in the x direction
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_aerosol_input_MG_radiation)
@@ -7529,21 +7529,21 @@
   standard_name = lower_latitude_index_of_cloud_nuclei_forcing_for_interpolation
   long_name = interpolation low index for ice and cloud condensation nuclei in the y direction
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (control_for_ice_cloud_condensation_nuclei_forcing==1)
 [jindx2_ci]
   standard_name = upper_latitude_index_of_cloud_nuclei_forcing_for_interpolation
   long_name = interpolation high index for ice and cloud condensation nuclei in the y direction
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (control_for_ice_cloud_condensation_nuclei_forcing==1)
 [ddy_ci]
   standard_name = latitude_interpolation_weight_for_cloud_nuclei_forcing
   long_name = interpolation high index for ice and cloud condensation nuclei in the y direction
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_ice_cloud_condensation_nuclei_forcing==1)
@@ -7551,21 +7551,21 @@
   standard_name = lower_longitude_index_of_cloud_nuclei_forcing_for_interpolation
   long_name = interpolation low index for ice and cloud condensation nuclei in the x direction
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (control_for_ice_cloud_condensation_nuclei_forcing==1)
 [iindx2_ci]
   standard_name = upper_longitude_index_of_cloud_nuclei_forcing_for_interpolation
   long_name = interpolation high index for ice and cloud condensation nuclei in the x direction
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (control_for_ice_cloud_condensation_nuclei_forcing==1)
 [ddx_ci]
   standard_name = longitude_interpolation_weight_for_cloud_nuclei_forcing
   long_name = interpolation high index for ice and cloud condensation nuclei in the x direction
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_ice_cloud_condensation_nuclei_forcing==1)
@@ -7573,21 +7573,21 @@
   standard_name = lower_latitude_index_of_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag_for_interpolation
   long_name = index1 for weight1 for tau NGWs
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_ugwp_version_1)
 [jindx2_tau]
   standard_name = upper_latitude_index_of_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag_for_interpolation
   long_name = index2 for weight2 for tau NGWs
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_ugwp_version_1)
 [ddy_j1tau]
   standard_name = latitude_interpolation_weight_complement_for_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
   long_name = interpolation weight1 for tau NGWs
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1)
@@ -7595,7 +7595,7 @@
   standard_name = latitude_interpolation_weight_for_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
   long_name = interpolation weight2 for tau NGWs
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1)
@@ -9858,12 +9858,6 @@
   units = DDT
   dimensions = ()
   type = GFS_coupling_type
-[Grid]
-  standard_name = GFS_grid_type_instance
-  long_name = grid and interpolation related data
-  units = DDT
-  dimensions = ()
-  type = GFS_grid_type
 [Tbd]
   standard_name = GFS_tbd_type_instance
   long_name = to be determined data that doesn't fit in any one container

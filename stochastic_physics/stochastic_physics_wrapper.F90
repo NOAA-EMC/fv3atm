@@ -57,13 +57,13 @@ module stochastic_physics_wrapper_mod
 !-------------------------------
 !  CCPP step
 !-------------------------------
-  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Data, Atm_block, ierr)
+  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Grid, GFS_Data, Atm_block, ierr)
 
 #ifdef _OPENMP
     use omp_lib
 #endif
 
-    use GFS_typedefs,       only: GFS_control_type, GFS_data_type
+    use GFS_typedefs,       only: GFS_control_type, GFS_grid_type, GFS_data_type
     use mpp_mod,            only: FATAL, mpp_error
     use block_control_mod,  only: block_control_type
     use atmosphere_mod,     only: Atm, mygrid
@@ -76,6 +76,7 @@ module stochastic_physics_wrapper_mod
     implicit none
 
     type(GFS_control_type),   intent(inout) :: GFS_Control
+    type(GFS_grid_type),      intent(in)    :: GFS_Grid
     type(GFS_data_type),      intent(inout) :: GFS_Data(:)
     type(block_control_type), intent(inout) :: Atm_block
     integer,                  intent(out)   :: ierr
@@ -101,10 +102,8 @@ module stochastic_physics_wrapper_mod
       if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type > 0) .OR. GFS_Control%do_spp) then
          allocate(xlat(1:nblks,maxblk))
          allocate(xlon(1:nblks,maxblk))
-         do nb=1,nblks
-            xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
-            xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
-         end do
+         call transfer_field_to_stochastics(GFS_Control%blksz, GFS_Grid%xlat, xlat)
+         call transfer_field_to_stochastics(GFS_Control%blksz, GFS_Grid%xlon, xlon)
         ! Initialize stochastic physics
         call init_stochastic_physics(levs, GFS_Control%blksz, GFS_Control%dtp, GFS_Control%sppt_amp,                                  &
             GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt, GFS_Control%do_shum, &
@@ -391,12 +390,12 @@ module stochastic_physics_wrapper_mod
              uwind      (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%ugrs(:,:)
              vwind      (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%vgrs(:,:)
              height     (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%phil(:,:)
-             dx         (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%dx(:)
              condition  (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%condition(:)
              ca_deep_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_deep(:)
              ca_turb_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_turb(:)
              ca_shal_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_shal(:)
          enddo
+         call transfer_field_to_stochastics(GFS_Control%blksz, GFS_Grid%dx, dx)
          call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtp,GFS_control%restart,GFS_Control%first_time_step,              &
             sst,lmsk,lake,uwind,vwind,height,dx,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl, Atm(mygrid)%domain_for_coupler,nblks,      &
             Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, levs,                        &
@@ -427,6 +426,48 @@ module stochastic_physics_wrapper_mod
       endif !do_ca
 
     endif initalize_stochastic_physics
+
+  contains
+
+    subroutine transfer_field_to_stochastics(blksz, data_in, data_out)
+
+      integer, dimension(:), intent(in) :: blksz
+      real(kind=kind_phys), dimension(:), intent(in) :: data_in
+      real(kind=kind_phys), dimension(:,:), intent(out) :: data_out
+      integer :: i, nb, ni
+
+      nb = 1
+      ni = 1
+      do i=1,size(data_in)
+        if (ni>blksz(nb)) then
+          nb = nb+1
+          ni = 1
+        end if
+        data_out(nb,ni) = data_in(i)
+        ni =  ni+1
+      end do
+
+    end subroutine transfer_field_to_stochastics
+
+    subroutine transfer_field_from_stochastics(blksz, data_in, data_out)
+
+      integer, dimension(:), intent(in) :: blksz
+      real(kind=kind_phys), dimension(:,:), intent(in) :: data_in
+      real(kind=kind_phys), dimension(:), intent(out) :: data_out
+      integer :: i, nb, ni
+
+      nb = 1
+      ni = 1
+      do i=1,size(data_out)
+        if (ni>blksz(nb)) then
+          nb = nb+1
+          ni = 1
+        end if
+        data_out(i)= data_in(nb,ni)
+        ni =  ni+1
+      end do
+
+    end subroutine transfer_field_from_stochastics
 
   end subroutine stochastic_physics_wrapper
 
