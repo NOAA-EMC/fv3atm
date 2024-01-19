@@ -29,7 +29,6 @@
       use mpi
       use esmf
       use fms
-      use mpp_mod, only : mpp_init
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
