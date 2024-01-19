@@ -29,7 +29,7 @@ jobs:
     - name: decide-doc-build
       run: |
         if [[ "${{ matrix.cmake_opts }}" == "-D32BIT=ON" && "${{ matrix.gcc_ver }}" == 11 && "${{ matrix.mpi }}" == mpich ]]; then
-          echo 'builddocs=ON' >> ${GITHUB_ENV}
+          echo 'builddocs=ON' | tee -a ${GITHUB_ENV}
         fi
 
     - name: apt-install
@@ -112,7 +112,7 @@ jobs:
       with:
         name: docs
         path: |
-          build/docs/html
+          ${{ github.workspace }}/fv3atm/build/docs/html
           
     - name: debug-artifacts
       uses: actions/upload-artifact@v4
