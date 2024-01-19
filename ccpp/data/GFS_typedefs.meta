@@ -2288,7 +2288,7 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
-[frp_input]
+[frp_output]
   standard_name = frp_hourly
   long_name = hourly fire radiative power
   units = MW
@@ -2312,6 +2312,37 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
+[fire_type_out]
+  standard_name = fire_type_out
+  long_name = type of fire
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = integer
+  active = (do_smoke_coupling)
+[peak_hr_out]
+ standard_name = peak_hr_fire
+ long_name = hour of peak fire emissions
+ units = none
+ dimensions = (horizontal_loop_extent)
+ type = real
+ kind = kind_phys
+ active = (do_smoke_coupling)
+[lu_nofire_out]
+ standard_name = lu_nofire_out
+ long_name = land use of no fire pixels for type
+ units = frac
+ dimensions = (horizontal_loop_extent)
+ type = real
+ kind = kind_phys
+ active = (do_smoke_coupling)
+[lu_qfire_out]
+ standard_name = lu_qfire_out
+ long_name = land use of fire pixels for type
+ units = frac
+ dimensions = (horizontal_loop_extent)
+ type = real
+ kind = kind_phys
+ active = (do_smoke_coupling)
 [fire_in]
   standard_name = smoke_fire_auxiliary_input
   long_name = smoke fire auxiliary input variables
@@ -3047,6 +3078,22 @@
 [max_fplume]
   standard_name = maximum_fire_plume_sigma_pressure_level
   long_name = maximum model level of fire plumerise
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[uspdavg]
+  standard_name = bl_averaged_wind_speed
+  long_name = average wind speed within the boundary layer
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[hpbl_thetav]
+  standard_name = pbl_height_thetav
+  long_name = pbl height based on modified parcel method
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -6675,6 +6722,13 @@
   standard_name = smoke_plumerise_frequency
   long_name = rrfs smoke add smoke option
   units = min
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[n_dbg_lines]
+  standard_name = smoke_debug_lines
+  long_name = rrfs smoke add smoke option
+  units = index
   dimensions = ()
   type = integer
   active = (do_smoke_coupling)
