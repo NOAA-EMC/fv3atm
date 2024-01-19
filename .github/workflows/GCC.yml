@@ -31,6 +31,9 @@ jobs:
       run: |
         if [[ "${{ matrix.cmake_opts }}" == "-D32BIT=ON" && "${{ matrix.gcc_ver }}" == 11 && "${{ matrix.mpi }}" == mpich ]]; then
           echo 'devbuild=ON' | tee -a ${GITHUB_ENV}
+          echo 'gcov_cmake="-DCMAKE_Fortran_FLAGS=-fprofile-abs-path -fprofile-arcs -ftest-coverage -O0"' | tee -a ${GITHUB_ENV}
+        else
+          echo 'devbuild=OFF' | tee -a ${GITHUB_ENV}
         fi
 
     - name: apt-install
@@ -85,7 +88,7 @@ jobs:
         sed -i 's/doc /upp_doc /' upp/docs/CMakeLists.txt
         mkdir ${GITHUB_WORKSPACE}/fv3atm/build
         cd ${GITHUB_WORKSPACE}/fv3atm/build
-        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=${{ env.devbuild }}
+        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=${{ env.devbuild }} ${{ env.gcov_cmake }}
         make -j2
         ls -l /home/runner/work/fv3atm/fv3atm/fv3atm/io
 
