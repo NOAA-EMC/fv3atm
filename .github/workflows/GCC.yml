@@ -26,10 +26,11 @@ jobs:
 
     steps:
 
-    - name: decide-doc-build
+    # Only do Doxygen and gcovr build for one job
+    - name: decide-doc-gcovr-build
       run: |
         if [[ "${{ matrix.cmake_opts }}" == "-D32BIT=ON" && "${{ matrix.gcc_ver }}" == 11 && "${{ matrix.mpi }}" == mpich ]]; then
-          echo 'builddocs=ON' | tee -a ${GITHUB_ENV}
+          echo 'devbuild=ON' | tee -a ${GITHUB_ENV}
         fi
 
     - name: apt-install
@@ -84,7 +85,7 @@ jobs:
         sed -i 's/doc /upp_doc /' upp/docs/CMakeLists.txt
         mkdir ${GITHUB_WORKSPACE}/fv3atm/build
         cd ${GITHUB_WORKSPACE}/fv3atm/build
-        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=${{ env.builddocs }}
+        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=${{ env.devbuild }}
         make -j2
         ls -l /home/runner/work/fv3atm/fv3atm/fv3atm/io
 
@@ -94,6 +95,7 @@ jobs:
         ctest -j2 --output-on-failure --rerun-failed
 
     - name: get-test-coverage
+      if: ${{ env.devbuild == 'ON' }}
       run: |
         f=${GITHUB_WORKSPACE}/fv3atm
         cd $f/build
@@ -101,6 +103,7 @@ jobs:
 
     - name: upload-test-coverage
       uses: actions/upload-artifact@v4
+      if: ${{ env.devbuild == 'ON' }}
       with:
         name: test-coverage-fv3atm-${{ github.sha }}
         path: |
@@ -108,7 +111,7 @@ jobs:
               ${{ github.workspace }}/fv3atm/build/*.css
 
     - uses: actions/upload-artifact@v4
-      if: ${{ env.builddocs == 'ON' }}
+      if: ${{ env.devbuild == 'ON' }}
       with:
         name: docs
         path: |
