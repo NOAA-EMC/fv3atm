@@ -26,9 +26,9 @@ jobs:
 
     steps:
 
-    - name: install-doxygen
+    - name: apt-install
       run: |
-        sudo apt-get install doxygen graphviz
+        sudo apt-get install gcovr doxygen graphviz
         
     - name: checkout-fv3atm
       uses: actions/checkout@v3
@@ -59,6 +59,13 @@ jobs:
         spack concretize |& tee ${SPACK_ENV}/log.concretize
         spack install -j2 --fail-fast
 
+    - name: cache-save
+      uses: actions/cache/save@v3
+      if: ${{ always() }}
+      with:
+        path: ${{ github.workspace }}/spack-develop
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc11-2
+
     - name: build-fv3atm
       run: |
         . ${GITHUB_WORKSPACE}/spack-develop/share/spack/setup-env.sh
@@ -79,7 +86,21 @@ jobs:
         cd $GITHUB_WORKSPACE/fv3atm/build
         ctest -j2 --output-on-failure --rerun-failed
 
-    - uses: actions/upload-artifact@v3
+    - name: get-test-coverage
+      run: |
+        f=${GITHUB_WORKSPACE}/fv3atm
+        cd $f/build
+        gcovr -r .. -v --html-details --exclude ${f}/tests --exclude $f/stochastic_physics_repo --exclude $f/build/ccpp --exclude $f/ccpp/physics --exclude $f/ccpp/framework --exclude $f/atmos_cubed_sphere  --exclude CMakeFiles --print-summary -o test-coverage.html
+
+    - name: upload-test-coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-coverage-fv3atm-${{ github.sha }}
+        path: |
+              ${{ github.workspace }}/fv3atm/build/*.html 
+              ${{ github.workspace }}/fv3atm/build/*.css
+
+    - uses: actions/upload-artifact@v4
       with:
         name: docs
         path: |
