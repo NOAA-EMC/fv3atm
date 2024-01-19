@@ -931,7 +931,7 @@ module GFS_diagnostics
 
 !--- air quality diagnostics ---
   if (Model%cplaqm) then
-    if (associated(IntDiag(1)%aod)) then
+    if (size(IntDiag(1)%aod) > 0) then
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'aod'
@@ -1887,7 +1887,7 @@ module GFS_diagnostics
     enddo
     endif
 
-    if(associated(Coupling(1)%htrlw)) then
+    if(size(Coupling(1)%htrlw) > 0) then
     idx = idx + 1
     ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'htrlw'
