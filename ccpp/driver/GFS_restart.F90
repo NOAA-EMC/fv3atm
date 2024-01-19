@@ -51,8 +51,8 @@ module GFS_restart
     type(GFS_sfcprop_type),     intent(in)    :: Sfcprop(:)
     type(GFS_coupling_type),    intent(in)    :: Coupling(:)
     type(GFS_grid_type),        intent(in)    :: Grid
-    type(GFS_tbd_type),         intent(in)    :: Tbd(:)
-    type(GFS_cldprop_type),     intent(in)    :: Cldprop(:)
+    type(GFS_tbd_type),         intent(in)    :: Tbd
+    type(GFS_cldprop_type),     intent(in)    :: Cldprop
     type(GFS_radtend_type),     intent(in)    :: Radtend(:)
     type(GFS_diag_type),        intent(in)    :: IntDiag(:)
     type(GFS_init_type),        intent(in)    :: Init_parm
@@ -206,9 +206,9 @@ module GFS_restart
     Restart%name2d(2) = 'cvt'
     Restart%name2d(3) = 'cvb'
     do nb = 1,nblks
-      Restart%data(nb,1)%var2p => Cldprop(nb)%cv(:)
-      Restart%data(nb,2)%var2p => Cldprop(nb)%cvt(:)
-      Restart%data(nb,3)%var2p => Cldprop(nb)%cvb(:)
+      Restart%data(nb,1)%var2p => Cldprop%cv(Model%chunk_begin(nb):Model%chunk_end(nb))
+      Restart%data(nb,2)%var2p => Cldprop%cvt(Model%chunk_begin(nb):Model%chunk_end(nb))
+      Restart%data(nb,3)%var2p => Cldprop%cvb(Model%chunk_begin(nb):Model%chunk_end(nb))
     enddo
 
     !--- phy_f2d variables
@@ -218,7 +218,7 @@ module GFS_restart
       write(c2,'(i2.2)') num
       Restart%name2d(num+offset) = 'phy_f2d_'//c2
       do nb = 1,nblks
-        Restart%data(nb,num+offset)%var2p => Tbd(nb)%phy_f2d(:,num)
+        Restart%data(nb,num+offset)%var2p => Tbd%phy_f2d(Model%chunk_begin(nb):Model%chunk_end(nb),num)
       enddo
     enddo
     offset = offset + Model%ntot2d
@@ -230,7 +230,7 @@ module GFS_restart
         write(c2,'(i2.2)') num
         Restart%name2d(num+offset) = 'phy_fctd_'//c2
         do nb = 1,nblks
-          Restart%data(nb,num+offset)%var2p => Tbd(nb)%phy_fctd(:,num)
+          Restart%data(nb,num+offset)%var2p => Tbd%phy_fctd(Model%chunk_begin(nb):Model%chunk_end(nb),num)
         enddo
       enddo
       offset = offset + Model%nctp
@@ -272,7 +272,7 @@ module GFS_restart
       num = num + 1
       Restart%name2d(num) = 'aod_gf'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%aod_gf(:)
+        Restart%data(nb,num)%var2p => Tbd%aod_gf(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
     endif
     !--- RAP/HRRR-specific variables, 2D
@@ -291,7 +291,7 @@ module GFS_restart
       num = num + 1
       Restart%name2d(num) = 'aod_gf'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%aod_gf(:)
+        Restart%data(nb,num)%var2p => Tbd%aod_gf(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
     endif
     ! NoahMP
@@ -385,7 +385,7 @@ module GFS_restart
         num = num + 1
         Restart%name2d(num) = 'mynn_2d_hpbl'
         do nb = 1,nblks
-          Restart%data(nb,num)%var2p => Tbd(nb)%hpbl(:)
+          Restart%data(nb,num)%var2p => Tbd%hpbl(Model%chunk_begin(nb):Model%chunk_end(nb))
         enddo
         num = num + 1
         Restart%name2d(num) = 'mynn_2d_ustm'
@@ -482,7 +482,7 @@ module GFS_restart
             write(Restart%name2d(num),'("cap_suppress_",I0)') itime
           endif
           do nb = 1,nblks
-            Restart%data(nb,num)%var2p => Tbd(nb)%cap_suppress(:,Model%ix_dfi_radar(itime))
+            Restart%data(nb,num)%var2p => Tbd%cap_suppress(Model%chunk_begin(nb):Model%chunk_end(nb),Model%ix_dfi_radar(itime))
           enddo
         endif
       enddo
@@ -523,7 +523,7 @@ module GFS_restart
       write(c2,'(i2.2)') num
       Restart%name3d(num) = 'phy_f3d_'//c2
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%phy_f3d(:,:,num)
+        Restart%data(nb,num)%var3p => Tbd%phy_f3d(Model%chunk_begin(nb):Model%chunk_end(nb),:,num)
       enddo
     enddo
     if (Model%lrefres) then
@@ -544,7 +544,7 @@ module GFS_restart
        num = num + 1
        Restart%name3d(num) = 'sas_3d_qgrs_dsave'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
+        Restart%data(nb,num)%var3p => Tbd%prevsq(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'sas_3d_dqdt_qmicro'
@@ -559,7 +559,7 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'cnv_3d_ud_mf'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%ud_mf(:,:)
+        Restart%data(nb,num)%var3p => Tbd%ud_mf(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
 
@@ -568,12 +568,12 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'gf_3d_prevst'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%prevst(:,:)
+        Restart%data(nb,num)%var3p => Tbd%prevst(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'gf_3d_prevsq'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
+        Restart%data(nb,num)%var3p => Tbd%prevsq(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'gf_3d_qci_conv'
@@ -588,12 +588,12 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'gf_3d_prevst'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%prevst(:,:)
+        Restart%data(nb,num)%var3p => Tbd%prevst(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'gf_3d_prevsq'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
+        Restart%data(nb,num)%var3p => Tbd%prevsq(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'gf_3d_qci_conv'
@@ -606,47 +606,47 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_cldfra_bl'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%cldfra_bl(:,:)
+        Restart%data(nb,num)%var3p => Tbd%cldfra_bl(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_qc_bl'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%qc_bl(:,:)
+        Restart%data(nb,num)%var3p => Tbd%qc_bl(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_qi_bl'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%qi_bl(:,:)
+        Restart%data(nb,num)%var3p => Tbd%qi_bl(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_el_pbl'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%el_pbl(:,:)
+        Restart%data(nb,num)%var3p => Tbd%el_pbl(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_sh3d'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%sh3d(:,:)
+        Restart%data(nb,num)%var3p => Tbd%sh3d(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_qke'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%qke(:,:)
+        Restart%data(nb,num)%var3p => Tbd%qke(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_tsq'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%tsq(:,:)
+        Restart%data(nb,num)%var3p => Tbd%tsq(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_qsq'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%qsq(:,:)
+        Restart%data(nb,num)%var3p => Tbd%qsq(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_cov'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Tbd(nb)%cov(:,:)
+        Restart%data(nb,num)%var3p => Tbd%cov(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
 
@@ -661,8 +661,8 @@ module GFS_restart
             write(Restart%name3d(num),'("radar_tten_",I0)') itime
           endif
           do nb = 1,nblks
-            Restart%data(nb,num)%var3p => Tbd(nb)%dfi_radar_tten( &
-              :,:,Model%ix_dfi_radar(itime))
+            Restart%data(nb,num)%var3p => Tbd%dfi_radar_tten( &
+              Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%ix_dfi_radar(itime))
           enddo
         endif
       enddo

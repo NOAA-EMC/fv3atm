@@ -131,8 +131,8 @@ module GFS_diagnostics
     type(GFS_sfcprop_type),       intent(in)    :: Sfcprop(:)
     type(GFS_coupling_type),      intent(in)    :: Coupling(:)
     type(GFS_grid_type),          intent(in)    :: Grid
-    type(GFS_tbd_type),           intent(in)    :: Tbd(:)
-    type(GFS_cldprop_type),       intent(in)    :: Cldprop(:)
+    type(GFS_tbd_type),           intent(in)    :: Tbd
+    type(GFS_cldprop_type),       intent(in)    :: Cldprop
     type(GFS_radtend_type),       intent(in)    :: Radtend(:)
     type(GFS_diag_type),          intent(in)    :: IntDiag(:)
     type(GFS_init_type),          intent(in)    :: Init_parm
@@ -644,7 +644,7 @@ module GFS_diagnostics
     ExtDiag(idx)%cnvfac = cn_100
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => Cldprop(nb)%cv(:)
+      ExtDiag(idx)%data(nb)%var2 => Cldprop%cv(Model%chunk_begin(nb):Model%chunk_end(nb))
     enddo
 
     idx = idx + 1
@@ -656,8 +656,8 @@ module GFS_diagnostics
     ExtDiag(idx)%mask = 'cldmask'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => Cldprop(nb)%cvt(:)
-      ExtDiag(idx)%data(nb)%var21 => Cldprop(nb)%cv(:)
+      ExtDiag(idx)%data(nb)%var2 => Cldprop%cvt(Model%chunk_begin(nb):Model%chunk_end(nb))
+      ExtDiag(idx)%data(nb)%var21 => Cldprop%cv(Model%chunk_begin(nb):Model%chunk_end(nb))
     enddo
 
     idx = idx + 1
@@ -669,8 +669,8 @@ module GFS_diagnostics
     ExtDiag(idx)%mask = 'cldmask'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => Cldprop(nb)%cvb(:)
-      ExtDiag(idx)%data(nb)%var21 => Cldprop(nb)%cv(:)
+      ExtDiag(idx)%data(nb)%var2 => Cldprop%cvb(Model%chunk_begin(nb):Model%chunk_end(nb))
+      ExtDiag(idx)%data(nb)%var21 => Cldprop%cv(Model%chunk_begin(nb):Model%chunk_end(nb))
     enddo
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af PREScnvclb,idx=',idx
 
@@ -1983,7 +1983,7 @@ module GFS_diagnostics
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%hpbl(:)
+      ExtDiag(idx)%data(nb)%var2 => Tbd%hpbl(Model%chunk_begin(nb):Model%chunk_end(nb))
     enddo
 
     idx = idx + 1
@@ -2370,7 +2370,7 @@ module GFS_diagnostics
     allocate (ExtDiag(idx)%data(nblks))
     if( Model%ncnvw > 0 ) then
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%ncnvw)
+        ExtDiag(idx)%data(nb)%var3 => Tbd%phy_f3d(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%ncnvw)
       enddo
     endif
 
@@ -4773,7 +4773,7 @@ module GFS_diagnostics
 
        allocate (ExtDiag(idx)%data(nblks))
        do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%dfi_radar_tten(:,:,i)
+          ExtDiag(idx)%data(nb)%var3 => Tbd%dfi_radar_tten(Model%chunk_begin(nb):Model%chunk_end(nb),:,i)
        enddo
     enddo
 
@@ -4823,7 +4823,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nleffr)
+        ExtDiag(idx)%data(nb)%var3 => Tbd%phy_f3d(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%nleffr)
       enddo
       idx = idx + 1
       ExtDiag(idx)%axes = 3
@@ -4833,7 +4833,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nieffr)
+        ExtDiag(idx)%data(nb)%var3 => Tbd%phy_f3d(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%nieffr)
       enddo
       idx = idx + 1
       ExtDiag(idx)%axes = 3
@@ -4843,7 +4843,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nseffr)
+        ExtDiag(idx)%data(nb)%var3 => Tbd%phy_f3d(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%nseffr)
       enddo
     endif
 
@@ -4928,7 +4928,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%CLDFRA_BL(:,:)
+        ExtDiag(idx)%data(nb)%var3 => Tbd%CLDFRA_BL(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
 
       idx = idx + 1
@@ -4939,7 +4939,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%QC_BL(:,:)
+        ExtDiag(idx)%data(nb)%var3 => Tbd%QC_BL(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
 
       idx = idx + 1
@@ -4950,7 +4950,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%el_pbl(:,:)
+        ExtDiag(idx)%data(nb)%var3 => Tbd%el_pbl(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
 
       idx = idx + 1
@@ -4961,7 +4961,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%QKE(:,:)
+        ExtDiag(idx)%data(nb)%var3 => Tbd%QKE(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
 
       if (Model%bl_mynn_output > 0) then

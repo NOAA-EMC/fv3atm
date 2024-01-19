@@ -7613,56 +7613,56 @@
   standard_name = random_number_seed_for_mcica_shortwave
   long_name = random seeds for sub-column cloud generators sw
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2)
 [icsdlw]
   standard_name = random_number_seed_for_mcica_longwave
   long_name = random seeds for sub-column cloud generators lw
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2)
 [rseeds]
   standard_name = random_number_seeds_from_host
   long_name = random number seeds from host
   units = none
-  dimensions = (horizontal_loop_extent, number_of_host_provided_random_number_streams)
+  dimensions = (horizontal_dimension, number_of_host_provided_random_number_streams)
   type = integer
   active = ((flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2) .and. do_host_provided_random_seeds)
 [tau_amf]
   standard_name = absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
   long_name = ngw_absolute_momentum_flux
   units = mixed
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ozpl]
   standard_name = ozone_forcing
   long_name = ozone forcing data
   units = mixed
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_data)
+  dimensions = (horizontal_dimension,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_data)
   type = real
   kind = kind_phys
 [h2opl]
   standard_name = stratospheric_water_vapor_forcing
   long_name = water forcing data
   units = mixed
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_h2o_forcing_data,number_of_coefficients_in_h2o_forcing_data)
+  dimensions = (horizontal_dimension,vertical_dimension_of_h2o_forcing_data,number_of_coefficients_in_h2o_forcing_data)
   type = real
   kind = kind_phys
 [hpbl]
   standard_name = atmosphere_boundary_layer_thickness
   long_name = pbl height
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ud_mf]
   standard_name = instantaneous_atmosphere_updraft_convective_mass_flux
   long_name = (updraft mass flux) * delt
   units = kg m-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = ( control_for_deep_convection_scheme .ge. 0 .or. control_for_shallow_convection_scheme .ge. 0 )
@@ -7670,28 +7670,28 @@
   standard_name = ice_nucleation_number_from_climatology
   long_name = ice nucleation number in MG MP
   units = kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [ccn_nm]
   standard_name = tendency_of_activated_cloud_condensation_nuclei_from_climatology
   long_name = tendency of ccn activated number
   units = kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [aer_nm]
   standard_name = mass_mixing_ratio_of_aerosol_from_gocart_or_merra2
   long_name = mass mixing ratio of aerosol from gocart or merra2
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_aerosol_tracers_MG)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,number_of_aerosol_tracers_MG)
   type = real
   kind = kind_phys
 [aod_gf]
   standard_name = aerosol_optical_depth_for_grell_freitas_deep_convection
   long_name = aerosol optical depth used in Grell-Freitas Convective Parameterization
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
@@ -7699,47 +7699,47 @@
   standard_name = map_of_block_column_number_to_global_i_index
   long_name = map of local index ix to global index i for this block
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [jmap]
   standard_name = map_of_block_column_number_to_global_j_index
   long_name = map of local index ix to global index j for this block
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [rann]
   standard_name = random_number
   long_name = random number array (0-1)
   units = none
-  dimensions = (horizontal_loop_extent,number_of_random_numbers)
+  dimensions = (horizontal_dimension,number_of_random_numbers)
   type = real
   kind = kind_phys
 [acv]
   standard_name = cumulative_lwe_thickness_of_convective_precipitation_amount_between_sw_radiation_calls
   long_name = accumulated convective rainfall amount for cnvc90 only
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [acvb]
   standard_name = cumulative_min_vertical_index_at_cloud_base_between_sw_radiation_calls
   long_name = smallest cloud base vertical index encountered thus far
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [acvt]
   standard_name = cumulative_max_vertical_index_at_cloud_base_between_sw_radiation_calls
   long_name = largest cloud top vertical index encountered thus far
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dtdtnp]
   standard_name = tendency_of_air_temperature_to_withold_from_sppt
   long_name = temp. change from physics that should not be perturbed by sppt
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_physics_perturbations .or. flag_for_global_cellular_automata)
@@ -7747,7 +7747,7 @@
   standard_name = tendency_of_lwe_thickness_of_rain_amount_on_dynamics_timestep_for_coupling
   long_name = change in rain_cpl (coupling_type)
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_chemistry_coupling .or. flag_for_land_coupling)
@@ -7755,7 +7755,7 @@
   standard_name = tendency_of_lwe_thickness_of_snowfall_amount_on_dynamics_timestep_for_coupling
   long_name = change in show_cpl (coupling_type)
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_chemistry_coupling .or. flag_for_land_coupling)
@@ -7763,7 +7763,7 @@
   standard_name = atmosphere_updraft_convective_mass_flux_at_cloud_base_by_cloud_type
   long_name = cloud base mass flux for CS convection
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent,number_of_cloud_types_CS)
+  dimensions = (horizontal_dimension,number_of_cloud_types_CS)
   type = real
   kind = kind_phys
   active = (number_of_cloud_types_CS > 0 .and. flag_for_Chikira_Sugiyama_deep_convection)
@@ -7771,7 +7771,7 @@
   standard_name = surface_air_pressure_two_timesteps_back
   long_name = surface air pressure two timesteps back
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (index_of_surface_air_pressure_two_timesteps_back_in_xyz_dimensioned_tracer_array > 0)
@@ -7779,7 +7779,7 @@
   standard_name = surface_air_pressure_on_previous_timestep
   long_name = surface air pressure at previous timestep
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (index_of_surface_air_pressure_on_previous_timestep_in_xyz_dimensioned_restart_array > 0)
@@ -7787,7 +7787,7 @@
   standard_name = enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection
   long_name = surface wind enhancement due to convection
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection_in_xy_dimensioned_restart_array > 0)
@@ -7795,7 +7795,7 @@
   standard_name = air_temperature_two_timesteps_back
   long_name = air temperature two timesteps back
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_air_temperature_two_timesteps_back_in_xyz_dimensioned_restart_array > 0)
@@ -7803,7 +7803,7 @@
   standard_name = specific_humidity_two_timesteps_back
   long_name = water vapor specific humidity two timesteps back
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_specific_humidity_two_timesteps_back_in_xyz_dimensioned_restart_array > 0)
@@ -7811,7 +7811,7 @@
   standard_name = air_temperature_on_previous_timestep_in_xyz_dimensioned_restart_array
   long_name = air temperature at previous timestep
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_air_temperature_on_previous_timestep_in_xyz_dimensioned_restart_array > 0)
@@ -7819,7 +7819,7 @@
   standard_name = specific_humidity_on_previous_timestep_in_xyz_dimensioned_restart_array
   long_name = water vapor specific humidity at previous timestep
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_specific_humidity_on_previous_timestep_in_xyz_dimensioned_restart_array > 0)
@@ -7827,7 +7827,7 @@
   standard_name = convective_cloud_condensate_mixing_ratio
   long_name = convective cloud water mixing ratio in the phy_f3d array
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_convective_cloud_condensate_mixing_ratio_in_xyz_dimensioned_restart_array > 0)
@@ -7835,7 +7835,7 @@
   standard_name = convective_cloud_area_fraction
   long_name = convective cloud cover in the phy_f3d array
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_convective_cloud_area_fraction_in_xyz_dimensioned_restart_array > 0)
@@ -7843,7 +7843,7 @@
   standard_name = upward_virtual_potential_temperature_flux
   long_name = upward kinematic buoyancy flux from the SHOC scheme
   units = K m s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_upward_virtual_potential_temperature_flux_in_xyz_dimensioned_restart_array > 0)
@@ -7851,7 +7851,7 @@
   standard_name = atmosphere_heat_diffusivity_from_shoc
   long_name = diffusivity for heat from the SHOC scheme
   units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_atmosphere_heat_diffusivity_in_xyz_dimensioned_restart_array > 0)
@@ -7859,7 +7859,7 @@
   standard_name = subgrid_scale_cloud_fraction_from_shoc
   long_name = subgrid-scale cloud fraction from the SHOC scheme
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_subgrid_cloud_area_fracation_in_atmosphere_layer_in_xyz_dimensioned_restart_array > 0)
@@ -7867,7 +7867,7 @@
   standard_name = cloud_fraction_for_MG
   long_name = cloud fraction used by Morrison-Gettelman MP
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_cloud_area_fraction_in_atmosphere_layer_in_xyz_dimensioned_restart_array > 0)
@@ -7875,7 +7875,7 @@
   standard_name = effective_radius_of_stratiform_cloud_liquid_water_particle
   long_name = eff. radius of cloud liquid water particle in micrometer
   units = um
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_cloud_liquid_water_effective_radius_in_xyz_dimensioned_restart_array > 0)
@@ -7883,7 +7883,7 @@
   standard_name = effective_radius_of_stratiform_cloud_ice_particle
   long_name = eff. radius of cloud ice water particle in micrometer
   units = um
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_cloud_ice_effective_radius_in_xyz_dimensioned_restart_array > 0)
@@ -7891,7 +7891,7 @@
   standard_name = effective_radius_of_stratiform_cloud_rain_particle
   long_name = effective radius of cloud rain particle in micrometers
   units = um
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_rain_effective_radius_in_xyz_dimensioned_restart_array > 0)
@@ -7899,7 +7899,7 @@
   standard_name = effective_radius_of_stratiform_cloud_snow_particle
   long_name = effective radius of cloud snow particle in micrometers
   units = um
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_snow_effective_radius_in_xyz_dimensioned_restart_array > 0)
@@ -7907,7 +7907,7 @@
   standard_name = effective_radius_of_stratiform_cloud_graupel_particle
   long_name = eff. radius of cloud graupel particle in micrometer
   units = um
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (index_of_graupel_effective_radius_in_xyz_dimensioned_restart_array > 0)
@@ -7915,7 +7915,7 @@
   standard_name = tendency_of_air_temperature_due_to_nonphysics
   long_name = temperature tendency due to dynamics only
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
@@ -7923,7 +7923,7 @@
   standard_name = tendendy_of_specific_humidity_due_to_nonphysics
   long_name = moisture tendency due to dynamics only
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
@@ -7931,7 +7931,7 @@
   standard_name = air_temperature_on_previous_timestep
   long_name = temperature from previous time step
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
@@ -7939,7 +7939,7 @@
   standard_name = specific_humidity_on_previous_timestep
   long_name = moisture from previous time step
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifer_for_scale_aware_mass_flux_deep_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection)
@@ -7947,21 +7947,21 @@
   standard_name = counter_for_grell_freitas_convection
   long_name = convective activity memory
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
 [cactiv_m]
   standard_name = counter_for_grell_freitas_mid_level_convection
   long_name = mid-level convective activity memory
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
 [CLDFRA_BL]
   standard_name = subgrid_scale_cloud_area_fraction_in_atmosphere_layer
   long_name = subgrid cloud fraction from PBL scheme
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -7969,7 +7969,7 @@
   standard_name = subgrid_scale_cloud_liquid_water_mixing_ratio
   long_name = subgrid cloud water mixing ratio from PBL scheme
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -7977,7 +7977,7 @@
   standard_name = subgrid_scale_cloud_ice_mixing_ratio
   long_name = subgrid cloud ice mixing ratio from PBL scheme
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -7985,7 +7985,7 @@
   standard_name = turbulent_mixing_length
   long_name = mixing length in meters
   units = m
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -7993,7 +7993,7 @@
   standard_name = stability_function_for_heat
   long_name = stability function for heat
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -8001,7 +8001,7 @@
   standard_name = stability_function_for_momentum
   long_name = stability function for momentum
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -8009,7 +8009,7 @@
   standard_name = nonadvected_turbulent_kinetic_energy_multiplied_by_2
   long_name = 2 x tke at mass points
   units = m2 s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -8017,7 +8017,7 @@
   standard_name = variance_of_air_temperature
   long_name = temperature fluctuation squared
   units = K2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -8025,7 +8025,7 @@
   standard_name = variance_of_specific_humidity
   long_name = water vapor fluctuation squared
   units = kg2 kg-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -8033,7 +8033,7 @@
   standard_name = covariance_of_air_temperature_and_specific_humidity
   long_name = covariance of temperature and moisture
   units = K kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -8041,7 +8041,7 @@
   standard_name = surface_specific_humidity_for_MYJ_schemes
   long_name = surface air saturation specific humidity for MYJ schemes
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8049,7 +8049,7 @@
   standard_name = air_potential_temperature_at_top_of_viscous_sublayer
   long_name = potential temperature at viscous sublayer top over water
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8057,7 +8057,7 @@
   standard_name = specific_humidity_at_top_of_viscous_sublayer
   long_name = specific humidity at_viscous sublayer top over water
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8065,7 +8065,7 @@
   standard_name = x_wind_at_top_of_viscous_sublayer
   long_name = u wind component at viscous sublayer top over water
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8073,7 +8073,7 @@
   standard_name = y_wind_at_top_of_viscous_sublayer
   long_name = v wind component at viscous sublayer top over water
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8081,7 +8081,7 @@
   standard_name = heat_exchange_coefficient_for_MYJ_schemes
   long_name = surface heat exchange_coefficient for MYJ schemes
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8089,7 +8089,7 @@
   standard_name = momentum_exchange_coefficient_for_MYJ_schemes
   long_name = surface momentum exchange_coefficient for MYJ schemes
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8097,7 +8097,7 @@
   standard_name = control_for_surface_layer_evaporation
   long_name = surface layer evaporation switch
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8105,7 +8105,7 @@
   standard_name = surface_upward_specific_humidity_flux_for_mellor_yamada_janjic_surface_layer_scheme
   long_name = kinematic surface latent heat flux
   units = m s-1 kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8113,7 +8113,7 @@
   standard_name = weight_for_momentum_at_top_of_viscous_sublayer
   long_name = weight for momentum at viscous layer top
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8121,7 +8121,7 @@
   standard_name = weight_for_potental_temperature_at_top_of_viscous_sublayer
   long_name = weight for potental temperature at viscous layer top
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8129,7 +8129,7 @@
   standard_name = weight_for_specific_humidity_at_top_of_viscous_sublayer
   long_name = weight for Specfic Humidity at viscous layer top
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -8137,7 +8137,7 @@
   standard_name = radar_derived_microphysics_temperature_tendency
   long_name = radar-derived microphysics temperature tendency
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_radar_derived_temperature_or_convection_suppression_intervals)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,number_of_radar_derived_temperature_or_convection_suppression_intervals)
   type = real
   kind = kind_phys
   active = (number_of_radar_derived_temperature_or_convection_suppression_intervals>0)
@@ -8145,7 +8145,7 @@
   standard_name = radar_derived_convection_suppression
   long_name = radar-derived convection suppression
   units = unitless
-  dimensions = (horizontal_loop_extent,number_of_radar_derived_temperature_or_convection_suppression_intervals)
+  dimensions = (horizontal_dimension,number_of_radar_derived_temperature_or_convection_suppression_intervals)
   type = real
   kind = kind_phys
   active = (number_of_radar_derived_temperature_or_convection_suppression_intervals>0 .and. flag_for_radar_derived_convection_suppression)
@@ -8163,21 +8163,21 @@
   standard_name = convective_cloud_area_fraction_between_sw_radiation_calls_from_cnvc90
   long_name = fraction of convective cloud
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [cvt]
   standard_name = pressure_at_convective_cloud_top_between_sw_radiation_calls_from_cnvc90
   long_name = convective cloud top pressure
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [cvb]
   standard_name = pressure_at_convective_cloud_base_between_sw_radiation_calls_from_cnvc90
   long_name = convective cloud bottom pressure
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 
@@ -9858,18 +9858,6 @@
   units = DDT
   dimensions = ()
   type = GFS_coupling_type
-[Tbd]
-  standard_name = GFS_tbd_type_instance
-  long_name = to be determined data that doesn't fit in any one container
-  units = DDT
-  dimensions = ()
-  type = GFS_tbd_type
-[Cldprop]
-  standard_name = GFS_cldprop_type_instance
-  long_name = cloud fields needed by radiation from physics
-  units = DDT
-  dimensions = ()
-  type = GFS_cldprop_type
 [Radtend]
   standard_name = GFS_radtend_type_instance
   long_name = radiation tendencies needed in physics

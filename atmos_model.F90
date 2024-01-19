@@ -84,7 +84,7 @@ use GFS_restart,        only: GFS_restart_type, GFS_restart_populate
 use GFS_diagnostics,    only: GFS_externaldiag_type, &
                               GFS_externaldiag_populate
 use CCPP_data,          only: ccpp_suite, GFS_control, &
-                              GFS_grid, &
+                              GFS_grid, GFS_Tbd, GFS_Cldprop, &
                               GFS_data, GFS_interstitial
 use GFS_init,           only: GFS_initialize
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
@@ -371,7 +371,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'RADIATION STEP  ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_grid, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
@@ -385,7 +385,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP1   ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_grid, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data, Atm_block)
       endif
 
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
@@ -404,7 +404,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_grid, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data, Atm_block)
       endif
       call getiauforcing(GFS_control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
@@ -712,13 +712,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%fn_nml='using internal file'
 
    call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
-                        GFS_data%Coupling, GFS_grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
+                        GFS_data%Coupling, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data%Radtend, &
                         GFS_data%Intdiag, GFS_interstitial, Init_parm)
 
    !--- populate/associate the Diag container elements
    call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Data%Statein, GFS_Data%Stateout,   &
                                              GFS_Data%Sfcprop, GFS_Data%Coupling, GFS_Grid,      &
-                                             GFS_Data%Tbd, GFS_Data%Cldprop, GFS_Data%Radtend,   &
+                                             GFS_Tbd, GFS_Cldprop, GFS_Data%Radtend,             &
                                              GFS_Data%Intdiag, Init_parm)
 
    Atmos%Diag => GFS_Diag
@@ -744,7 +744,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_nggps_diag (Time, init=.true.)
    call fv3atm_diag_register (GFS_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
    call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
-                              GFS_data%Coupling, GFS_Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
+                              GFS_data%Coupling, GFS_Grid, GFS_Tbd, GFS_Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    if (quilting_restart) then
       call fv_dyn_restart_register (Atm(mygrid))
@@ -972,7 +972,7 @@ subroutine update_atmos_model_state (Atmos, rc)
     if (chksum_debug) then
       if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', GFS_control%kdt, GFS_control%fhour
       if (mpp_pe() == mpp_root_pe()) print *,'in UPDATE STATE    ', size(GFS_data(1)%SfcProp%tsfc),'nblks=',Atm_block%nblks
-      call fv3atm_checksum(GFS_control, GFS_Grid, GFS_data, Atm_block)
+      call fv3atm_checksum(GFS_control, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_data, Atm_block)
     endif
 
     !--- advance time ---
@@ -1658,6 +1658,7 @@ subroutine update_atmos_chemistry(state, rc)
       enddo
 
       area = reshape(GFS_Grid%area, shape(area))
+      hpbl = reshape(GFS_Tbd%hpbl, shape(hpbl))
 
 !$OMP parallel do default (none) &
 !$OMP             shared  (nj, ni, Atm_block, GFS_data, GFS_Control, &
@@ -1673,7 +1674,6 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          hpbl(i,j)   = GFS_Data(nb)%Tbd%hpbl(ix)
           rainc(i,j)  = GFS_Data(nb)%Coupling%rainc_cpl(ix)
           rain(i,j)   = GFS_Data(nb)%Coupling%rain_cpl(ix)  &
                       + GFS_Data(nb)%Coupling%snow_cpl(ix)

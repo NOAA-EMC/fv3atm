@@ -2157,8 +2157,6 @@ module GFS_typedefs
      type(GFS_stateout_type) :: Stateout
      type(GFS_sfcprop_type)  :: Sfcprop
      type(GFS_coupling_type) :: Coupling
-     type(GFS_tbd_type)      :: Tbd
-     type(GFS_cldprop_type)  :: Cldprop
      type(GFS_radtend_type)  :: Radtend
      type(GFS_diag_type)     :: Intdiag
   end type GFS_data_type
@@ -7039,14 +7037,15 @@ module GFS_typedefs
 !--------------------
 ! GFS_tbd_type%create
 !--------------------
-  subroutine tbd_create (Tbd, IM, Model)
+  subroutine tbd_create (Tbd, Model)
 
     implicit none
 
     class(GFS_tbd_type)                :: Tbd
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
 
+    IM = Model%ncols
 !--- In
 !--- sub-grid cloud radiation
     if ( Model%isubc_lw == 2 .or. Model%isubc_sw == 2 ) then
@@ -7080,19 +7079,16 @@ module GFS_typedefs
     Tbd%ozpl  = clear_val
 
 !--- ccn and in needs
-    ! DH* allocate only for MG? *DH
     allocate (Tbd%in_nm  (IM,Model%levs))
     allocate (Tbd%ccn_nm (IM,Model%levs))
     Tbd%in_nm  = clear_val
     Tbd%ccn_nm = clear_val
 
 !--- aerosol fields
-    ! DH* allocate only for MG? *DH
     allocate (Tbd%aer_nm  (IM,Model%levs,ntrcaer))
     Tbd%aer_nm = clear_val
 
 !--- tau_amf for  NGWs
-    ! DH* allocate only for UGWP ? *DH
     allocate (Tbd%tau_amf(im) )
     Tbd%tau_amf = clear_val
 
@@ -7237,13 +7233,15 @@ module GFS_typedefs
 !------------------------
 ! GFS_cldprop_type%create
 !------------------------
-  subroutine cldprop_create (Cldprop, IM, Model)
+  subroutine cldprop_create (Cldprop, Model)
 
     implicit none
 
     class(GFS_cldprop_type)            :: Cldprop
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     allocate (Cldprop%cv  (IM))
     allocate (Cldprop%cvt (IM))

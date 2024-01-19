@@ -30,6 +30,18 @@
   units = DDT
   dimensions = ()
   type = GFS_grid_type
+[GFS_Tbd]
+  standard_name = GFS_tbd_type_instance
+  long_name = instance of derived type GFS_tbd_type
+  units = DDT
+  dimensions = ()
+  type = GFS_tbd_type
+[GFS_Cldprop]
+  standard_name = GFS_cldprop_type_instance
+  long_name = instance of derived type GFS_cldprop_type
+  units = DDT
+  dimensions = ()
+  type = GFS_cldprop_type
 [GFS_Data(ccpp_block_number)]
   standard_name = GFS_data_type_instance
   long_name = instance of derived type GFS_data_type
