@@ -24,6 +24,18 @@
   units = DDT
   dimensions = ()
   type = GFS_control_type
+[GFS_Statein]
+  standard_name = GFS_statein_type_instance
+  long_name = prognostic state data in from dycore
+  units = DDT
+  dimensions = ()
+  type = GFS_statein_type
+[GFS_Stateout]
+  standard_name = GFS_stateout_type_instance
+  long_name = prognostic state or tendencies return to dycore
+  units = DDT
+  dimensions = ()
+  type = GFS_stateout_type
 [GFS_Grid]
   standard_name = GFS_grid_type_instance
   long_name = instance of derived type GFS_grid_type

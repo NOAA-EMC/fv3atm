@@ -36,8 +36,8 @@ module GFS_init
 
     !--- interface variables
     type(GFS_control_type),      intent(inout) :: Model
-    type(GFS_statein_type),      intent(inout) :: Statein(:)
-    type(GFS_stateout_type),     intent(inout) :: Stateout(:)
+    type(GFS_statein_type),      intent(inout) :: Statein
+    type(GFS_stateout_type),     intent(inout) :: Stateout
     type(GFS_sfcprop_type),      intent(inout) :: Sfcprop(:)
     type(GFS_coupling_type),     intent(inout) :: Coupling(:)
     type(GFS_grid_type),         intent(inout) :: Grid
@@ -84,14 +84,14 @@ module GFS_init
 
     do nb = 1,nblks
       ix = Init_parm%blksz(nb)
-      call Statein  (nb)%create (ix, Model)
-      call Stateout (nb)%create (ix, Model)
       call Sfcprop  (nb)%create (ix, Model)
       call Coupling (nb)%create (ix, Model)
       call Radtend  (nb)%create (ix, Model)
 !--- internal representation of diagnostics
       call Diag     (nb)%create (ix, Model)
     enddo
+    call Statein%create(Model)
+    call Stateout%create(Model)
     call Grid%create(Model)
     call Tbd%create(Model)
     call Cldprop%create(Model)

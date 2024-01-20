@@ -126,8 +126,8 @@ module GFS_diagnostics
 !  ---  interface variables
     type(GFS_externaldiag_type),  intent(inout) :: ExtDiag(:)
     type(GFS_control_type),       intent(in)    :: Model
-    type(GFS_statein_type),       intent(in)    :: Statein(:)
-    type(GFS_stateout_type),      intent(in)    :: Stateout(:)
+    type(GFS_statein_type),       intent(in)    :: Statein
+    type(GFS_stateout_type),      intent(in)    :: Stateout
     type(GFS_sfcprop_type),       intent(in)    :: Sfcprop(:)
     type(GFS_coupling_type),      intent(in)    :: Coupling(:)
     type(GFS_grid_type),          intent(in)    :: Grid
@@ -147,7 +147,7 @@ module GFS_diagnostics
     character(len=30) :: namestr, descstr
 
     NFXR = Model%NFXR
-    nblks = size(Statein)
+    nblks = Model%nchunks
 
     ExtDiag(:)%id = -99
     ExtDiag(:)%axes = -99
@@ -4468,7 +4468,7 @@ module GFS_diagnostics
         ExtDiag(idx)%mod_name = 'gfs_phys'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntwa)
+          ExtDiag(idx)%data(nb)%var3 => Statein%qgrs(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%ntwa)
         enddo
 
         idx = idx + 1
@@ -4490,7 +4490,7 @@ module GFS_diagnostics
         ExtDiag(idx)%mod_name = 'gfs_phys'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var3 => Stateout(nb)%gq0(:,:,Model%ntwa)
+          ExtDiag(idx)%data(nb)%var3 => Stateout%gq0(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%ntwa)
         enddo
       endif
     endif
@@ -4505,7 +4505,7 @@ module GFS_diagnostics
         ExtDiag(idx)%mod_name = 'gfs_phys'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntia)
+          ExtDiag(idx)%data(nb)%var3 => Statein%qgrs(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%ntia)
         enddo
 
         idx = idx + 1
@@ -4527,7 +4527,7 @@ module GFS_diagnostics
         ExtDiag(idx)%mod_name = 'gfs_phys'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var3 => Stateout(nb)%gq0(:,:,Model%ntia)
+          ExtDiag(idx)%data(nb)%var3 => Stateout%gq0(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%ntia)
         enddo
       end if
     endif

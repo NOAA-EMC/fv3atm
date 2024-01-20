@@ -6,6 +6,7 @@ module fv3atm_restart_io_mod
 
   use block_control_mod,  only: block_control_type
   use mpp_mod,            only: mpp_error, mpp_chksum, NOTE,   FATAL
+  use GFS_typedefs,       only: GFS_statein_type, GFS_stateout_type
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_typedefs,       only: GFS_grid_type, GFS_cldprop_type, GFS_tbd_type
   use GFS_typedefs,       only: GFS_data_type
@@ -141,10 +142,12 @@ contains
   !----------------
   ! fv3atm_checksum
   !----------------
-  subroutine fv3atm_checksum (Model, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Data, Atm_block)
+  subroutine fv3atm_checksum (Model, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Data, Atm_block)
     implicit none
     !--- interface variables
     type(GFS_control_type),    intent(in) :: Model
+    type(GFS_statein_type),    intent(in) :: GFS_Statein
+    type(GFS_stateout_type),   intent(in) :: GFS_Stateout
     type(GFS_grid_type),       intent(in) :: GFS_Grid
     type(GFS_tbd_type),        intent(in) :: GFS_Tbd
     type(GFS_cldprop_type),    intent(in) :: GFS_Cldprop
@@ -165,7 +168,7 @@ contains
     jec = Model%jsc+Model%ny-1
     lev = Model%levs
 
-    ntr = size(GFS_Data(1)%Statein%qgrs,3)
+    ntr = size(GFS_Statein%qgrs,3)
 
     nsfcprop2d = 94
     if (Model%lsm == Model%lsm_noahmp) then
@@ -210,7 +213,10 @@ contains
       ! Copy into temp2d
       nt=0
 
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Statein%pgr)
+      ! DH* clean this up - create a new/replacement copy_from_GFS_data
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Statein%pgr, (/iec-isc+1, jec-jsc+1/))
+      !call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Statein%pgr)
+      ! *DH
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%slmsk)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tsfc)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tisfc)
@@ -289,7 +295,7 @@ contains
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcdsw)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcnsw)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcdlw)
-      ! DH* cleam this up - create a new/replacement copy_from_GFS_data
+      ! DH* clean this up - create a new/replacement copy_from_GFS_data
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%xlon, (/iec-isc+1, jec-jsc+1/))
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%xlat, (/iec-isc+1, jec-jsc+1/))
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%xlat_d, (/iec-isc+1, jec-jsc+1/))
@@ -456,37 +462,38 @@ contains
       ! Copy to temp3dlevsp1
       nt=0
 
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3dlevsp1, GFS_Data(nb)%Statein%phii)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3dlevsp1, GFS_Data(nb)%Statein%prsi)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3dlevsp1, GFS_Data(nb)%Statein%prsik)
+      ! DH*
+      nt=nt+1; temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,nt) = reshape(GFS_Statein%phii, (/iec-isc+1, jec-jsc+1, lev+1/))
+      nt=nt+1; temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,nt) = reshape(GFS_Statein%prsi, (/iec-isc+1, jec-jsc+1, lev+1/))
+      nt=nt+1; temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,nt) = reshape(GFS_Statein%prsik, (/iec-isc+1, jec-jsc+1, lev+1/))
+      ! *DH
 
       ! Copy to temp3d
       nt=0
 
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%phil)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%prsl)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%prslk)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%ugrs)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%vgrs)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%vvl)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%tgrs)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gu0)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gv0)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gt0)
+      ! DH*
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Statein%phil, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Statein%prsl, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Statein%prslk, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Statein%ugrs, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Statein%vgrs, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Statein%vvl, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Statein%tgrs, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Stateout%gu0, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Stateout%gv0, (/iec-isc+1, jec-jsc+1, lev/))
+      nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Stateout%gt0, (/iec-isc+1, jec-jsc+1, lev/))
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%htrsw)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%htrlw)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%swhc)
       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%lwhc)
       do k = 1,Model%ntot3d
-        ! DH*
-        !call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Tbd%phy_f3d(:,:,k))
         nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Tbd%phy_f3d(:,:,k), (/iec-isc+1, jec-jsc+1, lev/))
-        ! *DH
       enddo
       do k = 1,ntr
-        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%qgrs(:,:,k))
-        call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gq0(:,:,k))
+        nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Statein%qgrs(:,:,k), (/iec-isc+1, jec-jsc+1, lev/))
+        nt=nt+1; temp3d(isc:iec,jsc:jec,1:lev,nt) = reshape(GFS_Stateout%gq0(:,:,k), (/iec-isc+1, jec-jsc+1, lev/))
       enddo
+      ! *DH
     enddo block_loop
 
 

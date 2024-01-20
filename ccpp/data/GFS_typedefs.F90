@@ -2153,8 +2153,6 @@ module GFS_typedefs
 !! \htmlinclude GFS_data_type.html
 !!
   type GFS_data_type
-     type(GFS_statein_type)  :: Statein
-     type(GFS_stateout_type) :: Stateout
      type(GFS_sfcprop_type)  :: Sfcprop
      type(GFS_coupling_type) :: Coupling
      type(GFS_radtend_type)  :: Radtend
@@ -2177,12 +2175,14 @@ module GFS_typedefs
 !------------------------
 ! GFS_statein_type%create
 !------------------------
-  subroutine statein_create (Statein, IM, Model)
+  subroutine statein_create (Statein, Model)
     implicit none
 
     class(GFS_statein_type)             :: Statein
-    integer,                 intent(in) :: IM
     type(GFS_control_type),  intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     !--- level geopotential and pressures
     allocate (Statein%phii  (IM,Model%levs+1))
@@ -2244,13 +2244,15 @@ module GFS_typedefs
 !-------------------------
 ! GFS_stateout_type%create
 !-------------------------
-  subroutine stateout_create (Stateout, IM, Model)
+  subroutine stateout_create (Stateout, Model)
 
     implicit none
 
     class(GFS_stateout_type)           :: Stateout
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     allocate (Stateout%gu0 (IM,Model%levs))
     allocate (Stateout%gv0 (IM,Model%levs))

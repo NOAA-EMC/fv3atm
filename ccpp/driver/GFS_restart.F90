@@ -46,8 +46,8 @@ module GFS_restart
 !----------------------------------------------------------------------------------------!
     type(GFS_restart_type),     intent(inout) :: Restart
     type(GFS_control_type),     intent(in)    :: Model
-    type(GFS_statein_type),     intent(in)    :: Statein(:)
-    type(GFS_stateout_type),    intent(in)    :: Stateout(:)
+    type(GFS_statein_type),     intent(in)    :: Statein
+    type(GFS_stateout_type),    intent(in)    :: Stateout
     type(GFS_sfcprop_type),     intent(in)    :: Sfcprop(:)
     type(GFS_coupling_type),    intent(in)    :: Coupling(:)
     type(GFS_grid_type),        intent(in)    :: Grid

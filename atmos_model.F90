@@ -84,7 +84,8 @@ use GFS_restart,        only: GFS_restart_type, GFS_restart_populate
 use GFS_diagnostics,    only: GFS_externaldiag_type, &
                               GFS_externaldiag_populate
 use CCPP_data,          only: ccpp_suite, GFS_control, &
-                              GFS_grid, GFS_Tbd, GFS_Cldprop, &
+                              GFS_statein, GFS_stateout, &
+                              GFS_grid, GFS_tbd, GFS_cldprop, &
                               GFS_data, GFS_interstitial
 use GFS_init,           only: GFS_initialize
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
@@ -267,17 +268,15 @@ subroutine update_atmos_radiation_physics (Atmos)
     call set_atmosphere_pelist()
     call mpp_clock_begin(getClock)
     if (GFS_control%do_skeb) call atmosphere_diss_est (GFS_control%skeb_npass) !  do smoothing for SKEB
-    call atmos_phys_driver_statein (GFS_data, Atm_block, flip_vc)
+    call atmos_phys_driver_statein (GFS_Control, GFS_Statein, Atm_block, flip_vc)
     call mpp_clock_end(getClock)
 
 !--- if dycore only run, set up the dummy physics output state as the input state
     if (dycore_only) then
-      do nb = 1,Atm_block%nblks
-        GFS_data(nb)%Stateout%gu0 = GFS_data(nb)%Statein%ugrs
-        GFS_data(nb)%Stateout%gv0 = GFS_data(nb)%Statein%vgrs
-        GFS_data(nb)%Stateout%gt0 = GFS_data(nb)%Statein%tgrs
-        GFS_data(nb)%Stateout%gq0 = GFS_data(nb)%Statein%qgrs
-      enddo
+        GFS_Stateout%gu0 = GFS_Statein%ugrs
+        GFS_Stateout%gv0 = GFS_Statein%vgrs
+        GFS_Stateout%gt0 = GFS_Statein%tgrs
+        GFS_Stateout%gq0 = GFS_Statein%qgrs
     else
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "setup step"
 
@@ -295,7 +294,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
           GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 !--- call stochastic physics pattern generation / cellular automata
-        call stochastic_physics_wrapper(GFS_control, GFS_grid, GFS_data, Atm_block, ierr)
+        call stochastic_physics_wrapper(GFS_Control, GFS_Statein, GFS_Grid, GFS_Data, Atm_block, ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
       endif
 
@@ -322,7 +321,7 @@ subroutine update_atmos_radiation_physics (Atmos)
         if(idtend>=1) then
           do nb = 1,Atm_block%nblks
             GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
-                 + (GFS_data(nb)%Statein%ugrs - GFS_data(nb)%Stateout%gu0)
+                 + (GFS_Statein%ugrs(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) - GFS_Stateout%gu0(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:))
           enddo
         endif
 
@@ -330,7 +329,7 @@ subroutine update_atmos_radiation_physics (Atmos)
         if(idtend>=1) then
           do nb = 1,Atm_block%nblks
             GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
-                 + (GFS_data(nb)%Statein%vgrs - GFS_data(nb)%Stateout%gv0)
+                 + (GFS_Statein%vgrs(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) - GFS_Stateout%gv0(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:))
           enddo
         endif
 
@@ -338,7 +337,7 @@ subroutine update_atmos_radiation_physics (Atmos)
         if(idtend>=1) then
           do nb = 1,Atm_block%nblks
             GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
-                 + (GFS_data(nb)%Statein%tgrs - GFS_data(nb)%Stateout%gt0)
+                 + (GFS_Statein%tgrs(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) - GFS_Stateout%gt0(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:))
           enddo
         endif
 
@@ -348,7 +347,7 @@ subroutine update_atmos_radiation_physics (Atmos)
             if(idtend>=1) then
               do nb = 1,Atm_block%nblks
                 GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
-                     + (GFS_data(nb)%Statein%qgrs(:,:,itrac) - GFS_data(nb)%Stateout%gq0(:,:,itrac))
+                     + (GFS_Statein%qgrs(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:,itrac) - GFS_Stateout%gq0(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:,itrac))
               enddo
             endif
           enddo
@@ -371,7 +370,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'RADIATION STEP  ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
@@ -385,7 +384,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP1   ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Data, Atm_block)
       endif
 
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
@@ -404,7 +403,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Data, Atm_block)
       endif
       call getiauforcing(GFS_control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
@@ -474,16 +473,16 @@ subroutine atmos_timestep_diagnostics(Atmos)
         pmaxloc(1) = GFS_Control%tile_num
         j = 0
         do nb = 1,ATM_block%nblks
-          count = size(GFS_data(nb)%Statein%pgr)
+          count = size(GFS_Statein%pgr(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb)))
           do i=1,count
             j = j+1
-            pdiff = GFS_data(nb)%Statein%pgr(i)-GFS_data(nb)%Intdiag%old_pgr(i)
+            pdiff = GFS_Statein%pgr(j)-GFS_data(nb)%Intdiag%old_pgr(i)
             adiff = abs(pdiff)
             psum  = psum + adiff
             if(adiff>=maxabs) then
               maxabs=adiff
               pmaxloc(2:3) = (/ dble(ATM_block%index(nb)%ii(i)), dble(ATM_block%index(nb)%jj(i)) /)
-              pmaxloc(4:7) = (/ dble(pdiff), dble(GFS_data(nb)%Statein%pgr(i)), &
+              pmaxloc(4:7) = (/ dble(pdiff), dble(GFS_Statein%pgr(j)), &
                    dble(GFS_Grid%xlat(j)), dble(GFS_Grid%xlon(j)) /)
             endif
           enddo
@@ -511,7 +510,7 @@ subroutine atmos_timestep_diagnostics(Atmos)
       endif
       ! old_pgr is updated every timestep, including the first one where stats aren't printed:
       do nb = 1,ATM_block%nblks
-        GFS_data(nb)%Intdiag%old_pgr=GFS_data(nb)%Statein%pgr
+        GFS_data(nb)%Intdiag%old_pgr=GFS_Statein%pgr(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
       enddo
     endif
 
@@ -711,12 +710,12 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%input_nml_file  => input_nml_file
    Init_parm%fn_nml='using internal file'
 
-   call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
+   call GFS_initialize (GFS_control, GFS_Statein, GFS_Stateout, GFS_data%Sfcprop,     &
                         GFS_data%Coupling, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data%Radtend, &
                         GFS_data%Intdiag, GFS_interstitial, Init_parm)
 
    !--- populate/associate the Diag container elements
-   call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Data%Statein, GFS_Data%Stateout,   &
+   call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Statein, GFS_Stateout,   &
                                              GFS_Data%Sfcprop, GFS_Data%Coupling, GFS_Grid,      &
                                              GFS_Tbd, GFS_Cldprop, GFS_Data%Radtend,             &
                                              GFS_Data%Intdiag, Init_parm)
@@ -743,8 +742,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    call atmosphere_nggps_diag (Time, init=.true.)
    call fv3atm_diag_register (GFS_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
-   call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
-                              GFS_data%Coupling, GFS_Grid, GFS_Tbd, GFS_Cldprop,  GFS_data%Radtend, &
+   call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_statein, GFS_stateout, GFS_data%Sfcprop, &
+                              GFS_data%Coupling, GFS_grid, GFS_tbd, GFS_cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    if (quilting_restart) then
       call fv_dyn_restart_register (Atm(mygrid))
@@ -757,17 +756,15 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    endif
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
-   call atmos_phys_driver_statein (GFS_data, Atm_block, flip_vc)
+   call atmos_phys_driver_statein (GFS_control, GFS_statein, Atm_block, flip_vc)
 
    ! When asked to calculate 3-dim. tendencies, set Stateout variables to
    ! Statein variables here in order to capture the first call to dycore
     if (GFS_control%ldiag3d) then
-      do nb = 1,Atm_block%nblks
-        GFS_data(nb)%Stateout%gu0 = GFS_data(nb)%Statein%ugrs
-        GFS_data(nb)%Stateout%gv0 = GFS_data(nb)%Statein%vgrs
-        GFS_data(nb)%Stateout%gt0 = GFS_data(nb)%Statein%tgrs
-        GFS_data(nb)%Stateout%gq0 = GFS_data(nb)%Statein%qgrs
-      enddo
+        GFS_Stateout%gu0 = GFS_Statein%ugrs
+        GFS_Stateout%gv0 = GFS_Statein%vgrs
+        GFS_Stateout%gt0 = GFS_Statein%tgrs
+        GFS_Stateout%gq0 = GFS_Statein%qgrs
     endif
 
    ! Initialize the CCPP framework
@@ -781,7 +778,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-     call stochastic_physics_wrapper(GFS_control, GFS_Grid, GFS_data, Atm_block, ierr)
+     call stochastic_physics_wrapper(GFS_control, GFS_statein, GFS_grid, GFS_data, Atm_block, ierr)
      if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    endif
@@ -962,7 +959,7 @@ subroutine update_atmos_model_state (Atmos, rc)
     call set_atmosphere_pelist()
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
-    call atmosphere_state_update (Atmos%Time, GFS_data, IAU_Data, Atm_block, flip_vc)
+    call atmosphere_state_update(Atmos%Time, GFS_control, GFS_statein, GFS_stateout, IAU_Data, Atm_block, flip_vc)
 #ifdef MOVING_NEST
     call execute_tracker(Atm, mygrid, Atmos%Time, Atmos%Time_step)
 #endif
@@ -972,7 +969,7 @@ subroutine update_atmos_model_state (Atmos, rc)
     if (chksum_debug) then
       if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', GFS_control%kdt, GFS_control%fhour
       if (mpp_pe() == mpp_root_pe()) print *,'in UPDATE STATE    ', size(GFS_data(1)%SfcProp%tsfc),'nblks=',Atm_block%nblks
-      call fv3atm_checksum(GFS_control, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_data, Atm_block)
+      call fv3atm_checksum(GFS_control, GFS_statein, GFS_stateout, GFS_grid, GFS_tbd, GFS_cldprop, GFS_data, Atm_block)
     endif
 
     !--- advance time ---
@@ -1288,7 +1285,7 @@ subroutine update_atmos_chemistry(state, rc)
   integer :: localrc
   integer :: ni, nj, nk, nt, ntb, nte
   integer :: nb, ix, i, j, k, k1, it
-  integer :: ib, jb
+  integer :: ib, jb, im
 
   real(ESMF_KIND_R8), dimension(:,:,:),   pointer :: cldfra,       &
                                                      pfils, pflls, &
@@ -1343,8 +1340,8 @@ subroutine update_atmos_chemistry(state, rc)
       !--- prognostic tracer concentrations
       do it = ntb, nte
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nk, nj, ni, Atm_block, GFS_data, q)  &
-!$OMP             private (k, j, jb, i, ib, nb, ix)
+!$OMP             shared  (it, nk, nj, ni, Atm_block, GFS_Control, GFS_Stateout, q)  &
+!$OMP             private (k, j, jb, i, ib, nb, ix, im)
         do k = 1, nk
           do j = 1, nj
             jb = j + Atm_block%jsc - 1
@@ -1352,7 +1349,8 @@ subroutine update_atmos_chemistry(state, rc)
               ib = i + Atm_block%isc - 1
               nb = Atm_block%blkno(ib,jb)
               ix = Atm_block%ixp(ib,jb)
-              GFS_data(nb)%Stateout%gq0(ix,k,it) = q(i,j,k,it)
+              im = GFS_Control%chunk_begin(nb)+ix-1
+              GFS_Stateout%gq0(im,k,it) = q(i,j,k,it)
             enddo
           enddo
         enddo
@@ -1593,6 +1591,16 @@ subroutine update_atmos_chemistry(state, rc)
 
       end if
 
+      !--- interface values
+      phii = reshape(GFS_Statein%phii, shape(phii))
+      prsi = reshape(GFS_Statein%prsi, shape(prsi))
+      !--- layer values
+      prsl = reshape(GFS_Statein%prsl, shape(prsl))
+      phil = reshape(GFS_Statein%phil, shape(phil))
+      temp = reshape(GFS_Stateout%gt0, shape(temp))
+      ua   = reshape(GFS_Stateout%gu0, shape(ua  ))
+      va   = reshape(GFS_Stateout%gv0, shape(va  ))
+
       !--- handle all three-dimensional variables
 !$OMP parallel do default (none) &
 !$OMP             shared  (nk, nj, ni, Atm_block, GFS_Data, GFS_Control, &
@@ -1606,15 +1614,15 @@ subroutine update_atmos_chemistry(state, rc)
             ib = i + Atm_block%isc - 1
             nb = Atm_block%blkno(ib,jb)
             ix = Atm_block%ixp(ib,jb)
-            !--- interface values
-            phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
-            prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
-            !--- layer values
-            prsl(i,j,k) = GFS_Data(nb)%Statein%prsl(ix,k)
-            phil(i,j,k) = GFS_Data(nb)%Statein%phil(ix,k)
-            temp(i,j,k) = GFS_Data(nb)%Stateout%gt0(ix,k)
-            ua  (i,j,k) = GFS_Data(nb)%Stateout%gu0(ix,k)
-            va  (i,j,k) = GFS_Data(nb)%Stateout%gv0(ix,k)
+            !!--- interface values
+            !phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
+            !prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
+            !!--- layer values
+            !prsl(i,j,k) = GFS_Data(nb)%Statein%prsl(ix,k)
+            !phil(i,j,k) = GFS_Data(nb)%Statein%phil(ix,k)
+            !temp(i,j,k) = GFS_Data(nb)%Stateout%gt0(ix,k)
+            !ua  (i,j,k) = GFS_Data(nb)%Stateout%gu0(ix,k)
+            !va  (i,j,k) = GFS_Data(nb)%Stateout%gv0(ix,k)
             cldfra(i,j,k) = GFS_Data(nb)%IntDiag%cldfra(ix,k)
             if (.not.GFS_Control%cplaqm) then
               !--- layer values
@@ -1634,16 +1642,17 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
-          prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
+          im = GFS_Control%chunk_begin(nb)+ix-1
+          phii(i,j,k) = GFS_Statein%phii(im,k)
+          prsi(i,j,k) = GFS_Statein%prsi(im,k)
         enddo
       enddo
 
       !--- tracers quantities
       do it = 1, nt
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nk, nj, ni, Atm_block, GFS_data, q)  &
-!$OMP             private (k, j, jb, i, ib, nb, ix)
+!$OMP             shared  (it, nk, nj, ni, Atm_block, GFS_Control, GFS_Stateout, q)  &
+!$OMP             private (k, j, jb, i, ib, nb, ix, im)
         do k = 1, nk
           do j = 1, nj
             jb = j + Atm_block%jsc - 1
@@ -1651,7 +1660,8 @@ subroutine update_atmos_chemistry(state, rc)
               ib = i + Atm_block%isc - 1
               nb = Atm_block%blkno(ib,jb)
               ix = Atm_block%ixp(ib,jb)
-              q(i,j,k,it) = GFS_data(nb)%Stateout%gq0(ix,k,it)
+              im = GFS_Control%chunk_begin(nb)+ix-1
+              q(i,j,k,it) = GFS_Stateout%gq0(im,k,it)
             enddo
           enddo
         enddo
@@ -2861,6 +2871,9 @@ end subroutine update_atmos_chemistry
     real(kind=ESMF_KIND_R8), parameter :: zeror8 = 0._ESMF_KIND_R8
     real(GFS_kind_phys),     parameter :: revap  = one/2.501E+06_GFS_kind_phys ! reciprocal of specific
                                                                                ! heat of vaporization J/kg
+
+! DH*
+#if 0
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
 
@@ -3204,7 +3217,9 @@ end subroutine update_atmos_chemistry
       enddo
       if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
     endif !cplflx or cpllnd
-
+#else
+     call mpp_error(FATAL, 'setup_exportdata NOT YET IMPLEMENTED FOR CHUNKED ARRAYS!')
+#endif
   end subroutine setup_exportdata
 
   subroutine addLsmask2grid(fcstGrid, rc)

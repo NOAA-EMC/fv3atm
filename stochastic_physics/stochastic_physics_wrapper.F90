@@ -57,13 +57,13 @@ module stochastic_physics_wrapper_mod
 !-------------------------------
 !  CCPP step
 !-------------------------------
-  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Grid, GFS_Data, Atm_block, ierr)
+  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Statein, GFS_Grid, GFS_Data, Atm_block, ierr)
 
 #ifdef _OPENMP
     use omp_lib
 #endif
 
-    use GFS_typedefs,       only: GFS_control_type, GFS_grid_type, GFS_data_type
+    use GFS_typedefs,       only: GFS_control_type, GFS_statein_type, GFS_grid_type, GFS_data_type
     use mpp_mod,            only: FATAL, mpp_error
     use block_control_mod,  only: block_control_type
     use atmosphere_mod,     only: Atm, mygrid
@@ -76,6 +76,7 @@ module stochastic_physics_wrapper_mod
     implicit none
 
     type(GFS_control_type),   intent(inout) :: GFS_Control
+    type(GFS_statein_type),   intent(in)    :: GFS_Statein
     type(GFS_grid_type),      intent(in)    :: GFS_Grid
     type(GFS_data_type),      intent(inout) :: GFS_Data(:)
     type(block_control_type), intent(inout) :: Atm_block
@@ -387,9 +388,12 @@ module stochastic_physics_wrapper_mod
              sst        (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%tsfco(:)
              lmsk       (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%slmsk(:)
              lake       (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%lakefrac(:)
-             uwind      (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%ugrs(:,:)
-             vwind      (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%vgrs(:,:)
-             height     (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%phil(:,:)
+             !uwind      (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%ugrs(:,:)
+             call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%ugrs, uwind)
+             !vwind      (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%vgrs(:,:)
+             call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%vgrs, vwind)
+             !height     (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%phil(:,:)
+             call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%phil, height)
              condition  (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%condition(:)
              ca_deep_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_deep(:)
              ca_turb_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_turb(:)
@@ -448,6 +452,19 @@ module stochastic_physics_wrapper_mod
       end do
 
     end subroutine transfer_field_to_stochastics
+
+    subroutine transfer_field_to_stochastics_3d(blksz, data_in, data_out)
+
+      integer, dimension(:), intent(in) :: blksz
+      real(kind=kind_phys), dimension(:,:), intent(in) :: data_in
+      real(kind=kind_phys), dimension(:,:,:), intent(out) :: data_out
+      integer :: j
+
+      do j=1,size(data_in, dim=2)
+         call transfer_field_to_stochastics(blksz, data_in(:,j), data_out(:,:,j))
+      end do
+
+    end subroutine transfer_field_to_stochastics_3d
 
     subroutine transfer_field_from_stochastics(blksz, data_in, data_out)
 
