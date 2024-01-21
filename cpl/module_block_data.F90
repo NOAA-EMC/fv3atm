@@ -73,7 +73,7 @@ contains
 
   ! -- copy: 1D to 2D
 
-  subroutine block_copy_1d_i4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_1d_i4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -81,11 +81,12 @@ contains
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -95,11 +96,12 @@ contains
       if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
         j = jb - block%jsc + 1
-        destin_ptr(i,j) = factor * real(source_ptr(ix), kind=8)
+        destin_ptr(i,j) = factor * real(source_ptr(im), kind=8)
       enddo
       localrc = ESMF_SUCCESS
     end if
@@ -108,7 +110,7 @@ contains
 
   end subroutine block_copy_1d_i4_to_2d_r8
 
-  subroutine block_copy_1d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_1d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -116,11 +118,12 @@ contains
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -130,11 +133,12 @@ contains
       if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
         j = jb - block%jsc + 1
-        destin_ptr(i,j) = factor * source_ptr(ix)
+        destin_ptr(i,j) = factor * source_ptr(im)
       enddo
       localrc = ESMF_SUCCESS
     end if
@@ -143,7 +147,7 @@ contains
 
   end subroutine block_copy_1d_r8_to_2d_r8
 
-  subroutine block_copy_spval_1d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, special_value, rc)
+  subroutine block_copy_spval_1d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, special_value, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -152,23 +156,25 @@ contains
     integer,                   intent(in)  :: block_index
     real(kind=8),              intent(in)  :: scale_factor
     real(kind=8),              intent(in)  :: special_value
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
     if (associated(destin_ptr) .and. associated(source_ptr)) then
        !$omp parallel do private(ix,ib,jb,i,j)
        do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          if (source_ptr(ix) .ne. special_value) then
-             destin_ptr(i,j) = scale_factor * source_ptr(ix)
+          if (source_ptr(im) .ne. special_value) then
+             destin_ptr(i,j) = scale_factor * source_ptr(im)
           else
              destin_ptr(i,j) = special_value
           end if
@@ -182,7 +188,7 @@ contains
 
   ! -- copy: 1D slice to 2D
 
-  subroutine block_copy_1dslice_r8_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, scale_factor, rc)
+  subroutine block_copy_1dslice_r8_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -191,11 +197,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -207,11 +214,12 @@ contains
         if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          destin_ptr(i,j) = factor * source_ptr(ix,slice)
+          destin_ptr(i,j) = factor * source_ptr(im,slice)
         enddo
         localrc = ESMF_SUCCESS
       end if
@@ -223,7 +231,7 @@ contains
 
   ! -- copy: 1D slice to 2D
 
-  subroutine block_copy_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, scale_factor, rc)
+  subroutine block_copy_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -233,11 +241,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -249,11 +258,12 @@ contains
         if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          destin_ptr(i,j) = factor * source_ptr(ix,slice1,slice2)
+          destin_ptr(i,j) = factor * source_ptr(im,slice1,slice2)
         enddo
         localrc = ESMF_SUCCESS
       end if
@@ -265,7 +275,7 @@ contains
 
   ! -- copy: 2D to 3D
 
-  subroutine block_copy_2d_r8_to_3d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_2d_r8_to_3d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -273,11 +283,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=8) :: factor
 
     ! -- begin
@@ -288,11 +299,12 @@ contains
       do k = 1, size(source_ptr, dim=2)
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          destin_ptr(i,j,k) = factor * source_ptr(ix,k)
+          destin_ptr(i,j,k) = factor * source_ptr(im,k)
         enddo
       enddo
       localrc = ESMF_SUCCESS
@@ -304,7 +316,7 @@ contains
 
   ! -- copy: 2D to 2D
 
-  subroutine block_copy_2d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_2d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -312,11 +324,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -326,6 +339,7 @@ contains
       if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
@@ -339,7 +353,7 @@ contains
 
   end subroutine block_copy_2d_r8_to_2d_r8
 
-  subroutine block_array_copy_2d_r8_to_2d_r8(destin_ptr, source_arr, block, block_index, scale_factor, rc)
+  subroutine block_array_copy_2d_r8_to_2d_r8(destin_ptr, source_arr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -347,11 +361,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),  optional,   intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,       optional,   intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=8) :: factor
 
     ! -- begin
@@ -361,6 +376,7 @@ contains
       if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
@@ -376,7 +392,7 @@ contains
 
   ! -- copy: 3D to 3D
 
-  subroutine block_copy_3d_r8_to_3d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_3d_r8_to_3d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -384,11 +400,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=8) :: factor
 
     ! -- begin
@@ -399,6 +416,7 @@ contains
       do k = 1, size(source_ptr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
@@ -413,7 +431,7 @@ contains
 
   end subroutine block_copy_3d_r8_to_3d_r8
 
-  subroutine block_array_copy_3d_r8_to_3d_r8(destin_ptr, source_arr, block, block_index, scale_factor, rc)
+  subroutine block_array_copy_3d_r8_to_3d_r8(destin_ptr, source_arr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -421,11 +439,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=8) :: factor
 
     ! -- begin
@@ -436,6 +455,7 @@ contains
       do k = 1, size(source_arr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
@@ -452,7 +472,7 @@ contains
 
   ! -- copy: 3D slice to 3D
 
-  subroutine block_copy_3dslice_r8_to_3d_r8(destin_ptr, source_ptr, slice, block, block_index, scale_factor, rc)
+  subroutine block_copy_3dslice_r8_to_3d_r8(destin_ptr, source_ptr, slice, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -461,11 +481,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=8) :: factor
 
     ! -- begin
@@ -478,6 +499,7 @@ contains
         do k = 1, size(source_ptr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
           do ix = 1, block%blksz(block_index)
+            im = offset + ix - 1
             ib = block%index(block_index)%ii(ix)
             jb = block%index(block_index)%jj(ix)
             i = ib - block%isc + 1
@@ -493,7 +515,7 @@ contains
 
   end subroutine block_copy_3dslice_r8_to_3d_r8
 
-  subroutine block_array_copy_3dslice_r8_to_3d_r8(destin_ptr, source_arr, slice, block, block_index, scale_factor, rc)
+  subroutine block_array_copy_3dslice_r8_to_3d_r8(destin_ptr, source_arr, slice, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -502,11 +524,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=8),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=8) :: factor
 
     ! -- begin
@@ -519,6 +542,7 @@ contains
         do k = 1, size(source_arr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
           do ix = 1, block%blksz(block_index)
+            im = offset + ix - 1
             ib = block%index(block_index)%ii(ix)
             jb = block%index(block_index)%jj(ix)
             i = ib - block%isc + 1
@@ -536,24 +560,26 @@ contains
 
   ! -- fill: 2D
 
-  subroutine block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc)
+  subroutine block_fill_2d_r8(destin_ptr, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- local variables
     integer :: localrc
-    integer :: i, ib, ix, j, jb
+    integer :: i, ib, ix, j, jb, im
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
     if (associated(destin_ptr)) then
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
@@ -569,18 +595,19 @@ contains
 
   ! -- fill: 3D
 
-  subroutine block_fill_3d_r8(destin_ptr, fill_value, block, block_index, rc)
+  subroutine block_fill_3d_r8(destin_ptr, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- local variables
     integer :: localrc
-    integer :: i, ib, ix, j, jb, k
+    integer :: i, ib, ix, im, j, jb, k
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -588,6 +615,7 @@ contains
       do k = 1, size(destin_ptr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
@@ -604,7 +632,7 @@ contains
 
   ! -- copy/fill: 1D to 2D
 
-  subroutine block_copy_or_fill_1d_r8_to_2d_r8(destin_ptr, source_ptr, fill_value, block, block_index, rc)
+  subroutine block_copy_or_fill_1d_r8_to_2d_r8(destin_ptr, source_ptr, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -612,6 +640,7 @@ contains
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- begin
@@ -619,9 +648,9 @@ contains
 
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
-        call block_copy_1d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, rc=rc)
+        call block_copy_1d_r8_to_2d_r8(destin_ptr, source_ptr, block, block_index, offset=offset, rc=rc)
       else
-        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, offset=offset, rc=rc)
       end if
     end if
 
@@ -629,7 +658,7 @@ contains
 
   ! -- copy/fill: 1D slice to 2D
 
-  subroutine block_copy_or_fill_1dslice_r8_to_2d_r8(destin_ptr, source_ptr, slice, fill_value, block, block_index, rc)
+  subroutine block_copy_or_fill_1dslice_r8_to_2d_r8(destin_ptr, source_ptr, slice, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -638,6 +667,7 @@ contains
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- begin
@@ -645,9 +675,9 @@ contains
 
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
-        call block_copy_1dslice_r8_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, rc=rc)
+        call block_copy_1dslice_r8_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, offset=offset, rc=rc)
       else
-        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, offset=offset, rc=rc)
       end if
     end if
 
@@ -655,7 +685,7 @@ contains
 
   ! -- copy/fill: 1D slice to 2D
 
-  subroutine block_copy_or_fill_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, fill_value, block, block_index, rc)
+  subroutine block_copy_or_fill_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -665,6 +695,7 @@ contains
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- begin
@@ -672,9 +703,9 @@ contains
 
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
-        call block_copy_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, rc=rc)
+        call block_copy_1dslice2_r8_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, offset=offset, rc=rc)
       else
-        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, offset=offset, rc=rc)
       end if
     end if
 
@@ -682,7 +713,7 @@ contains
 
   ! -- copy/fill: 2D to 3D
 
-  subroutine block_copy_or_fill_2d_r8_to_3d_r8(destin_ptr, source_ptr, fill_value, block, block_index, rc)
+  subroutine block_copy_or_fill_2d_r8_to_3d_r8(destin_ptr, source_ptr, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -690,6 +721,7 @@ contains
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- begin
@@ -697,9 +729,9 @@ contains
 
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
-        call block_copy_2d_r8_to_3d_r8(destin_ptr, source_ptr, block, block_index, rc=rc)
+        call block_copy_2d_r8_to_3d_r8(destin_ptr, source_ptr, block, block_index, offset=offset, rc=rc)
       else
-        call block_fill_3d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+        call block_fill_3d_r8(destin_ptr, fill_value, block, block_index, offset=offset, rc=rc)
       end if
     end if
 
@@ -707,7 +739,7 @@ contains
 
   ! -- combine: 1D to 2D
 
-  subroutine block_combine_frac_1d_r8_to_2d_r8(destin_ptr, fract1_ptr, fract2_ptr, block, block_index, rc)
+  subroutine block_combine_frac_1d_r8_to_2d_r8(destin_ptr, fract1_ptr, fract2_ptr, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -715,11 +747,12 @@ contains
     real(kind=8),              pointer     :: fract2_ptr(:)
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -727,11 +760,12 @@ contains
         associated(fract1_ptr) .and. associated(fract2_ptr)) then
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
         j = jb - block%jsc + 1
-        destin_ptr(i,j) = fract1_ptr(ix) * (1._8 - fract2_ptr(ix))
+        destin_ptr(i,j) = fract1_ptr(im) * (1._8 - fract2_ptr(im))
       enddo
       localrc = ESMF_SUCCESS
     end if
@@ -747,7 +781,7 @@ contains
 
   ! ------------------------------------------------------------------------------------------
 
-  subroutine block_copy_1d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_1d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -755,11 +789,12 @@ contains
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=4) :: factor
 
     ! -- begin
@@ -769,11 +804,12 @@ contains
       if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
         j = jb - block%jsc + 1
-        destin_ptr(i,j) = factor * source_ptr(ix)
+        destin_ptr(i,j) = factor * source_ptr(im)
       enddo
       localrc = ESMF_SUCCESS
     end if
@@ -782,7 +818,7 @@ contains
 
   end subroutine block_copy_1d_r4_to_2d_r8
 
-  subroutine block_copy_spval_1d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, special_value, rc)
+  subroutine block_copy_spval_1d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, special_value, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -791,23 +827,25 @@ contains
     integer,                   intent(in)  :: block_index
     real(kind=4),              intent(in)  :: scale_factor
     real(kind=4),              intent(in)  :: special_value
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
     if (associated(destin_ptr) .and. associated(source_ptr)) then
        !$omp parallel do private(ix,ib,jb,i,j)
        do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          if (source_ptr(ix) .ne. special_value) then
-             destin_ptr(i,j) = scale_factor * source_ptr(ix)
+          if (source_ptr(im) .ne. special_value) then
+             destin_ptr(i,j) = scale_factor * source_ptr(im)
           else
              destin_ptr(i,j) = special_value
           end if
@@ -821,7 +859,7 @@ contains
 
   ! -- copy: 1D slice to 2D
 
-  subroutine block_copy_1dslice_r4_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, scale_factor, rc)
+  subroutine block_copy_1dslice_r4_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -830,11 +868,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=4) :: factor
 
     ! -- begin
@@ -846,11 +885,12 @@ contains
         if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          destin_ptr(i,j) = factor * source_ptr(ix,slice)
+          destin_ptr(i,j) = factor * source_ptr(im,slice)
         enddo
         localrc = ESMF_SUCCESS
       end if
@@ -862,7 +902,7 @@ contains
 
   ! -- copy: 1D slice to 2D
 
-  subroutine block_copy_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, scale_factor, rc)
+  subroutine block_copy_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -872,11 +912,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=4) :: factor
 
     ! -- begin
@@ -888,11 +929,12 @@ contains
         if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          destin_ptr(i,j) = factor * source_ptr(ix,slice1,slice2)
+          destin_ptr(i,j) = factor * source_ptr(im,slice1,slice2)
         enddo
         localrc = ESMF_SUCCESS
       end if
@@ -904,7 +946,7 @@ contains
 
   ! -- copy: 2D to 3D
 
-  subroutine block_copy_2d_r4_to_3d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_2d_r4_to_3d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -912,11 +954,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=4) :: factor
 
     ! -- begin
@@ -927,11 +970,12 @@ contains
       do k = 1, size(source_ptr, dim=2)
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          destin_ptr(i,j,k) = factor * source_ptr(ix,k)
+          destin_ptr(i,j,k) = factor * source_ptr(im,k)
         enddo
       enddo
       localrc = ESMF_SUCCESS
@@ -943,7 +987,7 @@ contains
 
   ! -- copy: 2D to 2D
 
-  subroutine block_copy_2d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_2d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -951,11 +995,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=4) :: factor
 
     ! -- begin
@@ -965,6 +1010,7 @@ contains
       if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
@@ -978,7 +1024,7 @@ contains
 
   end subroutine block_copy_2d_r4_to_2d_r8
 
-  subroutine block_array_copy_2d_r4_to_2d_r8(destin_ptr, source_arr, block, block_index, scale_factor, rc)
+  subroutine block_array_copy_2d_r4_to_2d_r8(destin_ptr, source_arr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -986,11 +1032,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb
+    integer      :: i, ib, ix, im, j, jb
     real(kind=4) :: factor
 
     ! -- begin
@@ -1000,6 +1047,7 @@ contains
       if (present(scale_factor)) factor = scale_factor
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
@@ -1015,7 +1063,7 @@ contains
 
   ! -- copy: 3D to 3D
 
-  subroutine block_copy_3d_r4_to_3d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+  subroutine block_copy_3d_r4_to_3d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -1023,11 +1071,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=4) :: factor
 
     ! -- begin
@@ -1038,6 +1087,7 @@ contains
       do k = 1, size(source_ptr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
@@ -1052,7 +1102,7 @@ contains
 
   end subroutine block_copy_3d_r4_to_3d_r8
 
-  subroutine block_array_copy_3d_r4_to_3d_r8(destin_ptr, source_arr, block, block_index, scale_factor, rc)
+  subroutine block_array_copy_3d_r4_to_3d_r8(destin_ptr, source_arr, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -1060,11 +1110,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4), optional,    intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=4) :: factor
 
     ! -- begin
@@ -1075,6 +1126,7 @@ contains
       do k = 1, size(source_arr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
+          im = offset + ix - 1
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
@@ -1091,7 +1143,7 @@ contains
 
   ! -- copy: 3D slice to 3D
 
-  subroutine block_copy_3dslice_r4_to_3d_r8(destin_ptr, source_ptr, slice, block, block_index, scale_factor, rc)
+  subroutine block_copy_3dslice_r4_to_3d_r8(destin_ptr, source_ptr, slice, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -1100,11 +1152,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=4) :: factor
 
     ! -- begin
@@ -1117,6 +1170,7 @@ contains
         do k = 1, size(source_ptr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
           do ix = 1, block%blksz(block_index)
+            im = offset + ix - 1
             ib = block%index(block_index)%ii(ix)
             jb = block%index(block_index)%jj(ix)
             i = ib - block%isc + 1
@@ -1132,7 +1186,7 @@ contains
 
   end subroutine block_copy_3dslice_r4_to_3d_r8
 
-  subroutine block_array_copy_3dslice_r4_to_3d_r8(destin_ptr, source_arr, slice, block, block_index, scale_factor, rc)
+  subroutine block_array_copy_3dslice_r4_to_3d_r8(destin_ptr, source_arr, slice, block, block_index, scale_factor, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -1141,11 +1195,12 @@ contains
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
     real(kind=4),    optional, intent(in)  :: scale_factor
+    integer,                   intent(in)  :: offset
     integer,         optional, intent(out) :: rc
 
     ! -- local variables
     integer      :: localrc
-    integer      :: i, ib, ix, j, jb, k
+    integer      :: i, ib, ix, im, j, jb, k
     real(kind=4) :: factor
 
     ! -- begin
@@ -1158,6 +1213,7 @@ contains
         do k = 1, size(source_arr, dim=3)
 !$omp parallel do private(ix,ib,jb,i,j)
           do ix = 1, block%blksz(block_index)
+            im = offset + ix - 1
             ib = block%index(block_index)%ii(ix)
             jb = block%index(block_index)%jj(ix)
             i = ib - block%isc + 1
@@ -1175,7 +1231,7 @@ contains
 
   ! -- copy/fill: 1D to 2D
 
-  subroutine block_copy_or_fill_1d_r4_to_2d_r8(destin_ptr, source_ptr, fill_value, block, block_index, rc)
+  subroutine block_copy_or_fill_1d_r4_to_2d_r8(destin_ptr, source_ptr, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -1183,6 +1239,7 @@ contains
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- begin
@@ -1190,9 +1247,9 @@ contains
 
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
-        call block_copy_1d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, rc=rc)
+        call block_copy_1d_r4_to_2d_r8(destin_ptr, source_ptr, block, block_index, offset=offset, rc=rc)
       else
-        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, offset=offset, rc=rc)
       end if
     end if
 
@@ -1200,7 +1257,7 @@ contains
 
   ! -- copy/fill: 1D slice to 2D
 
-  subroutine block_copy_or_fill_1dslice_r4_to_2d_r8(destin_ptr, source_ptr, slice, fill_value, block, block_index, rc)
+  subroutine block_copy_or_fill_1dslice_r4_to_2d_r8(destin_ptr, source_ptr, slice, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -1209,6 +1266,7 @@ contains
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- begin
@@ -1216,9 +1274,9 @@ contains
 
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
-        call block_copy_1dslice_r4_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, rc=rc)
+        call block_copy_1dslice_r4_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, offset=offset, rc=rc)
       else
-        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, offset=offset, rc=rc)
       end if
     end if
 
@@ -1226,7 +1284,7 @@ contains
 
  ! -- copy/fill: 1D slice to 2D
 
-  subroutine block_copy_or_fill_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, fill_value, block, block_index, rc)
+  subroutine block_copy_or_fill_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -1236,6 +1294,7 @@ contains
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- begin
@@ -1243,9 +1302,9 @@ contains
 
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
-        call block_copy_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, rc=rc)
+        call block_copy_1dslice2_r4_to_2d_r8(destin_ptr, source_ptr, slice1, slice2, block, block_index, offset=offset, rc=rc)
       else
-        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+        call block_fill_2d_r8(destin_ptr, fill_value, block, block_index, offset=offset, rc=rc)
       end if
     end if
 
@@ -1253,7 +1312,7 @@ contains
 
   ! -- copy/fill: 2D to 3D
 
-  subroutine block_copy_or_fill_2d_r4_to_3d_r8(destin_ptr, source_ptr, fill_value, block, block_index, rc)
+  subroutine block_copy_or_fill_2d_r4_to_3d_r8(destin_ptr, source_ptr, fill_value, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:,:)
@@ -1261,6 +1320,7 @@ contains
     real(ESMF_KIND_R8),        intent(in)  :: fill_value
     type (block_control_type), intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- begin
@@ -1268,9 +1328,9 @@ contains
 
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
-        call block_copy_2d_r4_to_3d_r8(destin_ptr, source_ptr, block, block_index, rc=rc)
+        call block_copy_2d_r4_to_3d_r8(destin_ptr, source_ptr, block, block_index, offset=offset, rc=rc)
       else
-        call block_fill_3d_r8(destin_ptr, fill_value, block, block_index, rc=rc)
+        call block_fill_3d_r8(destin_ptr, fill_value, block, block_index, offset=offset, rc=rc)
       end if
     end if
 
@@ -1278,7 +1338,7 @@ contains
 
   ! -- combine: 1D to 2D
 
-  subroutine block_combine_frac_1d_r4_to_2d_r8(destin_ptr, fract1_ptr, fract2_ptr, block, block_index, rc)
+  subroutine block_combine_frac_1d_r4_to_2d_r8(destin_ptr, fract1_ptr, fract2_ptr, block, block_index, offset, rc)
 
     ! -- arguments
     real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
@@ -1286,11 +1346,12 @@ contains
     real(kind=4),              pointer     :: fract2_ptr(:)
     type(block_control_type),  intent(in)  :: block
     integer,                   intent(in)  :: block_index
+    integer,                   intent(in)  :: offset
     integer, optional,         intent(out) :: rc
 
     ! -- local variables
     integer :: localrc
-    integer :: i, ib, ix, j, jb
+    integer :: i, ib, ix, im, j, jb
 
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
@@ -1298,11 +1359,12 @@ contains
         associated(fract1_ptr) .and. associated(fract2_ptr)) then
 !$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
+        im = offset + ix - 1
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
         j = jb - block%jsc + 1
-        destin_ptr(i,j) = fract1_ptr(ix) * (1._4 - fract2_ptr(ix))
+        destin_ptr(i,j) = fract1_ptr(im) * (1._4 - fract2_ptr(im))
       enddo
       localrc = ESMF_SUCCESS
     end if
