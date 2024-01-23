@@ -979,7 +979,7 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[fire_heat_flux_out]
+[fire_heat_flux]
   standard_name = surface_fire_heat_flux
   long_name = heat flux of fire at the surface
   units = W m-2
@@ -987,7 +987,7 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[frac_grid_burned_out]
+[frac_grid_burned]
   standard_name = fraction_of_grid_cell_burning
   long_name = ration of the burnt area to the grid cell area
   units = frac
@@ -2312,31 +2312,31 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
-[fire_type_out]
-  standard_name = fire_type_out
+[fire_type]
+  standard_name = fire_type
   long_name = type of fire
-  units = none
+  units = 1
   dimensions = (horizontal_loop_extent)
   type = integer
   active = (do_smoke_coupling)
-[peak_hr_out]
+[peak_hr]
  standard_name = peak_hr_fire
- long_name = hour of peak fire emissions
- units = none
+ long_name = time_of_peak_fire_emissions
+ units = s
  dimensions = (horizontal_loop_extent)
  type = real
  kind = kind_phys
  active = (do_smoke_coupling)
-[lu_nofire_out]
- standard_name = lu_nofire_out
+[lu_nofire]
+ standard_name = sum_of_land_use_fractions_for_no_fire_pixels
  long_name = land use of no fire pixels for type
  units = frac
  dimensions = (horizontal_loop_extent)
  type = real
  kind = kind_phys
  active = (do_smoke_coupling)
-[lu_qfire_out]
- standard_name = lu_qfire_out
+[lu_qfire]
+ standard_name = sum_of_land_use_fractions_for_cropland_fire_pixels
  long_name = land use of fire pixels for type
  units = frac
  dimensions = (horizontal_loop_extent)
@@ -3084,17 +3084,17 @@
   kind = kind_phys
   active = (do_smoke_coupling)
 [uspdavg]
-  standard_name = bl_averaged_wind_speed
+  standard_name = mean_wind_speed_in_boundary_layer
   long_name = average wind speed within the boundary layer
-  units = none
+  units = m s-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
 [hpbl_thetav]
-  standard_name = pbl_height_thetav
+  standard_name = atmosphere_boundary_layer_thickness_from_modified_parcel
   long_name = pbl height based on modified parcel method
-  units = none
+  units = m
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys

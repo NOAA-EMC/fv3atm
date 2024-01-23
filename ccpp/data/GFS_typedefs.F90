@@ -458,18 +458,18 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: emanoc  (:)     => null()  !< instantaneous anthro. oc emission
 
     !--- Smoke. These 2 arrays are input smoke emission and frp
-    real (kind=kind_phys), pointer :: ebb_smoke_in(:)    => null()  !< input smoke emission
-    real (kind=kind_phys), pointer :: frp_output  (:)    => null()  !< output FRP
+    real (kind=kind_phys), pointer :: ebb_smoke_in(:)   => null()  !< input smoke emission
+    real (kind=kind_phys), pointer :: frp_output  (:)   => null()  !< output FRP
     !--- For fire diurnal cycle
     real (kind=kind_phys), pointer :: fhist       (:)   => null()  !< instantaneous fire coef_bb
     real (kind=kind_phys), pointer :: coef_bb_dc  (:)   => null()  !< instantaneous fire coef_bb
-    integer, pointer               :: fire_type_out   (:)   => null()  !< fire type
-    real (kind=kind_phys), pointer :: peak_hr_out (:) => null() !< peak hour of fire emissions
-    real (kind=kind_phys), pointer :: lu_nofire_out (:) =>null() !<lu_nofire pixels
-    real (kind=kind_phys), pointer :: lu_qfire_out (:) =>null() !<lu_qfire pixels
+    integer, pointer               :: fire_type   (:)   => null()  !< fire type
+    real (kind=kind_phys), pointer :: peak_hr     (:)   => null()  !< peak hour of fire emissions
+    real (kind=kind_phys), pointer :: lu_nofire   (:)   => null()  !<lu_nofire pixels
+    real (kind=kind_phys), pointer :: lu_qfire    (:)   => null()  !<lu_qfire pixels
     !--- wildfire heat flux
-    real (kind=kind_phys), pointer :: fire_heat_flux_out (:) => null() !< heat flux from wildfire
-    real (kind=kind_phys), pointer :: frac_grid_burned_out (:) => null() !< fraction of grid cell burning
+    real (kind=kind_phys), pointer :: fire_heat_flux   (:) => null() !< heat flux from wildfire
+    real (kind=kind_phys), pointer :: frac_grid_burned (:) => null() !< fraction of grid cell burning
 
     !--- For smoke and dust auxiliary inputs
     real (kind=kind_phys), pointer :: fire_in   (:,:)   => null()  !< fire auxiliary inputs
@@ -2690,8 +2690,8 @@ module GFS_typedefs
        allocate (Sfcprop%acsnow_land     (IM))
        allocate (Sfcprop%acsnow_ice      (IM))
        allocate (Sfcprop%xlaixy   (IM))
-       allocate (Sfcprop%fire_heat_flux_out (IM))
-       allocate (Sfcprop%frac_grid_burned_out (IM))
+       allocate (Sfcprop%fire_heat_flux  (IM))
+       allocate (Sfcprop%frac_grid_burned(IM))
 
        !
        Sfcprop%wetness         = clear_val
@@ -2712,8 +2712,8 @@ module GFS_typedefs
        Sfcprop%acsnow_land     = clear_val
        Sfcprop%acsnow_ice      = clear_val
        Sfcprop%xlaixy          = clear_val
-       Sfcprop%fire_heat_flux_out = clear_val
-       Sfcprop%frac_grid_burned_out = clear_val
+       Sfcprop%fire_heat_flux  = clear_val
+       Sfcprop%frac_grid_burned= clear_val
        !
     end if
 
@@ -2810,10 +2810,10 @@ module GFS_typedefs
       allocate (Sfcprop%frp_output (IM))
       allocate (Sfcprop%fhist     (IM))
       allocate (Sfcprop%coef_bb_dc(IM))
-      allocate (Sfcprop%fire_type_out (IM))
-      allocate (Sfcprop%peak_hr_out(IM))
-      allocate (Sfcprop%lu_nofire_out(IM))
-      allocate (Sfcprop%lu_qfire_out(IM))
+      allocate (Sfcprop%fire_type (IM))
+      allocate (Sfcprop%peak_hr   (IM))
+      allocate (Sfcprop%lu_nofire (IM))
+      allocate (Sfcprop%lu_qfire  (IM))
       allocate (Sfcprop%fire_in   (IM,Model%fire_aux_data_levels))
 
       ! IMPORTANT: This initialization must match rrfs_sd_fill_data
@@ -2824,11 +2824,11 @@ module GFS_typedefs
       Sfcprop%frp_output  = clear_val
       Sfcprop%fhist      = 1.
       Sfcprop%coef_bb_dc = clear_val
-      Sfcprop%fire_type_out  = 0
+      Sfcprop%fire_type  = 0
       Sfcprop%fire_in    = clear_val
-      Sfcprop%peak_hr_out = clear_val
-      Sfcprop%lu_nofire_out = clear_val
-      Sfcprop%lu_qfire_out = clear_val
+      Sfcprop%peak_hr    = clear_val
+      Sfcprop%lu_nofire  = clear_val
+      Sfcprop%lu_qfire   = clear_val
     endif
 
   end subroutine sfcprop_create

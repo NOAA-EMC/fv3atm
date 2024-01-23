@@ -4580,7 +4580,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%fire_heat_flux_out
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%fire_heat_flux
       enddo
 
       idx = idx + 1
@@ -4591,7 +4591,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%frac_grid_burned_out
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%frac_grid_burned
       enddo
 
       idx = idx + 1
@@ -4806,46 +4806,46 @@ module GFS_diagnostics
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'peak_hr_out'
+      ExtDiag(idx)%name = 'peak_hr'
       ExtDiag(idx)%desc = 'hour of peak smoke emissions'
       ExtDiag(idx)%unit = ' '
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%peak_hr_out
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%peak_hr
       enddo
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'fire_type_out'
+      ExtDiag(idx)%name = 'fire_type'
       ExtDiag(idx)%desc = 'fire type'
       ExtDiag(idx)%unit = ''
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%fire_type_out
+        ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%fire_type
       enddo
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'lu_nofire_out'
+      ExtDiag(idx)%name = 'lu_nofire'
       ExtDiag(idx)%desc = 'lu nofire pixes'
       ExtDiag(idx)%unit = ''
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lu_nofire_out
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lu_nofire
       enddo
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'lu_qfire_out'
+      ExtDiag(idx)%name = 'lu_qfire'
       ExtDiag(idx)%desc = 'lu qfire pixes'
       ExtDiag(idx)%unit = ''
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lu_qfire_out
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lu_qfire
       enddo
 
       idx = idx + 1
