@@ -2330,7 +2330,7 @@
 [lu_nofire]
  standard_name = sum_of_land_use_fractions_for_no_fire_pixels
  long_name = land use of no fire pixels for type
- units = frac
+ units = 1
  dimensions = (horizontal_loop_extent)
  type = real
  kind = kind_phys
@@ -2338,7 +2338,7 @@
 [lu_qfire]
  standard_name = sum_of_land_use_fractions_for_cropland_fire_pixels
  long_name = land use of fire pixels for type
- units = frac
+ units = 1
  dimensions = (horizontal_loop_extent)
  type = real
  kind = kind_phys
