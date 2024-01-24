@@ -11,21 +11,21 @@
 !> Jul 2019 | Jun Wang | allocate arrays for post processing
 !> Feb 2022 | J. Meng/B. Cui | create interface to run inline post with post_2d_decomp
 !>
-!> @param[in] imi i dimension size of the output grid
-!> @param[in] jmi j dimension size of the output grid
-!> @param[in] lmi l (layer) dimension size of the output grid
-!> @param[in] mype MPI rank
-!> @param[in] nwtlpes number of write tasks in the write group
-!> @param[in] lead_write lead task of the write group
-!> @param[in] mpicomp MPI communicator of the write grid component
-!> @param[in] jts start index in j dimention in a task subdomain
-!> @param[in] jte end index in j dimention in a task subdomain
-!> @param[in] jtsgrp start index in j dimention of all write tasks
-!> @param[in] jtegrp end idex in j dimention of all write tasks
-!> @param[in] its start index in i dimention in a task subdomain
-!> @param[in] ite end index in j dimention in a task subdomain
-!> @param[in] itsgrp start index in i dimention of all write tasks
-!> @param[in] itegrp end idex in i dimention of all write tasks
+!> @param[in] imi i dimension size of the output grid.
+!> @param[in] jmi j dimension size of the output grid.
+!> @param[in] lmi l (layer) dimension size of the output grid.
+!> @param[in] mype MPI rank.
+!> @param[in] nwtlpes number of write tasks in the write group.
+!> @param[in] lead_write lead task of the write group.
+!> @param[in] mpicomp MPI communicator of the write grid component.
+!> @param[in] jts start index in j dimention in a task subdomain.
+!> @param[in] jte end index in j dimention in a task subdomain.
+!> @param[in] jtsgrp start index in j dimention of all write tasks.
+!> @param[in] jtegrp end index in j dimention of all write tasks.
+!> @param[in] its start index in i dimention in a task subdomain.
+!> @param[in] ite end index in j dimention in a task subdomain.
+!> @param[in] itsgrp start index in i dimention of all write tasks.
+!> @param[in] itegrp end idex in i dimention of all write tasks.
 !>
 !> @author Jun Wang @date Oct 8 2019 
 subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
