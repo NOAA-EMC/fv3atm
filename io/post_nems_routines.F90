@@ -1,5 +1,5 @@
 !> @file
-!> @brief miscellaneous subroutines to support inline post
+!> @brief Miscellaneous subroutines to support inline post.
 !> @author Jun Wang @date Oct 8, 2019 
 
 !> Allocate post variables.
@@ -234,13 +234,13 @@ subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
 
   !> Read post namelist.
   !>
-  !> @param[in] kpo number of pressure levels
-  !> @param[in] kth number of isentropic levels
-  !> @param[in] kpv number of potential vorticity levels
-  !> @param[in] po pressure levels to output
-  !> @param[in] th isentropic levels to output
-  !> @param[in] pv potential vorticity levels to output
-  !> @param[in] post_namelist post namelist array
+  !> @param[in] kpo number of pressure levels.
+  !> @param[in] kth number of isentropic levels.
+  !> @param[in] kpv number of potential vorticity levels.
+  !> @param[in] po pressure levels to output.
+  !> @param[in] th isentropic levels to output.
+  !> @param[in] pv potential vorticity levels to output.
+  !> @param[in] post_namelist post namelist array.
   !>
   !> @author Jun Wang @date Jul 2019
   subroutine read_postnmlt(kpo,kth,kpv,po,th,pv,post_namelist)
@@ -357,7 +357,7 @@ subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
 
     !> Finalize post step.
     !>
-    !> @param[in] post_gribversion grib version(1 or 2) used in post
+    !> @param[in] post_gribversion grib version(1 or 2) used in post.
     !>
     !> @author Jun Wang @date Jul 2019
     subroutine post_finalize(post_gribversion)

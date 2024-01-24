@@ -37,18 +37,18 @@ module post_fv3
 
   contains
 
-    !> Interface to run inline post
+    !> Interface to run inline post.
     !>
-    !> @param[in] wrt_int_state write grid component internal state
-    !> @param[in] grid_id id number of the output grid
-    !> @param[in] mype MPI rank
-    !> @param[in] mpicomp MPI communicator of the write grid component
-    !> @param[in] lead_write lead task of the write group
-    !> @param[in] itasks number of MPI tasks in i direction of output domain
-    !> @param[in] jtasks number of MPI tasks in j direction of output domain
-    !> @param[in] mynfhr output forecast hours on the write grid component
-    !> @param[in] mynfmin output forecast minutes on the write grid component
-    !> @param[in] mynfsec output forecast secondson the write grid component
+    !> @param[in] wrt_int_state write grid component internal state.
+    !> @param[in] grid_id id number of the output grid.
+    !> @param[in] mype MPI rank.
+    !> @param[in] mpicomp MPI communicator of the write grid component.
+    !> @param[in] lead_write lead task of the write group.
+    !> @param[in] itasks number of MPI tasks in i direction of output domain.
+    !> @param[in] jtasks number of MPI tasks in j direction of output domain.
+    !> @param[in] mynfhr output forecast hours on the write grid component.
+    !> @param[in] mynfmin output forecast minutes on the write grid component.
+    !> @param[in] mynfsec output forecast secondson the write grid component.
     !>
     !> @author Jun Wang @date Jul, 2019 
     subroutine post_run_fv3(wrt_int_state,grid_id,mype,mpicomp,lead_write, &
@@ -230,10 +230,10 @@ module post_fv3
 
     end subroutine post_run_fv3
 
-    !> Subroutine to get attributes for post processing
+    !> Subroutine to get attributes for post processing.
     !>
-    !> @param[in] wrt_int_state write grid component internal state
-    !> @param[in] grid_id id number of the output grid
+    !> @param[in] wrt_int_state write grid component internal state.
+    !> @param[in] grid_id id number of the output grid.
     !>
     !> @author Jun Wang @date Jul, 2019 
     subroutine post_getattr_fv3(wrt_int_state,grid_id)
@@ -504,12 +504,12 @@ module post_fv3
 !
     end subroutine post_getattr_fv3
 
-    !> Subroutine to set post variables
+    !> Subroutine to set post variables.
     !>
-    !> @param[in] wrt_int_state write grid component internal state
-    !> @param[in] grid_id id number of the output grid
-    !> @param[in] mype MPI rank
-    !> @param[in] mpicomp MPI communicator of the write grid component
+    !> @param[in] wrt_int_state write grid component internal state.
+    !> @param[in] grid_id id number of the output grid.
+    !> @param[in] mype MPI rank.
+    !> @param[in] mpicomp MPI communicator of the write grid component.
     !>
     !> @author Jun Wang @date Jul 2019 
     subroutine set_postvars_fv3(wrt_int_state,grid_id,mype,mpicomp)
