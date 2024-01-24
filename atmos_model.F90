@@ -1055,7 +1055,7 @@ subroutine update_atmos_model_state (Atmos, rc)
 
     if (nint(GFS_Control%fhzero) > 0) then
       if (mod(isec - sec_lastfhzerofh,nint(GFS_Control%fhzero*3600.)) == 0) diag_time = Atmos%Time
-    if (mpp_pe() == mpp_root_pe()) print *,'in atmos_model update diag_time=',isec/3600.,'last fhzeo=',sec_lastfhzerofh
+!    if (mpp_pe() == mpp_root_pe()) print *,'in atmos_model update time=',isec/3600.,'last fhzeo=',sec_lastfhzerofh
     endif
     call diag_send_complete_instant (Atmos%Time)
 
