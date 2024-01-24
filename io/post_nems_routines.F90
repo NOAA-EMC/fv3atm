@@ -1,5 +1,5 @@
 !> @file
-!> @brief ???
+!> @brief miscellaneous subroutines to support inline post
 !> @author Jun Wang @date Oct 8, 2019 
 
 !> Allocate post variables.
@@ -11,21 +11,21 @@
 !> Jul 2019 | Jun Wang | allocate arrays for post processing
 !> Feb 2022 | J. Meng/B. Cui | create interface to run inline post with post_2d_decomp
 !>
-!> @param[in] imi ???
-!> @param[in] jmi ???
-!> @param[in] lmi ???
-!> @param[in] mype ???
-!> @param[in] nwtlpes ???
-!> @param[in] lead_write ???
-!> @param[in] mpicomp ???
-!> @param[in] jts ???
-!> @param[in] jte ???
-!> @param[in] jtsgrp ???
-!> @param[in] jtegrp ???
-!> @param[in] its ???
-!> @param[in] ite ???
-!> @param[in] itsgrp ???
-!> @param[in] itegrp ???
+!> @param[in] imi i dimension size of the output grid
+!> @param[in] jmi j dimension size of the output grid
+!> @param[in] lmi l (layer) dimension size of the output grid
+!> @param[in] mype MPI rank
+!> @param[in] nwtlpes number of write tasks in the write group
+!> @param[in] lead_write lead task of the write group
+!> @param[in] mpicomp MPI communicator of the write grid component
+!> @param[in] jts start index in j dimention in a task subdomain
+!> @param[in] jte end index in j dimention in a task subdomain
+!> @param[in] jtsgrp start index in j dimention of all write tasks
+!> @param[in] jtegrp end idex in j dimention of all write tasks
+!> @param[in] its start index in i dimention in a task subdomain
+!> @param[in] ite end index in j dimention in a task subdomain
+!> @param[in] itsgrp start index in i dimention of all write tasks
+!> @param[in] itegrp end idex in i dimention of all write tasks
 !>
 !> @author Jun Wang @date Oct 8 2019 
 subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
@@ -234,13 +234,13 @@ subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
 
   !> Read post namelist.
   !>
-  !> @param[in] kpo ???
-  !> @param[in] kth ???
-  !> @param[in] kpv ???
-  !> @param[in] po ???
-  !> @param[in] th ???
-  !> @param[in] pv ???
-  !> @param[in] post_namelist ???
+  !> @param[in] kpo number of pressure levels
+  !> @param[in] kth number of isentropic levels
+  !> @param[in] kpv number of potential vorticity levels
+  !> @param[in] po pressure levels to output
+  !> @param[in] th isentropic levels to output
+  !> @param[in] pv potential vorticity levels to output
+  !> @param[in] post_namelist post namelist array
   !>
   !> @author Jun Wang @date Jul 2019
   subroutine read_postnmlt(kpo,kth,kpv,po,th,pv,post_namelist)
@@ -357,7 +357,7 @@ subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
 
     !> Finalize post step.
     !>
-    !> @param[in] post_gribversion ???
+    !> @param[in] post_gribversion grib version(1 or 2) used in post
     !>
     !> @author Jun Wang @date Jul 2019
     subroutine post_finalize(post_gribversion)
