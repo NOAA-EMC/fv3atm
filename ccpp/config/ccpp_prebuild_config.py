@@ -192,6 +192,7 @@ SCHEME_FILES = [
     'physics/physics/SFC_Layer/UFS/sfc_nst_post.f90',
     'physics/physics/SFC_Models/Land/RUC/lsm_ruc.F90',
     'physics/physics/SFC_Models/SeaIce/CICE/sfc_cice.f',
+    'physics/physics/SFC_Models/Land/sfc_land.F90',
     'physics/physics/SFC_Models/Land/Noah/lsm_noah.f',
     'physics/physics/SFC_Models/Land/Noahmp/noahmpdrv.F90',
     'physics/physics/SFC_Models/Lake/Flake/flake_driver.F90',
