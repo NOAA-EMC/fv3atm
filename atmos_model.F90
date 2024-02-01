@@ -1977,6 +1977,58 @@ end subroutine update_atmos_chemistry
             endif
           endif
 
+! get zonal ocean current:
+!--------------------------------------------------------------------------
+          fldname = 'ocn_current_zonal'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cplocn2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  GFS_Data(nb)%Sfcprop%usfco(ix) = zero
+                  if (GFS_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then  ! ocean points
+                    if(mergeflg(i,j)) then
+                     GFS_Data(nb)%Sfcprop%usfco(ix)       =  zero
+                      datar8(i,j) = zero
+                    else
+                      GFS_Data(nb)%Sfcprop%usfco(ix)       = datar8(i,j)
+                    endif
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get usfco from mediator'
+            endif
+          endif
+
+! get meridional ocean current:
+!--------------------------------------------------------------------------
+          fldname = 'ocn_current_merid'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cplocn2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  GFS_Data(nb)%Sfcprop%vsfco(ix) = zero
+                  if (GFS_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then  ! ocean points
+                    if(mergeflg(i,j)) then
+                     GFS_Data(nb)%Sfcprop%vsfco(ix)       =  zero
+                      datar8(i,j) = zero
+                    else
+                      GFS_Data(nb)%Sfcprop%vsfco(ix)       = datar8(i,j)
+                    endif
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get vsfco from mediator'
+            endif
+          endif
+
 ! get sea ice fraction:  fice or sea ice concentration from the mediator
 !-----------------------------------------------------------------------
           fldname = 'ice_fraction'
