@@ -901,6 +901,7 @@ module GFS_typedefs
     !--- new microphysical switch
     integer              :: imp_physics                    !< choice of microphysics scheme
     integer              :: imp_physics_gfdl          = 11 !< choice of GFDL     microphysics scheme
+    integer              :: imp_physics_gfdl_v3       = 13 !< choice of GFDL     microphysics version 3 scheme
     integer              :: imp_physics_thompson      = 8  !< choice of Thompson microphysics scheme
     integer              :: imp_physics_wsm6          = 6  !< choice of WSMG     microphysics scheme
     integer              :: imp_physics_zhao_carr     = 99 !< choice of Zhao-Carr microphysics scheme
@@ -4691,7 +4692,9 @@ module GFS_typedefs
     Model%use_ufo          = use_ufo
     Model%exticeden        = exticeden
     if (Model%exticeden .and. &
-      (Model%imp_physics /= Model%imp_physics_gfdl .and. Model%imp_physics /= Model%imp_physics_thompson .and. &
+      (Model%imp_physics /= Model%imp_physics_gfdl     .and. &
+       Model%imp_physics /= Model%imp_physics_gfdl_v3  .and. &
+       Model%imp_physics /= Model%imp_physics_thompson .and. &
        Model%imp_physics /= Model%imp_physics_nssl )) then
       !see GFS_MP_generic_post.F90; exticeden is only compatible with GFDL,
       !Thompson, or NSSL MP
@@ -6038,7 +6041,8 @@ module GFS_typedefs
                  ' mg_alf=',          Model%mg_alf,          ' mg_qcmin=',      Model%mg_qcmin,     &
                  ' mg_do_ice_gmao=',  Model%mg_do_ice_gmao,  ' mg_do_liq_liu=', Model%mg_do_liq_liu
 
-    elseif (Model%imp_physics == Model%imp_physics_gfdl) then !GFDL microphysics
+    elseif (Model%imp_physics == Model%imp_physics_gfdl .or. & 
+             Model%imp_physics == Model%imp_physics_gfdl_v3) then !GFDL microphysics
       Model%npdf3d  = 0
       if(Model%effr_in) then
         Model%num_p3d = 5
@@ -6567,7 +6571,13 @@ module GFS_typedefs
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_gfdl) then
-        print *, ' GFDL microphysical parameters'
+        print *, ' GFDL microphysical parameters v1'
+        print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad
+        print *, ' lrefres                : ', Model%lrefres
+        print *, ' '
+      endif
+      if (Model%imp_physics == Model%imp_physics_gfdl_v3) then
+        print *, ' GFDL microphysical parameters v3'
         print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad
         print *, ' lrefres                : ', Model%lrefres
         print *, ' '
