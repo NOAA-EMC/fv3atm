@@ -365,7 +365,7 @@ contains
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
         j = jb - block%jsc + 1
-        destin_ptr(i,j) = factor * source_arr(ib,jb)
+        destin_ptr(i,j) = factor * source_arr(i,j)
       enddo
       localrc = ESMF_SUCCESS
     end if
@@ -440,7 +440,7 @@ contains
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          destin_ptr(i,j,k) = factor * source_arr(ib,jb,k)
+          destin_ptr(i,j,k) = factor * source_arr(i,j,k)
         enddo
       enddo
       localrc = ESMF_SUCCESS
@@ -523,7 +523,7 @@ contains
             jb = block%index(block_index)%jj(ix)
             i = ib - block%isc + 1
             j = jb - block%jsc + 1
-            destin_ptr(i,j,k) = factor * source_arr(ib,jb,k,slice)
+            destin_ptr(i,j,k) = factor * source_arr(i,j,k,slice)
           enddo
         enddo
         localrc = ESMF_SUCCESS
@@ -1004,7 +1004,7 @@ contains
         jb = block%index(block_index)%jj(ix)
         i = ib - block%isc + 1
         j = jb - block%jsc + 1
-        destin_ptr(i,j) = factor * source_arr(ib,jb)
+        destin_ptr(i,j) = factor * source_arr(i,j)
       enddo
       localrc = ESMF_SUCCESS
     end if
@@ -1079,7 +1079,7 @@ contains
           jb = block%index(block_index)%jj(ix)
           i = ib - block%isc + 1
           j = jb - block%jsc + 1
-          destin_ptr(i,j,k) = factor * source_arr(ib,jb,k)
+          destin_ptr(i,j,k) = factor * source_arr(i,j,k)
         enddo
       enddo
       localrc = ESMF_SUCCESS
@@ -1162,7 +1162,7 @@ contains
             jb = block%index(block_index)%jj(ix)
             i = ib - block%isc + 1
             j = jb - block%jsc + 1
-            destin_ptr(i,j,k) = factor * source_arr(ib,jb,k,slice)
+            destin_ptr(i,j,k) = factor * source_arr(i,j,k,slice)
           enddo
         enddo
         localrc = ESMF_SUCCESS
