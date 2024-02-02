@@ -156,7 +156,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 62
+  integer,          public, parameter :: NimportFields = 64
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -179,6 +179,8 @@ module module_cplfields
     FieldInfo("inst_ice_vis_dir_albedo                  ", "s"), &
     FieldInfo("wave_z0_roughness_length                 ", "s"), &
     FieldInfo("inst_tracer_diag_aod                     ", "s"), &
+    FieldInfo("ocn_current_zonal                        ", "s"), &
+    FieldInfo("ocn_current_merid                        ", "s"), &
 
     ! For receiving fluxes from mediator
     FieldInfo("stress_on_air_ocn_zonal                  ", "s"), &
