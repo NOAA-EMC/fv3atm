@@ -805,6 +805,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[usfco]
+  standard_name = x_ocean_current
+  long_name = zonal current at ocean surface
+  units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[vsfco]
+  standard_name = y_ocean_current
+  long_name = meridional current at ocean surface
+  units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [tsfcl]
   standard_name = surface_skin_temperature_over_land
   long_name = surface skin temperature over land
@@ -5853,6 +5867,12 @@
   standard_name = flag_for_surface_roughness_option_over_water
   long_name = surface roughness options over water
   units = flag
+  dimensions = ()
+  type = integer
+[icplocn2atm]
+  standard_name = control_for_air_sea_flux_computation_over_water
+  long_name = air-sea flux option
+  units = 1
   dimensions = ()
   type = integer
 [xkzminv]

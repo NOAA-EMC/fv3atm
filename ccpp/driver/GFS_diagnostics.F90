@@ -3932,6 +3932,28 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%tsfc(:)
     enddo
 
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'usfco'
+    ExtDiag(idx)%desc = 'surface zonal current'
+    ExtDiag(idx)%unit = 'm/s'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%usfco(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'vsfco'
+    ExtDiag(idx)%desc = 'surface meridional current'
+    ExtDiag(idx)%unit = 'm/s'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%vsfco(:)
+    enddo
+
     if (Model%frac_grid) then
       do num = 1,Model%kice
         write (xtra,'(i1)') num
