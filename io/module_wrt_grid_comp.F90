@@ -3418,11 +3418,13 @@
         call ESMF_VMGet(vm=vm, mpiCommunicator=wrt_mpi_comm, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        if (petCount > 1) then
-          call write_restart_netcdf(wrtTileFB, trim(tileFileName), .true., wrt_mpi_comm, localPet, rc)
-        else
+        !Restrict writing cubed sphere restart files to use serial I/O due to slowness
+        ! on WCOOS2 when large number of tasks in the write group is used
+        !if (petCount > 1) then
+        !  call write_restart_netcdf(wrtTileFB, trim(tileFileName), .true., wrt_mpi_comm, localPet, rc)
+        !else
           call write_restart_netcdf(wrtTileFB, trim(tileFileName), .false., wrt_mpi_comm, localPet, rc)
-        endif
+        !endif
 
       endif
       return
