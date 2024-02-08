@@ -14,7 +14,8 @@ module fv3atm_restart_io_mod
                                 register_axis, register_restart_field, &
                                 register_variable_attribute, register_field, &
                                 read_restart, write_restart, write_data,     &
-                                get_global_io_domain_indices, get_dimension_size
+                                get_global_io_domain_indices, get_dimension_size, &
+                                global_att_exists, get_global_attribute
   use mpp_domains_mod,    only: domain2d
   use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
        create_3d_field_and_add_to_bundle, copy_from_gfs_data, axis_type
@@ -515,6 +516,7 @@ contains
     !--- directory of the input files
     character(5)  :: indir='INPUT'
     character(37) :: infile
+    character(2)  :: file_ver
     !--- fms2_io file open logic
     logical :: amiopen
     logical :: override_frac_grid
@@ -644,8 +646,19 @@ contains
     amiopen=open_file(Sfc_restart, trim(infile), "read", domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
     if( .not.amiopen ) call mpp_error(FATAL, 'Error opening file'//trim(infile))
 
+    if (global_att_exists(Sfc_restart, "file_version")) then
+      call get_global_attribute(Sfc_restart, "file_version", file_ver)
+      if (file_ver == "V2") then
+        sfc%is_v2_file=.true.
+      endif
+    endif
+
     if(sfc%allocate_arrays(Model, Atm_block, .true., warm_start)) then
-      call sfc%fill_2d_names(Model, warm_start)
+      if (sfc%is_v2_file) then
+        call sfc%fill_2d_names_v2(Model, warm_start)
+      else
+        call sfc%fill_2d_names(Model, warm_start)
+      endif
       call sfc%register_axes(Model, Sfc_restart, .true., warm_start)
 
       ! Tell CLM Lake to allocate data, and register its axes and fields
