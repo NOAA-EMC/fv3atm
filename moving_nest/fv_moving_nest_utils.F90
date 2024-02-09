@@ -66,13 +66,11 @@ module fv_moving_nest_utils_mod
 #else
   use IPD_typedefs,      only: kind_phys => IPD_kind_phys
 #endif
-
 #ifdef OVERLOAD_R4
   use constantsR4_mod,   only: grav
 #else
   use constants_mod,     only: grav
 #endif
-
   use boundary_mod,      only: update_coarse_grid, update_coarse_grid_mpp
   use bounding_box_mod,  only: bbox, bbox_get_C2F_index, fill_bbox
   use fms2_io_mod,       only: read_data, write_data, open_file, close_file, register_axis, register_field
@@ -94,6 +92,12 @@ module fv_moving_nest_utils_mod
   integer, parameter:: f_p = selected_real_kind(20)
 #endif
 
+#ifdef OVERLOAD_R4
+  real, parameter:: real_snan=x'FFBFFFFF'
+#else
+  real, parameter:: real_snan=x'FFF7FFFFFFFFFFFF'
+#endif
+
   integer, parameter :: UWIND = 1
   integer, parameter :: VWIND = 2
 
@@ -112,41 +116,50 @@ module fv_moving_nest_utils_mod
 
   interface fill_nest_halos_from_parent
     module procedure fill_nest_halos_from_parent_r4_2d
-    module procedure fill_nest_halos_from_parent_r4_3d
+    module procedure fill_nest_halos_from_parent_r4_3d_highz
+    module procedure fill_nest_halos_from_parent_r4_3d_lowhighz
     module procedure fill_nest_halos_from_parent_r4_4d
 
     module procedure fill_nest_halos_from_parent_r8_2d
-    module procedure fill_nest_halos_from_parent_r8_3d
+    module procedure fill_nest_halos_from_parent_r8_3d_highz
+    module procedure fill_nest_halos_from_parent_r8_3d_lowhighz
     module procedure fill_nest_halos_from_parent_r8_4d
   end interface fill_nest_halos_from_parent
 
+
   interface alloc_halo_buffer
     module procedure alloc_halo_buffer_r4_2d
-    module procedure alloc_halo_buffer_r4_3d
+    module procedure alloc_halo_buffer_r4_3d_highz
+    module procedure alloc_halo_buffer_r4_3d_lowhighz
     module procedure alloc_halo_buffer_r4_4d
 
     module procedure alloc_halo_buffer_r8_2d
-    module procedure alloc_halo_buffer_r8_3d
+    module procedure alloc_halo_buffer_r8_3d_highz
+    module procedure alloc_halo_buffer_r8_3d_lowhighz
     module procedure alloc_halo_buffer_r8_4d
   end interface alloc_halo_buffer
 
   interface fill_nest_from_buffer
     module procedure fill_nest_from_buffer_r4_2d
-    module procedure fill_nest_from_buffer_r4_3d
+    module procedure fill_nest_from_buffer_r4_3d_highz
+    module procedure fill_nest_from_buffer_r4_3d_lowhighz
     module procedure fill_nest_from_buffer_r4_4d
 
     module procedure fill_nest_from_buffer_r8_2d
-    module procedure fill_nest_from_buffer_r8_3d
+    module procedure fill_nest_from_buffer_r8_3d_highz
+    module procedure fill_nest_from_buffer_r8_3d_lowhighz
     module procedure fill_nest_from_buffer_r8_4d
   end interface fill_nest_from_buffer
 
   interface fill_nest_from_buffer_cell_center
     module procedure fill_nest_from_buffer_cell_center_r4_2d
-    module procedure fill_nest_from_buffer_cell_center_r4_3d
+    module procedure fill_nest_from_buffer_cell_center_r4_3d_highz
+    module procedure fill_nest_from_buffer_cell_center_r4_3d_lowhighz
     module procedure fill_nest_from_buffer_cell_center_r4_4d
 
     module procedure fill_nest_from_buffer_cell_center_r8_2d
-    module procedure fill_nest_from_buffer_cell_center_r8_3d
+    module procedure fill_nest_from_buffer_cell_center_r8_3d_highz
+    module procedure fill_nest_from_buffer_cell_center_r8_3d_lowhighz
     module procedure fill_nest_from_buffer_cell_center_r8_4d
   end interface fill_nest_from_buffer_cell_center
 
@@ -161,6 +174,28 @@ module fv_moving_nest_utils_mod
     module procedure fill_grid_from_supergrid_r8_4d
   end interface fill_grid_from_supergrid
 
+  ! Masked subroutines
+  interface fill_nest_halos_from_parent_masked
+    module procedure fill_nest_halos_from_parent_masked_r8_2d_const
+    module procedure fill_nest_halos_from_parent_masked_r8_2d_2d
+    module procedure fill_nest_halos_from_parent_masked_r8_3d_lowhighZ_const
+    module procedure fill_nest_halos_from_parent_masked_r8_3d_lowhighZ_1d
+    module procedure fill_nest_halos_from_parent_masked_r8_3d_lowhighZ_2d
+  end interface fill_nest_halos_from_parent_masked
+
+  interface fill_nest_from_buffer_masked
+    module procedure fill_nest_from_buffer_masked_r8_2d_const
+    module procedure fill_nest_from_buffer_masked_r8_2d_2d
+    module procedure fill_nest_from_buffer_masked_r8_3d_1d
+    module procedure fill_nest_from_buffer_masked_r8_3d_2d
+  end interface fill_nest_from_buffer_masked
+
+  interface fill_nest_from_buffer_cell_center_masked
+    module procedure fill_nest_from_buffer_cell_center_masked_2d_const
+    module procedure fill_nest_from_buffer_cell_center_masked_2d_2d
+    module procedure fill_nest_from_buffer_cell_center_masked_3d_1d
+    module procedure fill_nest_from_buffer_cell_center_masked_3d_2d
+  end interface fill_nest_from_buffer_cell_center_masked
 
 contains
 
@@ -483,7 +518,7 @@ contains
   end subroutine fill_nest_halos_from_parent_r8_2d
 
 
-  subroutine fill_nest_halos_from_parent_masked(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, mask_var, mask_val, default_val)
+  subroutine fill_nest_halos_from_parent_masked_r8_2d_const(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, mask_var, parent_mask_var, mask_val, default_val)
     character(len=*), intent(in)                :: var_name
     real*8, allocatable, intent(inout)          :: data_var(:,:)
     integer, intent(in)                         :: interp_type
@@ -493,7 +528,8 @@ contains
     logical, intent(in)                         :: is_fine_pe
     type(nest_domain_type), intent(inout)       :: nest_domain
     integer, intent(in)                         :: position
-    real*4, allocatable, intent(in)             :: mask_var(:,:)
+    real, allocatable, intent(in)               :: mask_var(:,:)
+    real, allocatable, intent(in)               :: parent_mask_var(:,:)
     integer, intent(in)                         :: mask_val
     real*8, intent(in)                          :: default_val
 
@@ -529,10 +565,10 @@ contains
       !!
       !!===========================================================
 
-      call fill_nest_from_buffer_masked(interp_type, data_var, nbuffer, north_fine, north_coarse, NORTH, x_refine, y_refine, wt, ind, mask_var, mask_val, default_val)
-      call fill_nest_from_buffer_masked(interp_type, data_var, sbuffer, south_fine, south_coarse, SOUTH, x_refine, y_refine, wt, ind, mask_var, mask_val, default_val)
-      call fill_nest_from_buffer_masked(interp_type, data_var, ebuffer, east_fine, east_coarse, EAST, x_refine, y_refine, wt, ind, mask_var, mask_val, default_val)
-      call fill_nest_from_buffer_masked(interp_type, data_var, wbuffer, west_fine, west_coarse, WEST, x_refine, y_refine, wt, ind, mask_var, mask_val, default_val)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, nbuffer, north_fine, north_coarse, NORTH, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, sbuffer, south_fine, south_coarse, SOUTH, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, ebuffer, east_fine, east_coarse, EAST, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, wbuffer, west_fine, west_coarse, WEST, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
 
     endif
 
@@ -541,21 +577,24 @@ contains
     deallocate(ebuffer)
     deallocate(wbuffer)
 
-  end subroutine fill_nest_halos_from_parent_masked
+  end subroutine fill_nest_halos_from_parent_masked_r8_2d_const
 
-
-  subroutine fill_nest_halos_from_parent_r4_3d(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
+  subroutine fill_nest_halos_from_parent_masked_r8_2d_2d(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, mask_var, parent_mask_var, mask_val, default_grid)
     character(len=*), intent(in)                :: var_name
-    real*4, allocatable, intent(inout)          :: data_var(:,:,:)
+    real*8, allocatable, intent(inout)          :: data_var(:,:)
     integer, intent(in)                         :: interp_type
-    real, allocatable, intent(in)               :: wt(:,:,:)
+    real, allocatable, intent(in)               :: wt(:,:,:)   ! TODO should this also be real*8?
     integer, allocatable, intent(in)            :: ind(:,:,:)
     integer, intent(in)                         :: x_refine, y_refine
     logical, intent(in)                         :: is_fine_pe
     type(nest_domain_type), intent(inout)       :: nest_domain
-    integer, intent(in)                         :: position, nz
+    integer, intent(in)                         :: position
+    real, allocatable, intent(in)             :: mask_var(:,:)
+    real, allocatable, intent(in)             :: parent_mask_var(:,:)
+    integer, intent(in)                         :: mask_val
+    real, allocatable, intent(in)               :: default_grid(:,:)
 
-    real*4, dimension(:,:,:), allocatable :: nbuffer, sbuffer, ebuffer, wbuffer
+    real*8, dimension(:,:), allocatable :: nbuffer, sbuffer, ebuffer, wbuffer
     type(bbox)                          :: north_fine, north_coarse
     type(bbox)                          :: south_fine, south_coarse
     type(bbox)                          :: east_fine, east_coarse
@@ -571,10 +610,10 @@ contains
     !!
     !!===========================================================
 
-    call alloc_halo_buffer(nbuffer, north_fine, north_coarse, nest_domain, NORTH,  position, nz)
-    call alloc_halo_buffer(sbuffer, south_fine, south_coarse, nest_domain, SOUTH,  position, nz)
-    call alloc_halo_buffer(ebuffer, east_fine,  east_coarse,  nest_domain, EAST,   position, nz)
-    call alloc_halo_buffer(wbuffer, west_fine,  west_coarse,  nest_domain, WEST,   position, nz)
+    call alloc_halo_buffer(nbuffer, north_fine, north_coarse, nest_domain, NORTH,  position)
+    call alloc_halo_buffer(sbuffer, south_fine, south_coarse, nest_domain, SOUTH,  position)
+    call alloc_halo_buffer(ebuffer, east_fine,  east_coarse,  nest_domain, EAST,   position)
+    call alloc_halo_buffer(wbuffer, west_fine,  west_coarse,  nest_domain, WEST,   position)
 
     ! Passes data from coarse grid to fine grid's halo
     call mpp_update_nest_fine(data_var, nest_domain, wbuffer, sbuffer, ebuffer, nbuffer, nest_level, position=position)
@@ -587,10 +626,10 @@ contains
       !!
       !!===========================================================
 
-      call fill_nest_from_buffer(interp_type, data_var, nbuffer, north_fine, north_coarse, nz, NORTH, x_refine, y_refine, wt, ind)
-      call fill_nest_from_buffer(interp_type, data_var, sbuffer, south_fine, south_coarse, nz, SOUTH, x_refine, y_refine, wt, ind)
-      call fill_nest_from_buffer(interp_type, data_var, ebuffer, east_fine, east_coarse, nz, EAST, x_refine, y_refine, wt, ind)
-      call fill_nest_from_buffer(interp_type, data_var, wbuffer, west_fine, west_coarse, nz, WEST, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, nbuffer, north_fine, north_coarse, NORTH, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, sbuffer, south_fine, south_coarse, SOUTH, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, ebuffer, east_fine, east_coarse, EAST, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, wbuffer, west_fine, west_coarse, WEST, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
 
     endif
 
@@ -599,10 +638,12 @@ contains
     deallocate(ebuffer)
     deallocate(wbuffer)
 
-  end subroutine fill_nest_halos_from_parent_r4_3d
+  end subroutine fill_nest_halos_from_parent_masked_r8_2d_2d
 
 
-  subroutine fill_nest_halos_from_parent_r8_3d(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
+
+
+  subroutine fill_nest_halos_from_parent_masked_r8_3d_lowhighz_const(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, low_z, high_z, mask_var, parent_mask_var, mask_val, default_val)
     character(len=*), intent(in)                :: var_name
     real*8, allocatable, intent(inout)          :: data_var(:,:,:)
     integer, intent(in)                         :: interp_type
@@ -611,7 +652,36 @@ contains
     integer, intent(in)                         :: x_refine, y_refine
     logical, intent(in)                         :: is_fine_pe
     type(nest_domain_type), intent(inout)       :: nest_domain
-    integer, intent(in)                         :: position, nz
+    integer, intent(in)                         :: position, low_z, high_z
+    real, allocatable, intent(in)             :: mask_var(:,:)
+    real, allocatable, intent(in)             :: parent_mask_var(:,:)
+    integer, intent(in)                         :: mask_val
+    real*8, intent(in)                          :: default_val
+
+    real*8                          :: default_vector(low_z:high_z)
+
+    default_vector = default_val
+
+    call fill_nest_halos_from_parent_masked_r8_3d_lowhighz_1d(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, low_z, high_z, mask_var, parent_mask_var, mask_val, default_vector)
+
+  end subroutine fill_nest_halos_from_parent_masked_r8_3d_lowhighz_const
+
+
+
+  subroutine fill_nest_halos_from_parent_masked_r8_3d_lowhighz_1d(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, low_z, high_z, mask_var, parent_mask_var, mask_val, default_val)
+    character(len=*), intent(in)                :: var_name
+    real*8, allocatable, intent(inout)          :: data_var(:,:,:)
+    integer, intent(in)                         :: interp_type
+    real, allocatable, intent(in)               :: wt(:,:,:)   ! TODO should this be real*8?
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    integer, intent(in)                         :: x_refine, y_refine
+    logical, intent(in)                         :: is_fine_pe
+    type(nest_domain_type), intent(inout)       :: nest_domain
+    integer, intent(in)                         :: position, low_z, high_z
+    real, allocatable, intent(in)             :: mask_var(:,:)
+    real, allocatable, intent(in)             :: parent_mask_var(:,:)
+    integer, intent(in)                         :: mask_val
+    real*8, intent(in)                          :: default_val(low_z:high_z)
 
     real*8, dimension(:,:,:), allocatable :: nbuffer, sbuffer, ebuffer, wbuffer
     type(bbox)                          :: north_fine, north_coarse
@@ -629,10 +699,10 @@ contains
     !!
     !!===========================================================
 
-    call alloc_halo_buffer(nbuffer, north_fine, north_coarse, nest_domain, NORTH,  position, nz)
-    call alloc_halo_buffer(sbuffer, south_fine, south_coarse, nest_domain, SOUTH,  position, nz)
-    call alloc_halo_buffer(ebuffer, east_fine,  east_coarse,  nest_domain, EAST,   position, nz)
-    call alloc_halo_buffer(wbuffer, west_fine,  west_coarse,  nest_domain, WEST,   position, nz)
+    call alloc_halo_buffer(nbuffer, north_fine, north_coarse, nest_domain, NORTH,  position, low_z, high_z)
+    call alloc_halo_buffer(sbuffer, south_fine, south_coarse, nest_domain, SOUTH,  position, low_z, high_z)
+    call alloc_halo_buffer(ebuffer, east_fine,  east_coarse,  nest_domain, EAST,   position, low_z, high_z)
+    call alloc_halo_buffer(wbuffer, west_fine,  west_coarse,  nest_domain, WEST,   position, low_z, high_z)
 
     ! Passes data from coarse grid to fine grid's halo
     call mpp_update_nest_fine(data_var, nest_domain, wbuffer, sbuffer, ebuffer, nbuffer, nest_level, position=position)
@@ -645,10 +715,10 @@ contains
       !!
       !!===========================================================
 
-      call fill_nest_from_buffer(interp_type, data_var, nbuffer, north_fine, north_coarse, nz, NORTH, x_refine, y_refine, wt, ind)
-      call fill_nest_from_buffer(interp_type, data_var, sbuffer, south_fine, south_coarse, nz, SOUTH, x_refine, y_refine, wt, ind)
-      call fill_nest_from_buffer(interp_type, data_var, ebuffer, east_fine, east_coarse, nz, EAST, x_refine, y_refine, wt, ind)
-      call fill_nest_from_buffer(interp_type, data_var, wbuffer, west_fine, west_coarse, nz, WEST, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, nbuffer, north_fine, north_coarse, low_z, high_z, NORTH, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, sbuffer, south_fine, south_coarse, low_z, high_z, SOUTH, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, ebuffer, east_fine, east_coarse, low_z, high_z, EAST, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, wbuffer, west_fine, west_coarse, low_z, high_z, WEST, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
 
     endif
 
@@ -657,7 +727,216 @@ contains
     deallocate(ebuffer)
     deallocate(wbuffer)
 
-  end subroutine fill_nest_halos_from_parent_r8_3d
+  end subroutine fill_nest_halos_from_parent_masked_r8_3d_lowhighz_1d
+
+
+  subroutine fill_nest_halos_from_parent_masked_r8_3d_lowhighz_2d(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, low_z, high_z, mask_var, parent_mask_var, mask_val, default_grid)
+    character(len=*), intent(in)                :: var_name
+    real*8, allocatable, intent(inout)          :: data_var(:,:,:)
+    integer, intent(in)                         :: interp_type
+    real, allocatable, intent(in)               :: wt(:,:,:)   ! TODO should this be real*8?
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    integer, intent(in)                         :: x_refine, y_refine
+    logical, intent(in)                         :: is_fine_pe
+    type(nest_domain_type), intent(inout)       :: nest_domain
+    integer, intent(in)                         :: position, low_z, high_z
+    real, allocatable, intent(in)             :: mask_var(:,:)
+    real, allocatable, intent(in)             :: parent_mask_var(:,:)
+    integer, intent(in)                         :: mask_val
+    real, allocatable, intent(in)               :: default_grid(:,:)
+
+    real*8, dimension(:,:,:), allocatable :: nbuffer, sbuffer, ebuffer, wbuffer
+    type(bbox)                          :: north_fine, north_coarse
+    type(bbox)                          :: south_fine, south_coarse
+    type(bbox)                          :: east_fine, east_coarse
+    type(bbox)                          :: west_fine, west_coarse
+    integer                             :: this_pe
+    integer                             :: nest_level = 1  ! TODO allow to vary
+
+    this_pe = mpp_pe()
+
+    !!===========================================================
+    !!
+    !! Fill halo buffers
+    !!
+    !!===========================================================
+
+    call alloc_halo_buffer(nbuffer, north_fine, north_coarse, nest_domain, NORTH,  position, low_z, high_z)
+    call alloc_halo_buffer(sbuffer, south_fine, south_coarse, nest_domain, SOUTH,  position, low_z, high_z)
+    call alloc_halo_buffer(ebuffer, east_fine,  east_coarse,  nest_domain, EAST,   position, low_z, high_z)
+    call alloc_halo_buffer(wbuffer, west_fine,  west_coarse,  nest_domain, WEST,   position, low_z, high_z)
+
+    ! Passes data from coarse grid to fine grid's halo
+    call mpp_update_nest_fine(data_var, nest_domain, wbuffer, sbuffer, ebuffer, nbuffer, nest_level, position=position)
+
+    if (is_fine_pe) then
+
+      !!===========================================================
+      !!
+      !! Apply halo data
+      !!
+      !!===========================================================
+
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, nbuffer, north_fine, north_coarse, low_z, high_z, NORTH, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, sbuffer, south_fine, south_coarse, low_z, high_z, SOUTH, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, ebuffer, east_fine, east_coarse, low_z, high_z, EAST, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+      call fill_nest_from_buffer_masked(var_name, interp_type, data_var, wbuffer, west_fine, west_coarse, low_z, high_z, WEST, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+
+    endif
+
+    deallocate(nbuffer)
+    deallocate(sbuffer)
+    deallocate(ebuffer)
+    deallocate(wbuffer)
+
+  end subroutine fill_nest_halos_from_parent_masked_r8_3d_lowhighz_2d
+
+
+
+  subroutine fill_nest_halos_from_parent_r4_3d_highz(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
+    character(len=*), intent(in)                :: var_name
+    real*4, allocatable, intent(inout)          :: data_var(:,:,:)
+    integer, intent(in)                         :: interp_type
+    real, allocatable, intent(in)               :: wt(:,:,:)
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    integer, intent(in)                         :: x_refine, y_refine
+    logical, intent(in)                         :: is_fine_pe
+    type(nest_domain_type), intent(inout)       :: nest_domain
+    integer, intent(in)                         :: position, nz
+
+
+    call fill_nest_halos_from_parent_r4_3d_lowhighz(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, 1, nz)
+
+  end subroutine fill_nest_halos_from_parent_r4_3d_highz
+
+  subroutine fill_nest_halos_from_parent_r4_3d_lowhighz(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, low_z, high_z)
+    character(len=*), intent(in)                :: var_name
+    real*4, allocatable, intent(inout)          :: data_var(:,:,:)
+    integer, intent(in)                         :: interp_type
+    real, allocatable, intent(in)               :: wt(:,:,:)
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    integer, intent(in)                         :: x_refine, y_refine
+    logical, intent(in)                         :: is_fine_pe
+    type(nest_domain_type), intent(inout)       :: nest_domain
+    integer, intent(in)                         :: position, low_z, high_z
+
+    real*4, dimension(:,:,:), allocatable :: nbuffer, sbuffer, ebuffer, wbuffer
+    type(bbox)                          :: north_fine, north_coarse
+    type(bbox)                          :: south_fine, south_coarse
+    type(bbox)                          :: east_fine, east_coarse
+    type(bbox)                          :: west_fine, west_coarse
+    integer                             :: this_pe
+    integer                             :: nest_level = 1  ! TODO allow to vary
+
+    this_pe = mpp_pe()
+
+    !!===========================================================
+    !!
+    !! Fill halo buffers
+    !!
+    !!===========================================================
+
+    call alloc_halo_buffer(nbuffer, north_fine, north_coarse, nest_domain, NORTH,  position, low_z, high_z)
+    call alloc_halo_buffer(sbuffer, south_fine, south_coarse, nest_domain, SOUTH,  position, low_z, high_z)
+    call alloc_halo_buffer(ebuffer, east_fine,  east_coarse,  nest_domain, EAST,   position, low_z, high_z)
+    call alloc_halo_buffer(wbuffer, west_fine,  west_coarse,  nest_domain, WEST,   position, low_z, high_z)
+
+    ! Passes data from coarse grid to fine grid's halo
+    call mpp_update_nest_fine(data_var, nest_domain, wbuffer, sbuffer, ebuffer, nbuffer, nest_level, position=position)
+
+    if (is_fine_pe) then
+
+      !!===========================================================
+      !!
+      !! Apply halo data
+      !!
+      !!===========================================================
+
+      call fill_nest_from_buffer(interp_type, data_var, nbuffer, north_fine, north_coarse, low_z, high_z, NORTH, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer(interp_type, data_var, sbuffer, south_fine, south_coarse, low_z, high_z, SOUTH, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer(interp_type, data_var, ebuffer, east_fine, east_coarse, low_z, high_z, EAST, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer(interp_type, data_var, wbuffer, west_fine, west_coarse, low_z, high_z, WEST, x_refine, y_refine, wt, ind)
+
+    endif
+
+    deallocate(nbuffer)
+    deallocate(sbuffer)
+    deallocate(ebuffer)
+    deallocate(wbuffer)
+
+  end subroutine fill_nest_halos_from_parent_r4_3d_lowhighz
+
+  subroutine fill_nest_halos_from_parent_r8_3d_highz(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
+    character(len=*), intent(in)                :: var_name
+    real*8, allocatable, intent(inout)          :: data_var(:,:,:)
+    integer, intent(in)                         :: interp_type
+    real, allocatable, intent(in)               :: wt(:,:,:)   ! TODO should this be real*8?
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    integer, intent(in)                         :: x_refine, y_refine
+    logical, intent(in)                         :: is_fine_pe
+    type(nest_domain_type), intent(inout)       :: nest_domain
+    integer, intent(in)                         :: position, nz
+
+    call fill_nest_halos_from_parent_r8_3d_lowhighz(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, 1, nz)
+
+  end subroutine fill_nest_halos_from_parent_r8_3d_highz
+
+  subroutine fill_nest_halos_from_parent_r8_3d_lowhighz(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, low_z, high_z)
+    character(len=*), intent(in)                :: var_name
+    real*8, allocatable, intent(inout)          :: data_var(:,:,:)
+    integer, intent(in)                         :: interp_type
+    real, allocatable, intent(in)               :: wt(:,:,:)   ! TODO should this be real*8?
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    integer, intent(in)                         :: x_refine, y_refine
+    logical, intent(in)                         :: is_fine_pe
+    type(nest_domain_type), intent(inout)       :: nest_domain
+    integer, intent(in)                         :: position, low_z, high_z
+
+    real*8, dimension(:,:,:), allocatable :: nbuffer, sbuffer, ebuffer, wbuffer
+    type(bbox)                          :: north_fine, north_coarse
+    type(bbox)                          :: south_fine, south_coarse
+    type(bbox)                          :: east_fine, east_coarse
+    type(bbox)                          :: west_fine, west_coarse
+    integer                             :: this_pe
+    integer                             :: nest_level = 1  ! TODO allow to vary
+
+    this_pe = mpp_pe()
+
+    !!===========================================================
+    !!
+    !! Fill halo buffers
+    !!
+    !!===========================================================
+
+    call alloc_halo_buffer(nbuffer, north_fine, north_coarse, nest_domain, NORTH,  position, low_z, high_z)
+    call alloc_halo_buffer(sbuffer, south_fine, south_coarse, nest_domain, SOUTH,  position, low_z, high_z)
+    call alloc_halo_buffer(ebuffer, east_fine,  east_coarse,  nest_domain, EAST,   position, low_z, high_z)
+    call alloc_halo_buffer(wbuffer, west_fine,  west_coarse,  nest_domain, WEST,   position, low_z, high_z)
+
+    ! Passes data from coarse grid to fine grid's halo
+    call mpp_update_nest_fine(data_var, nest_domain, wbuffer, sbuffer, ebuffer, nbuffer, nest_level, position=position)
+
+    if (is_fine_pe) then
+
+      !!===========================================================
+      !!
+      !! Apply halo data
+      !!
+      !!===========================================================
+
+      call fill_nest_from_buffer(interp_type, data_var, nbuffer, north_fine, north_coarse, low_z, high_z, NORTH, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer(interp_type, data_var, sbuffer, south_fine, south_coarse, low_z, high_z, SOUTH, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer(interp_type, data_var, ebuffer, east_fine, east_coarse, low_z, high_z, EAST, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer(interp_type, data_var, wbuffer, west_fine, west_coarse, low_z, high_z, WEST, x_refine, y_refine, wt, ind)
+
+    endif
+
+    deallocate(nbuffer)
+    deallocate(sbuffer)
+    deallocate(ebuffer)
+    deallocate(wbuffer)
+
+  end subroutine fill_nest_halos_from_parent_r8_3d_lowhighz
 
 
   subroutine fill_nest_halos_from_parent_r4_4d(var_name, data_var, interp_type, wt, ind, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
@@ -836,17 +1115,27 @@ contains
   end subroutine alloc_halo_buffer_r4_2d
 
 
-  subroutine alloc_halo_buffer_r4_3d(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, nz)
+  subroutine alloc_halo_buffer_r4_3d_highz(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, high_z)
     real*4, dimension(:,:,:), allocatable, intent(out) :: buffer
     type(bbox), intent(out)                            :: bbox_fine, bbox_coarse
     type(nest_domain_type), intent(in)                 :: nest_domain
-    integer, intent(in)                                :: direction, position, nz
+    integer, intent(in)                                :: direction, position, high_z
+
+    call alloc_halo_buffer_r4_3d_lowhighz(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, 1, high_z)
+
+  end subroutine alloc_halo_buffer_r4_3d_highz
+
+  subroutine alloc_halo_buffer_r4_3d_lowhighz(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, low_z, high_z)
+    real*4, dimension(:,:,:), allocatable, intent(out) :: buffer
+    type(bbox), intent(out)                            :: bbox_fine, bbox_coarse
+    type(nest_domain_type), intent(in)                 :: nest_domain
+    integer, intent(in)                                :: direction, position, low_z, high_z
 
 
     call bbox_get_C2F_index(nest_domain, bbox_fine, bbox_coarse, direction,  position)
 
     if( bbox_coarse.ie .GE. bbox_coarse.is .AND. bbox_coarse.je .GE. bbox_coarse.js ) then
-      allocate(buffer(bbox_coarse.is:bbox_coarse.ie, bbox_coarse.js:bbox_coarse.je,1:nz))
+      allocate(buffer(bbox_coarse.is:bbox_coarse.ie, bbox_coarse.js:bbox_coarse.je, low_z:high_z))
     else
       ! The buffer must have some storage allocated, whether it's a useful buffer or just a dummy.
       allocate(buffer(1,1,1))
@@ -854,19 +1143,29 @@ contains
 
     buffer = 0
 
-  end subroutine alloc_halo_buffer_r4_3d
+  end subroutine alloc_halo_buffer_r4_3d_lowhighz
 
 
-  subroutine alloc_halo_buffer_r8_3d(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, nz)
+  subroutine alloc_halo_buffer_r8_3d_highz(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, high_z)
     real*8, dimension(:,:,:), allocatable, intent(out) :: buffer
     type(bbox), intent(out)                            :: bbox_fine, bbox_coarse
     type(nest_domain_type), intent(in)                 :: nest_domain
-    integer, intent(in)                                :: direction, position, nz
+    integer, intent(in)                                :: direction, position, high_z
+
+    call alloc_halo_buffer_r8_3d_lowhighz(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, 1, high_z)
+
+  end subroutine alloc_halo_buffer_r8_3d_highz
+
+  subroutine alloc_halo_buffer_r8_3d_lowhighz(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, low_z, high_z)
+    real*8, dimension(:,:,:), allocatable, intent(out) :: buffer
+    type(bbox), intent(out)                            :: bbox_fine, bbox_coarse
+    type(nest_domain_type), intent(in)                 :: nest_domain
+    integer, intent(in)                                :: direction, position, low_z, high_z
 
     call bbox_get_C2F_index(nest_domain, bbox_fine, bbox_coarse, direction,  position)
 
     if( bbox_coarse.ie .GE. bbox_coarse.is .AND. bbox_coarse.je .GE. bbox_coarse.js ) then
-      allocate(buffer(bbox_coarse.is:bbox_coarse.ie, bbox_coarse.js:bbox_coarse.je,1:nz))
+      allocate(buffer(bbox_coarse.is:bbox_coarse.ie, bbox_coarse.js:bbox_coarse.je, low_z:high_z))
     else
       ! The buffer must have some storage allocated, whether it's a useful buffer or just a dummy.
       allocate(buffer(1,1,1))
@@ -874,7 +1173,7 @@ contains
 
     buffer = 0
 
-  end subroutine alloc_halo_buffer_r8_3d
+  end subroutine alloc_halo_buffer_r8_3d_lowhighz
 
 
   subroutine alloc_halo_buffer_r4_4d(buffer, bbox_fine, bbox_coarse, nest_domain, direction, position, nz, n4d)
@@ -1522,9 +1821,10 @@ contains
   end subroutine fill_nest_from_buffer_r8_2d
 
 
-  subroutine fill_nest_from_buffer_masked(interp_type, x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, mask_val, default_val)
+  subroutine fill_nest_from_buffer_masked_r8_2d_const(var_name, interp_type, x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
     implicit none
 
+    character(len=*), intent(in)                :: var_name
     integer, intent(in)                         :: interp_type
     real*8, allocatable, intent(inout)          :: x(:,:)
     real*8, allocatable, intent(in)             :: buffer(:,:)
@@ -1533,6 +1833,7 @@ contains
     real, allocatable, intent(in)               :: wt(:,:,:)    ! The final dimension is always 4
     integer, allocatable, intent(in)            :: ind(:,:,:)
     real, allocatable, intent(in)               :: mask_var(:,:)
+    real, allocatable, intent(in)               :: parent_mask_var(:,:)
     integer, intent(in)                         :: mask_val
     real*8, intent(in)                          :: default_val
 
@@ -1542,12 +1843,14 @@ contains
     ! Output the interpolation type
     select case (interp_type)
     case (1)
+      print '("[WARN] fv_moving_nest_utils.F90 fill_nest_from_buffer_mask interp_type 1 not implemented.  var_name=",A16)', var_name
       call fill_nest_from_buffer_cell_center("A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind)
       !     case (3)  ! C grid staggered
     case (4)
+      print '("[WARN] fv_moving_nest_utils.F90 fill_nest_from_buffer_mask interp_type 4 not implemented. var_name=",A16)', var_name
       call fill_nest_from_buffer_cell_center("D", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind)
     case (7)
-      call fill_nest_from_buffer_cell_center_masked("A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, mask_val, default_val)
+      call fill_nest_from_buffer_cell_center_masked(var_name, "A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
     case (9)
       !call fill_nest_from_buffer_nearest_neighbor(x, buffer, bbox_fine, bbox_coarse, dir, wt)
       call mpp_error(FATAL, '2D fill_nest_from_buffer_nearest_neighbor not yet implemented.')
@@ -1555,11 +1858,134 @@ contains
       call mpp_error(FATAL, 'interp_single_nest got invalid value for interp_type from namelist.')
     end select
 
-  end subroutine fill_nest_from_buffer_masked
+  end subroutine fill_nest_from_buffer_masked_r8_2d_const
+
+  subroutine fill_nest_from_buffer_masked_r8_2d_2d(var_name, interp_type, x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+    implicit none
+
+    character(len=*), intent(in)                :: var_name
+    integer, intent(in)                         :: interp_type
+    real*8, allocatable, intent(inout)          :: x(:,:)
+    real*8, allocatable, intent(in)             :: buffer(:,:)
+    type(bbox), intent(in)                      :: bbox_fine, bbox_coarse
+    integer, intent(in)                         :: dir, x_refine, y_refine
+    real, allocatable, intent(in)               :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    real, allocatable, intent(in)               :: mask_var(:,:)
+    real, allocatable, intent(in)               :: parent_mask_var(:,:)
+    integer, intent(in)                         :: mask_val
+    real, allocatable, intent(in)               :: default_grid(:,:)
+
+    integer   :: this_pe
+    this_pe = mpp_pe()
+
+    ! Output the interpolation type
+    select case (interp_type)
+    case (1)
+      print '("[WARN] fv_moving_nest_utils.F90 fill_nest_from_buffer_mask interp_type 1 not implemented.  var_name=",A16)', var_name
+      call fill_nest_from_buffer_cell_center("A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind)
+      !     case (3)  ! C grid staggered
+    case (4)
+      print '("[WARN] fv_moving_nest_utils.F90 fill_nest_from_buffer_mask interp_type 4 not implemented. var_name=",A16)', var_name
+      call fill_nest_from_buffer_cell_center("D", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind)
+    case (7)
+      call fill_nest_from_buffer_cell_center_masked(var_name, "A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+    case (9)
+      !call fill_nest_from_buffer_nearest_neighbor(x, buffer, bbox_fine, bbox_coarse, dir, wt)
+      call mpp_error(FATAL, '2D fill_nest_from_buffer_nearest_neighbor not yet implemented.')
+    case default
+      call mpp_error(FATAL, 'interp_single_nest got invalid value for interp_type from namelist.')
+    end select
+
+  end subroutine fill_nest_from_buffer_masked_r8_2d_2d
+
+
+  subroutine fill_nest_from_buffer_masked_r8_3d_1d(var_name, interp_type, x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_vector)
+    implicit none
+
+    character(len=*), intent(in)                :: var_name
+    integer, intent(in)                         :: interp_type
+    real*8, allocatable, intent(inout)          :: x(:,:,:)
+    real*8, allocatable, intent(in)             :: buffer(:,:,:)
+    type(bbox), intent(in)                      :: bbox_fine, bbox_coarse
+    integer, intent(in)                         :: dir, x_refine, y_refine, low_z, high_z
+    real, allocatable, intent(in)               :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    real, allocatable, intent(in)               :: mask_var(:,:)
+    real, allocatable, intent(in)               :: parent_mask_var(:,:)
+    integer, intent(in)                         :: mask_val
+    real*8, intent(in)                          :: default_vector(low_z:high_z)
+
+    integer   :: this_pe
+    this_pe = mpp_pe()
+
+    ! Output the interpolation type
+    select case (interp_type)
+    case (1)
+      print '("[WARN] fv_moving_nest_utils.F90 fill_nest_from_buffer_mask interp_type 1 not implemented.  var_name=",A16)', var_name
+      call mpp_error(FATAL, '3D fill_nest_from_buffer_nearest_neighbor not yet implemented.')
+      !call fill_nest_from_buffer_cell_center("A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind)
+      !     case (3)  ! C grid staggered
+    case (4)
+      print '("[WARN] fv_moving_nest_utils.F90 fill_nest_from_buffer_mask interp_type 4 not implemented. var_name=",A16)', var_name
+      call mpp_error(FATAL, '3D fill_nest_from_buffer_nearest_neighbor not yet implemented.')
+      !call fill_nest_from_buffer_cell_center("D", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind)
+    case (7)
+      call fill_nest_from_buffer_cell_center_masked(var_name, "A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, low_z, high_z, default_vector)
+    case (9)
+      !call fill_nest_from_buffer_nearest_neighbor(x, buffer, bbox_fine, bbox_coarse, dir, wt)
+      call mpp_error(FATAL, '3D fill_nest_from_buffer_nearest_neighbor not yet implemented.')
+    case default
+      call mpp_error(FATAL, 'interp_single_nest got invalid value for interp_type from namelist.')
+    end select
+
+  end subroutine fill_nest_from_buffer_masked_r8_3d_1d
+
+
+  subroutine fill_nest_from_buffer_masked_r8_3d_2d(var_name, interp_type, x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+    implicit none
+
+    character(len=*), intent(in)                :: var_name
+    integer, intent(in)                         :: interp_type
+    real*8, allocatable, intent(inout)          :: x(:,:,:)
+    real*8, allocatable, intent(in)             :: buffer(:,:,:)
+    type(bbox), intent(in)                      :: bbox_fine, bbox_coarse
+    integer, intent(in)                         :: dir, x_refine, y_refine, low_z, high_z
+    real, allocatable, intent(in)               :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+    real, allocatable, intent(in)               :: mask_var(:,:)
+    real, allocatable, intent(in)               :: parent_mask_var(:,:)
+    integer, intent(in)                         :: mask_val
+    real, allocatable, intent(in)               :: default_grid(:,:)
+
+    integer   :: this_pe
+    this_pe = mpp_pe()
+
+    ! Output the interpolation type
+    select case (interp_type)
+    case (1)
+      print '("[WARN] fv_moving_nest_utils.F90 fill_nest_from_buffer_mask interp_type 1 not implemented.  var_name=",A16)', var_name
+      call mpp_error(FATAL, '3D fill_nest_from_buffer_nearest_neighbor not yet implemented.')
+      !call fill_nest_from_buffer_cell_center("A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind)
+      !     case (3)  ! C grid staggered
+    case (4)
+      print '("[WARN] fv_moving_nest_utils.F90 fill_nest_from_buffer_mask interp_type 4 not implemented. var_name=",A16)', var_name
+      call mpp_error(FATAL, '3D fill_nest_from_buffer_nearest_neighbor not yet implemented.')
+      !call fill_nest_from_buffer_cell_center("D", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind)
+    case (7)
+      call fill_nest_from_buffer_cell_center_masked(var_name, "A", x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, low_z, high_z, default_grid)
+    case (9)
+      !call fill_nest_from_buffer_nearest_neighbor(x, buffer, bbox_fine, bbox_coarse, dir, wt)
+      call mpp_error(FATAL, '3D fill_nest_from_buffer_nearest_neighbor not yet implemented.')
+    case default
+      call mpp_error(FATAL, 'interp_single_nest got invalid value for interp_type from namelist.')
+    end select
+
+  end subroutine fill_nest_from_buffer_masked_r8_3d_2d
 
 
 
-  subroutine fill_nest_from_buffer_r4_3d(interp_type, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+  subroutine fill_nest_from_buffer_r4_3d_highz(interp_type, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
     implicit none
 
     integer, intent(in)                         :: interp_type
@@ -1571,27 +1997,43 @@ contains
     real, allocatable, intent(in)               :: wt(:,:,:)    ! The final dimension is always 4
     integer, allocatable, intent(in)            :: ind(:,:,:)
 
+    call fill_nest_from_buffer_r4_3d_lowhighz(interp_type, x, buffer, bbox_fine, bbox_coarse, 1, nz, dir, x_refine, y_refine, wt, ind)
+
+  end subroutine fill_nest_from_buffer_r4_3d_highz
+
+  subroutine fill_nest_from_buffer_r4_3d_lowhighz(interp_type, x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind)
+    implicit none
+
+    integer, intent(in)                         :: interp_type
+    real*4, allocatable, intent(inout)          :: x(:,:,:)
+    real*4, allocatable, intent(in)             :: buffer(:,:,:)
+    type(bbox), intent(in)                      :: bbox_fine, bbox_coarse
+    integer, intent(in)                         :: low_z, high_z
+    integer, intent(in)                         :: dir, x_refine, y_refine
+    real, allocatable, intent(in)               :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+
     integer   :: this_pe
     this_pe = mpp_pe()
 
     ! Output the interpolation type
     select case (interp_type)
     case (1)
-      call fill_nest_from_buffer_cell_center("A", x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer_cell_center("A", x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind)
       !     case (3) ! C grid staggered
     case (4)
-      call fill_nest_from_buffer_cell_center("D", x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer_cell_center("D", x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind)
     case (9)
-      !call fill_nest_from_buffer_nearest_neighbor(x, buffer, bbox_fine, bbox_coarse, nz, dir, wt)
+      !call fill_nest_from_buffer_nearest_neighbor(x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, wt)
       call mpp_error(FATAL, 'fill_nest_from_buffer_nearest_neighbor is not yet implemented.')
     case default
       call mpp_error(FATAL, 'interp_single_nest got invalid value for interp_type from namelist.')
     end select
 
-  end subroutine fill_nest_from_buffer_r4_3d
+  end subroutine fill_nest_from_buffer_r4_3d_lowhighz
 
 
-  subroutine fill_nest_from_buffer_r8_3d(interp_type, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+  subroutine fill_nest_from_buffer_r8_3d_highz(interp_type, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
     implicit none
 
     integer, intent(in)                         :: interp_type
@@ -1603,24 +2045,40 @@ contains
     real, allocatable, intent(in)               :: wt(:,:,:)    ! The final dimension is always 4
     integer, allocatable, intent(in)            :: ind(:,:,:)
 
+    call fill_nest_from_buffer_r8_3d_lowhighz(interp_type, x, buffer, bbox_fine, bbox_coarse, 1, nz, dir, x_refine, y_refine, wt, ind)
+
+  end subroutine fill_nest_from_buffer_r8_3d_highz
+
+  subroutine fill_nest_from_buffer_r8_3d_lowhighz(interp_type, x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind)
+    implicit none
+
+    integer, intent(in)                         :: interp_type
+    real*8, allocatable, intent(inout)          :: x(:,:,:)
+    real*8, allocatable, intent(in)             :: buffer(:,:,:)
+    type(bbox), intent(in)                      :: bbox_fine, bbox_coarse
+    integer, intent(in)                         :: low_z, high_z
+    integer, intent(in)                         :: dir, x_refine, y_refine
+    real, allocatable, intent(in)               :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)            :: ind(:,:,:)
+
     integer   :: this_pe
     this_pe = mpp_pe()
 
     ! Output the interpolation type
     select case (interp_type)
     case (1)
-      call fill_nest_from_buffer_cell_center("A", x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer_cell_center("A", x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind)
       !     case (3)  ! C grid staggered
     case (4)
-      call fill_nest_from_buffer_cell_center("D", x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+      call fill_nest_from_buffer_cell_center("D", x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind)
     case (9)
       call mpp_error(FATAL, 'nearest_neighbor is not yet implemented for fv_moving_nest_utils.F90::fill_nest_from_buffer_3D_kindphys')
-      !call fill_nest_from_buffer_nearest_neighbor(x, buffer, bbox_fine, bbox_coarse, nz, dir, wt)
+      !call fill_nest_from_buffer_nearest_neighbor(x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, wt)
     case default
       call mpp_error(FATAL, 'interp_single_nest got invalid value for interp_type from namelist.')
     end select
 
-  end subroutine fill_nest_from_buffer_r8_3d
+  end subroutine fill_nest_from_buffer_r8_3d_lowhighz
 
 
   !>@brief  This subroutine fills the nest halo data from the coarse grid data by downscaling.
@@ -1795,8 +2253,9 @@ contains
   end subroutine fill_nest_from_buffer_cell_center_r8_2d
 
 
-  subroutine fill_nest_from_buffer_cell_center_masked(stagger, x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, mask_val, default_val)
+  subroutine fill_nest_from_buffer_cell_center_masked_2d_const(var_name, stagger, x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_val)
     implicit none
+    character(len=*), intent(in)                  :: var_name
     character ( len = 1 ), intent(in)             :: stagger
     real*8, allocatable, intent(inout)            :: x(:,:)
     real*8, allocatable, intent(in)               :: buffer(:,:)
@@ -1805,12 +2264,21 @@ contains
     real, allocatable, intent(in)                 :: wt(:,:,:)    ! The final dimension is always 4
     integer, allocatable, intent(in)              :: ind(:,:,:)
     real, allocatable, intent(in)                 :: mask_var(:,:)
+    real, allocatable, intent(in)                 :: parent_mask_var(:,:)
     integer, intent(in)                           :: mask_val
     real*8, intent(in)                            :: default_val
 
     character(len=8)       :: dir_str
     integer                :: i, j, k, ic, jc
     real                   :: tw
+    real                   :: dummy_val, dummy_mask
+    integer                :: num_reset, num_weights
+    integer                :: this_pe
+
+    this_pe = mpp_pe()
+
+    num_reset = 0
+    dummy_val = real_snan
 
     select case(dir)
     case (NORTH)
@@ -1842,19 +2310,74 @@ contains
           !if (mask_var(i,j) .eq. mask_val) then
           x(i,j) = 0.0
           tw = 0.0
-          if (buffer(ic,jc) .gt. -1.0)     x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc  )
-          if (buffer(ic,jc+1) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc+1)
-          if (buffer(ic+1,jc+1) .gt. -1.0) x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic+1,jc+1)
-          if (buffer(ic+1,jc) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic+1,jc  )
+          num_weights = 0
 
-          if (buffer(ic,jc) .gt. -1.0)     tw = tw + wt(i,j,1)
-          if (buffer(ic,jc+1) .gt. -1.0)   tw = tw + wt(i,j,1)
-          if (buffer(ic+1,jc+1) .gt. -1.0) tw = tw + wt(i,j,1)
-          if (buffer(ic+1,jc) .gt. -1.0)   tw = tw + wt(i,j,1)
+! WDR Original -- seems like the wt values should range from 1-4, not all use wt(i,j,1)
+!  will likely alter land values of shifted physics fields in regression tests.
+!  old values were (slightly) incorrect -- averaged of the 4 nearby points instead of actual weights
+!          if (buffer(ic,jc) .gt. -1.0)     x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc  )
+!          if (buffer(ic,jc+1) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc+1)
+!          if (buffer(ic+1,jc+1) .gt. -1.0) x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic+1,jc+1)
+!          if (buffer(ic+1,jc) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic+1,jc  )
+!
+!          if (buffer(ic,jc) .gt. -1.0)     tw = tw + wt(i,j,1)
+!          if (buffer(ic,jc+1) .gt. -1.0)   tw = tw + wt(i,j,1)
+!          if (buffer(ic+1,jc+1) .gt. -1.0) tw = tw + wt(i,j,1)
+!          if (buffer(ic+1,jc) .gt. -1.0)   tw = tw + wt(i,j,1)
+
+
+! Intermediate: Corrected the weights
+!          if (buffer(ic,jc) .gt. -1.0)     x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc  )
+!          if (buffer(ic,jc+1) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,2)*buffer(ic,  jc+1)
+!          if (buffer(ic+1,jc+1) .gt. -1.0) x(i,j) = x(i,j) + wt(i,j,3)*buffer(ic+1,jc+1)
+!          if (buffer(ic+1,jc) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,4)*buffer(ic+1,jc  )
+!
+!          if (buffer(ic,jc) .gt. -1.0)     tw = tw + wt(i,j,1)
+!          if (buffer(ic,jc+1) .gt. -1.0)   tw = tw + wt(i,j,2)
+!          if (buffer(ic+1,jc+1) .gt. -1.0) tw = tw + wt(i,j,3)
+!          if (buffer(ic+1,jc) .gt. -1.0)   tw = tw + wt(i,j,4)
+
+
+!          print '("[INFO] MASK2D npe=",I0," ",A16," parent_mask_var(",I0,",",I0,")=",F15.5," mask_var(",I0,",",I0,")=",F15.5)', mpp_pe(), var_name, ic, jc, parent_mask_var(ic,jc), i, j, mask_var(i,j)
+
+
+          ! Note that weights don't seem to always be exactly 0.0 when the corner points are aligned
+          ! Use the land sea mask to choose which points to add to weight and buffer
+          if (parent_mask_var(ic,jc) .eq. mask_var(i,j) .and. wt(i,j,1) .gt. 0.0001 ) then
+            num_weights = num_weights + 1
+            x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc  )
+            tw = tw + wt(i,j,1)
+
+          endif
+
+          if (parent_mask_var(ic,jc+1) .eq. mask_var(i,j) .and. wt(i,j,2) .gt. 0.0001) then
+            num_weights = num_weights + 2
+            x(i,j) = x(i,j) + wt(i,j,2)*buffer(ic,  jc+1)
+            tw = tw + wt(i,j,2)
+
+          endif
+
+          if (parent_mask_var(ic+1,jc+1) .eq. mask_var(i,j) .and. wt(i,j,3) .gt. 0.0001) then
+            num_weights = num_weights + 4
+            x(i,j) = x(i,j) + wt(i,j,3)*buffer(ic+1,jc+1)
+            tw = tw + wt(i,j,3)
+
+          endif
+
+          if (parent_mask_var(ic+1,jc) .eq. mask_var(i,j) .and. wt(i,j,4) .gt. 0.0001) then
+            num_weights = num_weights + 8
+            x(i,j) = x(i,j) + wt(i,j,4)*buffer(ic+1,jc  )
+            tw = tw + wt(i,j,4)
+
+          endif
+
 
           if (tw .gt. 0.0) then
             x(i,j) = x(i,j) / tw
           else
+            num_reset = num_reset + 1
+            dummy_val = buffer(ic, jc)
+            dummy_mask = mask_var(i,j)
             x(i,j) = default_val
           endif
 
@@ -1862,10 +2385,357 @@ contains
       enddo
     endif
 
-  end subroutine fill_nest_from_buffer_cell_center_masked
+!    if (.not. isnan(dummy_val)) print '("[INFO] WDR fill_nest_from_buffer_cell_center_masked npe=",I0," num_reset=",I0," var=",A12," mask_var=",F10.4," dummy_val=",F14.4," ",E15.8)', mpp_pe(), num_reset, trim(var_name), dummy_mask, dummy_val, dummy_val
+
+  end subroutine fill_nest_from_buffer_cell_center_masked_2d_const
+
+  subroutine fill_nest_from_buffer_cell_center_masked_2d_2d(var_name, stagger, x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, default_grid)
+    implicit none
+    character(len=*), intent(in)                  :: var_name
+    character ( len = 1 ), intent(in)             :: stagger
+    real*8, allocatable, intent(inout)            :: x(:,:)
+    real*8, allocatable, intent(in)               :: buffer(:,:)
+    type(bbox), intent(in)                        :: bbox_fine, bbox_coarse
+    integer, intent(in)                           :: dir, x_refine, y_refine
+    real, allocatable, intent(in)                 :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)              :: ind(:,:,:)
+    real, allocatable, intent(in)                 :: mask_var(:,:)
+    real, allocatable, intent(in)                 :: parent_mask_var(:,:)
+    integer, intent(in)                           :: mask_val
+    real, allocatable, intent(in)                 :: default_grid(:,:)
+
+    character(len=8)       :: dir_str
+    integer                :: i, j, k, ic, jc
+    real                   :: tw
+    real                   :: dummy_val, dummy_mask
+    integer                :: num_reset, num_weights
+    integer                :: this_pe
+
+    this_pe = mpp_pe()
+
+    num_reset = 0
+    dummy_val = real_snan
+
+    select case(dir)
+    case (NORTH)
+      dir_str = "NORTH"
+    case (SOUTH)
+      dir_str = "SOUTH"
+    case (EAST)
+      dir_str = "EAST"
+    case (WEST)
+      dir_str = "WEST"
+    case default
+      dir_str = "ERR DIR"
+    end select
+
+    if( bbox_coarse%ie .GE. bbox_coarse%is .AND. bbox_coarse%je .GE. bbox_coarse%js ) then
+      do j=bbox_fine%js, bbox_fine%je
+        do i=bbox_fine%is, bbox_fine%ie
+
+          ic = ind(i,j,1)
+          jc = ind(i,j,2)
+
+          !x(i,j) = &
+          !     wt(i,j,1)*buffer(ic,  jc  ) +  &
+          !     wt(i,j,2)*buffer(ic,  jc+1) +  &
+          !     wt(i,j,3)*buffer(ic+1,jc+1) +  &
+          !     wt(i,j,4)*buffer(ic+1,jc  )
+
+          ! Land type
+          !if (mask_var(i,j) .eq. mask_val) then
+          x(i,j) = 0.0
+          tw = 0.0
+          num_weights = 0
+
+! WDR Original -- seems like the wt values should range from 1-4, not all use wt(i,j,1)
+!  will likely alter land values of shifted physics fields in regression tests.
+!  old values were (slightly) incorrect -- averaged of the 4 nearby points instead of actual weights
+!          if (buffer(ic,jc) .gt. -1.0)     x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc  )
+!          if (buffer(ic,jc+1) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc+1)
+!          if (buffer(ic+1,jc+1) .gt. -1.0) x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic+1,jc+1)
+!          if (buffer(ic+1,jc) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic+1,jc  )
+!
+!          if (buffer(ic,jc) .gt. -1.0)     tw = tw + wt(i,j,1)
+!          if (buffer(ic,jc+1) .gt. -1.0)   tw = tw + wt(i,j,1)
+!          if (buffer(ic+1,jc+1) .gt. -1.0) tw = tw + wt(i,j,1)
+!          if (buffer(ic+1,jc) .gt. -1.0)   tw = tw + wt(i,j,1)
 
 
-  subroutine fill_nest_from_buffer_cell_center_r4_3d(stagger, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+! Intermediate: Corrected the weights
+!          if (buffer(ic,jc) .gt. -1.0)     x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc  )
+!          if (buffer(ic,jc+1) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,2)*buffer(ic,  jc+1)
+!          if (buffer(ic+1,jc+1) .gt. -1.0) x(i,j) = x(i,j) + wt(i,j,3)*buffer(ic+1,jc+1)
+!          if (buffer(ic+1,jc) .gt. -1.0)   x(i,j) = x(i,j) + wt(i,j,4)*buffer(ic+1,jc  )
+!
+!          if (buffer(ic,jc) .gt. -1.0)     tw = tw + wt(i,j,1)
+!          if (buffer(ic,jc+1) .gt. -1.0)   tw = tw + wt(i,j,2)
+!          if (buffer(ic+1,jc+1) .gt. -1.0) tw = tw + wt(i,j,3)
+!          if (buffer(ic+1,jc) .gt. -1.0)   tw = tw + wt(i,j,4)
+
+
+!          print '("[INFO] MASK2D npe=",I0," ",A16," parent_mask_var(",I0,",",I0,")=",F15.5," mask_var(",I0,",",I0,")=",F15.5)', mpp_pe(), var_name, ic, jc, parent_mask_var(ic,jc), i, j, mask_var(i,j)
+
+
+
+          ! Note that weights don't seem to always be exactly 0.0 when the corner points are aligned
+          ! Use the land sea mask to choose which points to add to weight and buffer
+          if (parent_mask_var(ic,jc) .eq. mask_var(i,j) .and. wt(i,j,1) .gt. 0.0001 ) then
+            num_weights = num_weights + 1
+            x(i,j) = x(i,j) + wt(i,j,1)*buffer(ic,  jc  )
+            tw = tw + wt(i,j,1)
+
+          endif
+
+          if (parent_mask_var(ic,jc+1) .eq. mask_var(i,j) .and. wt(i,j,2) .gt. 0.0001) then
+            num_weights = num_weights + 2
+            x(i,j) = x(i,j) + wt(i,j,2)*buffer(ic,  jc+1)
+            tw = tw + wt(i,j,2)
+
+          endif
+
+          if (parent_mask_var(ic+1,jc+1) .eq. mask_var(i,j) .and. wt(i,j,3) .gt. 0.0001) then
+            num_weights = num_weights + 4
+            x(i,j) = x(i,j) + wt(i,j,3)*buffer(ic+1,jc+1)
+            tw = tw + wt(i,j,3)
+
+          endif
+
+          if (parent_mask_var(ic+1,jc) .eq. mask_var(i,j) .and. wt(i,j,4) .gt. 0.0001) then
+            num_weights = num_weights + 8
+            x(i,j) = x(i,j) + wt(i,j,4)*buffer(ic+1,jc  )
+            tw = tw + wt(i,j,4)
+
+          endif
+
+          if (tw .gt. 0.0) then
+            x(i,j) = x(i,j) / tw
+          else
+            num_reset = num_reset + 1
+            dummy_val = buffer(ic, jc)
+            dummy_mask = mask_var(i,j)
+            x(i,j) = default_grid(i,j)
+          endif
+
+        enddo
+      enddo
+    endif
+
+!    if (.not. isnan(dummy_val)) print '("[INFO] WDR fill_nest_from_buffer_cell_center_masked npe=",I0," num_reset=",I0," var=",A12," mask_var=",F10.4," dummy_val=",F14.4," ",E15.8)', mpp_pe(), num_reset, trim(var_name), dummy_mask, dummy_val, dummy_val
+
+  end subroutine fill_nest_from_buffer_cell_center_masked_2d_2d
+
+
+  subroutine fill_nest_from_buffer_cell_center_masked_3d_1d(var_name, stagger, x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, low_z, high_z, default_vector)
+    implicit none
+    character(len=*), intent(in)                  :: var_name
+    character ( len = 1 ), intent(in)             :: stagger
+    real*8, allocatable, intent(inout)            :: x(:,:,:)
+    real*8, allocatable, intent(in)               :: buffer(:,:,:)
+    type(bbox), intent(in)                        :: bbox_fine, bbox_coarse
+    integer, intent(in)                           :: dir, x_refine, y_refine
+    real, allocatable, intent(in)                 :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)              :: ind(:,:,:)
+    real, allocatable, intent(in)                 :: mask_var(:,:)
+    real, allocatable, intent(in)                 :: parent_mask_var(:,:)
+    integer, intent(in)                           :: mask_val, low_z, high_z
+    real*8, intent(in)                            :: default_vector(low_z:high_z)
+
+    character(len=8)       :: dir_str
+    integer                :: i, j, k, ic, jc
+    real                   :: tw
+    real                   :: dummy_val, dummy_mask
+
+    dummy_val = real_snan
+
+    select case(dir)
+    case (NORTH)
+      dir_str = "NORTH"
+    case (SOUTH)
+      dir_str = "SOUTH"
+    case (EAST)
+      dir_str = "EAST"
+    case (WEST)
+      dir_str = "WEST"
+    case default
+      dir_str = "ERR DIR"
+    end select
+
+    if( bbox_coarse%ie .GE. bbox_coarse%is .AND. bbox_coarse%je .GE. bbox_coarse%js ) then
+      do j=bbox_fine%js, bbox_fine%je
+        do i=bbox_fine%is, bbox_fine%ie
+
+          ic = ind(i,j,1)
+          jc = ind(i,j,2)
+
+          !x(i,j) = &
+          !     wt(i,j,1)*buffer(ic,  jc  ) +  &
+          !     wt(i,j,2)*buffer(ic,  jc+1) +  &
+          !     wt(i,j,3)*buffer(ic+1,jc+1) +  &
+          !     wt(i,j,4)*buffer(ic+1,jc  )
+
+          ! Land type
+          !if (mask_var(i,j) .eq. mask_val) then
+
+
+          do k=lbound(x,3), ubound(x,3)
+            x(i,j,k) = 0.0
+            tw = 0.0
+
+
+
+!            print '("[INFO] MASK3D npe=",I0," ",A16," parent_mask_var(",I0,",",I0,")=",F15.5," mask_var(",I0,",",I0,")=",F15.5)', mpp_pe(), var_name, ic, jc, parent_mask_var(ic,jc), i, j, mask_var(i,j)
+
+
+            ! Use the land sea mask to choose which points to add to weight and buffer
+            if (parent_mask_var(ic,jc) .eq. mask_var(i,j)) then
+              x(i,j,k) = x(i,j,k) + wt(i,j,1)*buffer(ic,  jc ,k)
+              tw = tw + wt(i,j,1)
+            endif
+
+            if (parent_mask_var(ic,jc+1) .eq. mask_var(i,j)) then
+              x(i,j,k) = x(i,j,k) + wt(i,j,2)*buffer(ic,  jc+1,k)
+              tw = tw + wt(i,j,2)
+            endif
+
+            if (parent_mask_var(ic+1,jc+1) .eq. mask_var(i,j)) then
+              x(i,j,k) = x(i,j,k) + wt(i,j,3)*buffer(ic+1,jc+1,k)
+              tw = tw + wt(i,j,3)
+            endif
+
+            if (parent_mask_var(ic+1,jc) .eq. mask_var(i,j)) then
+              x(i,j,k) = x(i,j,k) + wt(i,j,4)*buffer(ic+1,jc ,k)
+              tw = tw + wt(i,j,4)
+            endif
+
+
+            if (tw .gt. 0.0) then
+              x(i,j,k) = x(i,j,k) / tw
+            else
+              dummy_val = buffer(ic, jc,k)
+              dummy_mask = mask_var(i,j)
+              x(i,j,k) = default_vector(k)
+            endif
+
+          enddo
+        enddo
+      enddo
+    endif
+
+!    if (.not. isnan(dummy_val)) then
+!      print '("[INFO WDR CCM3 fill_nest_from_buffer_cell_center_masked_3d npe=",I0)', mpp_pe()
+!      print '("[INFO] WDR CCM3 fill_nest_from_buffer_cell_center_masked npe=",I0," var=",A16," mask_var=",F10.4," dummy_val=",F14.4," ",E15.8)', mpp_pe(), trim(var_name), dummy_mask, dummy_val, dummy_val
+!    endif
+
+  end subroutine fill_nest_from_buffer_cell_center_masked_3d_1d
+
+
+  subroutine fill_nest_from_buffer_cell_center_masked_3d_2d(var_name, stagger, x, buffer, bbox_fine, bbox_coarse, dir, x_refine, y_refine, wt, ind, mask_var, parent_mask_var, mask_val, low_z, high_z, default_grid)
+    implicit none
+    character(len=*), intent(in)                  :: var_name
+    character ( len = 1 ), intent(in)             :: stagger
+    real*8, allocatable, intent(inout)            :: x(:,:,:)
+    real*8, allocatable, intent(in)               :: buffer(:,:,:)
+    type(bbox), intent(in)                        :: bbox_fine, bbox_coarse
+    integer, intent(in)                           :: dir, x_refine, y_refine
+    real, allocatable, intent(in)                 :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)              :: ind(:,:,:)
+    real, allocatable, intent(in)                 :: mask_var(:,:)
+    real, allocatable, intent(in)                 :: parent_mask_var(:,:)
+    integer, intent(in)                           :: mask_val, low_z, high_z
+    real, allocatable, intent(in)                 :: default_grid(:,:)
+
+    character(len=8)       :: dir_str
+    integer                :: i, j, k, ic, jc
+    real                   :: tw
+    real                   :: dummy_val, dummy_mask
+
+    dummy_val = real_snan
+
+    select case(dir)
+    case (NORTH)
+      dir_str = "NORTH"
+    case (SOUTH)
+      dir_str = "SOUTH"
+    case (EAST)
+      dir_str = "EAST"
+    case (WEST)
+      dir_str = "WEST"
+    case default
+      dir_str = "ERR DIR"
+    end select
+
+    if( bbox_coarse%ie .GE. bbox_coarse%is .AND. bbox_coarse%je .GE. bbox_coarse%js ) then
+      do j=bbox_fine%js, bbox_fine%je
+        do i=bbox_fine%is, bbox_fine%ie
+
+          ic = ind(i,j,1)
+          jc = ind(i,j,2)
+
+          !x(i,j) = &
+          !     wt(i,j,1)*buffer(ic,  jc  ) +  &
+          !     wt(i,j,2)*buffer(ic,  jc+1) +  &
+          !     wt(i,j,3)*buffer(ic+1,jc+1) +  &
+          !     wt(i,j,4)*buffer(ic+1,jc  )
+
+          ! Land type
+          !if (mask_var(i,j) .eq. mask_val) then
+
+
+          do k=lbound(x,3), ubound(x,3)
+            x(i,j,k) = 0.0
+            tw = 0.0
+
+
+
+!            print '("[INFO] MASK3D npe=",I0," ",A16," parent_mask_var(",I0,",",I0,")=",F15.5," mask_var(",I0,",",I0,")=",F15.5)', mpp_pe(), var_name, ic, jc, parent_mask_var(ic,jc), i, j, mask_var(i,j)
+
+
+            ! Use the land sea mask to choose which points to add to weight and buffer
+            if (parent_mask_var(ic,jc) .eq. mask_var(i,j)) then
+              x(i,j,k) = x(i,j,k) + wt(i,j,1)*buffer(ic,  jc ,k)
+              tw = tw + wt(i,j,1)
+            endif
+
+            if (parent_mask_var(ic,jc+1) .eq. mask_var(i,j)) then
+              x(i,j,k) = x(i,j,k) + wt(i,j,2)*buffer(ic,  jc+1,k)
+              tw = tw + wt(i,j,2)
+            endif
+
+            if (parent_mask_var(ic+1,jc+1) .eq. mask_var(i,j)) then
+              x(i,j,k) = x(i,j,k) + wt(i,j,3)*buffer(ic+1,jc+1,k)
+              tw = tw + wt(i,j,3)
+            endif
+
+            if (parent_mask_var(ic+1,jc) .eq. mask_var(i,j)) then
+              x(i,j,k) = x(i,j,k) + wt(i,j,4)*buffer(ic+1,jc ,k)
+              tw = tw + wt(i,j,4)
+            endif
+
+
+            if (tw .gt. 0.0) then
+              x(i,j,k) = x(i,j,k) / tw
+            else
+              dummy_val = buffer(ic, jc,k)
+              dummy_mask = mask_var(i,j)
+              x(i,j,k) = default_grid(i,j)
+            endif
+
+          enddo
+        enddo
+      enddo
+    endif
+
+!    if (.not. isnan(dummy_val)) then
+!      print '("[INFO WDR CCM3 fill_nest_from_buffer_cell_center_masked_3d npe=",I0)', mpp_pe()
+!      print '("[INFO] WDR CCM3 fill_nest_from_buffer_cell_center_masked npe=",I0," var=",A16," mask_var=",F10.4," dummy_val=",F14.4," ",E15.8)', mpp_pe(), trim(var_name), dummy_mask, dummy_val, dummy_val
+!    endif
+
+  end subroutine fill_nest_from_buffer_cell_center_masked_3d_2d
+
+
+
+  subroutine fill_nest_from_buffer_cell_center_r4_3d_highz(stagger, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
     implicit none
     character ( len = 1 ), intent(in)             :: stagger
     real*4,  allocatable, intent(inout)           :: x(:,:,:)
@@ -1876,54 +2746,17 @@ contains
     real, allocatable, intent(in)                 :: wt(:,:,:)    ! The final dimension is always 4
     integer, allocatable, intent(in)              :: ind(:,:,:)
 
-    character(len=8)       :: dir_str
-    integer                :: i, j, k, ic, jc
+    call fill_nest_from_buffer_cell_center_r4_3d_lowhighz(stagger, x, buffer, bbox_fine, bbox_coarse, 1, nz, dir, x_refine, y_refine, wt, ind)
 
-    select case(dir)
-    case (NORTH)
-      dir_str = "NORTH"
-    case (SOUTH)
-      dir_str = "SOUTH"
-    case (EAST)
-      dir_str = "EAST"
-    case (WEST)
-      dir_str = "WEST"
-    case default
-      dir_str = "ERR DIR"
-    end select
+  end subroutine fill_nest_from_buffer_cell_center_r4_3d_highz
 
-    if( bbox_coarse%ie .GE. bbox_coarse%is .AND. bbox_coarse%je .GE. bbox_coarse%js ) then
-      do k=1,nz
-        do j=bbox_fine%js, bbox_fine%je
-          do i=bbox_fine%is, bbox_fine%ie
-            !if (stagger == "A") then
-            !else if (stagger == "C") then
-            !else if (stagger == "D") then
-            !endif
-
-            ic = ind(i,j,1)
-            jc = ind(i,j,2)
-
-            x(i,j,k) = &
-                wt(i,j,1)*buffer(ic,  jc,  k) +  &
-                wt(i,j,2)*buffer(ic,  jc+1,k) +  &
-                wt(i,j,3)*buffer(ic+1,jc+1,k) +  &
-                wt(i,j,4)*buffer(ic+1,jc,  k)
-
-          enddo
-        enddo
-      enddo
-    endif
-
-  end subroutine fill_nest_from_buffer_cell_center_r4_3d
-
-  subroutine fill_nest_from_buffer_cell_center_r8_3d(stagger, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+  subroutine fill_nest_from_buffer_cell_center_r4_3d_lowhighz(stagger, x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind)
     implicit none
     character ( len = 1 ), intent(in)             :: stagger
-    real*8, allocatable, intent(inout)            :: x(:,:,:)
-    real*8, allocatable, intent(in)               :: buffer(:,:,:)
+    real*4,  allocatable, intent(inout)           :: x(:,:,:)
+    real*4,  allocatable, intent(in)              :: buffer(:,:,:)
     type(bbox), intent(in)                        :: bbox_fine, bbox_coarse
-    integer, intent(in)                           :: nz
+    integer, intent(in)                           :: low_z, high_z
     integer, intent(in)                           :: dir, x_refine, y_refine
     real, allocatable, intent(in)                 :: wt(:,:,:)    ! The final dimension is always 4
     integer, allocatable, intent(in)              :: ind(:,:,:)
@@ -1945,7 +2778,74 @@ contains
     end select
 
     if( bbox_coarse%ie .GE. bbox_coarse%is .AND. bbox_coarse%je .GE. bbox_coarse%js ) then
-      do k=1,nz
+      do k=low_z, high_z
+        do j=bbox_fine%js, bbox_fine%je
+          do i=bbox_fine%is, bbox_fine%ie
+            !if (stagger == "A") then
+            !else if (stagger == "C") then
+            !else if (stagger == "D") then
+            !endif
+
+            ic = ind(i,j,1)
+            jc = ind(i,j,2)
+
+            x(i,j,k) = &
+                wt(i,j,1)*buffer(ic,  jc,  k) +  &
+                wt(i,j,2)*buffer(ic,  jc+1,k) +  &
+                wt(i,j,3)*buffer(ic+1,jc+1,k) +  &
+                wt(i,j,4)*buffer(ic+1,jc,  k)
+
+          enddo
+        enddo
+      enddo
+    endif
+
+  end subroutine fill_nest_from_buffer_cell_center_r4_3d_lowhighz
+
+  subroutine fill_nest_from_buffer_cell_center_r8_3d_highz(stagger, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
+    implicit none
+    character ( len = 1 ), intent(in)             :: stagger
+    real*8, allocatable, intent(inout)            :: x(:,:,:)
+    real*8, allocatable, intent(in)               :: buffer(:,:,:)
+    type(bbox), intent(in)                        :: bbox_fine, bbox_coarse
+    integer, intent(in)                           :: nz
+    integer, intent(in)                           :: dir, x_refine, y_refine
+    real, allocatable, intent(in)                 :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)              :: ind(:,:,:)
+
+    call fill_nest_from_buffer_cell_center_r8_3d_lowhighz(stagger, x, buffer, bbox_fine, bbox_coarse, 1, nz, dir, x_refine, y_refine, wt, ind)
+
+  end subroutine fill_nest_from_buffer_cell_center_r8_3d_highz
+
+  subroutine fill_nest_from_buffer_cell_center_r8_3d_lowhighz(stagger, x, buffer, bbox_fine, bbox_coarse, low_z, high_z, dir, x_refine, y_refine, wt, ind)
+    implicit none
+    character ( len = 1 ), intent(in)             :: stagger
+    real*8, allocatable, intent(inout)            :: x(:,:,:)
+    real*8, allocatable, intent(in)               :: buffer(:,:,:)
+    type(bbox), intent(in)                        :: bbox_fine, bbox_coarse
+    integer, intent(in)                           :: low_z, high_z
+    integer, intent(in)                           :: dir, x_refine, y_refine
+    real, allocatable, intent(in)                 :: wt(:,:,:)    ! The final dimension is always 4
+    integer, allocatable, intent(in)              :: ind(:,:,:)
+
+    character(len=8)       :: dir_str
+    integer                :: i, j, k, ic, jc
+
+    select case(dir)
+    case (NORTH)
+      dir_str = "NORTH"
+    case (SOUTH)
+      dir_str = "SOUTH"
+    case (EAST)
+      dir_str = "EAST"
+    case (WEST)
+      dir_str = "WEST"
+    case default
+      dir_str = "ERR DIR"
+    end select
+
+    if( bbox_coarse%ie .GE. bbox_coarse%is .AND. bbox_coarse%je .GE. bbox_coarse%js ) then
+      do k=low_z, high_z
         do j=bbox_fine%js, bbox_fine%je
           do i=bbox_fine%is, bbox_fine%ie
             !if (stagger == "A") then
@@ -1966,7 +2866,7 @@ contains
       enddo
     endif
 
-  end subroutine fill_nest_from_buffer_cell_center_r8_3d
+  end subroutine fill_nest_from_buffer_cell_center_r8_3d_lowhighz
 
 
   subroutine fill_nest_from_buffer_cell_center_r4_4d(stagger, x, buffer, bbox_fine, bbox_coarse, nz, dir, x_refine, y_refine, wt, ind)
