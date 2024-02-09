@@ -1406,7 +1406,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           if (isPresent) then
-            call ESMF_AttributeSet(fcstExportFB, convention="NetCDF", purpose="FV3", name="fhzero", value=nint(GFS_control%fhzero), rc=rc)
+            call ESMF_AttributeSet(fcstExportFB, convention="NetCDF", purpose="FV3", name="fhzero", value=GFS_control%fhzero, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
         else
