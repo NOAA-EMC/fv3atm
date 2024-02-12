@@ -386,6 +386,8 @@ contains
           mn_phys%zorll(i,j)  = IPD_Data(nb)%Sfcprop%zorll(ix)
           mn_phys%zorlwav(i,j)= IPD_Data(nb)%Sfcprop%zorlwav(ix)
           mn_phys%zorlw(i,j)  = IPD_Data(nb)%Sfcprop%zorlw(ix)
+          mn_phys%usfco(i,j)  = IPD_Data(nb)%Sfcprop%usfco(ix)
+          mn_phys%vsfco(i,j)  = IPD_Data(nb)%Sfcprop%vsfco(ix)
           mn_phys%tsfco(i,j)  = IPD_Data(nb)%Sfcprop%tsfco(ix)
           mn_phys%tsfcl(i,j)  = IPD_Data(nb)%Sfcprop%tsfcl(ix)
           mn_phys%tsfc(i,j)   = IPD_Data(nb)%Sfcprop%tsfc(ix)
@@ -544,6 +546,17 @@ contains
               IPD_Data(nb)%Sfcprop%zorl(ix)   = 85.0
             else
               IPD_Data(nb)%Sfcprop%zorl(ix)   = mn_phys%zorl(i,j)
+            endif
+
+            if (nint(IPD_data(nb)%Sfcprop%slmsk(ix)) .eq. 0 .and. mn_phys%usfco(i,j) .gt. 1e6) then
+              IPD_Data(nb)%Sfcprop%usfco(ix)  = 0.0
+            else
+              IPD_Data(nb)%Sfcprop%usfco(ix)  = mn_phys%usfco(i,j)
+            endif
+            if (nint(IPD_data(nb)%Sfcprop%slmsk(ix)) .eq. 0 .and. mn_phys%vsfco(i,j) .gt. 1e6) then
+              IPD_Data(nb)%Sfcprop%vsfco(ix)  = 0.0
+            else
+              IPD_Data(nb)%Sfcprop%vsfco(ix)  = mn_phys%vsfco(i,j)
             endif
 
             IPD_Data(nb)%Sfcprop%tsfco(ix)  = mn_phys%tsfco(i,j)
@@ -808,6 +821,15 @@ contains
           x_refine, y_refine, &
           is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 78.0D0)
 
+      call fill_nest_halos_from_parent_masked("usfco", mn_phys%usfco, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
+          Atm(child_grid_num)%neststruct%ind_h, &
+          x_refine, y_refine, &
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 0.0D0)
+      call fill_nest_halos_from_parent_masked("vsfco", mn_phys%vsfco, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
+          Atm(child_grid_num)%neststruct%ind_h, &
+          x_refine, y_refine, &
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 0.0D0)
+
       call fill_nest_halos_from_parent("tsfco", mn_phys%tsfco, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
@@ -979,6 +1001,8 @@ contains
       call mn_var_fill_intern_nest_halos(mn_phys%zorll, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%zorlwav, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%zorlw, domain_fine, is_fine_pe)
+      call mn_var_fill_intern_nest_halos(mn_phys%usfco, domain_fine, is_fine_pe)
+      call mn_var_fill_intern_nest_halos(mn_phys%vsfco, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%tsfco, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%tsfcl, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%tsfc, domain_fine, is_fine_pe)
@@ -1112,6 +1136,10 @@ contains
           delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
       call mn_var_shift_data(mn_phys%zorlw, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
           delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
+      call mn_var_shift_data(mn_phys%usfco, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
+          delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
+      call mn_var_shift_data(mn_phys%vsfco, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
+          delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
       call mn_var_shift_data(mn_phys%tsfco, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
           delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
       call mn_var_shift_data(mn_phys%tsfcl, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
@@ -1206,6 +1234,7 @@ contains
     real, allocatable, dimension(:,:) :: facsf_pr_local, facwf_pr_local
     real, allocatable, dimension(:,:) :: alvsf_pr_local, alvwf_pr_local, alnsf_pr_local, alnwf_pr_local
     real, allocatable, dimension(:,:) :: zorl_pr_local, zorll_pr_local, zorlw_pr_local, zorli_pr_local
+    real, allocatable, dimension(:,:) :: usfco_pr_local, vsfco_pr_local
     real, allocatable :: phy_f2d_pr_local (:,:,:)
     real, allocatable :: phy_f3d_pr_local (:,:,:,:)
     real, allocatable :: lakefrac_pr_local (:,:)  !< lake fraction
@@ -1264,6 +1293,8 @@ contains
       allocate ( zorll_pr_local(is:ie, js:je) )
       allocate ( zorlw_pr_local(is:ie, js:je) )
       allocate ( zorli_pr_local(is:ie, js:je) )
+      allocate ( usfco_pr_local(is:ie, js:je) )
+      allocate ( vsfco_pr_local(is:ie, js:je) )
     endif
 
     if (move_nsst) then
@@ -1332,6 +1363,8 @@ contains
           zorlw_pr_local(i, j) = IPD_data(nb)%Sfcprop%zorlw(ix)
           zorll_pr_local(i, j) = IPD_data(nb)%Sfcprop%zorll(ix)
           zorli_pr_local(i, j) = IPD_data(nb)%Sfcprop%zorli(ix)
+          usfco_pr_local(i, j) = IPD_data(nb)%Sfcprop%usfco(ix)
+          vsfco_pr_local(i, j) = IPD_data(nb)%Sfcprop%vsfco(ix)
           max_snow_alb_pr_local(i, j) = IPD_data(nb)%Sfcprop%snoalb(ix)
           tsfco_pr_local(i, j) = IPD_data(nb)%Sfcprop%tsfco(ix)
           tsfcl_pr_local(i, j) = IPD_data(nb)%Sfcprop%tsfcl(ix)
@@ -1394,6 +1427,8 @@ contains
       call mn_var_dump_to_netcdf(zorlw_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "ZORLW")
       call mn_var_dump_to_netcdf(zorll_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "ZORLL")
       call mn_var_dump_to_netcdf(zorli_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "ZORLI")
+      call mn_var_dump_to_netcdf(usfco_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "SSU")
+      call mn_var_dump_to_netcdf(vsfco_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "SSV")
 
       do nv = 1, IPD_Control%ntot2d
         write (phys_var_name, "(A4,I0.3)")  'PH2D', nv
@@ -1429,6 +1464,7 @@ contains
       deallocate(alvsf_pr_local, alvwf_pr_local, alnsf_pr_local, alnwf_pr_local)
       deallocate(facsf_pr_local, facwf_pr_local)
       deallocate(zorl_pr_local, zorlw_pr_local, zorll_pr_local, zorli_pr_local)
+      deallocate(usfco_pr_local, vsfco_pr_local)
       deallocate(phy_f2d_pr_local)
       deallocate(phy_f3d_pr_local)
     endif

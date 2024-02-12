@@ -26,7 +26,7 @@ module module_cplfields
   !  l : model levels (3D)
   !  s : surface (2D)
   !  t : tracers (4D)
-  integer,          public, parameter :: NexportFields = 121
+  integer,          public, parameter :: NexportFields = 119
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
@@ -118,8 +118,6 @@ module module_cplfields
     FieldInfo("leaf_area_index                          ", "s"), &
     FieldInfo("temperature_of_soil_layer                ", "g"), &
     FieldInfo("height                                   ", "s"), &
-    FieldInfo("inst_zonal_wind_height_lowest_from_phys  ", "s"), &
-    FieldInfo("inst_merid_wind_height_lowest_from_phys  ", "s"), &
     FieldInfo("inst_pres_height_lowest_from_phys        ", "s"), &
     FieldInfo("inst_spec_humid_height_lowest_from_phys  ", "s"), &
     FieldInfo("inst_prec_rate_conv                      ", "s"), &
@@ -158,7 +156,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 48
+  integer,          public, parameter :: NimportFields = 64
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -181,6 +179,8 @@ module module_cplfields
     FieldInfo("inst_ice_vis_dir_albedo                  ", "s"), &
     FieldInfo("wave_z0_roughness_length                 ", "s"), &
     FieldInfo("inst_tracer_diag_aod                     ", "s"), &
+    FieldInfo("ocn_current_zonal                        ", "s"), &
+    FieldInfo("ocn_current_merid                        ", "s"), &
 
     ! For receiving fluxes from mediator
     FieldInfo("stress_on_air_ocn_zonal                  ", "s"), &
@@ -188,6 +188,22 @@ module module_cplfields
     FieldInfo("laten_heat_flx_atm_into_ocn              ", "s"), &
     FieldInfo("sensi_heat_flx_atm_into_ocn              ", "s"), &
     FieldInfo("lwup_flx_ocn                             ", "s"), &
+
+    ! For receiving fluxes from external land component
+    FieldInfo("land_fraction                            ", "s"), &
+    FieldInfo("inst_snow_area_fraction_lnd              ", "s"), &
+    FieldInfo("inst_spec_humid_lnd                      ", "s"), &      
+    FieldInfo("inst_laten_heat_flx_lnd                  ", "s"), &
+    FieldInfo("inst_sensi_heat_flx_lnd                  ", "s"), &
+    FieldInfo("inst_potential_laten_heat_flx_lnd        ", "s"), &
+    FieldInfo("inst_temp_height2m_lnd                   ", "s"), &
+    FieldInfo("inst_spec_humid_height2m_lnd             ", "s"), &
+    FieldInfo("inst_upward_heat_flux_lnd                ", "s"), &
+    FieldInfo("inst_runoff_rate_lnd                     ", "s"), &
+    FieldInfo("inst_subsurface_runoff_rate_lnd          ", "s"), &
+    FieldInfo("inst_drag_wind_speed_for_momentum        ", "s"), &
+    FieldInfo("inst_drag_mass_flux_for_heat_and_moisture", "s"), &
+    FieldInfo("inst_func_of_roughness_length_and_vfrac  ", "s"), &
 
     !  For JEDI
     ! dynamics
