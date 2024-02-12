@@ -675,7 +675,8 @@ module FV3GFS_io_mod
      implicit none
      type(GFS_control_type),    intent(in) :: Model
      integer, intent(in) :: nvar_s2m
-     character(len=32),intent(out) :: sfc_name2(:), sfc_name3(:)
+     character(len=32),intent(out) :: sfc_name2(:)
+     character(len=32),intent(inout) :: sfc_name3(:)
      logical, intent(in) :: warm_start
      integer :: nt
 
