@@ -70,7 +70,7 @@
       integer,save      :: wrt_mpi_comm                                   !< The mpi communicator in the write comp.
       integer,save      :: idate(7)                                       !< IO base time array
       integer,save      :: start_time(7)                                  !< Experiment starting time
-      logical,save      :: write_nsflip                                   !< Flag to flip vertical coordinate
+      logical,save      :: write_nsflip                                   !< Flag to flip y-coordinate
       logical,save      :: change_wrtidate=.false.                        !< Flag to change output time
       integer,save      :: frestart(999) = -1                             !< Restart time/frequency array
       integer,save      :: calendar_type = 3                              !< Calendar type
@@ -4537,12 +4537,12 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      end subroutine splat8
 
-   !> Compute rotated lat/lon grid
+   !> Compute geographical lat/lon from rotated lat/lon grid
    !>
-   !> @param[in] tlmd Longitude
-   !> @param[in] tphd Latitude
-   !> @param[in] almd Rotated longitude
-   !> @param[in] aphd Rotated latitude
+   !> @param[in] tlmd Rotated Longitude
+   !> @param[in] tphd Rotated Latitude
+   !> @param[out] almd Geographical longitude
+   !> @param[out] aphd Geographical latitude
    !> @param[in] tlm0d Central longitude
    !> @param[in] tph0d Central latitude
    !>
@@ -4675,8 +4675,8 @@
      !>
      !> @param[in] nfl Number of fields
      !> @param[in] filename File name specified in each fiels
-     !> @param[in] outfile_name Output file names
-     !> @param[in] noutfile Number of output files
+     !> @param[inout] outfile_name Output file names
+     !> @param[inout] noutfile Number of output files
      !>
      !> @author J. Wang @date Jul, 2017        
      subroutine get_outfile(nfl, filename, outfile_name, noutfile)
