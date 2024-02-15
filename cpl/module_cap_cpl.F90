@@ -25,13 +25,12 @@ module module_cap_cpl
       logical, intent(in)                   :: fcstpe
       logical, intent(in)                   :: statewrite_flag
       integer, intent(in)                   :: stdiagnose_flag
-      character(len=*),         intent(in)  :: state_tag                        !< Import or export.
+      character(len=*), intent(in)          :: state_tag                        !< "import" or "export".
 
       character(len=*),parameter :: subname='(module_cap_cpl:diagnose_cplFields)'
       type(ESMF_Time) :: currTime
       type(ESMF_State) :: state
       character(len=240) :: timestr
-      integer :: timeslice = 1
       character(len=160) :: nuopcMsg
       character(len=160) :: filename
       integer :: rc
@@ -54,8 +53,8 @@ module module_cap_cpl
 
         ! Dump Fields out
         if (statewrite_flag) then
-          write(filename,'(A)') 'fv3_cap_import_'//trim(timestr)//'_'
-          call State_RWFields_tiles(state,trim(filename), timeslice, rc=rc)
+          write(filename,'(A)') 'fv3_cap_import_'//trim(timestr)//'.tile*.nc'
+          call State_RWFields_tiles(state,trim(filename), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
       end if
@@ -70,8 +69,8 @@ module module_cap_cpl
 
         ! Dump Fields out
         if (statewrite_flag) then
-          write(filename,'(A)') 'fv3_cap_export_'//trim(timestr)//'_'
-          call State_RWFields_tiles(state,trim(filename), timeslice, rc=rc)
+          write(filename,'(A)') 'fv3_cap_export_'//trim(timestr)//'.tile*.nc'
+          call State_RWFields_tiles(state,trim(filename), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
       end if
@@ -81,28 +80,36 @@ module module_cap_cpl
   !-----------------------------------------------------------------------------
 
   ! This subroutine requires ESMFv8 - for coupled FV3
-    subroutine State_RWFields_tiles(state,filename,timeslice,rc)
+    subroutine State_RWFields_tiles(state,filename,rc)
 
       type(ESMF_State), intent(in)          :: state
       character(len=*), intent(in)          :: fileName
-      integer, intent(in)                   :: timeslice
       integer, intent(out)                  :: rc
 
-      ! local
-      type(ESMF_Field)                       :: firstESMFFLD
-      type(ESMF_Field),allocatable           :: flds(:)
-      type(ESMF_GridComp) :: IOComp
-      type(ESMF_Grid) :: gridFv3
-
-      character(len=256) :: msgString
-      integer                                :: i, icount, ifld
+      ! local variables
+      type(ESMF_Array)                       :: array
+      type(ESMF_Grid)                        :: grid
+      type(ESMF_FieldBundle)                 :: fieldbundle
+      type(ESMF_Field), allocatable          :: flds(:)
+      type(ESMF_DistGrid)                    :: distgrid
+      integer                                :: i, icount, ifld, id
       integer                                :: fieldcount, firstfld
+      integer                                :: fieldDimCount, gridDimCount, dimCount, tileCount, ungriddedDimCount
       character(64), allocatable             :: itemNameList(:), fldNameList(:)
       type(ESMF_StateItem_Flag), allocatable :: typeList(:)
+      integer, allocatable                   :: minIndexPTile(:,:), maxIndexPTile(:,:)
+      integer, allocatable                   :: ungriddedLBound(:), ungriddedUBound(:)
+      integer, allocatable                   :: fieldDimLen(:)
+      character(len=32), allocatable         :: gridded_dim_labels(:), ungridded_dim_labels(:)
+
+      character(16), parameter :: convention = 'NetCDF'
+      character(16), parameter :: purpose = 'FV3'
+
+      integer, parameter :: max_n_axes = 4
+      integer, parameter :: max_n_dim = 16
+      integer, dimension(max_n_axes, max_n_dim) :: axes_dimcount = 0
 
       character(len=*),parameter :: subname='(module_cap_cpl:State_RWFields_tiles)'
-
-      ! local variables
 
       rc = ESMF_SUCCESS
       !call ESMF_LogWrite(trim(subname)//trim(filename)//": called", ESMF_LOGMSG_INFO, rc=rc)
@@ -119,9 +126,6 @@ module module_cap_cpl
         if(typeList(i) == ESMF_STATEITEM_FIELD) firstfld = i
         if(typeList(i) == ESMF_STATEITEM_FIELD) fieldcount = fieldcount + 1
       enddo
-      !write(msgString,*) trim(subname)//' icount = ',icount," fieldcount =
-      !",fieldcount," firstfld = ",firstfld
-      !call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
       allocate(flds(fieldCount),fldNameList(fieldCount))
       ifld = 1
@@ -132,36 +136,143 @@ module module_cap_cpl
         endif
       enddo
 
-      call ESMF_LogWrite(trim(subname)//": write "//trim(filename)//"tile1-tile6", ESMF_LOGMSG_INFO, rc=rc)
-      ! get first field
-      call ESMF_StateGet(state, itemName=itemNameList(firstfld), field=firstESMFFLD, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
-
-      call ESMF_FieldGet(firstESMFFLD, grid=gridFv3, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
-
-      IOComp = ESMFIO_Create(gridFv3, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+      call ESMF_LogWrite(trim(subname)//": write "//trim(filename), ESMF_LOGMSG_INFO, rc=rc)
 
       do ifld=1, fieldCount
         call ESMF_StateGet(state, itemName=fldNameList(ifld), field=flds(ifld), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        call ESMF_FieldGet(flds(ifld), grid=grid, dimCount=fieldDimCount, array=array, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        if (fieldDimCount > 4) then
+          call ESMF_LogWrite(trim(subname)//": fieldDimCount > 4 unsupported", ESMF_LOGMSG_ERROR, rc=rc)
+        end if
+
+        call ESMF_GridGet(grid, dimCount=gridDimCount, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        if (gridDimCount > 2) then
+          call ESMF_LogWrite(trim(subname)//": gridDimCount > 2 unsupported", ESMF_LOGMSG_ERROR, rc=rc)
+        end if
+
+        call ESMF_ArrayGet(array, distgrid=distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        allocate(fieldDimLen(fieldDimCount))
+
+        allocate(minIndexPTile(dimCount, tileCount))
+        allocate(maxIndexPTile(dimCount, tileCount))
+        call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, maxIndexPTile=maxIndexPTile, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        allocate(gridded_dim_labels(gridDimCount))
+        do i = 1, gridDimCount
+          fieldDimLen(i) = maxIndexPTile(i,1) - minIndexPTile(i,1) + 1
+          id = find_axis_id_for_axis_count(i,fieldDimLen(i))
+          if (id < 1) then
+            call ESMF_LogWrite(trim(subname)//": id < 1", ESMF_LOGMSG_ERROR, rc=rc)
+          endif
+          if (i == 1) write(gridded_dim_labels(i),'(A,I0)') 'xaxis_',id
+          if (i == 2) write(gridded_dim_labels(i),'(A,I0)') 'yaxis_',id
+        end do
+
+        deallocate(minIndexPTile)
+        deallocate(maxIndexPTile)
+
+        ungriddedDimCount = fieldDimCount - gridDimCount
+        allocate(ungridded_dim_labels(ungriddedDimCount))
+        if (fieldDimCount > gridDimCount) then
+          allocate(ungriddedLBound(ungriddedDimCount))
+          allocate(ungriddedUBound(ungriddedDimCount))
+          call ESMF_FieldGet(flds(ifld), ungriddedLBound=ungriddedLBound, ungriddedUBound=ungriddedUBound, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          do i=1,ungriddedDimCount
+            fieldDimLen(i+gridDimCount) = ungriddedUBound(i) - ungriddedLBound(i) + 1
+            id = find_axis_id_for_axis_count(i+gridDimCount, fieldDimLen(i+gridDimCount))
+            if (id < 1) then
+              write(0,*)'stop error', id, i, fieldDimLen(i+gridDimCount)
+            endif
+            if (i==1) write(ungridded_dim_labels(i),'(A,I0)') 'zaxis_',id
+            if (i==2) write(ungridded_dim_labels(i),'(A,I0)') 'taxis_',id
+          end do
+          deallocate(ungriddedLBound)
+          deallocate(ungriddedUBound)
+        end if
+
+        call ESMF_AttributeAdd(grid, convention=convention, purpose=purpose, attrList=(/ ESMF_ATT_GRIDDED_DIM_LABELS /), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        call ESMF_AttributeSet(grid, convention=convention, purpose=purpose, &
+                               name=ESMF_ATT_GRIDDED_DIM_LABELS, valueList=gridded_dim_labels, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        if (ungriddedDimCount > 0) then
+          call ESMF_AttributeAdd(flds(ifld), convention=convention, purpose=purpose, &
+                                 attrList=(/ ESMF_ATT_UNGRIDDED_DIM_LABELS /), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          call ESMF_AttributeSet(flds(ifld), convention=convention, purpose=purpose, &
+                                 name=ESMF_ATT_UNGRIDDED_DIM_LABELS, valueList=ungridded_dim_labels, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        end if
+
+        deallocate(fieldDimLen)
+        deallocate(gridded_dim_labels)
+        deallocate(ungridded_dim_labels)
+
       enddo
 
-      call ESMFIO_Write(IOComp, filename, flds, filePath='./', rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+      fieldbundle = ESMF_FieldBundleCreate(rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! -- Finalize ESMFIO
+      call ESMF_FieldBundleAdd(fieldbundle, flds, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_FieldBundleWrite(fieldbundle, fileName=trim(filename), convention=convention, purpose=purpose, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+! -- Finalize
       deallocate(flds)
       deallocate(fldNameList)
-      call ESMFIO_Destroy(IOComp, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) call ESMF_Finalize()
+
+      call ESMF_FieldBundleDestroy(fieldbundle, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       !call ESMF_LogWrite(trim(subname)//trim(filename)//": finished", ESMF_LOGMSG_INFO, rc=rc)
+
+    contains
+
+      function find_axis_id_for_axis_count(axis, count) result(id)
+        integer, intent(in) :: axis, count
+
+        integer :: id
+        integer :: i
+
+        id = -1 ! not found
+
+        if (axis > max_n_axes) then
+          call ESMF_LogWrite('axis > max_n_axes. Increase max_n_axes in '//trim(subname), ESMF_LOGMSG_ERROR)
+          return
+        end if
+
+        do i =1, max_n_dim
+           if (axes_dimcount(axis, i) == 0) then
+             axes_dimcount(axis, i) = count
+             id = i
+             return
+           else
+             if (axes_dimcount(axis, i) == count) then
+                 id = i
+                 return
+             end if
+           end if
+        end do
+
+        call ESMF_LogWrite('Increase max_n_dim in '//trim(subname), ESMF_LOGMSG_ERROR)
+
+      end function find_axis_id_for_axis_count
 
     end subroutine State_RWFields_tiles
 
