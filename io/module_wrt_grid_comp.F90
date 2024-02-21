@@ -65,29 +65,29 @@
       integer,save      :: ntasks                                         !< Number of write tasks in the current group.
       integer,save      :: itasks                                         !< Number of write tasks in i direction in the current group.
       integer,save      :: jtasks                                         !< Number of write tasks in j direction in the current group.
-      integer,save      :: ngrids                                         !< ???
+      integer,save      :: ngrids                                         !< Number of output grids
 
       integer,save      :: wrt_mpi_comm                                   !< The mpi communicator in the write comp.
-      integer,save      :: idate(7)                                       !< ???
-      integer,save      :: start_time(7)                                  !< ???
-      logical,save      :: write_nsflip                                   !< ???
-      logical,save      :: change_wrtidate=.false.                        !< ???
-      integer,save      :: frestart(999) = -1                             !< ???
-      integer,save      :: calendar_type = 3                              !< ???
-      logical           :: lprnt                                          !< ???
+      integer,save      :: idate(7)                                       !< IO base time array
+      integer,save      :: start_time(7)                                  !< Experiment starting time
+      logical,save      :: write_nsflip                                   !< Flag to flip y-coordinate
+      logical,save      :: change_wrtidate=.false.                        !< Flag to change output time
+      integer,save      :: frestart(999) = -1                             !< Restart time/frequency array
+      integer,save      :: calendar_type = 3                              !< Calendar type
+      logical           :: lprnt                                          !< Flag for debug prints
 !
 !-----------------------------------------------------------------------
 !
-      type(ESMF_FieldBundle)           :: gridFB                        !< ???
-      integer                          :: FBCount                       !< ???
-      character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)  !< ???
-      logical                                   :: top_parent_is_global !< ???
+      type(ESMF_FieldBundle)           :: gridFB                          !< Temporary field bundle for axes information
+      integer                          :: FBCount                         !< Number of field bundles
+      character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)    !< Forecast item name list 
+      logical                                   :: top_parent_is_global   !< Flag, .true. when the top partent domain is global
 !
 !-----------------------------------------------------------------------
-      REAL(KIND=8)             :: btim,btim0           !< ???
-      REAL(KIND=8),PUBLIC,SAVE :: write_init_tim       !< ???
-      REAL(KIND=8),PUBLIC,SAVE :: write_run_tim        !< ???
-      REAL(KIND=8), parameter  :: radi=180.0d0/pi      !< ???
+      REAL(KIND=8)             :: btim0                                   !< Begining time
+      REAL(KIND=8),PUBLIC,SAVE :: write_init_tim                          !< Write grid component initialization time
+      REAL(KIND=8),PUBLIC,SAVE :: write_run_tim                           !< Write grid component run time
+      REAL(KIND=8), parameter  :: radi=180.0d0/pi                         !< Radius
 !-----------------------------------------------------------------------
 !
       public SetServices
@@ -98,15 +98,16 @@
       end interface splat
 !
       type optimizeT
-        type(ESMF_State)                   :: state     !< ???
-        type(ESMF_GridComp), allocatable   :: comps(:)  !< ???
+        type(ESMF_State)                   :: state     !< ESMF state
+        type(ESMF_GridComp), allocatable   :: comps(:)  !< ESMF grid components
       end type
 
       contains
 
-      !> ???
+      !> NUOPC Interface to indicate the generic component being specialized
+      !>  and register any specialization points
       !>
-      !> @param wrt_comp ???
+      !> @param wrt_comp write grid component
       !> @param rc Return code.
       !>
       !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -138,12 +139,12 @@
 
       end subroutine SetServices
 
-      !> ???
+      !> Write grid component initialization phase 1
       !>
-      !> @param wrt_comp ???
-      !> @param imp_state_write ???
-      !> @param exp_state_write ???
-      !> @param clock ???
+      !> @param wrt_comp Write grid component
+      !> @param imp_state_write Write grid component import state
+      !> @param exp_state_write Write grid component export state
+      !> @param clock ESMF clock for the write grid component
       !> @param[out] rc Return code.
       !>
       !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -1550,12 +1551,12 @@
 !#######################################################################
 !-----------------------------------------------------------------------
 !
-      !> ???
+      !> Write grid component initialization phase 2
       !>
-      !> @param wrt_comp ???
-      !> @param imp_state_write ???
-      !> @param exp_state_write ???
-      !> @param clock ???
+      !> @param wrt_comp Write grid component
+      !> @param imp_state_write Write grid component import state
+      !> @param exp_state_write Write grid component export state
+      !> @param clock ESMF clock for the write grid component
       !> @param[out] rc Return code.
       !>
       !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -1655,12 +1656,12 @@
 !
       end subroutine wrt_initialize_p2
 
-      !> ???
+      !> Write grid component initialization phase 3
       !>
-      !> @param wrt_comp ???
-      !> @param imp_state_write ???
-      !> @param exp_state_write ???
-      !> @param clock ???
+      !> @param wrt_comp Write grid component
+      !> @param imp_state_write Write grid component import state
+      !> @param exp_state_write Write grid component export state
+      !> @param clock ESMF clock for the write grid component
       !> @param[out] rc Return code.
       !>
       !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -1759,12 +1760,12 @@
 !
       end subroutine wrt_initialize_p3
 
-      !> ???
+      !> Write grid component run phase
       !>
-      !> @param wrt_comp ???
-      !> @param imp_state_write ???
-      !> @param exp_state_write ???
-      !> @param clock ???
+      !> @param wrt_comp Write grid component
+      !> @param imp_state_write Write grid component import state
+      !> @param exp_state_write Write grid component export state
+      !> @param clock ESMF clock for the write grid component
       !> @param[out] rc Return code.
       !>
       !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -2502,12 +2503,12 @@
 !
       END SUBROUTINE wrt_run
 
-      !> ???
+      !> Write grid component finalize phase
       !>
-      !> @param wrt_comp ???
-      !> @param imp_state_write ???
-      !> @param exp_state_write ???
-      !> @param clock ???
+      !> @param wrt_comp Write grid component
+      !> @param imp_state_write Write grid component import state
+      !> @param exp_state_write Write grid component export state
+      !> @param clock ESMF clock for the write grid component
       !> @param[out] rc Return code.
       !>
       !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -2559,9 +2560,9 @@
 !
 !-----------------------------------------------------------------------
 !
-   !> ???
+   !> Recover the fields interpolated through vector interpolation
    !>
-   !> @param[in] file_bundle ???
+   !> @param[in] file_bundle Field bundle
    !> @param[out] rc Return code.
    !>
    !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -2804,9 +2805,9 @@
 !
 !-----------------------------------------------------------------------
 !
-   !> ???
+   !> Add undefined value mask to ESMF fields in an output file bundle
    !>
-   !> @param[in] file_bundle ???
+   !> @param[in] file_bundle Output field bundle
    !> @param[out] rc Return code.
    !>
    !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -3068,16 +3069,16 @@
 !-----------------------------------------------------------------------
 !
 
-  !> ???
+  !> ESMF prototype interface to write out tiled field bundles
   !>
-  !> @param[in] file_bundle ???
-  !> @param[in] fileName ???
-  !> @param[in] convention ???
-  !> @param[in] purpose ???
-  !> @param[in] status ???
-  !> @param[in] timeslice ???
-  !> @param[in] state ???
-  !> @param[in] comps ???
+  !> @param[in] file_bundle Output ESMF field bundles
+  !> @param[in] fileName File name
+  !> @param[in] convention Convention of attribute package
+  !> @param[in] purpose Purpose of attribute package
+  !> @param[in] status ESMF file status flag
+  !> @param[in] timeslice Time slice
+  !> @param[in] state ESMF state
+  !> @param[in] comps ESMF grid component
   !> @param[out] rc Return code.
   !>
   !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -3389,9 +3390,9 @@
 
   !-----------------------------------------------------------------------------
 
-  !> ???
+  !> IO component set services
   !>
-  !> @param[in] comp ???
+  !> @param[in] comp ESMF grid component
   !> @param[out] rc Return code.
   !>
   !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -3410,15 +3411,15 @@
 
   !-----------------------------------------------------------------------------
 
-  !> ???
+  !> IO component run phase
   !>
-  !> @param comp ???
-  !> @param importState ???
-  !> @param exportState ???
-  !> @param clock ???
+  !> @param comp The ESMF grid component
+  !> @param importState Import state
+  !> @param exportState Export State
+  !> @param clock ESMF clock
   !> @param[out] rc Return code.
   !>
-  !> @author J. Wang/G. Theurich @date Jul, 2017        
+  !> @author G. Theurich @date Jul, 2017        
   subroutine ioCompRun(comp, importState, exportState, clock, rc)
     use netcdf
 
@@ -3794,12 +3795,12 @@
 
   contains
 
-    !> ???
+    !> Write out ungridded dimension attributes
     !>
-    !> @param[in] dimLablel ???
+    !> @param[in] dimLablel Dimension label
     !> @param[out] rc Return code.
     !>
-    !> @author J. Wang/G. Theurich @date Jul, 2017        
+    !> @author G. Theurich @date Jul, 2017        
     subroutine write_out_ungridded_dim_atts(dimLabel, rc)
       character(len=*)      :: dimLabel
       integer, intent(out)  :: rc
@@ -3943,10 +3944,10 @@
       endif
     end subroutine write_out_ungridded_dim_atts
 
-    !> ???
+    !> Write out ungridded dimension attributes from the ESMF fields
     !>
-    !> @param[in] field ???
-    !> @param[in] dimLablel ???
+    !> @param[in] field ESMF field
+    !> @param[in] dimLabel Dimension label
     !> @param[out] rc Return code.
     !>
     !> @author J. Wang/G. Theurich @date Jul, 2017        
@@ -4095,15 +4096,15 @@
 
   !-----------------------------------------------------------------------------
 
-  !> ???
+  !> ESMF prototype to geta field on a single tile from a field on multitiles
   !>
-  !> @param[in] field ???
-  !> @param[in] tile ???
-  !> @param[in] tileField ???
-  !> @param[in] petList ???
+  !> @param[in] field ESMF field
+  !> @param[in] tile Tile number
+  !> @param[in] tileField ESMF field on the single tile
+  !> @param[in] petList PET list on the single tile
   !> @param[out] rc Return code.
   !>
-  !> @author J. Wang/G. Theurich @date Jul, 2017        
+  !> @author G. Theurich @date Jul, 2017        
   subroutine ESMFproto_FieldMakeSingleTile(field, tile, tileField, petList, rc)
     type(ESMF_Field),     intent(in)              :: field
     integer,              intent(in)              :: tile
@@ -4303,13 +4304,13 @@
 
   end subroutine ESMFproto_FieldMakeSingleTile
 
-  !> ???
+  !> Compute sine latitiude in real(4) from grid type
   !>
-  !> @param[in] idrt ???
-  !> @param[in] jmax ???
-  !> @param[out] aslat ???
+  !> @param[in] idrt Data representation type
+  !> @param[in] jmax Maximum on j-direction
+  !> @param[out] aslat SINE of latitude in real(4)
   !>
-  !> @author J. Wang/G. Theurich @date Jul, 2017        
+  !> @author J. Wang @date Jul, 2017        
   subroutine splat4(idrt,jmax,aslat)
 
       implicit none
@@ -4420,13 +4421,13 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      end subroutine splat4
 
-     !> ???
+     !> Compute sine latitiude in real(8) from grid type
      !>
-     !> @param[in] idrt ???
-     !> @param[in] jmax ???
-     !> @param[out] aslat ???
+     !> @param[in] idrt Data representation type
+     !> @param[in] jmax Maximum on j-direction
+     !> @param[out] aslat SINE of latitude in real(8)
      !>
-     !> @author J. Wang/G. Theurich @date Jul, 2017        
+     !> @author J. Wang @date Jul, 2017        
      subroutine splat8(idrt,jmax,aslat)
 !$$$
       implicit none
@@ -4536,16 +4537,16 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      end subroutine splat8
 
-   !> ???
+   !> Compute geographical lat/lon from rotated lat/lon grid
    !>
-   !> @param[in] tlmd ???
-   !> @param[in] tphd ???
-   !> @param[in] almd ???
-   !> @param[in] aphd ???
-   !> @param[in] tlm0d ???
-   !> @param[in] tph0d ???
+   !> @param[in] tlmd Rotated Longitude
+   !> @param[in] tphd Rotated Latitude
+   !> @param[out] almd Geographical longitude
+   !> @param[out] aphd Geographical latitude
+   !> @param[in] tlm0d Central longitude
+   !> @param[in] tph0d Central latitude
    !>
-   !> @author J. Wang/G. Theurich @date Jul, 2017        
+   !> @author D. Jovic @date Jul, 2017        
    subroutine rtll(tlmd,tphd,almd,aphd,tlm0d,tph0d)
 !-------------------------------------------------------------------------------
       real(ESMF_KIND_R8), intent(in) :: tlmd, tphd
@@ -4597,19 +4598,19 @@
 !
      end subroutine rtll
 
-     !> ???
+     !> Compute lambert comformal projection
      !>
-     !> @param[in] stlat1 ???
-     !> @param[in] stlat2 ???
-     !> @param[in] c_lat ???
-     !> @param[in] c_lon ???
-     !> @param[inout] glon ???
-     !> @param[inout] glat ???
-     !> @param[inout] x ???
-     !> @param[inout] y ???
-     !> @param[in] inv ???
+     !> @param[in] stlat1 First standard parallel
+     !> @param[in] stlat2 Second standard parallel
+     !> @param[in] c_lat Central latitude
+     !> @param[in] c_lon Central longitude
+     !> @param[inout] glon Longitude
+     !> @param[inout] glat Latitude
+     !> @param[inout] x Lambert X coordinate
+     !> @param[inout] y Lambert Y coordinate
+     !> @param[in] inv Transformation indicator
      !>
-     !> @author J. Wang/G. Theurich @date Jul, 2017        
+     !> @author D. Jovic @date Jul, 2017        
      subroutine lambert(stlat1,stlat2,c_lat,c_lon,glon,glat,x,y,inv)
 
 !-------------------------------------------------------------------------------
@@ -4670,14 +4671,14 @@
       return
      end subroutine lambert
 
-     !> ???
+     !> Get output file names
      !>
-     !> @param[in] nfl ???
-     !> @param[in] filename ???
-     !> @param[in] outfile_name ???
-     !> @param[in] noutfile ???
+     !> @param[in] nfl Number of fields
+     !> @param[in] filename File name specified in each fiels
+     !> @param[inout] outfile_name Output file names
+     !> @param[inout] noutfile Number of output files
      !>
-     !> @author J. Wang/G. Theurich @date Jul, 2017        
+     !> @author J. Wang @date Jul, 2017        
      subroutine get_outfile(nfl, filename, outfile_name, noutfile)
        integer, intent(in)          :: nfl
        character(*), intent(in)     :: filename(:,:)
@@ -4714,6 +4715,11 @@
 
      end subroutine get_outfile
 
+     !> Trim the regridding interpolation method in a string suffix
+     !>
+     !> @param[in] string String with suffix
+     !>
+     !> @author J. Wang @date Jul, 2017        
      pure function trim_regridmethod_suffix(string) result(trimmed_string)
        character(len=*), intent(in) :: string
        character(len=:), allocatable :: trimmed_string
@@ -4726,6 +4732,12 @@
 
      end function trim_regridmethod_suffix
 
+     !> Trim the suffix from a string
+     !>
+     !> @param[in] string String with suffix
+     !> @param[in] suffix Suffix string
+     !>
+     !> @author J. Wang @date Jul, 2017        
      pure function trim_suffix(string, suffix) result(trimmed_string)
        character(len=*), intent(in) :: string, suffix
        character(len=:), allocatable :: trimmed_string
