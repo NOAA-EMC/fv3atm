@@ -57,7 +57,7 @@ contains
 !
 !** local vars
     integer :: i,j,t, istart,iend,jstart,jend
-    integer :: im, jm, lm
+    integer :: im, jm, lm, lsoil
 
     integer, dimension(:), allocatable              :: fldlev
 
@@ -95,9 +95,10 @@ contains
     integer :: ncerr,ierr
     integer :: ncid
     integer :: oldMode
-    integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
+    integer :: dim_len
+    integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid, lsoil_dimid
     integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid, timeiso_varid
-    integer, dimension(:), allocatable :: dimids_2d, dimids_3d, dimids, chunksizes
+    integer, dimension(:), allocatable :: dimids_2d, dimids_3d, dimids_soil, dimids, chunksizes
     integer, dimension(:), allocatable :: varids
     integer :: xtype
     integer :: quant_mode
@@ -204,17 +205,24 @@ contains
     end do
 
     lm = maxval(fldlev(:))
+    call get_dimlen_if_exists(ncid, "zsoil", wrtgrid, lsoil, rc)
+    if (lsoil > 0 .and. (.not. any(fldlev(:) == lsoil))) then
+       lsoil = 0
+    end if
+    if (lsoil > 0 .and. (.not. any(fldlev(:) > 1 .and. fldlev(:) /= lsoil))) then
+       lm = 1
+    end if
 
     ! for serial output allocate 'global' arrays
     if (.not. par) then
-       allocate(array_r4(im,jm))
+       ! allocate(array_r4(im,jm))
        allocate(array_r8(im,jm))
-       allocate(array_r4_3d(im,jm,lm))
+       ! allocate(array_r4_3d(im,jm,lm))
        allocate(array_r8_3d(im,jm,lm))
        if (is_cubed_sphere) then
-          allocate(array_r4_cube(im,jm,tileCount))
+          ! allocate(array_r4_cube(im,jm,tileCount))
           allocate(array_r8_cube(im,jm,tileCount))
-          allocate(array_r4_3d_cube(im,jm,lm,tileCount))
+          ! allocate(array_r4_3d_cube(im,jm,lm,tileCount))
           allocate(array_r8_3d_cube(im,jm,lm,tileCount))
        end if
     end if
@@ -242,6 +250,9 @@ contains
        if (lm > 1) then
          call add_dim(ncid, "pfull", pfull_dimid, wrtgrid, mype, rc)
          call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, mype, rc)
+       end if
+       if (lsoil > 1) then
+         call add_dim(ncid, "zsoil", lsoil_dimid, wrtgrid, mype, rc)
        end if
        if (is_cubed_sphere) then
           ncerr = nf90_def_dim(ncid, "tile", tileCount, tile_dimid); NC_ERR_STOP(ncerr)
@@ -318,14 +329,16 @@ contains
        ! define variables (fields)
        if (is_cubed_sphere) then
           allocate(dimids_2d(4))
-          allocate(dimids_3d(5))
-          dimids_2d =             [im_dimid,jm_dimid,            tile_dimid,time_dimid]
-          if (lm > 1) dimids_3d = [im_dimid,jm_dimid,pfull_dimid,tile_dimid,time_dimid]
+          allocate(dimids_3d(5), dimids_soil(5))
+          dimids_2d =                  [im_dimid,jm_dimid,            tile_dimid,time_dimid]
+          if (lm > 1) dimids_3d =      [im_dimid,jm_dimid,pfull_dimid,tile_dimid,time_dimid]
+          if (lsoil > 1) dimids_soil = [im_dimid,jm_dimid,lsoil_dimid,tile_dimid,time_dimid]
        else
           allocate(dimids_2d(3))
-          allocate(dimids_3d(4))
-          dimids_2d =             [im_dimid,jm_dimid,                       time_dimid]
-          if (lm > 1) dimids_3d = [im_dimid,jm_dimid,pfull_dimid,           time_dimid]
+          allocate(dimids_3d(4), dimids_soil(4))
+          dimids_2d =                  [im_dimid,jm_dimid,                       time_dimid]
+          if (lm > 1) dimids_3d =      [im_dimid,jm_dimid,pfull_dimid,           time_dimid]
+          if (lsoil > 1) dimids_soil = [im_dimid,jm_dimid,lsoil_dimid,           time_dimid]
        end if
 
        do i=1, fieldCount
@@ -336,7 +349,11 @@ contains
          if (rank == 2) then
            dimids = dimids_2d
          else if (rank == 3) then
-           dimids = dimids_3d
+           if (fldlev(i) == lsoil) then
+             dimids = dimids_soil
+           else if (fldlev(i) == lm) then
+             dimids = dimids_3d
+           endif
          else
            if (mype==0) write(0,*)'Unsupported rank ', rank
            call ESMF_Finalize(endflag=ESMF_END_ABORT)
@@ -368,7 +385,7 @@ contains
                if (is_cubed_sphere) then
                   chunksizes = [im, jm, lm, tileCount, 1]
                else
-                  chunksizes = [ichunk3d(grid_id), jchunk3d(grid_id), kchunk3d(grid_id),            1]
+                  chunksizes = [ichunk3d(grid_id), jchunk3d(grid_id), fldlev(i), 1]
                end if
                ncerr = nf90_def_var_chunking(ncid, varids(i), NF90_CHUNKED, chunksizes) ; NC_ERR_STOP(ncerr)
             end if
@@ -610,17 +627,21 @@ contains
             else
                if (is_cubed_sphere) then
                   call ESMF_FieldGet(fcstField(i), array=array, rc=rc); ESMF_ERR_RETURN(rc)
+                  allocate(array_r4_cube(im,jm,tileCount))
                   do t=1,tileCount
                      call ESMF_ArrayGather(array, array_r4_cube(:,:,t), rootPet=0, tile=t, rc=rc); ESMF_ERR_RETURN(rc)
                   end do
                   if (do_io) then
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_cube, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
+                  deallocate(array_r4_cube)
                else
+                  allocate(array_r4(im,jm))
                   call ESMF_FieldGather(fcstField(i), array_r4, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                   if (do_io) then
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
+                  deallocate(array_r4)
                end if
             end if
          else if (typekind == ESMF_TYPEKIND_R8) then
@@ -663,17 +684,21 @@ contains
             else
                if (is_cubed_sphere) then
                   call ESMF_FieldGet(fcstField(i), array=array, rc=rc); ESMF_ERR_RETURN(rc)
+                  allocate(array_r4_3d_cube(im,jm,fldlev(i),tileCount))
                   do t=1,tileCount
                      call ESMF_ArrayGather(array, array_r4_3d_cube(:,:,:,t), rootPet=0, tile=t, rc=rc); ESMF_ERR_RETURN(rc)
                   end do
                   if (mype==0) then
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d_cube, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
+                  deallocate(array_r4_3d_cube)
                else
+                  allocate(array_r4_3d(im,jm,fldlev(i)))
                   call ESMF_FieldGather(fcstField(i), array_r4_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                   if (mype==0) then
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
+                  deallocate(array_r4_3d)
                end if
             end if
          else if (typekind == ESMF_TYPEKIND_R8) then
@@ -708,14 +733,14 @@ contains
     end do ! end fieldCount
 
     if (.not. par) then
-       deallocate(array_r4)
+       ! deallocate(array_r4)
        deallocate(array_r8)
-       deallocate(array_r4_3d)
+       ! deallocate(array_r4_3d)
        deallocate(array_r8_3d)
        if (is_cubed_sphere) then
-          deallocate(array_r4_cube)
+          ! deallocate(array_r4_cube)
           deallocate(array_r8_cube)
-          deallocate(array_r4_3d_cube)
+          ! deallocate(array_r4_3d_cube)
           deallocate(array_r8_3d_cube)
        end if
     end if
@@ -723,6 +748,7 @@ contains
     if (do_io) then
        deallocate(dimids_2d)
        deallocate(dimids_3d)
+       deallocate(dimids_soil)
     end if
 
     deallocate(fcstField)
@@ -883,6 +909,22 @@ contains
 
   end subroutine get_grid_attr
 
+!----------------------------------------------------------------------------------------
+  subroutine get_dimlen_if_exists(ncid, dim_name, grid, dim_len, rc)
+
+    integer, intent(in)             :: ncid
+    character(len=*), intent(in)    :: dim_name
+    type(ESMF_Grid), intent(in)     :: grid
+    integer, intent(out)            :: dim_len
+    integer, intent(out)            :: rc
+
+    dim_len = 0
+
+    call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
+                           name=dim_name, itemCount=dim_len, rc=rc); ESMF_ERR_RETURN(rc)
+
+  end subroutine get_dimlen_if_exists
+
   !> Add a dimension.
   !>
   !> @param[in] ncid NetCDF file ID.
@@ -907,6 +949,7 @@ contains
     integer :: ncerr
     type(ESMF_TypeKind_Flag)   :: typekind
 
+    real(ESMF_KIND_I4), allocatable  :: valueListI4(:)
     real(ESMF_KIND_R4), allocatable  :: valueListR4(:)
     real(ESMF_KIND_R8), allocatable  :: valueListR8(:)
 !
@@ -944,6 +987,15 @@ contains
        ncerr = nf90_put_var(ncid, dim_varid, values=valueListR4); NC_ERR_STOP(ncerr)
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        deallocate(valueListR4)
+     else if (typekind==ESMF_TYPEKIND_I4) then
+       ncerr = nf90_def_var(ncid, dim_name, NF90_INT4, dimids=[dimid], varid=dim_varid); NC_ERR_STOP(ncerr)
+       allocate(valueListI4(n))
+       call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
+                              name=trim(dim_name), valueList=valueListI4, rc=rc); ESMF_ERR_RETURN(rc)
+       ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_var(ncid, dim_varid, values=valueListI4); NC_ERR_STOP(ncerr)
+       ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
+       deallocate(valueListI4)
      else
         if (mype==0) write(0,*)'Error in module_write_netcdf.F90(add_dim) unknown typekind for ',trim(dim_name)
         call ESMF_Finalize(endflag=ESMF_END_ABORT)
