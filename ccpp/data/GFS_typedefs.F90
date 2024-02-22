@@ -2153,7 +2153,6 @@ module GFS_typedefs
 !! \htmlinclude GFS_data_type.html
 !!
   type GFS_data_type
-     type(GFS_sfcprop_type)  :: Sfcprop
      type(GFS_coupling_type) :: Coupling
      type(GFS_radtend_type)  :: Radtend
      type(GFS_diag_type)     :: Intdiag
@@ -2270,13 +2269,15 @@ module GFS_typedefs
 !------------------------
 ! GFS_sfcprop_type%create
 !------------------------
-  subroutine sfcprop_create (Sfcprop, IM, Model)
+  subroutine sfcprop_create (Sfcprop, Model)
 
     implicit none
 
     class(GFS_sfcprop_type)            :: Sfcprop
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     !--- physics and radiation
     allocate (Sfcprop%slmsk    (IM))

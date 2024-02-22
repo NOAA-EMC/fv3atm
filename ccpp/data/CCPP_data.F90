@@ -13,6 +13,7 @@ module CCPP_data
                              GFS_grid_type,          &
                              GFS_tbd_type,           &
                              GFS_cldprop_type,       &
+                             GFS_sfcprop_type,       &
                              GFS_data_type
 
     implicit none
@@ -30,6 +31,7 @@ module CCPP_data
            GFS_grid,               &
            GFS_tbd,                &
            GFS_cldprop,            &
+           GFS_sfcprop,            &
            GFS_data,               &
            GFS_interstitial
 
@@ -43,6 +45,7 @@ module CCPP_data
     type(GFS_grid_type),                                       save, target :: GFS_grid
     type(GFS_tbd_type),                                        save, target :: GFS_tbd
     type(GFS_cldprop_type),                                    save, target :: GFS_cldprop
+    type(GFS_sfcprop_type),                                    save, target :: GFS_sfcprop
     type(GFS_data_type),          dimension(:),   allocatable, save, target :: GFS_data
     type(GFS_interstitial_type),  dimension(:),   allocatable, save, target :: GFS_interstitial
 

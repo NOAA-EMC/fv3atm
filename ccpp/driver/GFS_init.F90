@@ -38,7 +38,7 @@ module GFS_init
     type(GFS_control_type),      intent(inout) :: Model
     type(GFS_statein_type),      intent(inout) :: Statein
     type(GFS_stateout_type),     intent(inout) :: Stateout
-    type(GFS_sfcprop_type),      intent(inout) :: Sfcprop(:)
+    type(GFS_sfcprop_type),      intent(inout) :: Sfcprop
     type(GFS_coupling_type),     intent(inout) :: Coupling(:)
     type(GFS_grid_type),         intent(inout) :: Grid
     type(GFS_tbd_type),          intent(inout) :: Tbd
@@ -84,7 +84,6 @@ module GFS_init
 
     do nb = 1,nblks
       ix = Init_parm%blksz(nb)
-      call Sfcprop  (nb)%create (ix, Model)
       call Coupling (nb)%create (ix, Model)
       call Radtend  (nb)%create (ix, Model)
 !--- internal representation of diagnostics
@@ -95,6 +94,7 @@ module GFS_init
     call Grid%create(Model)
     call Tbd%create(Model)
     call Cldprop%create(Model)
+    call Sfcprop%create(Model)
 
 ! This logic deals with non-uniform block sizes for CCPP. When non-uniform block sizes
 ! are used, it is required that only the last block has a different (smaller) size than

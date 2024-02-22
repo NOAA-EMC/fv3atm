@@ -645,56 +645,56 @@
   standard_name = area_type
   long_name = landmask: sea/land/ice=0/1/2
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [oceanfrac]
   standard_name = sea_area_fraction
   long_name = fraction of horizontal grid area occupied by ocean
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [landfrac]
   standard_name = land_area_fraction
   long_name = fraction of horizontal grid area occupied by land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [vegtype_frac]
   standard_name = fraction_of_vegetation_category
   long_name = fraction of horizontal grid area occupied by given vegetation category
   units = frac
-  dimensions = (horizontal_loop_extent,number_of_vegetation_categories)
+  dimensions = (horizontal_dimension,number_of_vegetation_categories)
   type = real
   kind = kind_phys
 [soiltype_frac]
   standard_name = fraction_of_soil_category
   long_name = fraction of horizontal grid area occupied by given soil category
   units = frac
-  dimensions = (horizontal_loop_extent,number_of_soil_categories)
+  dimensions = (horizontal_dimension,number_of_soil_categories)
   type = real
   kind = kind_phys
 [lakefrac]
   standard_name = lake_area_fraction
   long_name = fraction of horizontal grid area occupied by lake
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [lakedepth]
   standard_name = lake_depth
   long_name = lake depth
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [clm_lakedepth]
   standard_name = clm_lake_depth
   long_name = clm internal copy of lake depth with 10.0 replaced by default lake depth
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_execution_method > 0 .and. control_for_lake_model_selection == 2)
@@ -702,13 +702,13 @@
   standard_name = flag_for_using_lake_model
   long_name = flag indicating lake points using a lake model
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [lake_t2m]
   standard_name =  temperature_at_2m_from_clm_lake
   long_name = temperature at 2m from clm lake
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_execution_method > 0 .and. control_for_lake_model_selection == 2)
@@ -716,7 +716,7 @@
   standard_name =  specific_humidity_at_2m_from_clm_lake
   long_name = specific humidity at 2m from clm lake
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_execution_method > 0 .and. control_for_lake_model_selection == 2)
@@ -724,7 +724,7 @@
   standard_name = mixed_layer_depth_of_lakes
   long_name = depth of lake mixing layer
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 1 .and. control_for_lake_model_execution_method > 0)
@@ -732,7 +732,7 @@
   standard_name = lake_mixed_layer_temperature
   long_name = temperature of lake mixing layer
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 1 .and. control_for_lake_model_execution_method > 0)
@@ -740,7 +740,7 @@
   standard_name = mean_temperature_of_the_water_column
   long_name = thee  mean temperature of the water column
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 1 .and. control_for_lake_model_execution_method > 0)
@@ -748,7 +748,7 @@
   standard_name = the_thermally_active_layer_depth_of_the_bottom_sediment
   long_name = the depth of the thermally active layer of the bottom sediment
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 1 .and. control_for_lake_model_execution_method > 0)
@@ -756,7 +756,7 @@
   standard_name = temperature_at_the_bottom_of_the_sediment_upper_layer
   long_name = the temperature at the bottom of the sediment upper layer
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 1 .and. control_for_lake_model_execution_method > 0)
@@ -764,7 +764,7 @@
   standard_name = lake_bottom_temperature
   long_name = the temperature at the water-bottom sediment interface
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 1 .and. control_for_lake_model_execution_method > 0)
@@ -772,7 +772,7 @@
   standard_name = temperature_for_bottom_layer_of_water
   long_name = the temperature at the lake bottom layer water
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 1 .and. control_for_lake_model_execution_method > 0)
@@ -780,7 +780,7 @@
   standard_name = shape_factor_of_water_temperature_vertical_profile
   long_name = the shape factor of water temperature vertical profile
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 1 .and. control_for_lake_model_execution_method > 0)
@@ -788,7 +788,7 @@
   standard_name = temperature_of_snow_on_lake
   long_name = temperature of snow on a lake
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_execution_method > 0)
@@ -796,133 +796,133 @@
   standard_name = surface_skin_temperature
   long_name = surface skin temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tsfco]
   standard_name = sea_surface_temperature
   long_name = sea surface temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tsfcl]
   standard_name = surface_skin_temperature_over_land
   long_name = surface skin temperature over land
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tisfc]
   standard_name = surface_skin_temperature_over_ice
   long_name = surface skin temperature over ice
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tiice]
   standard_name = temperature_in_ice_layer
   long_name = sea ice internal temperature
   units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_sea_ice)
+  dimensions = (horizontal_dimension,vertical_dimension_of_sea_ice)
   type = real
   kind = kind_phys
 [snowd]
   standard_name = lwe_surface_snow
   long_name = water equivalent snow depth
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zorl]
   standard_name = surface_roughness_length
   long_name = surface roughness length
   units = cm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zorlw]
   standard_name = surface_roughness_length_over_water
   long_name = surface roughness length over water
   units = cm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zorll]
   standard_name = surface_roughness_length_over_land
   long_name = surface roughness length over land
   units = cm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zorli]
   standard_name = surface_roughness_length_over_ice
   long_name = surface roughness length over ice
   units = cm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zorlwav]
   standard_name = surface_roughness_length_from_wave_model
   long_name = surface roughness length from wave model
   units = cm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [fice]
   standard_name = sea_ice_area_fraction_of_sea_area_fraction
   long_name = ice fraction over open water
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [snodl]
   standard_name = surface_snow_thickness_water_equivalent_over_land
   long_name = water equivalent snow depth over land
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [weasdl]
   standard_name = water_equivalent_accumulated_snow_depth_over_land
   long_name = water equiv of acc snow depth over land
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [snodi]
   standard_name = surface_snow_thickness_water_equivalent_over_ice
   long_name = water equivalent snow depth over ice
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [weasdi]
   standard_name = water_equivalent_accumulated_snow_depth_over_ice
   long_name = water equiv of acc snow depth over land
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [hprime]
   standard_name = statistical_measures_of_subgrid_orography_collection_array
   long_name = orographic metrics
   units = mixed
-  dimensions = (horizontal_loop_extent,number_of_statistical_measures_of_subgrid_orography)
+  dimensions = (horizontal_dimension,number_of_statistical_measures_of_subgrid_orography)
   type = real
   kind = kind_phys
 [hprime(:,1)]
   standard_name = standard_deviation_of_subgrid_orography
   long_name = standard deviation of subgrid height_above_mean_sea_level
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dust12m_in]
   standard_name = fengsha_dust12m_input
   long_name = fengsha dust input
   units = various
-  dimensions = (horizontal_loop_extent,12,5)
+  dimensions = (horizontal_dimension,12,5)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -930,7 +930,7 @@
   standard_name = anthropogenic_background_input
   long_name = anthropogenic background input
   units = various
-  dimensions = (horizontal_loop_extent,1)
+  dimensions = (horizontal_dimension,1)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -938,7 +938,7 @@
   standard_name = emission_smoke_RRFS
   long_name = emission fire RRFS
   units = various
-  dimensions = (horizontal_loop_extent,24,2)
+  dimensions = (horizontal_dimension,24,2)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -946,7 +946,7 @@
   standard_name = emission_smoke_prvd_RRFS
   long_name = emission fire RRFS daily
   units = various
-  dimensions = (horizontal_loop_extent,4)
+  dimensions = (horizontal_dimension,4)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -954,7 +954,7 @@
   standard_name = baseline_surface_roughness_length
   long_name = baseline surface roughness length for momentum in meter
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
@@ -962,21 +962,21 @@
   standard_name = baseline_surface_longwave_emissivity
   long_name = baseline surface lw emissivity in fraction
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sncovr]
   standard_name = surface_snow_area_fraction_over_land
   long_name = surface snow area fraction
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sncovr_ice]
   standard_name = surface_snow_area_fraction_over_ice
   long_name = surface snow area fraction over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -984,7 +984,7 @@
   standard_name = surface_fire_heat_flux
   long_name = heat flux of fire at the surface
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -992,7 +992,7 @@
   standard_name = fraction_of_grid_cell_burning
   long_name = ration of the burnt area to the grid cell area
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1000,35 +1000,35 @@
   standard_name = upper_bound_of_max_albedo_assuming_deep_snow
   long_name = maximum snow albedo
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [emis_lnd]
   standard_name = surface_longwave_emissivity_over_land
   long_name = surface lw emissivity in fraction over land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [emis_ice]
   standard_name = surface_longwave_emissivity_over_ice
   long_name = surface lw emissivity in fraction over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [emis_wat]
   standard_name = surface_longwave_emissivity_over_water
   long_name = surface lw emissivity in fraction over water
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sfalb_lnd]
   standard_name = surface_diffused_shortwave_albedo_over_land
   long_name = mean surface diffused sw albedo over land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1036,7 +1036,7 @@
   standard_name = surface_diffused_shortwave_albedo_over_ice
   long_name = mean surface diffused sw albedo over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1044,7 +1044,7 @@
   standard_name = surface_snow_free_albedo_over_land
   long_name = surface snow-free albedo over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1052,118 +1052,118 @@
   standard_name = vis_albedo_weak_cosz
   long_name = mean vis albedo with weak cosz dependency
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [alnwf]
   standard_name = nir_albedo_weak_cosz
   long_name = mean nir albedo with weak cosz dependency
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [slope]
   standard_name = surface_slope_classification
   long_name = sfc slope type for lsm
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [slope_save]
   standard_name = surface_slope_classification_save
   long_name = sfc slope type for lsm save
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [shdmin]
   standard_name = min_vegetation_area_fraction
   long_name = min fractional coverage of green vegetation
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [shdmax]
   standard_name = max_vegetation_area_fraction
   long_name = max fractional coverage of green vegetation
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tg3]
   standard_name = deep_soil_temperature
   long_name = deep soil temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [vfrac]
   standard_name = vegetation_area_fraction
   long_name = areal fractional cover of green vegetation
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [vtype]
   standard_name = vegetation_type_classification
   long_name = vegetation type for lsm
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [vtype_save]
   standard_name = vegetation_type_classification_save
   long_name = vegetation type for lsm save
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [stype]
   standard_name = soil_type_classification
   long_name = soil type for lsm
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [stype_save]
   standard_name = soil_type_classification_save
   long_name = soil type for lsm save
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [scolor]
   standard_name = soil_color_classification
   long_name = soil color for lsm
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [scolor_save]
   standard_name = soil_color_classification_save
   long_name = soil color for lsm save
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [uustar]
   standard_name = surface_friction_velocity
   long_name = boundary layer parameter
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [oro]
   standard_name = height_above_mean_sea_level
   long_name = height_above_mean_sea_level
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [oro_uf]
   standard_name = unfiltered_height_above_mean_sea_level
   long_name = unfiltered height_above_mean_sea_level
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [maxupmf]
   standard_name = maximum_convective_updraft_mass_flux
   long_name = maximum convective updraft mass flux within a column
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection)
@@ -1171,7 +1171,7 @@
   standard_name = consecutive_calls_for_grell_freitas_convection
   long_name = Memory counter for GF
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
@@ -1179,7 +1179,7 @@
   standard_name = consecutive_calls_for_grell_freitas_mid_level_convection
   long_name = Memory counter for GF midlevel
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
@@ -1187,112 +1187,112 @@
   standard_name = sea_ice_thickness
   long_name = sea ice thickness
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [weasd]
   standard_name = lwe_thickness_of_surface_snow_amount
   long_name = water equiv of acc snow depth over land and sea ice
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [canopy]
   standard_name = canopy_water_amount
   long_name = canopy water amount
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ffmm]
   standard_name = Monin_Obukhov_similarity_function_for_momentum
   long_name = Monin-Obukhov similarity function for momentum
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ffhh]
   standard_name = Monin_Obukhov_similarity_function_for_heat
   long_name = Monin-Obukhov similarity function for heat
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [f10m]
   standard_name = ratio_of_wind_at_surface_adjacent_layer_to_wind_at_10m
   long_name = ratio of sigma level 1 wind and 10m wind
   units = ratio
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [rca]
   standard_name = aerodynamic_resistance_in_canopy
   long_name = canopy resistance
   units = s m-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tprcp]
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep
   long_name = total precipitation amount in each time step
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [srflag]
   standard_name = precipitation_type
   long_name = snow/rain flag for precipitation
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [slc]
   standard_name = volume_fraction_of_unfrozen_water_in_soil
   long_name = liquid soil moisture
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil)
   type = real
   kind = kind_phys
 [smc]
   standard_name = volume_fraction_of_condensed_water_in_soil
   long_name = total soil moisture
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil)
   type = real
   kind = kind_phys
 [stc]
   standard_name = soil_temperature
   long_name = soil temperature
   units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil)
   type = real
   kind = kind_phys
 [t2m]
   standard_name = air_temperature_at_2m
   long_name = 2 meter temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [th2m]
   standard_name = air_potential_temperature_at_2m
   long_name = 2 meter potential temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [q2m]
   standard_name = specific_humidity_at_2m
   long_name = 2 meter specific humidity
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tref]
   standard_name = reference_sea_surface_temperature
   long_name = sea surface reference temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1300,7 +1300,7 @@
   standard_name = molecular_sublayer_thickness_in_sea_water
   long_name = sub-layer cooling thickness
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1308,7 +1308,7 @@
   standard_name = coefficient_c_0
   long_name = coefficient 1 to calculate d(Tz)/d(Ts)
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1316,7 +1316,7 @@
   standard_name = coefficient_c_d
   long_name = coefficient 2 to calculate d(Tz)/d(Ts)
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1324,7 +1324,7 @@
   standard_name = coefficient_w_0
   long_name = coefficient 3 to calculate d(Tz)/d(Ts)
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1332,7 +1332,7 @@
   standard_name = coefficient_w_d
   long_name = coefficient 4 to calculate d(Tz)/d(Ts)
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1340,7 +1340,7 @@
   standard_name = heat_content_in_diurnal_thermocline
   long_name = heat content in diurnal thermocline layer
   units = K m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1348,7 +1348,7 @@
   standard_name = sea_water_salinity_in_diurnal_thermocline
   long_name = salinity  content in diurnal thermocline layer
   units = ppt m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1356,7 +1356,7 @@
   standard_name = x_current_in_diurnal_thermocline
   long_name = u-current content in diurnal thermocline layer
   units = m2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1364,7 +1364,7 @@
   standard_name = y_current_in_diurnal_thermocline
   long_name = v-current content in diurnal thermocline layer
   units = m2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1372,7 +1372,7 @@
   standard_name = diurnal_thermocline_layer_thickness
   long_name = diurnal thermocline layer thickness
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1380,7 +1380,7 @@
   standard_name = ocean_mixed_layer_thickness
   long_name = mixed layer thickness
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1388,7 +1388,7 @@
   standard_name = derivative_of_heat_content_in_diurnal_thermocline_wrt_surface_skin_temperature
   long_name = d(xt)/d(ts)
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1396,7 +1396,7 @@
   standard_name = derivative_of_diurnal_thermocline_layer_thickness_wrt_surface_skin_temperature
   long_name = d(xz)/d(ts)
   units = m K-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1404,7 +1404,7 @@
   standard_name = free_convection_layer_thickness_in_sea_water
   long_name = thickness of free convection layer (FCL)
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1412,7 +1412,7 @@
   standard_name = control_for_diurnal_thermocline_calculation
   long_name = index to start dtlm run or not
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1420,7 +1420,7 @@
   standard_name = molecular_sublayer_temperature_correction_in_sea_water
   long_name = sub-layer cooling amount
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1428,7 +1428,7 @@
   standard_name = surface_sensible_heat_due_to_rainfall
   long_name = sensible heat flux due to rainfall
   units = W
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
@@ -1436,7 +1436,7 @@
   standard_name = number_of_snow_layers
   long_name = number of snow layers
   units = count
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1444,7 +1444,7 @@
   standard_name = canopy_temperature
   long_name = vegetation temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1452,7 +1452,7 @@
   standard_name = ground_temperature
   long_name = ground temperature for noahmp
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1460,7 +1460,7 @@
   standard_name = canopy_intercepted_ice_mass
   long_name = canopy intercepted ice mass
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1468,7 +1468,7 @@
   standard_name = canopy_intercepted_liquid_water
   long_name = canopy intercepted liquid water
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1476,7 +1476,7 @@
   standard_name = air_vapor_pressure_in_canopy
   long_name = canopy air vapor pressure
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1484,7 +1484,7 @@
   standard_name = air_temperature_in_canopy
   long_name = canopy air temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1492,7 +1492,7 @@
   standard_name = surface_drag_coefficient_for_momentum_for_noahmp
   long_name = surface drag coefficient for momentum for noahmp
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1500,7 +1500,7 @@
   standard_name = surface_drag_coefficient_for_heat_and_moisture_for_noahmp
   long_name = surface exchange coeff heat & moisture for noahmp
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1508,7 +1508,7 @@
   standard_name = wet_canopy_area_fraction
   long_name = area fraction of canopy that is wetted/snowed
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1516,7 +1516,7 @@
   standard_name = lwe_thickness_of_snowfall_amount_on_previous_timestep
   long_name = snow mass at previous time step
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1524,7 +1524,7 @@
   standard_name = surface_albedo_assuming_deep_snow_on_previous_timestep
   long_name = snow albedo at previous time step
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1532,7 +1532,7 @@
   standard_name = lwe_snowfall_rate
   long_name = snow precipitation rate at surface
   units = mm s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1540,7 +1540,7 @@
   standard_name = water_storage_in_lake
   long_name = lake water storage
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1548,7 +1548,7 @@
   standard_name = water_table_depth
   long_name = water table depth
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1556,7 +1556,7 @@
   standard_name = water_storage_in_aquifer
   long_name = water storage in aquifer
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1564,7 +1564,7 @@
   standard_name = water_storage_in_aquifer_and_saturated_soil
   long_name = water storage in aquifer and saturated soil
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1572,7 +1572,7 @@
   standard_name = temperature_in_surface_snow
   long_name = temperature_in_surface_snow
   units = K
-  dimensions = (horizontal_loop_extent, lower_bound_of_vertical_dimension_of_surface_snow:0)
+  dimensions = (horizontal_dimension, lower_bound_of_vertical_dimension_of_surface_snow:0)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1580,7 +1580,7 @@
   standard_name = depth_from_snow_surface_at_bottom_interface
   long_name = depth from the top of the snow surface at the bottom of the layer
   units = m
-  dimensions = (horizontal_loop_extent, lower_bound_of_vertical_dimension_of_surface_snow:vertical_dimension_of_soil_internal_to_land_surface_scheme)
+  dimensions = (horizontal_dimension, lower_bound_of_vertical_dimension_of_surface_snow:vertical_dimension_of_soil_internal_to_land_surface_scheme)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1588,7 +1588,7 @@
   standard_name = lwe_thickness_of_ice_in_surface_snow
   long_name = snow layer ice
   units = mm
-  dimensions = (horizontal_loop_extent, lower_bound_of_vertical_dimension_of_surface_snow:0)
+  dimensions = (horizontal_dimension, lower_bound_of_vertical_dimension_of_surface_snow:0)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1596,7 +1596,7 @@
   standard_name = lwe_thickness_of_liquid_water_in_surface_snow
   long_name = snow layer liquid water
   units = mm
-  dimensions = (horizontal_loop_extent, lower_bound_of_vertical_dimension_of_surface_snow:0)
+  dimensions = (horizontal_dimension, lower_bound_of_vertical_dimension_of_surface_snow:0)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1604,7 +1604,7 @@
   standard_name = leaf_mass_content
   long_name = leaf mass
   units = g m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1612,7 +1612,7 @@
   standard_name = fine_root_mass_content
   long_name = fine root mass
   units = g m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1620,7 +1620,7 @@
   standard_name = stem_mass_content
   long_name = stem mass
   units = g m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1628,7 +1628,7 @@
   standard_name = wood_mass_content
   long_name = wood mass including woody roots
   units = g m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1636,7 +1636,7 @@
   standard_name = slow_soil_pool_mass_content_of_carbon
   long_name = stable carbon in deep soil
   units = g m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1644,7 +1644,7 @@
   standard_name = fast_soil_pool_mass_content_of_carbon
   long_name = short-lived carbon in shallow soil
   units = g m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1652,7 +1652,7 @@
   standard_name = leaf_area_index
   long_name = leaf area index
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1660,7 +1660,7 @@
   standard_name = stem_area_index
   long_name = stem area index
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1668,7 +1668,7 @@
   standard_name = dimensionless_age_of_surface_snow
   long_name = non-dimensional snow age
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1676,7 +1676,7 @@
   standard_name = volumetric_equilibrium_soil_moisture
   long_name = equilibrium soil water content
   units = m3 m-3
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil_internal_to_land_surface_scheme)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil_internal_to_land_surface_scheme)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1684,7 +1684,7 @@
   standard_name = volumetric_soil_moisture_between_soil_bottom_and_water_table
   long_name = soil water content between the bottom of the soil and the water table
   units = m3 m-3
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1692,7 +1692,7 @@
   standard_name = water_table_recharge_assuming_deep
   long_name = recharge to or from the water table when deep
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1700,7 +1700,7 @@
   standard_name = water_table_recharge_assuming_shallow
   long_name = recharge to or from the water table when shallow
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -1708,35 +1708,35 @@
   standard_name = surface_albedo_direct_visible_over_land
   long_name = direct surface albedo visible band over land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [albdirnir_lnd]
   standard_name = surface_albedo_direct_NIR_over_land
   long_name = direct surface albedo NIR band over land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [albdifvis_lnd]
   standard_name = surface_albedo_diffuse_visible_over_land
   long_name = diffuse surface albedo visible band over land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [albdifnir_lnd]
   standard_name = surface_albedo_diffuse_NIR_over_land
   long_name = diffuse surface albedo NIR band over land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [albdirvis_ice]
   standard_name = surface_albedo_direct_visible_over_ice
   long_name = direct surface albedo visible band over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo)
@@ -1744,7 +1744,7 @@
   standard_name = surface_albedo_diffuse_visible_over_ice
   long_name = diffuse surface albedo visible band over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo)
@@ -1752,7 +1752,7 @@
   standard_name = surface_albedo_direct_NIR_over_ice
   long_name = direct surface albedo NIR band over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo)
@@ -1760,7 +1760,7 @@
   standard_name = surface_albedo_diffuse_NIR_over_ice
   long_name = diffuse surface albedo NIR band over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo)
@@ -1768,7 +1768,7 @@
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1776,7 +1776,7 @@
   standard_name = volume_fraction_of_unfrozen_soil_moisture_for_land_surface_model
   long_name = volume fraction of unfrozen soil moisture for lsm
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil_internal_to_land_surface_scheme)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil_internal_to_land_surface_scheme)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1784,7 +1784,7 @@
   standard_name = volume_fraction_of_frozen_soil_moisture_for_land_surface_model
   long_name = volume fraction of frozen soil moisture for lsm
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil_internal_to_land_surface_scheme)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil_internal_to_land_surface_scheme)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1792,7 +1792,7 @@
   standard_name = volume_fraction_of_soil_moisture_for_land_surface_model
   long_name = volumetric fraction of soil moisture for lsm
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil_internal_to_land_surface_scheme)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil_internal_to_land_surface_scheme)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1800,7 +1800,7 @@
   standard_name = soil_temperature_for_land_surface_model
   long_name = soil temperature for land surface model
   units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil_internal_to_land_surface_scheme)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil_internal_to_land_surface_scheme)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1808,7 +1808,7 @@
   standard_name = cloud_condensed_water_mixing_ratio_at_surface_over_land
   long_name = moist cloud water mixing ratio at surface over land
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1816,7 +1816,7 @@
   standard_name = cloud_condensed_water_mixing_ratio_at_surface_over_ice
   long_name = moist cloud water mixing ratio at surface over ice
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1824,7 +1824,7 @@
   standard_name = water_vapor_mixing_ratio_at_surface_over_land
   long_name = water vapor mixing ratio at surface over land
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1832,7 +1832,7 @@
   standard_name = water_vapor_mixing_ratio_at_surface_over_ice
   long_name = water vapor mixing ratio at surface over ice
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1840,7 +1840,7 @@
   standard_name = control_for_frozen_soil_physics
   long_name = flag for frozen soil physics (RUC)
   units = flag
-  dimensions = (horizontal_loop_extent,vertical_dimension_of_soil_internal_to_land_surface_scheme)
+  dimensions = (horizontal_dimension,vertical_dimension_of_soil_internal_to_land_surface_scheme)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1848,7 +1848,7 @@
   standard_name = lsm_internal_surface_frozen_precipitation_density
   long_name = density of frozen precipitation
   units = kg m-3
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1856,7 +1856,7 @@
   standard_name = temperature_in_surface_snow_at_surface_adjacent_layer_over_land
   long_name = snow temperature at the bottom of the first snow layer over land
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1864,7 +1864,7 @@
   standard_name = temperature_in_surface_snow_at_surface_adjacent_layer_over_ice
   long_name = snow temperature at the bottom of the first snow layer over ice
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1872,7 +1872,7 @@
   standard_name = surface_snow_amount_assuming_variable_snow_density_over_land
   long_name = run-total snow accumulation on the ground with variable snow density over land
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1880,14 +1880,14 @@
   standard_name = surface_snow_lwe_thickness_amount_over_land
   long_name = run-total snowfall water equivalent over land
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [snowfallac_ice]
   standard_name = surface_snow_amount_assuming_variable_snow_density_over_ice
   long_name = run-total snow accumulation on the ground with variable snow density over ice
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1895,14 +1895,14 @@
   standard_name = surface_snow_lwe_thickness_amount_over_ice
   long_name = run-total snowfall water equivalent over ice
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ustm]
   standard_name = surface_friction_velocity_for_momentum
   long_name = friction velocity isolated for momentum only
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1910,7 +1910,7 @@
   standard_name = ratio_of_height_to_monin_obukhov_length
   long_name = monin obukhov surface stability parameter
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1918,7 +1918,7 @@
   standard_name = surface_temperature_scale
   long_name = temperature flux divided by ustar (temperature scale)
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1926,7 +1926,7 @@
   standard_name = reciprocal_of_obukhov_length
   long_name = one over obukhov length
   units = m-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1934,7 +1934,7 @@
   standard_name = surface_exchange_coefficient_for_heat
   long_name = surface exchange coefficient for heat
   units = W m-2 K-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1942,7 +1942,7 @@
   standard_name = surface_exchange_coefficient_for_moisture
   long_name = surface exchange coefficient for moisture
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1950,7 +1950,7 @@
   standard_name = surface_exchange_coefficient_for_heat_at_2m
   long_name = exchange coefficient for heat at 2 meters
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1958,7 +1958,7 @@
   standard_name = surface_exchange_coefficient_for_moisture_at_2m
   long_name = exchange coefficient for moisture at 2 meters
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1966,7 +1966,7 @@
   standard_name = surface_upward_latent_heat_flux
   long_name = latent heating at the surface (pos = up)
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
@@ -1974,28 +1974,28 @@
   standard_name = surface_upward_specific_humidity_flux
   long_name = kinematic surface upward latent heat flux
   units = kg kg-1 m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [hflx]
   standard_name = surface_upward_temperature_flux
   long_name = kinematic surface upward sensible heat flux
   units = K m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [qss]
   standard_name = surface_specific_humidity
   long_name = surface air saturation specific humidity
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [raincprv]
   standard_name = lwe_thickness_of_convective_precipitation_amount_on_previous_timestep
   long_name = convective_precipitation_amount from previous timestep
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. ( control_for_lake_model_execution_method > 0 .and. control_for_lake_model_selection == 2) )
@@ -2003,7 +2003,7 @@
   standard_name = lwe_thickness_of_explicit_precipitation_amount_on_previous_timestep
   long_name = explicit rainfall from previous timestep
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. ( control_for_lake_model_execution_method > 0 .and. control_for_lake_model_selection == 2) )
@@ -2011,7 +2011,7 @@
   standard_name = lwe_thickness_of_ice_precipitation_amount_on_previous_timestep
   long_name = ice amount from previous timestep
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -2019,7 +2019,7 @@
   standard_name = snow_mass_on_previous_timestep
   long_name = snow amount from previous timestep
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -2027,7 +2027,7 @@
   standard_name = lwe_thickness_of_graupel_amount_on_previous_timestep
   long_name = graupel amount from previous timestep
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -2035,7 +2035,7 @@
   standard_name = convective_precipitation_rate_on_previous_timestep
   long_name = convective precipitation rate from previous timestep
   units = mm s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -2043,7 +2043,7 @@
   standard_name = explicit_precipitation_rate_on_previous_timestep
   long_name = explicit rainfall rate previous timestep
   units = mm s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -2051,7 +2051,7 @@
   standard_name = ice_precipitation_rate_on_previous_timestep
   long_name = ice precipitation rate from previous timestep
   units = mm s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -2059,7 +2059,7 @@
   standard_name = snowfall_rate_on_previous_timestep
   long_name = snow precipitation rate from previous timestep
   units = mm s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -2067,7 +2067,7 @@
   standard_name = graupel_precipitation_rate_on_previous_timestep
   long_name = graupel precipitation rate from previous timestep
   units = mm s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -2075,35 +2075,35 @@
   standard_name = vis_albedo_strong_cosz
   long_name = mean vis albedo with strong cosz dependency
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [alnsf]
   standard_name = nir_albedo_strong_cosz
   long_name = mean nir albedo with strong cosz dependency
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [facsf]
   standard_name =strong_cosz_area_fraction
   long_name = fractional coverage with strong cosz dependency
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [facwf]
   standard_name = weak_cosz_area_fraction
   long_name = fractional coverage with weak cosz dependency
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [lake_albedo]
   standard_name = mid_day_surface_albedo_over_lake
   long_name = mid day surface albedo over lake
   units = fraction
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2111,7 +2111,7 @@
   standard_name = lake_depth_before_correction
   long_name = lake depth_before_correction
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2119,7 +2119,7 @@
   standard_name = water_equivalent_accumulated_snow_depth_in_clm_lake_model
   long_name = water equiv of acc snow depth over lake in clm lake model
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2127,7 +2127,7 @@
   standard_name = actual_snow_depth_in_clm_lake_model
   long_name = actual acc snow depth over lake in clm lake model
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2135,7 +2135,7 @@
   standard_name = snow_layers_in_clm_lake_model
   long_name = snow layers in clm lake model (treated as integer)
   units = count
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2143,7 +2143,7 @@
   standard_name = snow_level_depth_in_clm_lake_model
   long_name = snow level depth in clm lake model
   units = m
-  dimensions = (horizontal_loop_extent,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2151,7 +2151,7 @@
   standard_name = snow_level_thickness_in_clm_lake_model
   long_name = snow level thickness in clm lake model
   units = m
-  dimensions = (horizontal_loop_extent,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2159,7 +2159,7 @@
   standard_name = snow_interface_depth_in_clm_lake_model
   long_name = snow interface_depth in clm lake model
   units = m
-  dimensions = (horizontal_loop_extent,snow_plus_soil_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,snow_plus_soil_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2167,7 +2167,7 @@
   standard_name = volumetric_soil_water_in_clm_lake_model
   long_name = volumetric soil water in clm lake model
   units = m3 m-3
-  dimensions = (horizontal_loop_extent,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2175,7 +2175,7 @@
   standard_name = soil_liquid_water_content_in_clm_lake_model
   long_name = soil liquid water content in clm lake model
   units = kg m-3
-  dimensions = (horizontal_loop_extent,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2183,7 +2183,7 @@
   standard_name = soil_ice_water_content_in_clm_lake_model
   long_name = soil ice water content in clm lake model
   units = kg m-3
-  dimensions = (horizontal_loop_extent,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2191,7 +2191,7 @@
   standard_name = skin_temperature_from_lake_model
   long_name = skin temperature from lake model
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2199,7 +2199,7 @@
   standard_name = soil_or_snow_layer_temperature_from_clm_lake_model
   long_name = soil or snow layer temperature from clm lake model
   units = K
-  dimensions = (horizontal_loop_extent,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,snow_plus_soil_minus_one_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2207,7 +2207,7 @@
   standard_name = lake_layer_temperature_from_clm_lake_model
   long_name = lake layer temperature from clm lake model
   units = K
-  dimensions = (horizontal_loop_extent,lake_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,lake_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2215,7 +2215,7 @@
   standard_name = top_level_eddy_conductivity_from_previous_timestep_in_clm_lake_model
   long_name = top level eddy conductivity from previous timestep in clm lake model
   units = kg m-3
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2223,14 +2223,14 @@
   standard_name = lake_fractional_ice_cover_on_clm_lake_levels
   long_name = lake fractional ice cover on clm lake levels
   units = kg m-3
-  dimensions = (horizontal_loop_extent,lake_vertical_dimension_for_clm_lake_model)
+  dimensions = (horizontal_dimension,lake_vertical_dimension_for_clm_lake_model)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
 [lake_ht]
   standard_name = test_lake_ht
   long_name = test_lake_ht
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   units = unitless
   type = real
   kind = kind_phys
@@ -2239,7 +2239,7 @@
   standard_name = flag_for_clm_lake_initialization
   long_name = set to true in clm_lake_run after likeini is called for that gridpoint
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
@@ -2247,21 +2247,21 @@
   standard_name = clm_lake_is_salty
   long_name = lake at this point is salty (1) or not (0)
   units = 1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
 [lake_cannot_freeze]
   standard_name = clm_lake_cannot_freeze
   long_name = lake at this point is so salty it cannot freeze
   units = 1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (control_for_lake_model_selection == 2 .and. control_for_lake_model_execution_method > 0)
 [emdust]
   standard_name = emission_of_dust_for_smoke
   long_name = emission of dust for smoke
   units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2269,7 +2269,7 @@
   standard_name = emission_of_sea_salt_for_mp_indir_fdb
   long_name = emission of sea salt for mp indirect feedabck
   units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2277,7 +2277,7 @@
   standard_name = emission_of_anothropogenic_for_mp_indir_fdb
   long_name = emission of anothropogenic for mp indirect feedabck
   units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2285,7 +2285,7 @@
   standard_name = surface_smoke_emission
   long_name = emission of surface smoke
   units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2293,7 +2293,7 @@
   standard_name = frp_hourly
   long_name = hourly fire radiative power
   units = MW
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2301,7 +2301,7 @@
   standard_name = fire_hist
   long_name = coefficient to scale the fire activity depending on the fire duration
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2309,7 +2309,7 @@
   standard_name = coef_bb_dc
   long_name = coef to estimate the fire emission
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2317,7 +2317,7 @@
   standard_name = smoke_fire_auxiliary_input
   long_name = smoke fire auxiliary input variables
   units = various
-  dimensions = (horizontal_loop_extent,fire_auxiliary_data_extent)
+  dimensions = (horizontal_dimension,fire_auxiliary_data_extent)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -9835,12 +9835,6 @@
 [ccpp-arg-table]
   name = GFS_data_type
   type = ddt
-[Sfcprop]
-  standard_name = GFS_sfcprop_type_instance
-  long_name = surface fields
-  units = DDT
-  dimensions = ()
-  type = GFS_sfcprop_type
 [Coupling]
   standard_name = GFS_coupling_type_instance
   long_name = fields to/from coupling with other components (land/ice/ocean)
