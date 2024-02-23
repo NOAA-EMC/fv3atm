@@ -8,10 +8,8 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  #url = https://github.com/ufs-community/ccpp-physics
-  #branch = production/AQM.v7
-  url = https://github.com/BrianCurtis-NOAA/ccpp-physics
-  branch = quick_fail_fix
+  url = https://github.com/ufs-community/ccpp-physics
+  branch = production/AQM.v7
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
