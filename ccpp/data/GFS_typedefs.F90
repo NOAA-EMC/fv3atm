@@ -2154,7 +2154,6 @@ module GFS_typedefs
 !!
   type GFS_data_type
      type(GFS_coupling_type) :: Coupling
-     type(GFS_radtend_type)  :: Radtend
      type(GFS_diag_type)     :: Intdiag
   end type GFS_data_type
 
@@ -7260,13 +7259,15 @@ module GFS_typedefs
 !******************************************
 ! GFS_radtend_type%create
 !******************************************
-  subroutine radtend_create (Radtend, IM, Model)
+  subroutine radtend_create (Radtend, Model)
 
     implicit none
 
     class(GFS_radtend_type)            :: Radtend
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     !--- Out (radiation only)
     allocate (Radtend%sfcfsw (IM))

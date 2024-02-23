@@ -57,13 +57,13 @@ module stochastic_physics_wrapper_mod
 !-------------------------------
 !  CCPP step
 !-------------------------------
-  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Data, Atm_block, ierr)
+  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block, ierr)
 
 #ifdef _OPENMP
     use omp_lib
 #endif
 
-    use GFS_typedefs,       only: GFS_control_type, GFS_statein_type, GFS_grid_type, GFS_sfcprop_type, GFS_data_type
+    use GFS_typedefs,       only: GFS_control_type, GFS_statein_type, GFS_grid_type, GFS_sfcprop_type, GFS_radtend_type, GFS_data_type
     use mpp_mod,            only: FATAL, mpp_error
     use block_control_mod,  only: block_control_type
     use atmosphere_mod,     only: Atm, mygrid
@@ -79,6 +79,7 @@ module stochastic_physics_wrapper_mod
     type(GFS_statein_type),   intent(in)    :: GFS_Statein
     type(GFS_grid_type),      intent(in)    :: GFS_Grid
     type(GFS_sfcprop_type),   intent(inout) :: GFS_Sfcprop
+    type(GFS_radtend_type),   intent(inout) :: GFS_Radtend
     type(GFS_data_type),      intent(inout) :: GFS_Data(:)
     type(block_control_type), intent(inout) :: Atm_block
     integer,                  intent(out)   :: ierr
@@ -312,7 +313,7 @@ module stochastic_physics_wrapper_mod
                   case('sal')
                       snoalb(nb,1:GFS_Control%blksz(nb)) = GFS_Sfcprop%snoalb(ixs:ixe)
                   case('emi')
-                      semis(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Radtend%semis(1:GFS_Control%blksz(nb))
+                      semis(nb,1:GFS_Control%blksz(nb))  = GFS_Radtend%semis(ixs:ixe)
                   case('zol')
                       zorll(nb,1:GFS_Control%blksz(nb))  = GFS_Sfcprop%zorll(ixs:ixe)
                   endselect
@@ -378,7 +379,7 @@ module stochastic_physics_wrapper_mod
                   case('sal')
                       GFS_Sfcprop%snoalb(ixs:ixe) = snoalb(nb,1:GFS_Control%blksz(nb))
                   case('emi')
-                      GFS_Data(nb)%Radtend%semis(1:GFS_Control%blksz(nb))  = semis(nb,1:GFS_Control%blksz(nb))
+                      GFS_Radtend%semis(ixs:ixe)  = semis(nb,1:GFS_Control%blksz(nb))
                   case('zol')
                       GFS_Sfcprop%zorll(ixs:ixe)  = zorll(nb,1:GFS_Control%blksz(nb))
                   end select
@@ -396,6 +397,7 @@ module stochastic_physics_wrapper_mod
              sst        (nb,1:GFS_Control%blksz(nb)) = GFS_Sfcprop%tsfco(ixs:ixe)
              lmsk       (nb,1:GFS_Control%blksz(nb)) = GFS_Sfcprop%slmsk(ixs:ixe)
              lake       (nb,1:GFS_Control%blksz(nb)) = GFS_Sfcprop%lakefrac(ixs:ixe)
+             ! DH* note - don't think we need the transfer_field logic, just use ixs:ixe?
              !uwind      (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%ugrs(:,:)
              call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%ugrs, uwind)
              !vwind      (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%vgrs(:,:)

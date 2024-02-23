@@ -86,7 +86,8 @@ use GFS_diagnostics,    only: GFS_externaldiag_type, &
 use CCPP_data,          only: ccpp_suite, GFS_control, &
                               GFS_statein, GFS_stateout, &
                               GFS_grid, GFS_tbd, GFS_cldprop, &
-                              GFS_sfcprop, GFS_data, GFS_interstitial
+                              GFS_sfcprop, GFS_radtend, &
+                              GFS_data, GFS_interstitial
 use GFS_init,           only: GFS_initialize
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
@@ -294,7 +295,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
           GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 !--- call stochastic physics pattern generation / cellular automata
-        call stochastic_physics_wrapper(GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Data, Atm_block, ierr)
+        call stochastic_physics_wrapper(GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block, ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
       endif
 
@@ -370,7 +371,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'RADIATION STEP  ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
@@ -384,7 +385,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP1   ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block)
       endif
 
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
@@ -403,7 +404,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block)
       endif
       call getiauforcing(GFS_control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
@@ -711,13 +712,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%fn_nml='using internal file'
 
    call GFS_initialize (GFS_control, GFS_Statein, GFS_Stateout, GFS_Sfcprop, &
-                        GFS_data%Coupling, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_data%Radtend, &
+                        GFS_data%Coupling, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_Radtend, &
                         GFS_data%Intdiag, GFS_interstitial, Init_parm)
 
    !--- populate/associate the Diag container elements
    call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Statein, GFS_Stateout,   &
                                              GFS_Sfcprop, GFS_Data%Coupling, GFS_Grid,      &
-                                             GFS_Tbd, GFS_Cldprop, GFS_Data%Radtend,             &
+                                             GFS_Tbd, GFS_Cldprop, GFS_Radtend,             &
                                              GFS_Data%Intdiag, Init_parm)
 
    Atmos%Diag => GFS_Diag
@@ -742,8 +743,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    call atmosphere_nggps_diag (Time, init=.true.)
    call fv3atm_diag_register (GFS_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
-   call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_statein, GFS_stateout, GFS_Sfcprop, &
-                              GFS_data%Coupling, GFS_grid, GFS_tbd, GFS_cldprop,  GFS_data%Radtend, &
+   call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_statein, GFS_stateout, GFS_sfcprop, &
+                              GFS_data%Coupling, GFS_grid, GFS_tbd, GFS_cldprop,  GFS_Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    if (quilting_restart) then
       call fv_dyn_restart_register (Atm(mygrid))
@@ -778,7 +779,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-     call stochastic_physics_wrapper(GFS_control, GFS_statein, GFS_grid, GFS_sfcprop, GFS_data, Atm_block, ierr)
+     call stochastic_physics_wrapper(GFS_control, GFS_statein, GFS_grid, GFS_sfcprop, GFS_Radtend, GFS_data, Atm_block, ierr)
      if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    endif
@@ -968,7 +969,7 @@ subroutine update_atmos_model_state (Atmos, rc)
 
     if (chksum_debug) then
       if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', GFS_control%kdt, GFS_control%fhour
-      call fv3atm_checksum(GFS_control, GFS_statein, GFS_stateout, GFS_grid, GFS_tbd, GFS_cldprop, GFS_sfcprop, GFS_data, Atm_block)
+      call fv3atm_checksum(GFS_control, GFS_statein, GFS_stateout, GFS_grid, GFS_tbd, GFS_cldprop, GFS_sfcprop, GFS_Radtend, GFS_data, Atm_block)
     endif
 
     !--- advance time ---

@@ -8195,89 +8195,89 @@
   standard_name = surface_sw_fluxes_assuming_total_and_clear_sky_on_radiation_timestep
   long_name = sw radiation fluxes at sfc
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = sfcfsw_type
 [sfcflw]
   standard_name = surface_lw_fluxes_assuming_total_and_clear_sky_on_radiation_timestep
   long_name = lw radiation fluxes at sfc
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = sfcflw_type
 [htrsw]
   standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_timestep
   long_name = total sky sw heating rate
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [htrlw]
   standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_timestep
   long_name = total sky lw heating rate
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [sfalb]
   standard_name = surface_albedo_for_diffused_shortwave_on_radiation_timestep
   long_name = mean surface diffused sw albedo
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [coszen]
   standard_name = cosine_of_solar_zenith_angle_for_daytime_points_on_radiation_timestep
   long_name = mean cos of zenith angle over rad call period
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [coszdg]
   standard_name = cosine_of_solar_zenith_angle_on_radiation_timestep
   long_name = daytime mean cosz over rad call period
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tsflw]
   standard_name = air_temperature_at_surface_adjacent_layer_on_radiation_timestep
   long_name = surface air temp during lw calculation
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [semis]
   standard_name = surface_longwave_emissivity
   long_name = surface lw emissivity in fraction
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ext550]
   standard_name = aerosol_optical_depth_at_550nm
   long_name = 3d optical extinction for total aerosol species
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [swhc]
   standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_timestep
   long_name = clear sky sw heating rates
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [lwhc]
   standard_name = tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_timestep
   long_name = clear sky lw heating rates
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [lwhd]
   standard_name = tendency_of_air_temperature_due_to_integrated_dynamics_through_earths_atmosphere
   long_name = idea sky lw heating rates
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,6)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,6)
   type = real
   kind = kind_phys
 
@@ -9841,12 +9841,6 @@
   units = DDT
   dimensions = ()
   type = GFS_coupling_type
-[Radtend]
-  standard_name = GFS_radtend_type_instance
-  long_name = radiation tendencies needed in physics
-  units = DDT
-  dimensions = ()
-  type = GFS_radtend_type
 [Intdiag]
   standard_name = GFS_diag_type_instance
   long_name = fields targeted for diagnostic output

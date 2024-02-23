@@ -133,7 +133,7 @@ module GFS_diagnostics
     type(GFS_grid_type),          intent(in)    :: Grid
     type(GFS_tbd_type),           intent(in)    :: Tbd
     type(GFS_cldprop_type),       intent(in)    :: Cldprop
-    type(GFS_radtend_type),       intent(in)    :: Radtend(:)
+    type(GFS_radtend_type),       intent(in)    :: Radtend
     type(GFS_diag_type),          intent(in)    :: IntDiag(:)
     type(GFS_init_type),          intent(in)    :: Init_parm
 
@@ -1900,7 +1900,7 @@ module GFS_diagnostics
     enddo
     endif
 
-    if(associated(Radtend(1)%lwhc)) then
+    if(associated(Radtend%lwhc)) then
     idx = idx + 1
     ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'lwhc'
@@ -1909,7 +1909,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => Radtend(nb)%lwhc(:,:)
+      ExtDiag(idx)%data(nb)%var3 => Radtend%lwhc(Model%chunk_begin(nb):Model%chunk_end(nb),:)
     enddo
     endif
 
@@ -4754,7 +4754,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var3 => Radtend(nb)%ext550(:,:)
+       ExtDiag(idx)%data(nb)%var3 => Radtend%ext550(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
 

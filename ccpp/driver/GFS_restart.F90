@@ -53,7 +53,7 @@ module GFS_restart
     type(GFS_grid_type),        intent(in)    :: Grid
     type(GFS_tbd_type),         intent(in)    :: Tbd
     type(GFS_cldprop_type),     intent(in)    :: Cldprop
-    type(GFS_radtend_type),     intent(in)    :: Radtend(:)
+    type(GFS_radtend_type),     intent(in)    :: Radtend
     type(GFS_diag_type),        intent(in)    :: IntDiag(:)
     type(GFS_init_type),        intent(in)    :: Init_parm
     type(GFS_externaldiag_type),intent(in)    :: ExtDiag(:)
@@ -702,7 +702,7 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'ext550'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Radtend(nb)%ext550(:,:)
+        Restart%data(nb,num)%var3p => Radtend%ext550(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
 

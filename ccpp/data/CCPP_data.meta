@@ -60,6 +60,12 @@
   units = DDT
   dimensions = ()
   type = GFS_sfcprop_type
+[GFS_Radtend]
+  standard_name = GFS_radtend_type_instance
+  long_name = instance of derived type GFS_radtend_type
+  units = DDT
+  dimensions = ()
+  type = GFS_radtend_type
 [GFS_Data(ccpp_block_number)]
   standard_name = GFS_data_type_instance
   long_name = instance of derived type GFS_data_type
