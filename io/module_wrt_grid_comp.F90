@@ -28,7 +28,9 @@
 !
       use mpi
       use esmf
+      use fms_mod, only : uppercase
       use fms
+      use mpp_mod, only : mpp_init, mpp_error
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
