@@ -10388,3 +10388,31 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[con_rgas]
+  standard_name = molar_gas_constant
+  long_name = universal ideal molar gas constant
+  units = J K-1 mol-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_avgd]
+  standard_name = avogadro_consant
+  long_name = Avogadro constant
+  units = mol-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_amd]
+  standard_name = molecular_weight_of_dry_air
+  long_name = molecular weight of dry air
+  units = g mol-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_amw]
+  standard_name = molecular_weight_of_water_vapor
+  long_name = molecular weight of water vapor
+  units = g mol-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
