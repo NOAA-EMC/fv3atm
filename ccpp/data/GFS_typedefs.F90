@@ -2153,7 +2153,6 @@ module GFS_typedefs
 !! \htmlinclude GFS_data_type.html
 !!
   type GFS_data_type
-     type(GFS_coupling_type) :: Coupling
      type(GFS_diag_type)     :: Intdiag
   end type GFS_data_type
 
@@ -2830,13 +2829,15 @@ module GFS_typedefs
 !-------------------------
 ! GFS_coupling_type%create
 !-------------------------
-  subroutine coupling_create (Coupling, IM, Model)
+  subroutine coupling_create (Coupling, Model)
 
     implicit none
 
     class(GFS_coupling_type)           :: Coupling
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     !--- radiation out
     !--- physics in

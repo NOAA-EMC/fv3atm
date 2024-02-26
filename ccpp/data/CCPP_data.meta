@@ -66,6 +66,12 @@
   units = DDT
   dimensions = ()
   type = GFS_radtend_type
+[GFS_Coupling]
+  standard_name = GFS_coupling_type_instance
+  long_name = instance of derived type GFS_coupling_type
+  units = DDT
+  dimensions = ()
+  type = GFS_coupling_type
 [GFS_Data(ccpp_block_number)]
   standard_name = GFS_data_type_instance
   long_name = instance of derived type GFS_data_type

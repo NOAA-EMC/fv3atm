@@ -57,13 +57,13 @@ module stochastic_physics_wrapper_mod
 !-------------------------------
 !  CCPP step
 !-------------------------------
-  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block, ierr)
+  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, GFS_Data, Atm_block, ierr)
 
 #ifdef _OPENMP
     use omp_lib
 #endif
 
-    use GFS_typedefs,       only: GFS_control_type, GFS_statein_type, GFS_grid_type, GFS_sfcprop_type, GFS_radtend_type, GFS_data_type
+    use GFS_typedefs,       only: GFS_control_type, GFS_statein_type, GFS_grid_type, GFS_sfcprop_type, GFS_radtend_type, GFS_coupling_type, GFS_data_type
     use mpp_mod,            only: FATAL, mpp_error
     use block_control_mod,  only: block_control_type
     use atmosphere_mod,     only: Atm, mygrid
@@ -80,6 +80,7 @@ module stochastic_physics_wrapper_mod
     type(GFS_grid_type),      intent(in)    :: GFS_Grid
     type(GFS_sfcprop_type),   intent(inout) :: GFS_Sfcprop
     type(GFS_radtend_type),   intent(inout) :: GFS_Radtend
+    type(GFS_coupling_type),  intent(inout) :: GFS_Coupling
     type(GFS_data_type),      intent(inout) :: GFS_Data(:)
     type(block_control_type), intent(inout) :: Atm_block
     integer,                  intent(out)   :: ierr
@@ -187,7 +188,7 @@ module stochastic_physics_wrapper_mod
                                      spp_wts=spp_wts, nthreads=nthreads)
          ! Copy contiguous data back
          do nb=1,nblks
-            GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
+            GFS_Coupling%sfc_wts(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
          end do
          deallocate(sfc_wts)
       end if
@@ -224,18 +225,18 @@ module stochastic_physics_wrapper_mod
          ! Copy contiguous data back
          if (GFS_Control%do_sppt) then
             do nb=1,nblks
-                GFS_Data(nb)%Coupling%sppt_wts(:,:) = sppt_wts(nb,1:GFS_Control%blksz(nb),:)
+                GFS_Coupling%sppt_wts(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = sppt_wts(nb,1:GFS_Control%blksz(nb),:)
             end do
          end if
          if (GFS_Control%do_shum) then
             do nb=1,nblks
-                GFS_Data(nb)%Coupling%shum_wts(:,:) = shum_wts(nb,1:GFS_Control%blksz(nb),:)
+                GFS_Coupling%shum_wts(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = shum_wts(nb,1:GFS_Control%blksz(nb),:)
             end do
          end if
          if (GFS_Control%do_skeb) then
             do nb=1,nblks
-                GFS_Data(nb)%Coupling%skebu_wts(:,:) = skebu_wts(nb,1:GFS_Control%blksz(nb),:)
-                GFS_Data(nb)%Coupling%skebv_wts(:,:) = skebv_wts(nb,1:GFS_Control%blksz(nb),:)
+                GFS_Coupling%skebu_wts(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = skebu_wts(nb,1:GFS_Control%blksz(nb),:)
+                GFS_Coupling%skebv_wts(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = skebv_wts(nb,1:GFS_Control%blksz(nb),:)
             end do
          end if
          if (GFS_Control%do_spp) then
@@ -243,27 +244,27 @@ module stochastic_physics_wrapper_mod
                select case (trim(GFS_Control%spp_var_list(n)))
                case('pbl')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Coupling%spp_wts_pbl(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('sfc')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_sfc(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Coupling%spp_wts_sfc(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('mp')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_mp(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Coupling%spp_wts_mp(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('gwd')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_gwd(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Coupling%spp_wts_gwd(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('rad')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Coupling%spp_wts_rad(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('cu_deep')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_cu_deep(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Coupling%spp_wts_cu_deep(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                end select
             end do
@@ -271,7 +272,7 @@ module stochastic_physics_wrapper_mod
 
          if (GFS_Control%lndp_type == 2) then ! save wts, and apply lndp scheme
              do nb=1,nblks
-                GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
+                GFS_Coupling%sfc_wts(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb),:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
              end do
  
              do nb=1,nblks
@@ -404,10 +405,10 @@ module stochastic_physics_wrapper_mod
              call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%vgrs, vwind)
              !height     (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%phil(:,:)
              call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%phil, height)
-             condition  (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%condition(:)
-             ca_deep_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_deep(:)
-             ca_turb_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_turb(:)
-             ca_shal_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_shal(:)
+             condition  (nb,1:GFS_Control%blksz(nb)) = GFS_Coupling%condition(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
+             ca_deep_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Coupling%ca_deep(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
+             ca_turb_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Coupling%ca_turb(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
+             ca_shal_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Coupling%ca_shal(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
          enddo
          call transfer_field_to_stochastics(GFS_Control%blksz, GFS_Grid%dx, dx)
          call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtp,GFS_control%restart,GFS_Control%first_time_step,              &
@@ -418,9 +419,9 @@ module stochastic_physics_wrapper_mod
             GFS_Control%nspinup,GFS_Control%ca_trigger,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
          ! Copy contiguous data back as needed
          do nb=1,nblks
-             GFS_Data(nb)%Coupling%ca_deep(:) = ca_deep_cpl (nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Coupling%ca_turb(:) = ca_turb_cpl (nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Coupling%ca_shal(:) = ca_shal_cpl (nb,1:GFS_Control%blksz(nb))
+             GFS_Coupling%ca_deep(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb)) = ca_deep_cpl (nb,1:GFS_Control%blksz(nb))
+             GFS_Coupling%ca_turb(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb)) = ca_turb_cpl (nb,1:GFS_Control%blksz(nb))
+             GFS_Coupling%ca_shal(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb)) = ca_shal_cpl (nb,1:GFS_Control%blksz(nb))
          enddo
        endif
        if(GFS_Control%ca_global)then
@@ -431,9 +432,9 @@ module stochastic_physics_wrapper_mod
             GFS_Control%nsmooth,GFS_Control%ca_amplitude,GFS_Control%master,GFS_Control%communicator)
           ! Copy contiguous data back
           do nb=1,nblks
-             GFS_Data(nb)%Coupling%ca1(:) = ca1_cpl(nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Coupling%ca2(:) = ca2_cpl(nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Coupling%ca3(:) = ca3_cpl(nb,1:GFS_Control%blksz(nb))
+             GFS_Coupling%ca1(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb)) = ca1_cpl(nb,1:GFS_Control%blksz(nb))
+             GFS_Coupling%ca2(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb)) = ca2_cpl(nb,1:GFS_Control%blksz(nb))
+             GFS_Coupling%ca3(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb)) = ca3_cpl(nb,1:GFS_Control%blksz(nb))
           enddo
        endif
 

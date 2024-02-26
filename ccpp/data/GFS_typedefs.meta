@@ -2335,91 +2335,91 @@
   standard_name = surface_downwelling_direct_nir_shortwave_flux_on_radiation_timestep
   long_name = sfc nir beam sw downward flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [nirdfdi]
   standard_name = surface_downwelling_diffuse_nir_shortwave_flux_on_radiation_timestep
   long_name = sfc nir diff sw downward flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [visbmdi]
   standard_name = surface_downwelling_direct_uv_and_vis_shortwave_flux_on_radiation_timestep
   long_name = sfc uv+vis beam sw downward flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [visdfdi]
   standard_name = surface_downwelling_diffuse_uv_and_vis_shortwave_flux_on_radiation_timestep
   long_name = sfc uv+vis diff sw downward flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [nirbmui]
   standard_name = surface_upwelling_direct_nir_shortwave_flux_on_radiation_timestep
   long_name = sfc nir beam sw upward flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [nirdfui]
   standard_name = surface_upwelling_diffuse_nir_shortwave_flux_on_radiation_timestep
   long_name = sfc nir diff sw upward flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [visbmui]
   standard_name = surface_upwelling_direct_uv_and_vis_shortwave_flux_on_radiation_timestep
   long_name = sfc uv+vis beam sw upward flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [visdfui]
   standard_name = surface_upwelling_diffuse_uv_and_vis_shortwave_flux_on_radiation_timestep
   long_name = sfc uv+vis diff sw upward flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sfcdsw]
   standard_name = surface_downwelling_shortwave_flux_on_radiation_timestep
   long_name = total sky sfc downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sfcnsw]
   standard_name = surface_net_downwelling_shortwave_flux_on_radiation_timestep
   long_name = total sky sfc netsw flx into ground
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sfcdlw]
   standard_name = surface_downwelling_longwave_flux_on_radiation_timestep
   long_name = total sky sfc downward lw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sfculw]
   standard_name = surface_upwelling_longwave_flux_on_radiation_timestep
   long_name = total sky sfc upward lw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [rain_cpl]
   standard_name = cumulative_lwe_thickness_of_precipitation_amount_for_coupling
   long_name = total rain precipitation
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_stochastic_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata .or. flag_for_land_coupling)
@@ -2427,7 +2427,7 @@
   standard_name = cumulative_lwe_thickness_of_convective_precipitation_amount_for_coupling
   long_name = total convective precipitation
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_chemistry_coupling .or. flag_for_land_coupling)
@@ -2435,7 +2435,7 @@
   standard_name = cumulative_lwe_thickness_of_snow_amount_for_coupling
   long_name = total snow precipitation
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_stochastic_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata .or. flag_for_land_coupling)
@@ -2443,7 +2443,7 @@
   standard_name = cumulative_surface_x_momentum_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc x momentum flux multiplied by timestep
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2451,7 +2451,7 @@
   standard_name = cumulative_surface_y_momentum_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc y momentum flux multiplied by timestep
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2459,7 +2459,7 @@
   standard_name = cumulative_surface_upward_sensible_heat_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc sensible heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2467,7 +2467,7 @@
   standard_name = cumulative_surface_upward_latent_heat_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc latent heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2475,7 +2475,7 @@
   standard_name = cumulative_surface_downwelling_longwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc downward lw flux mulitplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2483,7 +2483,7 @@
   standard_name = cumulative_surface_downwelling_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc downward sw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2491,7 +2491,7 @@
   standard_name = cumulative_surface_downwelling_direct_nir_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc nir beam downward sw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2499,7 +2499,7 @@
   standard_name = cumulative_surface_downwelling_diffuse_nir_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc nir diff downward sw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2507,7 +2507,7 @@
   standard_name = cumulative_surface_downwelling_direct_uv_and_vis_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc uv+vis beam dnwd sw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2515,7 +2515,7 @@
   standard_name = cumulative_surface_downwelling_diffuse_uv_and_vis_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc uv+vis diff dnwd sw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2523,7 +2523,7 @@
   standard_name = cumulative_surface_net_downwelling_longwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net downward lw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2531,7 +2531,7 @@
   standard_name = cumulative_surface_net_downwelling_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net downward sw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2539,7 +2539,7 @@
   standard_name = cumulative_surface_net_downwelling_direct_nir_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net nir beam downward sw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2547,7 +2547,7 @@
   standard_name = cumulative_surface_net_downwellling_diffuse_nir_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net nir diff downward sw flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2555,7 +2555,7 @@
   standard_name = cumulative_surface_net_downwelling_direct_uv_and_vis_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net uv+vis beam downward sw rad flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2563,7 +2563,7 @@
   standard_name = cumulative_surface_net_downwelling_diffuse_uv_and_vis_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net uv+vis diff downward sw rad flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2571,7 +2571,7 @@
   standard_name = surface_x_momentum_flux_for_coupling
   long_name = instantaneous sfc x momentum flux
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2579,7 +2579,7 @@
   standard_name = surface_y_momentum_flux_for_coupling
   long_name = instantaneous sfc y momentum flux
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2587,7 +2587,7 @@
   standard_name = surface_upward_sensible_heat_flux_for_coupling
   long_name = instantaneous sfc sensible heat flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling)
@@ -2595,7 +2595,7 @@
   standard_name = surface_upward_latent_heat_flux_for_coupling
   long_name = instantaneous sfc latent heat flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling)
@@ -2603,7 +2603,7 @@
   standard_name = surface_downwelling_longwave_flux_for_coupling
   long_name = instantaneous sfc downward lw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2611,7 +2611,7 @@
   standard_name = surface_downwelling_shortwave_flux_for_coupling
   long_name = instantaneous sfc downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2619,7 +2619,7 @@
   standard_name = surface_downwelling_direct_nir_shortwave_flux_for_coupling
   long_name = instantaneous sfc nir beam downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2627,7 +2627,7 @@
   standard_name = surface_downwelling_diffuse_nir_shortwave_flux_for_coupling
   long_name = instantaneous sfc nir diff downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2635,7 +2635,7 @@
   standard_name = surface_downwelling_direct_uv_and_vis_shortwave_flux_for_coupling
   long_name = instantaneous sfc uv+vis beam downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2643,7 +2643,7 @@
   standard_name = surface_downwelling_diffuse_uv_and_vis_shortwave_flux_for_coupling
   long_name = instantaneous sfc uv+vis diff downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2651,7 +2651,7 @@
   standard_name = surface_net_downwelling_longwave_flux_for_coupling
   long_name = instantaneous net sfc downward lw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2659,7 +2659,7 @@
   standard_name = surface_net_downwelling_shortwave_flux_for_coupling
   long_name = instantaneous net sfc downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling .or. flag_for_land_coupling)
@@ -2667,7 +2667,7 @@
   standard_name = surface_net_downwelling_direct_nir_shortwave_flux_for_coupling
   long_name = instantaneous net nir beam sfc downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2675,7 +2675,7 @@
   standard_name = surface_net_downwelling_diffuse_nir_shortwave_flux_for_coupling
   long_name = instantaneous net nir diff sfc downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2683,7 +2683,7 @@
   standard_name = surface_net_downwelling_direct_uv_and_vis_shortwave_flux_for_coupling
   long_name = instantaneous net uv+vis beam downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2691,7 +2691,7 @@
   standard_name = surface_net_downwelling_diffuse_uv_and_vis_shortwave_flux_for_coupling
   long_name = instantaneous net uv+vis diff downward sw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling)
@@ -2699,7 +2699,7 @@
   standard_name = temperature_at_2m_for_coupling
   long_name = instantaneous T2m
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling)
@@ -2707,7 +2707,7 @@
   standard_name = specific_humidity_at_2m_for_coupling
   long_name = instantaneous Q2m
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling)
@@ -2715,7 +2715,7 @@
   standard_name = x_wind_at_10m_for_coupling
   long_name = instantaneous U10m
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_ocean_wave_coupling)
@@ -2723,7 +2723,7 @@
   standard_name = y_wind_at_10m_for_coupling
   long_name = instantaneous V10m
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_ocean_wave_coupling)
@@ -2731,7 +2731,7 @@
   standard_name = surface_skin_temperature_for_coupling
   long_name = instantaneous sfc temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2739,7 +2739,7 @@
   standard_name = surface_air_pressure_for_coupling
   long_name = instantaneous sfc pressure
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling .or. flag_for_land_coupling)
@@ -2747,7 +2747,7 @@
   standard_name = surface_upwelling_longwave_flux_from_coupled_process
   long_name = surface upwelling LW flux for coupling
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2755,7 +2755,7 @@
   standard_name = surface_x_momentum_flux_from_coupled_process
   long_name = sfc x momentum flux for coupling
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2763,7 +2763,7 @@
   standard_name = surface_y_momentum_flux_from_coupled_process
   long_name = sfc y momentum flux for coupling
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2771,7 +2771,7 @@
   standard_name = surface_upward_sensible_heat_flux_from_coupled_process
   long_name = sfc sensible heat flux input
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2779,7 +2779,7 @@
   standard_name = surface_upward_latent_heat_flux_from_coupled_process
   long_name = sfc latent heat flux input for coupling
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2787,7 +2787,7 @@
   standard_name = surface_upwelling_longwave_flux_over_ocean_from_mediator
   long_name = surface upwelling LW flux over ocean for coupling
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
@@ -2795,7 +2795,7 @@
   standard_name = surface_x_momentum_flux_over_ocean_from_mediator
   long_name = sfc x momentum flux over ocean for coupling
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
@@ -2803,7 +2803,7 @@
   standard_name = surface_y_momentum_flux_over_ocean_from_mediator
   long_name = sfc y momentum flux over ocean for coupling
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
@@ -2811,7 +2811,7 @@
   standard_name = surface_upward_sensible_heat_flux_over_ocean_from_mediator
   long_name = sfc sensible heat flux input over ocean for coupling
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
@@ -2819,7 +2819,7 @@
   standard_name = surface_upward_latent_heat_flux_over_ocean_from_mediator
   long_name = sfc latent heat flux input over ocean for coupling
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
@@ -2827,14 +2827,14 @@
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [slimskin_cpl]
   standard_name = area_type_from_coupled_process
   long_name = sea/land/ice mask input (=0/1/2)
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
@@ -2842,7 +2842,7 @@
   standard_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
   long_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_prognostic_updraft_area_fraction)
@@ -2850,7 +2850,7 @@
   standard_name = cellular_automata_area_fraction_for_deep_convection_from_coupled_process
   long_name = fraction of cellular automata for deep convection
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
@@ -2858,7 +2858,7 @@
   standard_name = cellular_automata_global_pattern_from_coupled_process
   long_name = cellular automata global pattern
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
@@ -2866,14 +2866,14 @@
   standard_name = physics_field_for_coupling
   long_name = physics_field_for_coupling
   units = m2 s-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [shum_wts]
   standard_name = shum_weights_from_coupled_process
   long_name = weights for stochastic shum perturbation
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_shum_option)
@@ -2881,7 +2881,7 @@
   standard_name = sppt_weights_from_coupled_process
   long_name = weights for stochastic sppt perturbation
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_physics_perturbations .or. flag_for_global_cellular_automata)
@@ -2889,7 +2889,7 @@
   standard_name = skeb_x_wind_weights_from_coupled_process
   long_name = weights for stochastic skeb perturbation of x wind
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_skeb_option)
@@ -2897,7 +2897,7 @@
   standard_name = skeb_y_wind_weights_from_coupled_process
   long_name = weights for stochastic skeb perturbation of y wind
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_skeb_option)
@@ -2905,7 +2905,7 @@
   standard_name = spp_weights_for_pbl_scheme
   long_name = spp weights for pbl scheme
   units = 1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
@@ -2913,7 +2913,7 @@
   standard_name = spp_weights_for_surface_layer_scheme
   long_name = spp weights for surface layer scheme
   units = 1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
@@ -2921,7 +2921,7 @@
   standard_name = spp_weights_for_microphysics_scheme
   long_name = spp weights for microphysics scheme
   units = 1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
@@ -2929,7 +2929,7 @@
   standard_name = spp_weights_for_gravity_wave_drag_scheme
   long_name = spp weights for gravity wave drag scheme
   units = 1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
@@ -2937,7 +2937,7 @@
   standard_name = spp_weights_for_radiation_scheme
   long_name = spp weights for radiation scheme
   units = 1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
@@ -2945,7 +2945,7 @@
   standard_name = spp_weights_for_cu_deep_scheme
   long_name = spp weights for cu deep scheme
   units = 1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_stochastically_perturbed_parameterizations)
@@ -2953,7 +2953,7 @@
   standard_name = surface_stochastic_weights_from_coupled_process
   long_name = weights for stochastic surface physics perturbation
   units = 1
-  dimensions = (horizontal_loop_extent,number_of_perturbed_land_surface_variables)
+  dimensions = (horizontal_dimension,number_of_perturbed_land_surface_variables)
   type = real
   kind = kind_phys
   active = (control_for_stochastic_land_surface_perturbation /= 0)
@@ -2961,7 +2961,7 @@
   standard_name = tendency_of_hygroscopic_aerosols_at_surface_adjacent_layer
   long_name = instantaneous water-friendly sfc aerosol source
   units = kg-1 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .and. flag_for_aerosol_physics)
@@ -2969,7 +2969,7 @@
   standard_name = tendency_of_nonhygroscopic_ice_nucleating_aerosols_at_surface_adjacent_layer
   long_name = instantaneous ice-friendly sfc aerosol source
   units = kg-1 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .and. flag_for_aerosol_physics)
@@ -2977,7 +2977,7 @@
   standard_name = ebu_smoke
   long_name = buffer of vertical fire emission
   units = various
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2985,7 +2985,7 @@
   standard_name = extinction_coefficient_in_air_due_to_smoke
   long_name = extinction coefficient in air due to smoke
   units = various
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -2993,7 +2993,7 @@
   standard_name = extinction_coefficient_in_air_due_to_dust
   long_name = extinction coefficient in air due to dust
   units = various
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3001,7 +3001,7 @@
   standard_name = chem3d_mynn_pbl_transport
   long_name = mynn pbl transport of smoke and dust
   units = various
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_chemical_species_vertically_mixed)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,number_of_chemical_species_vertically_mixed)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3009,7 +3009,7 @@
   standard_name = dry_deposition_velocity_mynn_pbl_transport
   long_name = dry deposition velocity by mynn pbl transport
   units = m s-1
-  dimensions = (horizontal_loop_extent,number_of_chemical_species_deposited)
+  dimensions = (horizontal_dimension,number_of_chemical_species_deposited)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3017,7 +3017,7 @@
   standard_name = conv_wet_deposition_smoke_dust
   long_name = convective wet removal of smoke and dust
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,number_of_chemical_species_vertically_mixed)
+  dimensions = (horizontal_dimension,number_of_chemical_species_vertically_mixed)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3025,7 +3025,7 @@
   standard_name = mp_wet_deposition_smoke_dust
   long_name = large scale wet deposition of smoke and dust
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,number_of_chemical_species_vertically_mixed)
+  dimensions = (horizontal_dimension,number_of_chemical_species_vertically_mixed)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3033,7 +3033,7 @@
   standard_name = dry_deposition_flux
   long_name = rrfs dry deposition flux
   units = ug m-2
-  dimensions = (horizontal_loop_extent,number_of_chemical_species_deposited)
+  dimensions = (horizontal_dimension,number_of_chemical_species_deposited)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3041,7 +3041,7 @@
   standard_name = minimum_fire_plume_sigma_pressure_level
   long_name = minimum model level of fire plumerise
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3049,7 +3049,7 @@
   standard_name = maximum_fire_plume_sigma_pressure_level
   long_name = maximum model level of fire plumerise
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3057,7 +3057,7 @@
   standard_name = hourly_wildfire_potential
   long_name = rrfs hourly fire weather potential
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3065,7 +3065,7 @@
   standard_name = hourly_wildfire_potential_average
   long_name = rrfs hourly fire weather potential average
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3073,7 +3073,7 @@
   standard_name = surface_upward_sensible_heat_flux_for_chemistry_coupling
   long_name = instantaneous upward sensible heat flux for chemistry coupling
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_chemistry_coupling)
@@ -3081,7 +3081,7 @@
   standard_name = convective_cloud_condesate_after_rainout
   long_name = convective cloud condesate after rainout
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection)
@@ -3089,7 +3089,7 @@
   standard_name = ice_flux_due_to_large_scale_precipitation
   long_name = instantaneous 3D flux of ice from nonconvective precipitation
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_chemistry_coupling)
@@ -3097,7 +3097,7 @@
   standard_name = liquid_flux_due_to_large_scale_precipitation
   long_name = instantaneous 3D flux of liquid water from nonconvective precipitation
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_chemistry_coupling)
@@ -3105,7 +3105,7 @@
   standard_name = updated_tendency_of_air_temperature_due_to_longwave_heating_on_physics_timestep
   long_name = total sky longwave heating rate on physics time step
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
@@ -3113,7 +3113,7 @@
   standard_name = surface_skin_temperature_on_radiation_timestep
   long_name = surface skin temperature on radiation timestep
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
@@ -3121,7 +3121,7 @@
   standard_name = RRTMGP_jacobian_of_lw_flux_upward
   long_name = RRTMGP Jacobian upward longwave flux profile
   units = W m-2 K-1
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  dimensions = (horizontal_dimension,vertical_interface_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
@@ -3129,7 +3129,7 @@
   standard_name = RRTMGP_lw_flux_profile_upward_allsky_on_radiation_timestep
   long_name = RRTMGP upward longwave all-sky flux profile
   units = W m-2
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  dimensions = (horizontal_dimension,vertical_interface_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
@@ -3137,7 +3137,7 @@
   standard_name = RRTMGP_lw_flux_profile_downward_allsky_on_radiation_timestep
   long_name = RRTMGP downward longwave all-sky flux profile
   units = W m-2
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  dimensions = (horizontal_dimension,vertical_interface_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
@@ -9835,12 +9835,6 @@
 [ccpp-arg-table]
   name = GFS_data_type
   type = ddt
-[Coupling]
-  standard_name = GFS_coupling_type_instance
-  long_name = fields to/from coupling with other components (land/ice/ocean)
-  units = DDT
-  dimensions = ()
-  type = GFS_coupling_type
 [Intdiag]
   standard_name = GFS_diag_type_instance
   long_name = fields targeted for diagnostic output

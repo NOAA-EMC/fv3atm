@@ -9,7 +9,7 @@ module fv3atm_restart_io_mod
   use GFS_typedefs,       only: GFS_statein_type, GFS_stateout_type
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_typedefs,       only: GFS_grid_type, GFS_cldprop_type, GFS_tbd_type
-  use GFS_typedefs,       only: GFS_radtend_type, GFS_data_type
+  use GFS_typedefs,       only: GFS_radtend_type, GFS_coupling_type, GFS_data_type
   use GFS_restart,        only: GFS_restart_type
   use fms_mod,            only: stdout
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited,      &
@@ -142,7 +142,7 @@ contains
   !----------------
   ! fv3atm_checksum
   !----------------
-  subroutine fv3atm_checksum (Model, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block)
+  subroutine fv3atm_checksum (Model, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, GFS_Data, Atm_block)
     implicit none
     !--- interface variables
     type(GFS_control_type),    intent(in) :: Model
@@ -153,6 +153,7 @@ contains
     type(GFS_cldprop_type),    intent(in) :: GFS_Cldprop
     type(GFS_sfcprop_type),    intent(in) :: GFS_Sfcprop
     type(GFS_radtend_type),    intent(in) :: GFS_Radtend
+    type(GFS_coupling_type),   intent(in) :: GFS_Coupling
     type(GFS_data_type),       intent(in) :: GFS_Data(:)
     type (block_control_type), intent(in) :: Atm_block
     !--- local variables
@@ -293,17 +294,17 @@ contains
 
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%t2m, (/iec-isc+1, jec-jsc+1/))
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%q2m, (/iec-isc+1, jec-jsc+1/))
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%nirbmdi)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%nirdfdi)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%visbmdi)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%visdfdi)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%nirbmui)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%nirdfui)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%visbmui)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%visdfui)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcdsw)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcnsw)
-      call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcdlw)
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%nirbmdi, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%nirdfdi, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%visbmdi, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%visdfdi, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%nirbmui, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%nirdfui, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%visbmui, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%visdfui, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%sfcdsw, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%sfcnsw, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Coupling%sfcdlw, (/iec-isc+1, jec-jsc+1/))
       ! DH* clean this up - create a new/replacement copy_from_GFS_data
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%xlon,   (/iec-isc+1, jec-jsc+1/))
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Grid%xlat,   (/iec-isc+1, jec-jsc+1/))

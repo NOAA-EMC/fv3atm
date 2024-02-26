@@ -49,7 +49,7 @@ module GFS_restart
     type(GFS_statein_type),     intent(in)    :: Statein
     type(GFS_stateout_type),    intent(in)    :: Stateout
     type(GFS_sfcprop_type),     intent(in)    :: Sfcprop
-    type(GFS_coupling_type),    intent(in)    :: Coupling(:)
+    type(GFS_coupling_type),    intent(in)    :: Coupling
     type(GFS_grid_type),        intent(in)    :: Grid
     type(GFS_tbd_type),         intent(in)    :: Tbd
     type(GFS_cldprop_type),     intent(in)    :: Cldprop
@@ -254,7 +254,7 @@ module GFS_restart
       num = num + 1
       Restart%name2d(num) = 'ca_condition'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%condition(:)
+        Restart%data(nb,num)%var2p => Coupling%condition(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
     endif
     ! Unified convection
@@ -462,12 +462,12 @@ module GFS_restart
       num = num + 1
       Restart%name2d(num) = 'thompson_2d_nwfa2d'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%nwfa2d(:)
+        Restart%data(nb,num)%var2p => Coupling%nwfa2d(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
       num = num + 1
       Restart%name2d(num) = 'thompson_2d_nifa2d'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%nifa2d(:)
+        Restart%data(nb,num)%var2p => Coupling%nifa2d(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
     endif
 
@@ -493,27 +493,27 @@ module GFS_restart
       num = num + 1
       Restart%name2d(num) = 'ddvel_1'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%ddvel(:,1)
+        Restart%data(nb,num)%var2p => Coupling%ddvel(Model%chunk_begin(nb):Model%chunk_end(nb),1)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ddvel_2'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%ddvel(:,2)
+        Restart%data(nb,num)%var2p => Coupling%ddvel(Model%chunk_begin(nb):Model%chunk_end(nb),2)
       enddo
       num = num + 1
       Restart%name2d(num) = 'min_fplume'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%min_fplume(:)
+        Restart%data(nb,num)%var2p => Coupling%min_fplume(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
       num = num + 1
       Restart%name2d(num) = 'max_fplume'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%max_fplume(:)
+        Restart%data(nb,num)%var2p => Coupling%max_fplume(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
       num = num + 1
       Restart%name2d(num) = 'rrfs_hwp'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%rrfs_hwp(:)
+        Restart%data(nb,num)%var2p => Coupling%rrfs_hwp(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
     endif
 
@@ -549,7 +549,7 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'sas_3d_dqdt_qmicro'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%dqdt_qmicro(:,:)
+        Restart%data(nb,num)%var3p => Coupling%dqdt_qmicro(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
 
@@ -578,7 +578,7 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'gf_3d_qci_conv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%qci_conv(:,:)
+        Restart%data(nb,num)%var3p => Coupling%qci_conv(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
 
@@ -598,7 +598,7 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'gf_3d_qci_conv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%qci_conv(:,:)
+        Restart%data(nb,num)%var3p => Coupling%qci_conv(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
     ! MYNN PBL
@@ -672,32 +672,32 @@ module GFS_restart
       num = num + 1
       Restart%name3d(num) = 'ebu_smoke'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%ebu_smoke(:,:)
+        Restart%data(nb,num)%var3p => Coupling%ebu_smoke(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'smoke_ext'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%smoke_ext(:,:)
+        Restart%data(nb,num)%var3p => Coupling%smoke_ext(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'dust_ext'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%dust_ext(:,:)
+        Restart%data(nb,num)%var3p => Coupling%dust_ext(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'chem3d_1'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%chem3d(:,:,1)
+        Restart%data(nb,num)%var3p => Coupling%chem3d(Model%chunk_begin(nb):Model%chunk_end(nb),:,1)
       enddo
       num = num + 1
       Restart%name3d(num) = 'chem3d_2'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%chem3d(:,:,2)
+        Restart%data(nb,num)%var3p => Coupling%chem3d(Model%chunk_begin(nb):Model%chunk_end(nb),:,2)
       enddo
       num = num + 1
       Restart%name3d(num) = 'chem3d_3'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%chem3d(:,:,3)
+        Restart%data(nb,num)%var3p => Coupling%chem3d(Model%chunk_begin(nb):Model%chunk_end(nb),:,3)
       enddo
       num = num + 1
       Restart%name3d(num) = 'ext550'

@@ -87,7 +87,7 @@ use CCPP_data,          only: ccpp_suite, GFS_control, &
                               GFS_statein, GFS_stateout, &
                               GFS_grid, GFS_tbd, GFS_cldprop, &
                               GFS_sfcprop, GFS_radtend, &
-                              GFS_data, GFS_interstitial
+                              GFS_coupling, GFS_data, GFS_interstitial
 use GFS_init,           only: GFS_initialize
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
@@ -295,7 +295,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
           GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 !--- call stochastic physics pattern generation / cellular automata
-        call stochastic_physics_wrapper(GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block, ierr)
+        call stochastic_physics_wrapper(GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, GFS_Data, Atm_block, ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
       endif
 
@@ -371,7 +371,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'RADIATION STEP  ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, GFS_Data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
@@ -385,7 +385,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP1   ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, GFS_Data, Atm_block)
       endif
 
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
@@ -404,7 +404,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
-        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Data, Atm_block)
+        call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, GFS_Data, Atm_block)
       endif
       call getiauforcing(GFS_control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
@@ -712,13 +712,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%fn_nml='using internal file'
 
    call GFS_initialize (GFS_control, GFS_Statein, GFS_Stateout, GFS_Sfcprop, &
-                        GFS_data%Coupling, GFS_grid, GFS_Tbd, GFS_Cldprop, GFS_Radtend, &
+                        GFS_Coupling, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Radtend, &
                         GFS_data%Intdiag, GFS_interstitial, Init_parm)
 
    !--- populate/associate the Diag container elements
    call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Statein, GFS_Stateout,   &
-                                             GFS_Sfcprop, GFS_Data%Coupling, GFS_Grid,      &
-                                             GFS_Tbd, GFS_Cldprop, GFS_Radtend,             &
+                                             GFS_Sfcprop, GFS_Coupling, GFS_Grid,      &
+                                             GFS_Tbd, GFS_Cldprop, GFS_Radtend,        &
                                              GFS_Data%Intdiag, Init_parm)
 
    Atmos%Diag => GFS_Diag
@@ -744,7 +744,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_nggps_diag (Time, init=.true.)
    call fv3atm_diag_register (GFS_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
    call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_statein, GFS_stateout, GFS_sfcprop, &
-                              GFS_data%Coupling, GFS_grid, GFS_tbd, GFS_cldprop,  GFS_Radtend, &
+                              GFS_coupling, GFS_grid, GFS_tbd, GFS_cldprop,  GFS_Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    if (quilting_restart) then
       call fv_dyn_restart_register (Atm(mygrid))
@@ -779,7 +779,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-     call stochastic_physics_wrapper(GFS_control, GFS_statein, GFS_grid, GFS_sfcprop, GFS_Radtend, GFS_data, Atm_block, ierr)
+     call stochastic_physics_wrapper(GFS_control, GFS_statein, GFS_grid, GFS_sfcprop, GFS_Radtend, GFS_Coupling, GFS_data, Atm_block, ierr)
      if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    endif
@@ -969,7 +969,7 @@ subroutine update_atmos_model_state (Atmos, rc)
 
     if (chksum_debug) then
       if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', GFS_control%kdt, GFS_control%fhour
-      call fv3atm_checksum(GFS_control, GFS_statein, GFS_stateout, GFS_grid, GFS_tbd, GFS_cldprop, GFS_sfcprop, GFS_Radtend, GFS_data, Atm_block)
+      call fv3atm_checksum(GFS_control, GFS_statein, GFS_stateout, GFS_grid, GFS_tbd, GFS_cldprop, GFS_sfcprop, GFS_Radtend, GFS_Coupling, GFS_data, Atm_block)
     endif
 
     !--- advance time ---
@@ -1601,6 +1601,12 @@ subroutine update_atmos_chemistry(state, rc)
       ua   = reshape(GFS_Stateout%gu0, shape(ua  ))
       va   = reshape(GFS_Stateout%gv0, shape(va  ))
 
+      if (.not.GFS_Control%cplaqm) then
+        !--- layer values
+        pfils = reshape(GFS_Coupling%pfi_lsan, shape(pfils))
+        pflls = reshape(GFS_Coupling%pfl_lsan, shape(pflls))
+      end if
+
       !--- handle all three-dimensional variables
 !$OMP parallel do default (none) &
 !$OMP             shared  (nk, nj, ni, Atm_block, GFS_Data, GFS_Control, &
@@ -1624,11 +1630,11 @@ subroutine update_atmos_chemistry(state, rc)
             !ua  (i,j,k) = GFS_Data(nb)%Stateout%gu0(ix,k)
             !va  (i,j,k) = GFS_Data(nb)%Stateout%gv0(ix,k)
             cldfra(i,j,k) = GFS_Data(nb)%IntDiag%cldfra(ix,k)
-            if (.not.GFS_Control%cplaqm) then
-              !--- layer values
-              pfils (i,j,k) = GFS_Data(nb)%Coupling%pfi_lsan(ix,k)
-              pflls (i,j,k) = GFS_Data(nb)%Coupling%pfl_lsan(ix,k)
-            end if
+            !if (.not.GFS_Control%cplaqm) then
+            !  !--- layer values
+            !  pfils (i,j,k) = GFS_Data(nb)%Coupling%pfi_lsan(ix,k)
+            !  pflls (i,j,k) = GFS_Data(nb)%Coupling%pfl_lsan(ix,k)
+            !end if
           enddo
         enddo
       enddo
@@ -1674,6 +1680,14 @@ subroutine update_atmos_chemistry(state, rc)
       zorl = reshape(GFS_Sfcprop%zorl, shape(zorl))
       fice = reshape(GFS_Sfcprop%fice, shape(fice))
       fsnow = reshape(GFS_Sfcprop%sncovr, shape(fsnow))
+
+      rainc = reshape(GFS_Coupling%rainc_cpl, shape(rainc))
+      rain = reshape(GFS_Coupling%rain_cpl, shape(rain))  &
+           + reshape(GFS_Coupling%snow_cpl, shape(rain))
+      tsfc = reshape(GFS_Coupling%tsfci_cpl, shape(tsfc))
+      u10m = reshape(GFS_Coupling%u10mi_cpl, shape(u10m))
+      v10m = reshape(GFS_Coupling%v10mi_cpl, shape(v10m))
+
       if (GFS_Control%cplaqm) then
         canopy = reshape(GFS_Sfcprop%canopy, shape(canopy))
         !oro(i,j)    = max(0.d0, GFS_Data(nb)%Sfcprop%oro(ix))
@@ -1701,12 +1715,19 @@ subroutine update_atmos_chemistry(state, rc)
         else
           where (slmsk == 2) stype = 9._ESMF_KIND_R8
         end if
+        dqsfc  = reshape(GFS_Coupling%dqsfci_cpl, shape(dqsfc))
+        dtsfc  = reshape(GFS_Coupling%dtsfci_cpl, shape(dtsfc))
+        nswsfc = reshape(GFS_Coupling%nswsfci_cpl, shape(nswsfc))
+        psfc   = reshape(GFS_Coupling%psurfi_cpl, shape(psfc))
+        q2m    = reshape(GFS_Coupling%q2mi_cpl, shape(q2m))
+        t2m    = reshape(GFS_Coupling%t2mi_cpl, shape(t2m))
       else
         !flake(i,j)  = max(zero, GFS_Data(nb)%Sfcprop%lakefrac(ix))
         flake = reshape(GFS_Sfcprop%lakefrac, shape(flake))
         where (flake<zero) flake = zero
         focn = reshape(GFS_Sfcprop%oceanfrac, shape(focn))
         slc = reshape(GFS_Sfcprop%slc, shape(slc))
+        shfsfc = reshape(GFS_Coupling%ushfsfci, shape(shfsfc))
         if (GFS_Control%lsm == GFS_Control%lsm_ruc) then
           swet = reshape(GFS_Sfcprop%wetness, shape(swet))
         end if
@@ -1726,22 +1747,9 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          rainc(i,j)  = GFS_Data(nb)%Coupling%rainc_cpl(ix)
-          rain(i,j)   = GFS_Data(nb)%Coupling%rain_cpl(ix)  &
-                      + GFS_Data(nb)%Coupling%snow_cpl(ix)
-          tsfc(i,j)   = GFS_Data(nb)%Coupling%tsfci_cpl(ix)
-          u10m(i,j)   = GFS_Data(nb)%Coupling%u10mi_cpl(ix)
-          v10m(i,j)   = GFS_Data(nb)%Coupling%v10mi_cpl(ix)
           if (GFS_Control%cplaqm) then
             cmm(i,j)    = GFS_Data(nb)%IntDiag%cmm(ix)
-            dqsfc(i,j)  = GFS_Data(nb)%Coupling%dqsfci_cpl(ix)
-            dtsfc(i,j)  = GFS_Data(nb)%Coupling%dtsfci_cpl(ix)
-            nswsfc(i,j) = GFS_Data(nb)%Coupling%nswsfci_cpl(ix)
-            psfc(i,j)   = GFS_Data(nb)%Coupling%psurfi_cpl(ix)
-            q2m(i,j)    = GFS_Data(nb)%Coupling%q2mi_cpl(ix)
-            t2m(i,j)    = GFS_Data(nb)%Coupling%t2mi_cpl(ix)
           else
-            shfsfc(i,j) = GFS_Data(nb)%Coupling%ushfsfci(ix)
             !if (GFS_Control%lsm == GFS_Control%lsm_ruc) then
             !  swet(i,j) = GFS_Data(nb)%Sfcprop%wetness(ix)
             !else
@@ -1754,20 +1762,23 @@ subroutine update_atmos_chemistry(state, rc)
 
       ! -- zero out accumulated fields
       if (.not. GFS_control%cplflx .and. .not. GFS_control%cpllnd) then
+! DH* I think we can make this a lot simpler?
 !$OMP parallel do default (none) &
-!$OMP             shared  (nj, ni, Atm_block, GFS_control, GFS_data) &
-!$OMP             private (j, jb, i, ib, nb, ix)
+!$OMP             shared  (nj, ni, Atm_block, GFS_control, GFS_coupling) &
+!$OMP             private (j, jb, i, ib, nb, ix, im)
         do j = 1, nj
           jb = j + Atm_block%jsc - 1
           do i = 1, ni
             ib = i + Atm_block%isc - 1
             nb = Atm_block%blkno(ib,jb)
             ix = Atm_block%ixp(ib,jb)
-            GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
-            GFS_data(nb)%coupling%rain_cpl(ix) = zero
-            GFS_data(nb)%coupling%snow_cpl(ix) = zero
+            im = GFS_Control%chunk_begin(nb)+ix-1
+            GFS_coupling%rainc_cpl(im) = zero
+            GFS_coupling%rain_cpl(im)  = zero
+            GFS_coupling%snow_cpl(im)  = zero
           enddo
         enddo
+! *DH
       end if
 
       if (GFS_control%debug) then
@@ -2026,7 +2037,7 @@ end subroutine update_atmos_chemistry
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
-                  GFS_data(nb)%Coupling%slimskin_cpl(ix) = GFS_Sfcprop%slmsk(im)
+                  GFS_Coupling%slimskin_cpl(im) = GFS_Sfcprop%slmsk(im)
                   ofrac = GFS_Sfcprop%oceanfrac(im)
                   if (ofrac > zero) then
                     GFS_Sfcprop%fice(im) = max(zero, min(one, datar8(i,j)/ofrac)) !LHS: ice frac wrt water area
@@ -2034,12 +2045,12 @@ end subroutine update_atmos_chemistry
                       if (GFS_Sfcprop%fice(im) > one-epsln) GFS_Sfcprop%fice(im) = one
                       if (abs(one-ofrac) < epsln) GFS_Sfcprop%slmsk(im) = 2.0_GFS_kind_phys !slmsk=2 crashes in gcycle on partial land points
 !                     GFS_Sfcprop%slmsk(im)         = 2.0_GFS_kind_phys
-                      GFS_data(nb)%Coupling%slimskin_cpl(ix) = 4.0_GFS_kind_phys
+                      GFS_Coupling%slimskin_cpl(im) = 4.0_GFS_kind_phys
                     else
                       GFS_Sfcprop%fice(im) = zero
                       if (abs(one-ofrac) < epsln) then
                         GFS_Sfcprop%slmsk(im)         = zero
-                        GFS_data(nb)%Coupling%slimskin_cpl(ix) = zero
+                        GFS_Coupling%slimskin_cpl(im) = zero
                       endif
                     endif
                   endif
@@ -2061,7 +2072,7 @@ end subroutine update_atmos_chemistry
 !                 nb = Atm_block%blkno(i,j)
 !                 ix = Atm_block%ixp(i,j)
 !                if (GFS_Sfcprop%slmsk(im) < 0.1 .or. GFS_Sfcprop%slmsk(im) > 1.9) then
-!                   GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
+!                   GFS_Coupling%ulwsfcin_cpl(im) = -datar8(i,j)
 !                 endif
 !               enddo
                 do i=isc,iec
@@ -2069,7 +2080,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
+                    GFS_Coupling%ulwsfcin_cpl(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2090,7 +2101,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
+                    GFS_Coupling%dqsfcin_cpl(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2111,7 +2122,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
+                    GFS_Coupling%dtsfcin_cpl(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2132,7 +2143,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
+                    GFS_Coupling%dusfcin_cpl(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2153,7 +2164,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
+                    GFS_Coupling%dvsfcin_cpl(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2174,7 +2185,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-!                   GFS_data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
+!                   GFS_Coupling%hicein_cpl(im) = datar8(i,j)
                     GFS_Sfcprop%hice(im)        = min(datar8(i,j), himax)
                   endif
                 enddo
@@ -2196,7 +2207,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%hsnoin_cpl(ix) = datar8(i,j)
+                    GFS_Coupling%hsnoin_cpl(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2219,7 +2230,7 @@ end subroutine update_atmos_chemistry
                     ix = Atm_block%ixp(i,j)
                     im = GFS_control%chunk_begin(nb)+ix-1
                     if (GFS_Sfcprop%oceanfrac(im) > zero) then
-!                     GFS_data(nb)%Coupling%sfc_alb_nir_dif_cpl(ix) = datar8(i,j)
+!                     GFS_Coupling%sfc_alb_nir_dif_cpl(im) = datar8(i,j)
                       GFS_Sfcprop%albdifnir_ice(im) = datar8(i,j)
                     endif
                   enddo
@@ -2241,7 +2252,7 @@ end subroutine update_atmos_chemistry
                     ix = Atm_block%ixp(i,j)
                     im = GFS_control%chunk_begin(nb)+ix-1
                     if (GFS_Sfcprop%oceanfrac(im) > zero) then
-!                     GFS_data(nb)%Coupling%sfc_alb_nir_dir_cpl(ix) = datar8(i,j)
+!                     GFS_Coupling%sfc_alb_nir_dir_cpl(im) = datar8(i,j)
                       GFS_Sfcprop%albdirnir_ice(im) = datar8(i,j)
                     endif
                   enddo
@@ -2263,7 +2274,7 @@ end subroutine update_atmos_chemistry
                     ix = Atm_block%ixp(i,j)
                     im = GFS_control%chunk_begin(nb)+ix-1
                     if (GFS_Sfcprop%oceanfrac(im) > zero) then
-!                     GFS_data(nb)%Coupling%sfc_alb_vis_dif_cpl(ix) = datar8(i,j)
+!                     GFS_Coupling%sfc_alb_vis_dif_cpl(im) = datar8(i,j)
                       GFS_Sfcprop%albdifvis_ice(im) = datar8(i,j)
                     endif
                   enddo
@@ -2286,7 +2297,7 @@ end subroutine update_atmos_chemistry
                     ix = Atm_block%ixp(i,j)
                     im = GFS_control%chunk_begin(nb)+ix-1
                     if (GFS_Sfcprop%oceanfrac(im) > zero) then
-!                     GFS_data(nb)%Coupling%sfc_alb_vis_dir_cpl(ix) = datar8(i,j)
+!                     GFS_Coupling%sfc_alb_vis_dir_cpl(im) = datar8(i,j)
                       GFS_Sfcprop%albdirvis_ice(im) = datar8(i,j)
                     endif
                   enddo
@@ -2309,7 +2320,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%ulwsfcin_med(ix) = -datar8(i,j)
+                    GFS_Coupling%ulwsfcin_med(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2330,7 +2341,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%dqsfcin_med(ix) = -datar8(i,j)
+                    GFS_Coupling%dqsfcin_med(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2351,7 +2362,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%dtsfcin_med(ix) = -datar8(i,j)
+                    GFS_Coupling%dtsfcin_med(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2372,7 +2383,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%dusfcin_med(ix) = -datar8(i,j)
+                    GFS_Coupling%dusfcin_med(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2393,7 +2404,7 @@ end subroutine update_atmos_chemistry
                   ix = Atm_block%ixp(i,j)
                   im = GFS_control%chunk_begin(nb)+ix-1
                   if (GFS_Sfcprop%oceanfrac(im) > zero) then
-                    GFS_data(nb)%Coupling%dvsfcin_med(ix) = -datar8(i,j)
+                    GFS_Coupling%dvsfcin_med(im) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2830,36 +2841,36 @@ end subroutine update_atmos_chemistry
           if (GFS_Sfcprop%oceanfrac(im) > zero) then
             if (GFS_Sfcprop%fice(im) >= GFS_control%min_seaice) then
 
-              GFS_data(nb)%Coupling%hsnoin_cpl(ix) = min(hsmax, GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
+              GFS_Coupling%hsnoin_cpl(im) = min(hsmax, GFS_Coupling%hsnoin_cpl(im) &
                                                               / GFS_Sfcprop%fice(im))
               GFS_Sfcprop%zorli(im)       = z0ice
               tem = GFS_Sfcprop%tisfc(im) * GFS_Sfcprop%tisfc(im)
               tem = con_sbc * tem * tem
-              if (GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) > zero) then
-                GFS_Sfcprop%emis_ice(im) = GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) / tem
+              if (GFS_Coupling%ulwsfcin_cpl(im) > zero) then
+                GFS_Sfcprop%emis_ice(im) = GFS_Coupling%ulwsfcin_cpl(im) / tem
                 GFS_Sfcprop%emis_ice(im) = max(0.9, min(one, GFS_Sfcprop%emis_ice(im)))
               else
                 GFS_Sfcprop%emis_ice(im) = 0.96
               endif
-              GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = tem * GFS_Sfcprop%emis_ice(im)
+              GFS_Coupling%ulwsfcin_cpl(im) = tem * GFS_Sfcprop%emis_ice(im)
             else
               GFS_Sfcprop%tisfc(im)       = GFS_Sfcprop%tsfco(im)
               GFS_Sfcprop%fice(im)        = zero
               GFS_Sfcprop%hice(im)        = zero
-              GFS_data(nb)%Coupling%hsnoin_cpl(ix) = zero
+              GFS_Coupling%hsnoin_cpl(im) = zero
 !
-              GFS_data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 ! over open water - should not be used in ATM
-              GFS_data(nb)%Coupling%dqsfcin_cpl(ix)  = -99999.0 !                 ,,
-              GFS_data(nb)%Coupling%dusfcin_cpl(ix)  = -99999.0 !                 ,,
-              GFS_data(nb)%Coupling%dvsfcin_cpl(ix)  = -99999.0 !                 ,,
-              GFS_data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 !                 ,,
-              GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = -99999.0 !                 ,,
+              GFS_Coupling%dtsfcin_cpl(im)  = -99999.0 ! over open water - should not be used in ATM
+              GFS_Coupling%dqsfcin_cpl(im)  = -99999.0 !                 ,,
+              GFS_Coupling%dusfcin_cpl(im)  = -99999.0 !                 ,,
+              GFS_Coupling%dvsfcin_cpl(im)  = -99999.0 !                 ,,
+              GFS_Coupling%dtsfcin_cpl(im)  = -99999.0 !                 ,,
+              GFS_Coupling%ulwsfcin_cpl(im) = -99999.0 !                 ,,
 !             GFS_Sfcprop%albdirvis_ice(im) = -9999.0  !                 ,,
 !             GFS_Sfcprop%albdirnir_ice(im) = -9999.0  !                 ,,
 !             GFS_Sfcprop%albdifvis_ice(im) = -9999.0  !                 ,,
 !             GFS_Sfcprop%albdifnir_ice(im) = -9999.0  !                 ,,
               if (abs(one-GFS_Sfcprop%oceanfrac(im)) < epsln) then !  100% open water
-                GFS_data(nb)%Coupling%slimskin_cpl(ix) = zero
+                GFS_Coupling%slimskin_cpl(im) = zero
                 GFS_Sfcprop%slmsk(im)         = zero
               endif
             endif
@@ -2901,7 +2912,7 @@ end subroutine update_atmos_chemistry
     integer, optional, intent(out) :: rc
 
     !--- local variables
-    integer                :: i, j, ix
+    integer                :: i, j, ix, im
     integer                :: isc, iec, jsc, jec
     integer                :: nb, nk
     integer                :: sphum, liq_wat, ice_wat, o3mr
@@ -2983,140 +2994,140 @@ end subroutine update_atmos_chemistry
             !--- Instantaneous quantities
             ! Instantaneous u wind (m/s) 10 m above ground
             case ('inst_zonal_wind_height10m')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%u10mi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous v wind (m/s) 10 m above ground
             case ('inst_merid_wind_height10m')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%v10mi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%v10mi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Zonal compt of momentum flux (N/m**2)
             case ('inst_zonal_moment_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfci_cpl, Atm_block, nb, -one, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dusfci_cpl, Atm_block, nb, -one, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Merid compt of momentum flux (N/m**2)
             case ('inst_merid_moment_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfci_cpl, Atm_block, nb, -one, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dvsfci_cpl, Atm_block, nb, -one, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Sensible heat flux (W/m**2)
             case ('inst_sensi_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfci_cpl, Atm_block, nb, -one, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dtsfci_cpl, Atm_block, nb, -one, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Latent heat flux (W/m**2)
             case ('inst_laten_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, -one, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dqsfci_cpl, Atm_block, nb, -one, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Evap flux (kg/m**2/s)
             case ('inst_evap_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfci_cpl, Atm_block, nb, -revap, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dqsfci_cpl, Atm_block, nb, -revap, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous precipitation rate (kg/m2/s)
             case ('inst_prec_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%rain_cpl, Atm_block, nb, rtimek, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%rain_cpl, Atm_block, nb, rtimek, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous convective precipitation rate (kg/m2/s)
             case ('inst_prec_rate_conv')
-              call block_data_copy(datar82d, GFS_Data(nb)%Coupling%rainc_cpl, Atm_block, nb, rtimek, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%rainc_cpl, Atm_block, nb, rtimek, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instaneous snow precipitation rate (kg/m2/s)
             case ('inst_fprec_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%snow_cpl, Atm_block, nb, rtimek, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%snow_cpl, Atm_block, nb, rtimek, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Downward long wave radiation flux (W/m**2)
             case ('inst_down_lw_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dlwsfci_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dlwsfci_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Downward solar radiation flux (W/m**2)
             case ('inst_down_sw_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dswsfci_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dswsfci_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Temperature (K) 2 m above ground
             case ('inst_temp_height2m')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%t2mi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%t2mi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Specific humidity (kg/kg) 2 m above ground
             case ('inst_spec_humid_height2m')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%q2mi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%q2mi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Temperature (K) at surface
             case ('inst_temp_height_surface')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%tsfci_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%tsfci_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Pressure (Pa) land and sea surface
             case ('inst_pres_height_surface')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%psurfi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%psurfi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous Surface height (m)
             case ('inst_surface_height')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%oro_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%oro_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous NET long wave radiation flux (W/m**2)
             case ('inst_net_lw_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nlwsfci_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nlwsfci_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous NET solar radiation flux over the ocean (W/m**2)
             case ('inst_net_sw_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nswsfci_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nswsfci_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous sfc downward nir direct flux (W/m**2)
             case ('inst_down_sw_ir_dir_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dnirbmi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dnirbmi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous sfc downward nir diffused flux (W/m**2)
             case ('inst_down_sw_ir_dif_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dnirdfi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dnirdfi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous sfc downward uv+vis direct flux (W/m**2)
             case ('inst_down_sw_vis_dir_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvisbmi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dvisbmi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous sfc downward uv+vis diffused flux (W/m**2)
             case ('inst_down_sw_vis_dif_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvisdfi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dvisdfi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous net sfc nir direct flux (W/m**2)
             case ('inst_net_sw_ir_dir_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nnirbmi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nnirbmi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous net sfc nir diffused flux (W/m**2)
             case ('inst_net_sw_ir_dif_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nnirdfi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nnirdfi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous net sfc uv+vis direct flux (W/m**2)
             case ('inst_net_sw_vis_dir_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nvisbmi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nvisbmi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Instantaneous net sfc uv+vis diffused flux (W/m**2)
             case ('inst_net_sw_vis_dif_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nvisdfi_cpl, Atm_block, nb, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nvisdfi_cpl, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! Land/Sea mask (sea:0,land:1)
             case ('inst_land_sea_mask', 'slmsk')
               call block_data_copy(datar82d, GFS_sfcprop%slmsk, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             !--- Mean quantities
             ! MEAN Zonal compt of momentum flux (N/m**2)
             case ('mean_zonal_moment_flx_atm')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dusfc_cpl, Atm_block, nb, -rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dusfc_cpl, Atm_block, nb, -rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN Merid compt of momentum flux (N/m**2)
             case ('mean_merid_moment_flx_atm')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvsfc_cpl, Atm_block, nb, -rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dvsfc_cpl, Atm_block, nb, -rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN Sensible heat flux (W/m**2)
             case ('mean_sensi_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dtsfc_cpl, Atm_block, nb, -rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dtsfc_cpl, Atm_block, nb, -rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN Latent heat flux (W/m**2)
             case ('mean_laten_heat_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, -rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dqsfc_cpl, Atm_block, nb, -rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN Evap rate (kg/m**2/s)
             case ('mean_evap_rate')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dqsfc_cpl, Atm_block, nb, -rtime*revap, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dqsfc_cpl, Atm_block, nb, -rtime*revap, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN Downward LW heat flux (W/m**2)
             case ('mean_down_lw_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dlwsfc_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dlwsfc_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN Downward SW heat flux (W/m**2)
             case ('mean_down_sw_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dswsfc_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dswsfc_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN NET long wave radiation flux (W/m**2)
             case ('mean_net_lw_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nlwsfc_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nlwsfc_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN NET solar radiation flux over the ocean (W/m**2)
             case ('mean_net_sw_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nswsfc_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nswsfc_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN sfc downward nir direct flux (W/m**2)
             case ('mean_down_sw_ir_dir_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dnirbm_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dnirbm_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN sfc downward nir diffused flux (W/m**2)
             case ('mean_down_sw_ir_dif_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dnirdf_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dnirdf_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN sfc downward uv+vis direct flux (W/m**2)
             case ('mean_down_sw_vis_dir_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvisbm_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dvisbm_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN sfc downward uv+vis diffused flux (W/m**2)
             case ('mean_down_sw_vis_dif_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%dvisdf_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%dvisdf_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN NET sfc nir direct flux (W/m**2)
             case ('mean_net_sw_ir_dir_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nnirbm_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nnirbm_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN NET sfc nir diffused flux (W/m**2)
             case ('mean_net_sw_ir_dif_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nnirdf_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nnirdf_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN NET sfc uv+vis direct flux (W/m**2)
             case ('mean_net_sw_vis_dir_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nvisbm_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nvisbm_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! MEAN NET sfc uv+vis diffused flux (W/m**2)
             case ('mean_net_sw_vis_dif_flx')
-              call block_data_copy(datar82d, GFS_data(nb)%coupling%nvisdf_cpl, Atm_block, nb, rtime, spval, offset=1, rc=localrc)
+              call block_data_copy(datar82d, GFS_coupling%nvisdf_cpl, Atm_block, nb, rtime, spval, offset=GFS_Control%chunk_begin(nb), rc=localrc)
             ! oceanfrac used by atm to calculate fluxes
             case ('openwater_frac_in_atm')
               call block_data_combine_fractions(datar82d, GFS_sfcprop%oceanfrac, GFS_sfcprop%fice, Atm_block, nb, offset=GFS_Control%chunk_begin(nb), rc=localrc)
@@ -3224,20 +3235,21 @@ end subroutine update_atmos_chemistry
 !---
     if (GFS_control%cplflx) then
 ! zero out accumulated fields
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          GFS_data(nb)%coupling%dusfc_cpl(ix)  = zero
-          GFS_data(nb)%coupling%dvsfc_cpl(ix)  = zero
-          GFS_data(nb)%coupling%dtsfc_cpl(ix)  = zero
-          GFS_data(nb)%coupling%dqsfc_cpl(ix)  = zero
-          GFS_data(nb)%coupling%nlwsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%dnirbm_cpl(ix) = zero
-          GFS_data(nb)%coupling%dnirdf_cpl(ix) = zero
-          GFS_data(nb)%coupling%dvisbm_cpl(ix) = zero
-          GFS_data(nb)%coupling%dvisdf_cpl(ix) = zero
+          im = GFS_control%chunk_begin(nb)+ix-1
+          GFS_coupling%dusfc_cpl(im)  = zero
+          GFS_coupling%dvsfc_cpl(im)  = zero
+          GFS_coupling%dtsfc_cpl(im)  = zero
+          GFS_coupling%dqsfc_cpl(im)  = zero
+          GFS_coupling%nlwsfc_cpl(im) = zero
+          GFS_coupling%dnirbm_cpl(im) = zero
+          GFS_coupling%dnirdf_cpl(im) = zero
+          GFS_coupling%dvisbm_cpl(im) = zero
+          GFS_coupling%dvisdf_cpl(im) = zero
         enddo
       enddo
       if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
@@ -3245,21 +3257,22 @@ end subroutine update_atmos_chemistry
 !---
     if (GFS_control%cplflx .or. GFS_control%cpllnd) then
 ! zero out accumulated fields
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          GFS_data(nb)%coupling%dlwsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%dswsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%rain_cpl(ix)   = zero
-          GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
-          GFS_data(nb)%coupling%snow_cpl(ix)   = zero
-          GFS_data(nb)%coupling%nswsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%nnirbm_cpl(ix) = zero
-          GFS_data(nb)%coupling%nnirdf_cpl(ix) = zero
-          GFS_data(nb)%coupling%nvisbm_cpl(ix) = zero
-          GFS_data(nb)%coupling%nvisdf_cpl(ix) = zero
+          im = GFS_control%chunk_begin(nb)+ix-1
+          GFS_coupling%dlwsfc_cpl(im) = zero
+          GFS_coupling%dswsfc_cpl(im) = zero
+          GFS_coupling%rain_cpl(im)   = zero
+          GFS_coupling%rainc_cpl(im)  = zero
+          GFS_coupling%snow_cpl(im)   = zero
+          GFS_coupling%nswsfc_cpl(im) = zero
+          GFS_coupling%nnirbm_cpl(im) = zero
+          GFS_coupling%nnirdf_cpl(im) = zero
+          GFS_coupling%nvisbm_cpl(im) = zero
+          GFS_coupling%nvisdf_cpl(im) = zero
         enddo
       enddo
       if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt

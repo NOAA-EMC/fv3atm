@@ -15,6 +15,7 @@ module CCPP_data
                              GFS_cldprop_type,       &
                              GFS_sfcprop_type,       &
                              GFS_radtend_type,       &
+                             GFS_coupling_type,      &
                              GFS_data_type
 
     implicit none
@@ -34,6 +35,7 @@ module CCPP_data
            GFS_cldprop,            &
            GFS_sfcprop,            &
            GFS_radtend,            &
+           GFS_coupling,           &
            GFS_data,               &
            GFS_interstitial
 
@@ -49,6 +51,7 @@ module CCPP_data
     type(GFS_cldprop_type),                                    save, target :: GFS_cldprop
     type(GFS_sfcprop_type),                                    save, target :: GFS_sfcprop
     type(GFS_radtend_type),                                    save, target :: GFS_radtend
+    type(GFS_coupling_type),                                   save, target :: GFS_coupling
     type(GFS_data_type),          dimension(:),   allocatable, save, target :: GFS_data
     type(GFS_interstitial_type),  dimension(:),   allocatable, save, target :: GFS_interstitial
 
