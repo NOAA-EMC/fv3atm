@@ -15,7 +15,7 @@
   #url = https://github.com/ufs-community/ccpp-physics
   #branch = ufs/dev
   url = https://github.com/climbfuji/ccpp-physics
-  branch = bugfix/ozphys_ccpp_compliant
+  branch = feature/gfs_debug_update
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
