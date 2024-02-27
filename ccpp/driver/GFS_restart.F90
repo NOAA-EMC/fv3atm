@@ -54,7 +54,7 @@ module GFS_restart
     type(GFS_tbd_type),         intent(in)    :: Tbd
     type(GFS_cldprop_type),     intent(in)    :: Cldprop
     type(GFS_radtend_type),     intent(in)    :: Radtend
-    type(GFS_diag_type),        intent(in)    :: IntDiag(:)
+    type(GFS_diag_type),        intent(in)    :: IntDiag
     type(GFS_init_type),        intent(in)    :: Init_parm
     type(GFS_externaldiag_type),intent(in)    :: ExtDiag(:)
 
@@ -530,7 +530,7 @@ module GFS_restart
       num = Model%ntot3d+1
       restart%name3d(num) = 'ref_f3d'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => IntDiag(nb)%refl_10cm(:,:)
+        Restart%data(nb,num)%var3p => IntDiag%refl_10cm(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
     if (Model%lrefres) then

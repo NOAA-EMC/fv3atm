@@ -8294,54 +8294,54 @@
   standard_name = cumulative_radiation_diagnostic
   long_name = time-accumulated 2D radiation-related diagnostic fields
   units = mixed
-  dimensions = (horizontal_loop_extent,number_of_diagnostics_variables_for_radiation)
+  dimensions = (horizontal_dimension,number_of_diagnostics_variables_for_radiation)
   type = real
   kind = kind_phys
 [topfsw]
   standard_name = sw_fluxes_top_atmosphere
   long_name = sw radiation fluxes at toa
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = topfsw_type
 [topflw]
   standard_name = lw_fluxes_top_atmosphere
   long_name = lw radiation fluxes at top
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = topflw_type
 [srunoff]
   standard_name = surface_runoff
   long_name = surface water runoff (from lsm)
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [evbsa]
   standard_name = cumulative_soil_upward_latent_heat_flux_multiplied_by_timestep
   long_name = cumulative soil upward latent heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [evcwa]
   standard_name = cumulative_canopy_upward_latent_heat_flu_multiplied_by_timestep
   long_name = cumulative canopy upward latent heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [snohfa]
   standard_name = cumulative_snow_freezing_rain_upward_latent_heat_flux_multiplied_by_timestep
   long_name = cumulative latent heat flux due to snow and frz rain multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [paha]
   standard_name = cumulative_precipitation_advected_heat_flux_multiplied_by_timestep
   long_name = cumulative precipitation advected heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -8349,224 +8349,224 @@
   standard_name = cumulative_transpiration_flux_multiplied_by_timestep
   long_name = cumulative total plant transpiration rate multiplied by timestep
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sbsnoa]
   standard_name = cumulative_snow_deposition_sublimation_upward_latent_heat_flux_multiplied_by_timestep
   long_name = cumulative latent heat flux from snow depo/subl multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [snowca]
   standard_name = cumulative_surface_snow_area_fraction_multiplied_by_timestep
   long_name = cumulative surface snow area fraction multiplied by timestep
   units = s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sbsno]
   standard_name = snow_deposition_sublimation_upward_latent_heat_flux
   long_name = latent heat flux from snow depo/subl
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [evbs]
   standard_name = soil_upward_latent_heat_flux
   long_name = soil upward latent heat flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [evcw]
   standard_name = canopy_upward_latent_heat_flux
   long_name = canopy upward latent heat flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [trans]
   standard_name = transpiration_flux
   long_name = total plant transpiration rate
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [soilm]
   standard_name = soil_moisture_content
   long_name = soil moisture
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [snowmt_land]
   standard_name = surface_snow_melt_over_land
   long_name = snow melt during timestep over land
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [snowmt_ice]
   standard_name = surface_snow_melt_over_ice
   long_name = snow melt during timestep over ice
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tmpmin]
   standard_name = minimum_temperature_at_2m
   long_name = min temperature at 2m height
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tmpmax]
   standard_name = maximum_temperature_at_2m
   long_name = max temperature at 2m height
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dusfc]
   standard_name = cumulative_surface_x_momentum_flux_for_diag_multiplied_by_timestep
   long_name = cumulative sfc x momentum flux multiplied by timestep
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dvsfc]
   standard_name = cumulative_surface_y_momentum_flux_for_diag_multiplied_by_timestep
   long_name = cumulative sfc y momentum flux multiplied by timestep
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dtsfc]
   standard_name = cumulative_surface_upward_sensible_heat_flux_for_diag_multiplied_by_timestep
   long_name = cumulative sfc sensible heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dqsfc]
   standard_name = cumulative_surface_upward_latent_heat_flux_for_diag_multiplied_by_timestep
   long_name = cumulative sfc latent heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [totprcp]
   standard_name = accumulated_lwe_thickness_of_precipitation_amount
   long_name = accumulated total precipitation
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [totice]
   standard_name = accumulated_lwe_thickness_of_ice_amount
   long_name = accumulated ice precipitation
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [totsnw]
   standard_name = accumulated_lwe_thickness_of_snow_amount
   long_name = accumulated snow precipitation
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [totgrp]
   standard_name = accumulated_lwe_thickness_of_graupel_amount
   long_name = accumulated graupel precipitation
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [totprcpb]
   standard_name = accumulated_lwe_thickness_of_precipitation_amount_in_bucket
   long_name = accumulated total precipitation in bucket
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [toticeb]
   standard_name = accumulated_lwe_thickness_of_ice_amount_in_bucket
   long_name = accumulated ice precipitation in bucket
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [totsnwb]
   standard_name = accumulated_lwe_thickness_of_snow_amount_in_bucket
   long_name = accumulated snow precipitation in bucket
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [totgrpb]
   standard_name = accumulated_lwe_thickness_of_graupel_amount_in_bucket
   long_name = accumulated graupel precipitation in bucket
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [frzr]
   standard_name = cumulative_lwe_thickness_of_surface_freezing_rain_amount
   long_name = accumulated surface freezing rain
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [frzrb]
   standard_name = cumulative_lwe_thickness_of_surface_freezing_rain_amount_in_bucket
   long_name = accumulated surface freezing rain in bucket
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [frozr]
   standard_name = cumulative_lwe_thickness_of_surface_graupel_amount
   long_name = accumulated surface graupel
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [frozrb]
   standard_name = cumulative_lwe_thickness_of_surface_graupel_amount_in_bucket
   long_name = accumulated surface graupel in bucket
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tsnowp]
   standard_name = cumulative_lwe_thickness_of_surface_snow_amount
   long_name = accumulated surface snow
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tsnowpb]
   standard_name = cumulative_lwe_thickness_of_surface_snow_amount_in_bucket
   long_name = accumulated surface snow in bucket
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [rhonewsn1]
   standard_name = surface_frozen_precipitation_density
   long_name = density of precipitation ice
   units = kg m-3
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [train]
   standard_name = accumulated_change_of_air_temperature_due_to_FA_scheme
   long_name = accumulated change of air temperature due to FA MP scheme
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (control_for_microphysics_scheme == identifier_for_fer_hires_microphysics_scheme)
@@ -8574,70 +8574,70 @@
   standard_name = cumulative_surface_ground_heat_flux_multiplied_by_timestep
   long_name = cumulative groud conductive heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dlwsfc]
   standard_name = cumulative_surface_downwelling_longwave_flux_multiplied_by_timestep
   long_name = cumulative surface downwelling LW flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ulwsfc]
   standard_name = cumulative_surface_upwelling_longwave_flux_multiplied_by_timestep
   long_name = cumulative surface upwelling LW flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [suntim]
   standard_name = duration_of_sunshine
   long_name = sunshine duration time
   units = s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [runoff]
   standard_name = total_runoff
   long_name = total water runoff
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ep]
   standard_name = cumulative_surface_upward_potential_latent_heat_flux_multiplied_by_timestep
   long_name = cumulative surface upward potential latent heat flux multiplied by timestep
   units = W m-2 s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tecan]
   standard_name = total_evaporation_of_intercepted_water
   long_name = total evaporation of intercepted water
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tetran]
   standard_name = total_transpiration_rate
   long_name = total transpiration rate
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tedir]
   standard_name = total_soil_surface_evaporation_rate
   long_name = total soil surface evaporation rate
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [twa]
   standard_name = total_water_storage_in_aquifer
   long_name = total water storage in aquifer
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -8645,294 +8645,294 @@
   standard_name = cumulative_cloud_work_function
   long_name = cumulative cloud work function (valid only with sas)
   units = m2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dugwd]
   standard_name = time_integral_of_x_stress_due_to_gravity_wave_drag
   long_name = vertically integrated u change by OGWD
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dvgwd]
   standard_name = time_integral_of_y_stress_due_to_gravity_wave_drag
   long_name = vertically integrated v change by OGWD
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [psmean]
   standard_name = cumulative_surface_pressure_multiplied_by_timestep
   long_name = cumulative surface pressure multiplied by timestep
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [cnvprcp]
   standard_name = cumulative_lwe_thickness_of_convective_precipitation_amount
   long_name = cumulative convective precipitation
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [cnvprcpb]
   standard_name = cumulative_lwe_thickness_of_convective_precipitation_amount_in_bucket
   long_name = cumulative convective precipitation in bucket
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [spfhmin]
   standard_name = minimum_specific_humidity_at_2m
   long_name = minimum specific humidity at 2m height
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [spfhmax]
   standard_name = maximum_specific_humidity_at_2m
   long_name = maximum specific humidity at 2m height
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [u10mmax]
   standard_name = maximum_x_wind_at_10m
   long_name = maximum x wind at 10 m
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [v10mmax]
   standard_name = maximum_y_wind_at_10m
   long_name = maximum y wind at 10 m
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [wind10mmax]
   standard_name = maximum_wind_at_10m
   long_name = maximum wind speed at 10 m
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [u10max]
   standard_name = maximum_u_wind_at_10m_over_maximum_hourly_time_interval
   long_name = maximum u wind at 10m over maximum hourly time interval
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [v10max]
   standard_name = maximum_v_wind_at_10m_over_maximum_hourly_time_interval
   long_name = maximum v wind at 10m over maximum hourly time interval
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [spd10max]
   standard_name = maximum_wind_at_10m_over_maximum_hourly_time_interval
   long_name = maximum wind at 10m over maximum hourly time interval
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [rain]
   standard_name = lwe_thickness_of_precipitation_amount_on_dynamics_timestep
   long_name = total rain at this time step
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [rainc]
   standard_name = lwe_thickness_of_convective_precipitation_amount_on_dynamics_timestep
   long_name = convective rain at this time step
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ice]
   standard_name = lwe_thickness_of_ice_amount_on_dynamics_timestep
   long_name = ice fall at this time step
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [snow]
   standard_name = lwe_thickness_of_snow_amount_on_dynamics_timestep
   long_name = snow fall at this time step
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [graupel]
   standard_name = lwe_thickness_of_graupel_amount_on_dynamics_timestep
   long_name = graupel fall at this time step
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [u10m]
   standard_name = x_wind_at_10m
   long_name = 10 meter u wind speed
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [v10m]
   standard_name = y_wind_at_10m
   long_name = 10 meter v wind speed
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dpt2m]
   standard_name = dewpoint_temperature_at_2m
   long_name = 2 meter dewpoint temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zlvl]
   standard_name = height_above_ground_at_lowest_model_layer
   long_name = layer 1 height above ground (not MSL)
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [psurf]
   standard_name = surface_air_pressure_diag
   long_name = surface air pressure diagnostic
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [pwat]
   standard_name = column_precipitable_water
   long_name = precipitable water
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [t1]
   standard_name = air_temperature_at_lowest_model_layer_for_diag
   long_name = layer 1 temperature for diag
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [q1]
   standard_name = water_vapor_specific_humidity_at_lowest_model_layer_for_diag
   long_name = layer 1 specific humidity for diag
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [u1]
   standard_name = x_wind_at_lowest_model_layer_for_diag
   long_name = layer 1 x wind for diag
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [v1]
   standard_name = y_wind_at_lowest_model_layer_for_diag
   long_name = layer 1 y wind for diag
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [chh]
   standard_name = surface_drag_mass_flux_for_heat_and_moisture_in_air
   long_name = thermal exchange coefficient
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [cmm]
   standard_name = surface_drag_wind_speed_for_momentum_in_air
   long_name = momentum exchange coefficient
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dlwsfci]
   standard_name = surface_downwelling_longwave_flux
   long_name = surface downwelling longwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ulwsfci]
   standard_name = surface_upwelling_longwave_flux
   long_name = surface upwelling longwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dswsfci]
   standard_name = surface_downwelling_shortwave_flux
   long_name = surface downwelling shortwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [nswsfci]
   standard_name = surface_net_downwelling_shortwave_flux
   long_name = surface net downwelling shortwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [uswsfci]
   standard_name = surface_upwelling_shortwave_flux
   long_name = surface upwelling shortwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dusfci]
   standard_name = instantaneous_surface_x_momentum_flux_for_diag
   long_name = instantaneous sfc x momentum flux multiplied by timestep
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dvsfci]
   standard_name = instantaneous_surface_y_momentum_flux_for_diag
   long_name = instantaneous sfc y momentum flux multiplied by timestep
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dtsfci]
   standard_name = instantaneous_surface_upward_sensible_heat_flux_for_diag
   long_name = instantaneous sfc sensible heat flux multiplied by timestep
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dqsfci]
   standard_name = instantaneous_surface_upward_latent_heat_flux_for_diag
   long_name = instantaneous sfc latent heat flux multiplied by timestep
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [gfluxi]
   standard_name = instantaneous_surface_ground_heat_flux
   long_name = instantaneous sfc ground heat flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [pahi]
   standard_name = instantaneous_total_precipitation_advected_heat
   long_name = instantaneous precipitation advected heat - total
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
@@ -8940,35 +8940,35 @@
   standard_name = instantaneous_surface_potential_evaporation
   long_name = instantaneous sfc potential evaporation
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [smcwlt2]
   standard_name = volume_fraction_of_condensed_water_in_soil_at_wilting_point
   long_name = wilting point (volumetric)
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [smcref2]
   standard_name = threshold_volume_fraction_of_condensed_water_in_soil
   long_name = soil moisture threshold (volumetric)
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [sr]
   standard_name = ratio_of_snowfall_to_rainfall
   long_name = snow ratio: ratio of snow to total precipitation (explicit only)
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [wet1]
   standard_name = normalized_soil_wetness
   long_name = normalized soil wetness
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (.not. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -8976,42 +8976,42 @@
   standard_name = dominant_rain_type
   long_name = dominant rain type
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tdomzr]
   standard_name = dominant_freezing_rain_type
   long_name = dominant freezing rain type
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tdomip]
   standard_name = dominant_sleet_type
   long_name = dominant sleet type
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tdoms]
   standard_name = dominant_snow_type
   long_name = dominant snow type
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zmtnblck]
   standard_name = level_of_dividing_streamline
   long_name = level of the dividing streamline
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dtend]
   standard_name = cumulative_change_of_state_variables
   long_name = diagnostic tendencies for state variables
   units = mixed
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,cumulative_change_of_state_variables_outer_index_max)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,cumulative_change_of_state_variables_outer_index_max)
   type = real
   kind = kind_phys
   active = (flag_for_diagnostics_3D)
@@ -9019,56 +9019,56 @@
   standard_name = maximum_reflectivity_at_1km_agl_over_maximum_hourly_time_interval
   long_name = maximum reflectivity at 1km agl over maximum hourly time interval
   units = dBZ
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [refdmax263k]
   standard_name = maximum_reflectivity_at_minus10c_over_maximum_hourly_time_interval
   long_name = maximum reflectivity at minus10c over maximum hourly time interval
   units = dBZ
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [t02max]
   standard_name = maximum_temperature_at_2m_over_maximum_hourly_time_interval
   long_name = maximum temperature at 2m over maximum hourly time interval
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [t02min]
   standard_name = minimum_temperature_at_2m_over_maximum_hourly_time_interval
   long_name = minumum temperature at 2m over maximum hourly time interval
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [rh02max]
   standard_name = maximum_relative_humidity_at_2m_over_maximum_hourly_time_interval
   long_name = maximum relative humidity at 2m over maximum hourly time interval
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [rh02min]
   standard_name = minimum_relative_humidity_at_2m_over_maximum_hourly_time_interval
   long_name = minumum relative humidity at 2m over maximum hourly time interval
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [pratemax]
   standard_name = maximum_precipitation_rate_over_maximum_hourly_time_interval
   long_name = maximum precipitation rate over maximum hourly time interval
   units = mm h-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [upd_mf]
   standard_name = cumulative_atmosphere_updraft_convective_mass_flux
   long_name = cumulative updraft mass flux
   units = kg m-1 s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D)
@@ -9076,7 +9076,7 @@
   standard_name = cumulative_atmosphere_downdraft_convective_mass_flux
   long_name = cumulative downdraft mass flux
   units = kg m-1 s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D)
@@ -9084,7 +9084,7 @@
   standard_name = cumulative_atmosphere_detrainment_convective_mass_flux
   long_name = cumulative detrainment mass flux
   units = kg m-1 s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D)
@@ -9092,7 +9092,7 @@
   standard_name = ozone_tendency_due_to_production_and_loss_rate
   long_name = ozone tendency due to production and loss rate
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
@@ -9100,7 +9100,7 @@
   standard_name = ozone_tendency_due_to_ozone_mixing_ratio
   long_name = ozone tendency due to ozone mixing ratio
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
@@ -9108,7 +9108,7 @@
   standard_name = ozone_tendency_due_to_temperature
   long_name = ozone tendency due to temperature
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
@@ -9116,7 +9116,7 @@
   standard_name = ozone_tendency_due_to_overhead_ozone_column
   long_name = ozone tendency due to overhead ozone column
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_tracer_diagnostics_3D .and. flag_for_nrl_2015_ozone_scheme)
@@ -9124,84 +9124,84 @@
   standard_name = radar_reflectivity_10cm
   long_name = instantaneous refl_10cm
   units = dBZ
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [max_hail_diam_sfc]
   standard_name = max_hail_diameter_sfc
   long_name = instantaneous maximum hail diameter at lowest model level
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [dkt]
   standard_name = atmosphere_heat_diffusivity
   long_name = atmospheric heat diffusivity
   units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [dku]
   standard_name = atmosphere_momentum_diffusivity
   long_name = atmospheric momentum diffusivity
   units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [cldfra]
   standard_name = instantaneous_3d_cloud_fraction
   long_name = instantaneous 3D cloud fraction for all MPs
   units = frac
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [cldfra2d]
   standard_name = max_in_column_cloud_fraction
   long_name = instantaneous 2D (max-in-column) cloud fraction
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [lwp_ex]
   standard_name = liq_water_path_from_microphysics
   long_name = total liquid water path from explicit microphysics
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [iwp_ex]
   standard_name = ice_water_path_from_microphysics
   long_name = total ice water path from explicit microphysics
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [lwp_fc]
   standard_name = liq_water_path_from_cloud_fraction
   long_name = total liquid water path from cloud fraction scheme
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [iwp_fc]
   standard_name = ice_water_path_from_cloud_fraction
   long_name = total ice water path from cloud fraction scheme
   units = kg m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [total_albedo]
   standard_name = total_sky_albedo
   long_name = total sky albedo at toa
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [edmf_a]
   standard_name = emdf_updraft_area
   long_name = updraft area from mass flux scheme
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9209,7 +9209,7 @@
   standard_name = emdf_updraft_vertical_velocity
   long_name = updraft vertical velocity from mass flux scheme
   units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9217,7 +9217,7 @@
   standard_name = emdf_updraft_total_water
   long_name = updraft total water from mass flux scheme
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9225,7 +9225,7 @@
   standard_name = emdf_updraft_theta_l
   long_name = updraft theta-l from mass flux scheme
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9233,7 +9233,7 @@
   standard_name = emdf_updraft_entrainment_rate
   long_name = updraft entranment rate from mass flux scheme
   units = s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9241,7 +9241,7 @@
   standard_name = emdf_updraft_cloud_water
   long_name = updraft cloud water from mass flux scheme
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9249,7 +9249,7 @@
   standard_name = theta_subsidence_tendency
   long_name = updraft theta subsidence tendency
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9257,7 +9257,7 @@
   standard_name = water_vapor_subsidence_tendency
   long_name = updraft water vapor subsidence tendency
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9265,7 +9265,7 @@
   standard_name = theta_detrainment_tendency
   long_name = updraft theta detrainment tendency
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9273,7 +9273,7 @@
   standard_name = water_vapor_detrainment_tendency
   long_name = updraft water vapor detrainment tendency
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
@@ -9281,7 +9281,7 @@
   standard_name = total_time_rate_of_change_of_tke
   long_name = total tke tendency
   units = m2 s-3
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
@@ -9289,7 +9289,7 @@
   standard_name = tke_tendency_due_to_vertical_transport
   long_name = tke tendency due to vertical transport and diffusion
   units = m2 s-3
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
@@ -9297,7 +9297,7 @@
   standard_name = tke_tendency_due_to_shear
   long_name = tke tendency due to shear
   units = m2 s-3
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
@@ -9305,7 +9305,7 @@
   standard_name = tke_tendency_due_to_buoyancy
   long_name = tke tendency due to buoyancy production or consumption
   units = m2 s-3
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
@@ -9313,7 +9313,7 @@
   standard_name = tke_tendency_due_to_dissipation
   long_name = tke tendency due to the dissipation of tke
   units = m2 s-3
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output == 1)
@@ -9321,7 +9321,7 @@
   standard_name = maximum_width_of_plumes
   long_name = maximum width of plumes per grid column
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -9329,7 +9329,7 @@
   standard_name = maximum_mass_flux
   long_name = maximum mass flux within a column
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -9337,7 +9337,7 @@
   standard_name = height_of_tallest_plume_in_a_column
   long_name = height of tallest plume in a column
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -9345,20 +9345,20 @@
   standard_name = k_level_of_highest_reaching_plume
   long_name = k-level of highest reaching plume
   units = count
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
 [ktop_plume]
   standard_name = k_level_of_highest_plume
   long_name = k-level of highest plume
   units = count
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
 [exch_h]
   standard_name = atmosphere_heat_diffusivity_for_mynnedmf
   long_name = diffusivity for heat for MYNN PBL (defined for all mass levels)
   units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -9366,7 +9366,7 @@
   standard_name = atmosphere_momentum_diffusivity_for_mynnedmf
   long_name = diffusivity for momentum for MYNN PBL (defined for all mass levels)
   units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
@@ -9374,56 +9374,56 @@
   standard_name = time_integral_of_height_of_mountain_blocking
   long_name = time integral of height of mountain blocking drag
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zlwb]
   standard_name = time_integral_of_height_of_low_level_wave_breaking
   long_name = time integral of height of drag due to low level wave breaking
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [zogw]
   standard_name = time_integral_of_height_of_launch_level_of_orographic_gravity_wave
   long_name = time integral of height of launch level of orographic gravity wave
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tau_tofd]
   standard_name = time_integral_of_momentum_flux_due_to_turbulent_orographic_form_drag
   long_name = time integral of momentum flux due to TOFD
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tau_mtb]
   standard_name = time_integral_of_momentum_flux_due_to_mountain_blocking_drag
   long_name = time integral of momentum flux due to mountain blocking drag
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tau_ogw]
   standard_name = time_integral_of_momentum_flux_due_to_orographic_gravity_wave_drag
   long_name = time integral of momentum flux due to orographic gravity wave drag
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tau_ngw]
   standard_name = time_integral_of_momentum_flux_due_to_nonstationary_gravity_wave
   long_name = time integral of momentum flux due to nonstationary gravity waves
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [du3dt_mtb]
   standard_name = time_integral_of_change_in_x_wind_due_to_mountain_blocking_drag
   long_name = time integral of change in x wind due to mountain blocking drag
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9431,7 +9431,7 @@
   standard_name = time_integral_of_change_in_x_wind_due_to_orographic_gravity_wave_drag
   long_name = time integral of change in x wind due to orographic gw drag
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9439,7 +9439,7 @@
   standard_name = cumulative_change_in_x_wind_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = cumulative change in x wind due to mesoscale orographic gravity wave drag
   units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9447,7 +9447,7 @@
   standard_name = cumulative_change_in_x_wind_due_to_blocking_drag
   long_name = cumulative change in x wind due to blocking drag
   units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9455,7 +9455,7 @@
   standard_name = cumulative_change_in_x_wind_due_to_small_scale_gravity_wave_drag
   long_name = cumulative change in x wind due to small scale gravity wave drag
   units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9463,7 +9463,7 @@
   standard_name = cumulative_change_in_x_wind_due_to_form_drag
   long_name = cumulative change in x wind due to form drag
   units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9471,7 +9471,7 @@
   standard_name = time_integral_of_change_in_x_wind_due_to_turbulent_orographic_form_drag
   long_name = time integral of change in x wind due to TOFD
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9479,7 +9479,7 @@
   standard_name = time_integral_of_change_in_x_wind_due_to_nonstationary_gravity_wave
   long_name = time integral of change in x wind due to NGW
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9487,7 +9487,7 @@
  standard_name = cumulative_change_in_wind_speed_due_to_mesoscale_orographic_gravity_wave_drag
  long_name = cumulative change in wind speed due to mesoscale orographic gravity wave drag
  units = m s-1
- dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+ dimensions = (horizontal_dimension,vertical_layer_dimension)
  type = real
  kind = kind_phys
  active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9495,7 +9495,7 @@
  standard_name = cumulative_change_in_wind_speed_due_to_blocking_drag
  long_name = cumulative change in wind speed due to blocking drag
  units = m s-1
- dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+ dimensions = (horizontal_dimension,vertical_layer_dimension)
  type = real
  kind = kind_phys
  active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9503,7 +9503,7 @@
  standard_name = cumulative_change_in_wind_speed_due_to_small_scale_orographic_gravity_wave_drag
  long_name = cumulative change in wind speed due to small scale orographic gravity wave drag
  units = m s-1
- dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+ dimensions = (horizontal_dimension,vertical_layer_dimension)
  type = real
  kind = kind_phys
  active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9511,7 +9511,7 @@
  standard_name = cumulative_change_in_wind_speed_due_to_turbulent_orographic_form_drag
  long_name = cumulative change in wind speed due to turbulent orographic form drag
  units = m s-1
- dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+ dimensions = (horizontal_dimension,vertical_layer_dimension)
  type = real
  kind = kind_phys
  active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9519,7 +9519,7 @@
  standard_name = cumulative_change_in_x_wind_due_to_convective_gravity_wave_drag
  long_name = cumulative change in x wind due to convective gravity wave drag
  units = m s-1
- dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+ dimensions = (horizontal_dimension,vertical_layer_dimension)
  type = real
  kind = kind_phys
  active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9527,7 +9527,7 @@
  standard_name = cumulative_change_in_y_wind_due_to_convective_gravity_wave_drag
  long_name = cumulative change in y wind due to convective gravity wave drag
  units = m s-1
- dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+ dimensions = (horizontal_dimension,vertical_layer_dimension)
  type = real
  kind = kind_phys
  active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9535,7 +9535,7 @@
  standard_name = cumulative_change_in_temperature_due_to_convective_gravity_wave_drag
  long_name = cumulative change in temperature due to convective gravity wave drag
  units = K
- dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+ dimensions = (horizontal_dimension,vertical_layer_dimension)
  type = real
  kind = kind_phys
  active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9543,35 +9543,35 @@
   standard_name = tendency_of_x_wind_due_to_gravity_wave_drag
   long_name = zonal wind tendency due to all GWs
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [dvdt_gw]
   standard_name = tendency_of_y_wind_due_to_gravity_wave_drag
   long_name = meridional wind tendency due to all GWs
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [dtdt_gw]
   standard_name = tendency_of_air_temperature_due_to_gravity_wave_drag
   long_name = air temperature tendency due to all GWs
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [kdis_gw]
   standard_name = atmosphere_momentum_diffusivity_due_to_gravity_wave_drag
   long_name = eddy mixing due to all GWs
   units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
 [dudt_ogw]
   standard_name = tendency_of_x_wind_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = x wind tendency from meso scale ogw
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9579,7 +9579,7 @@
   standard_name = tendency_of_y_wind_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = y wind tendency from meso scale ogw
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9587,7 +9587,7 @@
   standard_name = vertically_integrated_x_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = integrated x momentum flux from meso scale ogw
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9595,7 +9595,7 @@
   standard_name = vertically_integrated_y_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = integrated y momentum flux from meso scale ogw
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9603,7 +9603,7 @@
   standard_name = tendency_of_x_wind_due_to_blocking_drag
   long_name = x wind tendency from blocking drag
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9611,7 +9611,7 @@
   standard_name = tendency_of_y_wind_due_to_blocking_drag
   long_name = y wind tendency from blocking drag
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9619,7 +9619,7 @@
   standard_name = vertically_integrated_x_momentum_flux_due_to_blocking_drag
   long_name = integrated x momentum flux from blocking drag
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9627,7 +9627,7 @@
   standard_name = vertically_integrated_y_momentum_flux_due_to_blocking_drag
   long_name = integrated y momentum flux from blocking drag
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9635,7 +9635,7 @@
   standard_name = cumulative_vertically_integrated_x_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = cumulative integrated x momentum flux from mesoscale orographic gravity wave drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9643,7 +9643,7 @@
   standard_name = cumulative_vertically_integrated_y_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = cumulative integrated y momentum flux from mesoscale orographic gravity wave drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9651,7 +9651,7 @@
   standard_name = cumulative_vertically_integrated_x_momentum_flux_due_to_blocking_drag
   long_name = cumulative integrated x momentum flux from blocking drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9659,7 +9659,7 @@
   standard_name = cumulative_vertically_integrated_y_momentum_flux_due_to_blocking_drag
   long_name = cumulative integrated y momentum flux from blocking drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9667,7 +9667,7 @@
   standard_name = cumulative_vertically_integrated_x_momentum_flux_due_to_small_scale_gravity_wave_drag
   long_name = cumulative integrated x momentum flux from small scale gravity wave drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9675,7 +9675,7 @@
   standard_name = cumulative_vertically_integrated_y_momentum_flux_due_small_scale_gravity_wave_drag
   long_name = cumulative integrated y momentum flux from small scale gravity wave drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9683,7 +9683,7 @@
   standard_name = cumulative_vertically_integrated_x_momentum_flux_due_to_form_drag
   long_name = cumulative integrated x momentum flux from form drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9691,7 +9691,7 @@
   standard_name = cumulative_vertically_integrated_y_momentum_flux_due_to_form_drag
   long_name = cumulative integrated y momentum flux from form drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9699,7 +9699,7 @@
   standard_name = tendency_of_x_wind_due_to_small_scale_gravity_wave_drag
   long_name = x wind tendency from small scale gwd
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9707,7 +9707,7 @@
   standard_name = tendency_of_y_wind_due_to_small_scale_gravity_wave_drag
   long_name = y wind tendency from small scale gwd
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9715,7 +9715,7 @@
   standard_name = vertically_integrated_x_momentum_flux_due_to_small_scale_gravity_wave_drag
   long_name = integrated x momentum flux from small scale gwd
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9723,7 +9723,7 @@
   standard_name = vertically_integrated_y_momentum_flux_due_to_small_scale_gravity_wave_drag
   long_name = integrated y momentum flux from small scale gwd
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9731,7 +9731,7 @@
   standard_name = tendency_of_x_wind_due_to_form_drag
   long_name = x wind tendency from form drag
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9739,7 +9739,7 @@
   standard_name = tendency_of_y_wind_due_to_form_drag
   long_name = y wind tendency from form drag
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9747,7 +9747,7 @@
   standard_name = vertically_integrated_x_momentum_flux_due_to_form_drag
   long_name = integrated x momentum flux from form drag
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9755,7 +9755,7 @@
   standard_name = vertically_integrated_y_momentum_flux_due_to_form_drag
   long_name = integrated y momentum flux from form drag
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_ugwp_version_1 .or. flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9763,7 +9763,7 @@
   standard_name = time_integral_of_change_in_y_wind_due_to_nonstationary_gravity_wave
   long_name = time integral of change in y wind due to NGW
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_unified_gravity_wave_physics_diagnostics)
@@ -9771,7 +9771,7 @@
   standard_name = extended_diagnostics_output_from_thompson_microphysics
   long_name = set of 3d arrays for extended diagnostics output from thompson microphysics
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_3d_diagnostic_output_arrays_from_thompson_microphysics)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,number_of_3d_diagnostic_output_arrays_from_thompson_microphysics)
   type = real
   kind = kind_phys
   active = (flag_for_extended_diagnostic_output_from_thompson_microphysics)
@@ -9779,7 +9779,7 @@
   standard_name = auxiliary_2d_arrays
   long_name = auxiliary 2d arrays to output (for debugging)
   units = none
-  dimensions = (horizontal_loop_extent,number_of_xyz_dimensioned_auxiliary_arrays)
+  dimensions = (horizontal_dimension,number_of_xyz_dimensioned_auxiliary_arrays)
   type = real
   kind = kind_phys
   active = (number_of_xy_dimensioned_auxiliary_arrays > 0)
@@ -9787,7 +9787,7 @@
   standard_name = auxiliary_3d_arrays
   long_name = auxiliary 3d arrays to output (for debugging)
   units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_xyz_dimensioned_auxiliary_arrays)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,number_of_xyz_dimensioned_auxiliary_arrays)
   type = real
   kind = kind_phys
   active = (number_of_xyz_dimensioned_auxiliary_arrays > 0)
@@ -9795,14 +9795,14 @@
   standard_name = surface_air_pressure_from_previous_timestep
   long_name = surface air pressure from previous timestep
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [ltg1_max]
   standard_name = lightning_threat_index_1
   long_name = lightning threat index 1
   units = flashes 5 min-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -9811,7 +9811,7 @@
   standard_name = lightning_threat_index_2
   long_name = lightning threat index 2
   units = flashes 5 min-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -9820,27 +9820,11 @@
   standard_name = lightning_threat_index_3
   long_name = lightning threat index 3
   units = flashes 5 min-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
   active = (do_lightning_threat_index_calculations)
-
-########################################################################
-[ccpp-table-properties]
-  name = GFS_data_type
-  type = ddt
-  dependencies =
-
-[ccpp-arg-table]
-  name = GFS_data_type
-  type = ddt
-[Intdiag]
-  standard_name = GFS_diag_type_instance
-  long_name = fields targeted for diagnostic output
-  units = DDT
-  dimensions = ()
-  type = GFS_diag_type
 
 ########################################################################
 [ccpp-table-properties]
@@ -9873,12 +9857,6 @@
   units = DDT
   dimensions = ()
   type = GFS_coupling_type
-[GFS_data_type]
-  standard_name = GFS_data_type
-  long_name = definition of type GFS_data_type
-  units = DDT
-  dimensions = ()
-  type = GFS_data_type
 [GFS_diag_type]
   standard_name = GFS_diag_type
   long_name = definition of type GFS_diag_type

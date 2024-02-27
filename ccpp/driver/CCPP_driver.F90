@@ -13,7 +13,7 @@ module CCPP_driver
                                 cdata_block,                         &
                                 ccpp_suite,                          &
                                 GFS_control,                         &
-                                GFS_data
+                                GFS_Intdiag
 
   implicit none
 
@@ -138,24 +138,18 @@ module CCPP_driver
       !--- determine if radiation diagnostics buckets need to be cleared
       if (nint(GFS_control%fhzero*3600) >= nint(max(GFS_control%fhswr,GFS_control%fhlwr))) then
         if (mod(GFS_control%kdt,GFS_control%nszero) == 1) then
-          do nb = 1,nblks
-            call GFS_data(nb)%Intdiag%rad_zero(GFS_control)
-          end do
+          call GFS_Intdiag%rad_zero(GFS_control)
         endif
       else
         kdt_rad = nint(min(GFS_control%fhswr,GFS_control%fhlwr)/GFS_control%dtp)
         if (mod(GFS_control%kdt,kdt_rad) == 1) then
-          do nb = 1,nblks
-            call GFS_data(nb)%Intdiag%rad_zero(GFS_control)
-          enddo
+          call GFS_Intdiag%rad_zero(GFS_control)
         endif
       endif
 
       !--- determine if physics diagnostics buckets need to be cleared
       if ((mod(GFS_control%kdt-1,GFS_control%nszero)) == 0) then
-        do nb = 1,nblks
-          call GFS_data(nb)%Intdiag%phys_zero(GFS_control)
-        end do
+        call GFS_Intdiag%phys_zero(GFS_control)
       endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

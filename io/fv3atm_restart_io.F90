@@ -9,7 +9,7 @@ module fv3atm_restart_io_mod
   use GFS_typedefs,       only: GFS_statein_type, GFS_stateout_type
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, kind_phys
   use GFS_typedefs,       only: GFS_grid_type, GFS_cldprop_type, GFS_tbd_type
-  use GFS_typedefs,       only: GFS_radtend_type, GFS_coupling_type, GFS_data_type
+  use GFS_typedefs,       only: GFS_radtend_type, GFS_coupling_type
   use GFS_restart,        only: GFS_restart_type
   use fms_mod,            only: stdout
   use fms2_io_mod,        only: FmsNetcdfDomainFile_t, unlimited,      &
@@ -142,7 +142,7 @@ contains
   !----------------
   ! fv3atm_checksum
   !----------------
-  subroutine fv3atm_checksum (Model, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, GFS_Data, Atm_block)
+  subroutine fv3atm_checksum (Model, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, Atm_block)
     implicit none
     !--- interface variables
     type(GFS_control_type),    intent(in) :: Model
@@ -154,7 +154,6 @@ contains
     type(GFS_sfcprop_type),    intent(in) :: GFS_Sfcprop
     type(GFS_radtend_type),    intent(in) :: GFS_Radtend
     type(GFS_coupling_type),   intent(in) :: GFS_Coupling
-    type(GFS_data_type),       intent(in) :: GFS_Data(:)
     type (block_control_type), intent(in) :: Atm_block
     !--- local variables
     integer :: outunit, i, ix, im, nb, isc, iec, jsc, jec, lev, ntr, k

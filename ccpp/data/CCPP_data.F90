@@ -16,7 +16,7 @@ module CCPP_data
                              GFS_sfcprop_type,       &
                              GFS_radtend_type,       &
                              GFS_coupling_type,      &
-                             GFS_data_type
+                             GFS_diag_type
 
     implicit none
 
@@ -36,12 +36,12 @@ module CCPP_data
            GFS_sfcprop,            &
            GFS_radtend,            &
            GFS_coupling,           &
-           GFS_data,               &
+           GFS_intdiag,            &
            GFS_interstitial
 
     !-------------------------------------------------------!
-    !  GFS data containers, GFS_Data has dimension nblocks  !
-    !  and GFS_Interstitial has dimension nthreads          !
+    !  GFS data containers;                                 !
+    !  GFS_Interstitial has dimension nthreads              !
     !-------------------------------------------------------!
     type(GFS_control_type),                                    save, target :: GFS_control
     type(GFS_statein_type),                                    save, target :: GFS_statein
@@ -52,7 +52,7 @@ module CCPP_data
     type(GFS_sfcprop_type),                                    save, target :: GFS_sfcprop
     type(GFS_radtend_type),                                    save, target :: GFS_radtend
     type(GFS_coupling_type),                                   save, target :: GFS_coupling
-    type(GFS_data_type),          dimension(:),   allocatable, save, target :: GFS_data
+    type(GFS_diag_type),                                       save, target :: GFS_intdiag
     type(GFS_interstitial_type),  dimension(:),   allocatable, save, target :: GFS_interstitial
 
     !------------------------------------------------------!

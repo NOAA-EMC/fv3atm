@@ -57,13 +57,13 @@ module stochastic_physics_wrapper_mod
 !-------------------------------
 !  CCPP step
 !-------------------------------
-  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, GFS_Data, Atm_block, ierr)
+  subroutine stochastic_physics_wrapper (GFS_Control, GFS_Statein, GFS_Grid, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, Atm_block, ierr)
 
 #ifdef _OPENMP
     use omp_lib
 #endif
 
-    use GFS_typedefs,       only: GFS_control_type, GFS_statein_type, GFS_grid_type, GFS_sfcprop_type, GFS_radtend_type, GFS_coupling_type, GFS_data_type
+    use GFS_typedefs,       only: GFS_control_type, GFS_statein_type, GFS_grid_type, GFS_sfcprop_type, GFS_radtend_type, GFS_coupling_type
     use mpp_mod,            only: FATAL, mpp_error
     use block_control_mod,  only: block_control_type
     use atmosphere_mod,     only: Atm, mygrid
@@ -81,7 +81,6 @@ module stochastic_physics_wrapper_mod
     type(GFS_sfcprop_type),   intent(inout) :: GFS_Sfcprop
     type(GFS_radtend_type),   intent(inout) :: GFS_Radtend
     type(GFS_coupling_type),  intent(inout) :: GFS_Coupling
-    type(GFS_data_type),      intent(inout) :: GFS_Data(:)
     type(block_control_type), intent(inout) :: Atm_block
     integer,                  intent(out)   :: ierr
 
@@ -502,7 +501,7 @@ module stochastic_physics_wrapper_mod
 
   subroutine stochastic_physics_wrapper_end (GFS_Control)
 
-  use GFS_typedefs,       only: GFS_control_type, GFS_data_type
+  use GFS_typedefs,       only: GFS_control_type
   use stochastic_physics, only: finalize_stochastic_physics
 
   implicit none

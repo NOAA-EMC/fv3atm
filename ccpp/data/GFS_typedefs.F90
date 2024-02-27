@@ -80,7 +80,6 @@ module GFS_typedefs
 !    GFS_cldprop_type        !< cloud fields needed by radiation from physics
 !    GFS_radtend_type        !< radiation tendencies needed in physics
 !    GFS_diag_type           !< fields targetted for diagnostic output
-!    GFS_data_type           !< combined type of all of the above except GFS_control_type
 
 !--------------------------------------------------------------------------------
 ! GFS_init_type
@@ -2146,16 +2145,6 @@ module GFS_typedefs
       procedure :: phys_zero => diag_phys_zero
   end type GFS_diag_type
 
-!----------------------------------------------------------
-! combined type of all of the above except GFS_control_type
-!----------------------------------------------------------
-!! \section arg_table_GFS_data_type
-!! \htmlinclude GFS_data_type.html
-!!
-  type GFS_data_type
-     type(GFS_diag_type)     :: Intdiag
-  end type GFS_data_type
-
 !----------------
 ! PUBLIC ENTITIES
 !----------------
@@ -2164,7 +2153,6 @@ module GFS_typedefs
          GFS_coupling_type
   public GFS_control_type,  GFS_grid_type,     GFS_tbd_type, &
          GFS_cldprop_type,  GFS_radtend_type,  GFS_diag_type
-  public GFS_data_type
 
 !*******************************************************************************************
   CONTAINS
@@ -7540,15 +7528,15 @@ module GFS_typedefs
 !----------------
 ! GFS_diag%create
 !----------------
-  subroutine diag_create (Diag, IM, Model)
+  subroutine diag_create (Diag, Model)
     use parse_tracers,    only: get_tracer_index
     class(GFS_diag_type)               :: Diag
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
-
-!
+    integer :: IM
     logical, save :: linit
     logical :: have_pbl, have_dcnv, have_scnv, have_mp, have_oz_phys
+
+    IM = Model%ncols
 
     if(Model%print_diff_pgr) then
       allocate(Diag%old_pgr(IM))

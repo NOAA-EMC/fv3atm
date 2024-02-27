@@ -62,8 +62,7 @@ TYPEDEFS_NEW_METADATA = {
         'GFS_sfcprop_type'      : 'GFS_Sfcprop',
         'GFS_radtend_type'      : 'GFS_Radtend',
         'GFS_coupling_type'     : 'GFS_Coupling',
-        'GFS_data_type'         : 'GFS_Data(cdata%blk_no)',
-        'GFS_diag_type'         : 'GFS_Data(cdata%blk_no)%Intdiag',
+        'GFS_diag_type'         : 'GFS_Intdiag',
         'GFS_typedefs' : '',
         },
     }

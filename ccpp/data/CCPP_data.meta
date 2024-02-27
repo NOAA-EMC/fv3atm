@@ -72,18 +72,12 @@
   units = DDT
   dimensions = ()
   type = GFS_coupling_type
-[GFS_Data(ccpp_block_number)]
-  standard_name = GFS_data_type_instance
-  long_name = instance of derived type GFS_data_type
+[GFS_Intdiag]
+  standard_name = GFS_diag_type_instance
+  long_name = instance of derived type GFS_diag_type
   units = DDT
   dimensions = ()
-  type = GFS_data_type
-[GFS_Data]
-  standard_name = GFS_data_type_instance_all_blocks
-  long_name = instance of derived type GFS_data_type
-  units = DDT
-  dimensions = (ccpp_block_count)
-  type = GFS_data_type
+  type = GFS_diag_type
 [GFS_Interstitial(ccpp_thread_number)]
   standard_name = GFS_interstitial_type_instance
   long_name = instance of derived type GFS_interstitial_type
