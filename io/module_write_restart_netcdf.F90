@@ -7,10 +7,12 @@
 
 module module_write_restart_netcdf
 
+  use mpi
   use esmf
   use fms
+  use mpp_mod, only : mpp_chksum   ! needed for fms 2023.02
   use netcdf
-  use mpi
+  use module_fv3_io_def,only : zstandard_level
 
   implicit none
   private
@@ -74,10 +76,10 @@ module module_write_restart_netcdf
     integer :: ncerr,ierr
     integer :: ncid
     integer :: oldMode
-    integer :: dimid
+    integer :: dimid, dimtype
     integer :: im_dimid, im_p1_dimid, jm_dimid, jm_p1_dimid, time_dimid
     integer :: im_varid, im_p1_varid, jm_varid, jm_p1_varid, time_varid
-    integer, dimension(:), allocatable :: dimids_2d, dimids_3d
+    integer, dimension(:), allocatable :: dimids_2d, dimids_3d, chunksizes
     integer, dimension(:), allocatable :: varids, zaxis_dimids
     logical shuffle
 
@@ -188,6 +190,15 @@ module module_write_restart_netcdf
           deallocate(maxIndexPTile)
           deallocate(deToTileMap)
           deallocate(localDeToDeMap)
+
+          if (typekind == ESMF_TYPEKIND_R4) then
+             dimtype = NF90_FLOAT
+          else if (typekind == ESMF_TYPEKIND_R8) then
+             dimtype = NF90_DOUBLE
+          else
+             if (mype==0) write(0,*)'Unsupported typekind ', typekind
+             call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          end if
        end if
 
        if (fieldDimCount > gridDimCount) then
@@ -236,29 +247,29 @@ module module_write_restart_netcdf
        if ( .not.is_restart_core ) then
 
           ncerr = nf90_def_dim(ncid, "xaxis_1", im, im_dimid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_def_var(ncid, "xaxis_1", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "xaxis_1", dimtype, im_dimid, im_varid); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, trim(axis_attr_name), "X"); NC_ERR_STOP(ncerr)
 
           ncerr = nf90_def_dim(ncid, "yaxis_1", jm, jm_dimid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_def_var(ncid, "yaxis_1", NF90_DOUBLE, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "yaxis_1", dimtype, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, trim(axis_attr_name), "Y"); NC_ERR_STOP(ncerr)
 
        else
 
           ncerr = nf90_def_dim(ncid, "xaxis_1", im, im_dimid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_def_var(ncid, "xaxis_1", NF90_DOUBLE, im_dimid, im_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "xaxis_1", dimtype, im_dimid, im_varid); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, trim(axis_attr_name), "X"); NC_ERR_STOP(ncerr)
 
           ncerr = nf90_def_dim(ncid, "xaxis_2", im+1, im_p1_dimid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_def_var(ncid, "xaxis_2", NF90_DOUBLE, im_p1_dimid, im_p1_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "xaxis_2", dimtype, im_p1_dimid, im_p1_varid); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_p1_varid, trim(axis_attr_name), "X"); NC_ERR_STOP(ncerr)
 
           ncerr = nf90_def_dim(ncid, "yaxis_1", jm+1, jm_p1_dimid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_def_var(ncid, "yaxis_1", NF90_DOUBLE, jm_p1_dimid, jm_p1_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "yaxis_1", dimtype, jm_p1_dimid, jm_p1_varid); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_p1_varid, trim(axis_attr_name), "Y"); NC_ERR_STOP(ncerr)
 
           ncerr = nf90_def_dim(ncid, "yaxis_2", jm, jm_dimid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_def_var(ncid, "yaxis_2", NF90_DOUBLE, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_def_var(ncid, "yaxis_2", dimtype, jm_dimid, jm_varid); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, trim(axis_attr_name), "Y"); NC_ERR_STOP(ncerr)
 
        end if
@@ -291,7 +302,7 @@ module module_write_restart_netcdf
 
        ncerr = nf90_def_dim(ncid, "Time", NF90_UNLIMITED, time_dimid); NC_ERR_STOP(ncerr)
        ! ncerr = nf90_def_dim(ncid, "Time", 1, time_dimid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_def_var(ncid, "Time", NF90_DOUBLE, time_dimid, time_varid); NC_ERR_STOP(ncerr)
+       ncerr = nf90_def_var(ncid, "Time", dimtype, time_dimid, time_varid); NC_ERR_STOP(ncerr)
        if (par) then
           ncerr = nf90_var_par_access(ncid, time_varid, NF90_COLLECTIVE); NC_ERR_STOP(ncerr)
        end if
@@ -324,6 +335,7 @@ module module_write_restart_netcdf
          ! define variables
          if (rank == 2) then
            dimids_2d =             [im_dimid,jm_dimid,                       time_dimid]
+           chunksizes =            [im, jm, 1]
            if (typekind == ESMF_TYPEKIND_R4) then
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, dimids_2d, varids(i)); NC_ERR_STOP(ncerr)
            else if (typekind == ESMF_TYPEKIND_R8) then
@@ -335,13 +347,17 @@ module module_write_restart_netcdf
          else if (rank == 3) then
            if ( .not.is_restart_core ) then
              dimids_3d = [im_dimid,jm_dimid,zaxis_dimids(i),time_dimid]
+             chunksizes = [im, jm, 1, 1]
            else
              if (staggerloc == ESMF_STAGGERLOC_CENTER) then
                 dimids_3d = [im_dimid,jm_dimid,zaxis_dimids(i),time_dimid]
+                chunksizes = [im, jm, 1, 1]
              else if (staggerloc == ESMF_STAGGERLOC_EDGE1) then  ! east
                 dimids_3d = [im_p1_dimid,jm_dimid,zaxis_dimids(i),time_dimid]
+                chunksizes = [im+1, jm, 1, 1]
              else if (staggerloc == ESMF_STAGGERLOC_EDGE2) then  ! south
                 dimids_3d = [im_dimid,jm_p1_dimid,zaxis_dimids(i),time_dimid]
+                chunksizes = [im, jm+1, 1, 1]
              else
                if (mype==0) write(0,*)'Unsupported staggerloc ', staggerloc
                call ESMF_Finalize(endflag=ESMF_END_ABORT)
@@ -361,6 +377,18 @@ module module_write_restart_netcdf
          end if
          if (par) then
              ncerr = nf90_var_par_access(ncid, varids(i), par_access); NC_ERR_STOP(ncerr)
+         end if
+
+         ncerr = nf90_def_var_chunking(ncid, varids(i), NF90_CHUNKED, chunksizes) ; NC_ERR_STOP(ncerr)
+
+         if (zstandard_level(1) > 0) then
+            ncerr = nf90_def_var_zstandard(ncid, varids(i), zstandard_level(1))
+            if (ncerr /= nf90_noerr) then
+               if (ncerr == nf90_enofilter) then
+                  if (mype==0) write(0,*) 'Zstandard filter not found.'
+               end if
+               NC_ERR_STOP(ncerr)
+            end if
          end if
 
        end do   ! i=1,fieldCount
@@ -565,12 +593,7 @@ contains
         ncerr = nf90_def_dim(ncid, trim(dimLabel), valueCount, dimid=dimid); NC_ERR_STOP(ncerr); NC_ERR_STOP(ncerr)
       endif
       if( typekind == ESMF_TYPEKIND_R4 ) then
-        !!! FIXME Use NF90_DOUBLE as axis type, even though axis data are float
-        !!!       This is needed to make phy/sfc restart files identical to FMS
-        !!!       restart files which always defines all axis as double
-
-        ! ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_FLOAT, dimids=(/dimid/), varid=varid); NC_ERR_STOP(ncerr)
-        ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_DOUBLE, dimids=(/dimid/), varid=varid); NC_ERR_STOP(ncerr)
+        ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_FLOAT, dimids=(/dimid/), varid=varid); NC_ERR_STOP(ncerr)
         ncerr = nf90_put_att(ncid, varid, trim(axis_attr_name), "Z"); NC_ERR_STOP(ncerr)
         ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
         ncerr = nf90_put_var(ncid, varid, values=valueListr4); NC_ERR_STOP(ncerr)

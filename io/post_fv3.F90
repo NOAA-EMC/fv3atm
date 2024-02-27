@@ -93,7 +93,7 @@ module post_fv3
       its       = wrt_int_state%out_grid_info(grid_id)%i_start     !<-- Starting I of this write task's subsection
       ite       = wrt_int_state%out_grid_info(grid_id)%i_end       !<-- Ending I of this write task's subsection
 
-      if(mype==0) print *,'in post_run,jts=',jts,'jte=',jte,'nwtpg=',nwtpg, &
+      if(mype==0) print *,'in post_run, numx=',numx,'its=',its,'ite=',ite,'nwtpg=',nwtpg, &
         'jts=',jts,'jte=',jte,'maptype=',maptype,'wrt_int_state%FBCount=',wrt_int_state%FBCount
 
 !
@@ -508,7 +508,7 @@ module post_fv3
       use vrbls3d,     only: t, q, uh, vh, wh, alpint, dpres, zint, zmid, o3,  &
                              qqr, qqs, cwm, qqi, qqw, qqg, omga, cfr, pmid,    &
                              q2, rlwtt, rswtt, tcucn, tcucns, train, el_pbl,   &
-                             pint, exch_h, ref_10cm, qqni, qqnr, qqnwfa,       &
+                             pint, exch_h, ref_10cm, qqni, qqnr, qqnw, qqnwfa, &
                              qqnifa, effri, effrl, effrs, aextc55, taod5503d,  &
                              duem, dusd, dudp, duwt, dusv, ssem, sssd, ssdp,   &
                              sswt, sssv, bcem, bcsd, bcdp, bcwt, bcsv, ocem,   &
@@ -551,7 +551,7 @@ module post_fv3
                              dustpm10, dustcb, bccb, occb, sulfcb, sscb,       &
                              dustallcb, ssallcb, dustpm, sspm, pp25cb, pp10cb, &
                              no3cb, nh4cb, dusmass, ducmass, dusmass25,ducmass25, &
-                             snownc, graupelnc, qrmax
+                             snownc, graupelnc, qrmax, hail_maxhailcast
       use soil,        only: sldpth, sh2o, smc, stc, sllevel
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -992,6 +992,17 @@ module post_fv3
                   ltg3_max(i,j)=arrayr42d(i,j)
                   if(abs(arrayr42d(i,j)-fillValue) < small) ltg3_max(i,j)=spval
                 enddo
+              enddo
+            endif
+
+            ! Maximum hail diameter (mm) since last output
+            if(trim(fieldname)=='hailcast_dhail') then 
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,hail_maxhailcast,arrayr42d,fillValue,spval)
+              do j=jsta,jend 
+                do i=ista, iend
+                  hail_maxhailcast(i,j)=arrayr42d(i,j)
+                  if(abs(arrayr42d(i,j)-fillValue) < small) hail_maxhailcast(i,j)=spval
+                enddo        
               enddo
             endif
 
@@ -3642,8 +3653,8 @@ module post_fv3
               endif
 
               if(imp_physics == 8) then
-              ! model level rain number
-              if(trim(fieldname)=='ncrain') then
+              ! model level rain water number
+              if(trim(fieldname)=='rain_nc') then
                 !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnr,arrayr43d,spval,fillvalue)
                 do l=1,lm
                   do j=jsta,jend
@@ -3655,14 +3666,27 @@ module post_fv3
                 enddo
               endif
 
-              ! model level rain number
-              if(trim(fieldname)=='ncice') then
+              ! model level cloud ice number
+              if(trim(fieldname)=='nicp') then
                 !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqni,arrayr43d,spval,fillvalue)
                 do l=1,lm
                   do j=jsta,jend
                     do i=ista, iend
                       qqni(i,j,l)=arrayr43d(i,j,l)
                       if(abs(arrayr43d(i,j,l)-fillvalue)<small) qqni(i,j,l) = spval
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level cloud water number
+              if(trim(fieldname)=='water_nc') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnw,arrayr43d,spval,fillvalue)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnw(i,j,l)=arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) qqnw(i,j,l) = spval
                     enddo
                   enddo
                 enddo
@@ -3699,7 +3723,6 @@ module post_fv3
             endif !if(imp_physics == 11 .or. imp_physics == 8) then
 
             ! model level ref3d
-            if(modelname == 'GFS') then
             if(trim(fieldname)=='ref3D') then
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,ref_10cm,arrayr43d,fillvalue,spval)
               do l=1,lm
@@ -3712,7 +3735,6 @@ module post_fv3
               enddo
             endif
 !              if(mype==0) print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm)
-            else
             if(trim(fieldname)=='refl_10cm') then
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,ref_10cm,arrayr43d,fillvalue,spval)
               do l=1,lm
@@ -3724,7 +3746,6 @@ module post_fv3
                 enddo
               enddo
 !              if(mype==0) print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm),'ibdl=',ibdl
-            endif
             endif
 
             ! model level tke

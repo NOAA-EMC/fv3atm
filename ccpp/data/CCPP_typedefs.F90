@@ -8,7 +8,6 @@ module CCPP_typedefs
     use machine,  only: kind_grid, kind_dyn, kind_phys
 
     ! Constants/dimensions needed for interstitial DDTs
-    use ozne_def,                 only: oz_coeff
     use GFS_typedefs,             only: clear_val, LTP
 
     ! Physics type defininitions needed for interstitial DDTs
@@ -141,6 +140,7 @@ module CCPP_typedefs
     logical,               pointer      :: flag_cice(:)       => null()  !<
     logical,               pointer      :: flag_guess(:)      => null()  !<
     logical,               pointer      :: flag_iter(:)       => null()  !<
+    logical,               pointer      :: flag_lakefreeze(:) => null()  !<
     real (kind=kind_phys), pointer      :: ffmm_ice(:)        => null()  !<
     real (kind=kind_phys), pointer      :: ffmm_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: ffmm_water(:)      => null()  !<
@@ -608,6 +608,7 @@ contains
     allocate (Interstitial%flag_cice       (IM))
     allocate (Interstitial%flag_guess      (IM))
     allocate (Interstitial%flag_iter       (IM))
+    allocate (Interstitial%flag_lakefreeze (IM))
     allocate (Interstitial%ffmm_ice        (IM))
     allocate (Interstitial%ffmm_land       (IM))
     allocate (Interstitial%ffmm_water      (IM))
@@ -881,7 +882,7 @@ contains
     Interstitial%nf_albd          = NF_ALBD
     Interstitial%nspc1            = NSPC1
     if (Model%oz_phys .or. Model%oz_phys_2015) then
-      Interstitial%oz_coeffp5     = oz_coeff+5
+      Interstitial%oz_coeffp5     = Model%oz_coeff+5
     else
       Interstitial%oz_coeffp5     = 5
     endif
@@ -1058,11 +1059,12 @@ contains
       tracers = 2
       do n=2,Model%ntrac
         ltest = ( n /= Model%ntcw  .and. n /= Model%ntiw  .and. n /= Model%ntclamt .and. &
-             n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
-             n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc   .and. &
-             n /= Model%nthl  .and. n /= Model%nthnc .and. n /= Model%ntgv    .and. &
-             n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna .and.  &
-             n /= Model%ntsigma)
+                  n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
+                  n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc   .and. &
+                  n /= Model%nthl  .and. n /= Model%nthnc .and. n /= Model%ntgv    .and. &
+                  n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna  .and. &
+                  n /= Model%ntrz  .and. n /= Model%ntgz  .and. n /= Model%nthz    .and. &
+                  n /= Model%ntsigma)
         Interstitial%otsptflag(n) = ltest
         if ( ltest ) then
           tracers = tracers + 1
@@ -1297,6 +1299,7 @@ contains
     Interstitial%flag_cice       = .false.
     Interstitial%flag_guess      = .false.
     Interstitial%flag_iter       = .true.
+    Interstitial%flag_lakefreeze = .false.
     Interstitial%ffmm_ice        = Model%huge
     Interstitial%ffmm_land       = Model%huge
     Interstitial%ffmm_water      = Model%huge
