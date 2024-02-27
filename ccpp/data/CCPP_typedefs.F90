@@ -208,8 +208,6 @@ module CCPP_typedefs
     integer                             :: nbdlw                         !<
     integer                             :: nbdsw                         !<
     real (kind=kind_phys), pointer      :: ncgl(:,:)          => null()  !<
-    real (kind=kind_phys), pointer      :: ncpi(:,:)          => null()  !<
-    real (kind=kind_phys), pointer      :: ncpl(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: ncpr(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: ncps(:,:)          => null()  !<
     integer                             :: ncstrac                       !<
@@ -367,15 +365,6 @@ module CCPP_typedefs
     real (kind=kind_phys), pointer      :: tracer(:,:,:)             => null()  !<
     real (kind=kind_phys), pointer      :: aerosolslw(:,:,:,:)       => null()  !< Aerosol radiative properties in each LW band.
     real (kind=kind_phys), pointer      :: aerosolssw(:,:,:,:)       => null()  !< Aerosol radiative properties in each SW band.
-    real (kind=kind_phys), pointer      :: cld_frac(:,:)             => null()  !< Total cloud fraction
-    real (kind=kind_phys), pointer      :: cld_lwp(:,:)              => null()  !< Cloud liquid water path
-    real (kind=kind_phys), pointer      :: cld_reliq(:,:)            => null()  !< Cloud liquid effective radius
-    real (kind=kind_phys), pointer      :: cld_iwp(:,:)              => null()  !< Cloud ice water path
-    real (kind=kind_phys), pointer      :: cld_reice(:,:)            => null()  !< Cloud ice effecive radius
-    real (kind=kind_phys), pointer      :: cld_swp(:,:)              => null()  !< Cloud snow water path
-    real (kind=kind_phys), pointer      :: cld_resnow(:,:)           => null()  !< Cloud snow effective radius
-    real (kind=kind_phys), pointer      :: cld_rwp(:,:)              => null()  !< Cloud rain water path
-    real (kind=kind_phys), pointer      :: cld_rerain(:,:)           => null()  !< Cloud rain effective radius
     real (kind=kind_phys), pointer      :: precip_frac(:,:)          => null()  !< Precipitation fraction
     real (kind=kind_phys), pointer      :: cld_cnv_frac(:,:)         => null()  !< SGS convective cloud fraction 
     real (kind=kind_phys), pointer      :: cld_cnv_lwp(:,:)          => null()  !< SGS convective cloud liquid water path
@@ -532,6 +521,8 @@ contains
     if (.not. Model%do_RRTMGP) then
       ! RRTMGP uses its own cloud_overlap_param
       allocate (Interstitial%alpha         (IM,Model%levr+LTP))
+    else
+      allocate (Interstitial%alpha         (0,0))
     end if
     allocate (Interstitial%bexp1d          (IM))
     allocate (Interstitial%cd              (IM))
@@ -758,15 +749,6 @@ contains
        allocate (Interstitial%fluxswDOWN_clrsky    (IM, Model%levs+1))
        allocate (Interstitial%aerosolslw           (IM, Model%levs, Model%rrtmgp_nBandsLW, NF_AELW))
        allocate (Interstitial%aerosolssw           (IM, Model%levs, Model%rrtmgp_nBandsSW, NF_AESW))
-       allocate (Interstitial%cld_frac             (IM, Model%levs))
-       allocate (Interstitial%cld_lwp              (IM, Model%levs))
-       allocate (Interstitial%cld_reliq            (IM, Model%levs))
-       allocate (Interstitial%cld_iwp              (IM, Model%levs))
-       allocate (Interstitial%cld_reice            (IM, Model%levs))
-       allocate (Interstitial%cld_swp              (IM, Model%levs))
-       allocate (Interstitial%cld_resnow           (IM, Model%levs))
-       allocate (Interstitial%cld_rwp              (IM, Model%levs))
-       allocate (Interstitial%cld_rerain           (IM, Model%levs))
        allocate (Interstitial%precip_frac          (IM, Model%levs))
        allocate (Interstitial%cld_cnv_frac         (IM, Model%levs))
        allocate (Interstitial%cnv_cloud_overlap_param(IM, Model%levs))
@@ -794,7 +776,58 @@ contains
        allocate (Interstitial%vmr_ch4              (IM, Model%levs))
        allocate (Interstitial%vmr_n2o              (IM, Model%levs))
        allocate (Interstitial%vmr_co2              (IM, Model%levs))
-
+    else
+       allocate (Interstitial%tracer               (0,0,0))
+       allocate (Interstitial%tv_lay               (0,0))
+       allocate (Interstitial%relhum               (0,0))
+       allocate (Interstitial%qs_lay               (0,0))
+       allocate (Interstitial%q_lay                (0,0))
+       allocate (Interstitial%deltaZ               (0,0))
+       allocate (Interstitial%deltaZc              (0,0))
+       allocate (Interstitial%deltaP               (0,0))
+       allocate (Interstitial%p_lev                (0,0))
+       allocate (Interstitial%p_lay                (0,0))
+       allocate (Interstitial%t_lev                (0,0))
+       allocate (Interstitial%t_lay                (0,0))
+       allocate (Interstitial%cloud_overlap_param  (0,0))
+       allocate (Interstitial%precip_overlap_param (0,0))
+       allocate (Interstitial%fluxlwUP_allsky      (0,0))
+       allocate (Interstitial%fluxlwDOWN_allsky    (0,0))
+       allocate (Interstitial%fluxlwUP_clrsky      (0,0))
+       allocate (Interstitial%fluxlwDOWN_clrsky    (0,0))
+       allocate (Interstitial%fluxswUP_allsky      (0,0))
+       allocate (Interstitial%fluxswDOWN_allsky    (0,0))
+       allocate (Interstitial%fluxswUP_clrsky      (0,0))
+       allocate (Interstitial%fluxswDOWN_clrsky    (0,0))
+       allocate (Interstitial%aerosolslw           (0,0,0,0))
+       allocate (Interstitial%aerosolssw           (0,0,0,0))
+       allocate (Interstitial%precip_frac          (0,0))
+       allocate (Interstitial%cld_cnv_frac         (0,0))
+       allocate (Interstitial%cnv_cloud_overlap_param(0,0))
+       allocate (Interstitial%cld_cnv_lwp          (0,0))
+       allocate (Interstitial%cld_cnv_reliq        (0,0))
+       allocate (Interstitial%cld_cnv_iwp          (0,0))
+       allocate (Interstitial%cld_cnv_reice        (0,0))
+       allocate (Interstitial%cld_pbl_lwp          (0,0))
+       allocate (Interstitial%cld_pbl_reliq        (0,0))
+       allocate (Interstitial%cld_pbl_iwp          (0,0))
+       allocate (Interstitial%cld_pbl_reice        (0,0))
+       allocate (Interstitial%flxprf_lw            (0,0))
+       allocate (Interstitial%flxprf_sw            (0,0))
+       allocate (Interstitial%sfc_emiss_byband     (0,0))
+       allocate (Interstitial%sec_diff_byband      (0,0))
+       allocate (Interstitial%sfc_alb_nir_dir      (0,0))
+       allocate (Interstitial%sfc_alb_nir_dif      (0,0))
+       allocate (Interstitial%sfc_alb_uvvis_dir    (0,0))
+       allocate (Interstitial%sfc_alb_uvvis_dif    (0,0))
+       allocate (Interstitial%toa_src_sw           (0,0))
+       allocate (Interstitial%toa_src_lw           (0,0))
+       allocate (Interstitial%vmr_o2               (0,0))
+       allocate (Interstitial%vmr_h2o              (0,0))
+       allocate (Interstitial%vmr_o3               (0,0))
+       allocate (Interstitial%vmr_ch4              (0,0))
+       allocate (Interstitial%vmr_n2o              (0,0))
+       allocate (Interstitial%vmr_co2              (0,0))
     end if
 
 ! UGWP common
@@ -817,6 +850,11 @@ contains
       allocate (Interstitial%dvdt_ngw        (IM,Model%levs))
       allocate (Interstitial%dtdt_ngw        (IM,Model%levs))
       allocate (Interstitial%kdis_ngw        (IM,Model%levs))
+    else
+      allocate (Interstitial%dudt_ngw        (0,0))
+      allocate (Interstitial%dvdt_ngw        (0,0))
+      allocate (Interstitial%dtdt_ngw        (0,0))
+      allocate (Interstitial%kdis_ngw        (0,0))
     end if
 
 !-- GSL drag suite
@@ -826,6 +864,11 @@ contains
        allocate (Interstitial%ocss            (IM))
        allocate (Interstitial%oa4ss           (IM,4))
        allocate (Interstitial%clxss           (IM,4))
+    else
+       allocate (Interstitial%varss           (0))
+       allocate (Interstitial%ocss            (0))
+       allocate (Interstitial%oa4ss           (0,0))
+       allocate (Interstitial%clxss           (0,0))
     end if
 !
     ! Allocate arrays that are conditional on physics choices
@@ -836,7 +879,13 @@ contains
        allocate (Interstitial%icemp      (IM))
        allocate (Interstitial%rainmp     (IM))
        allocate (Interstitial%snowmp     (IM))
-    else if (Model%imp_physics == Model%imp_physics_mg) then
+    else
+       allocate (Interstitial%graupelmp  (0))
+       allocate (Interstitial%icemp      (0))
+       allocate (Interstitial%rainmp     (0))
+       allocate (Interstitial%snowmp     (0))
+    end if
+    if (Model%imp_physics == Model%imp_physics_mg) then
        allocate (Interstitial%ncgl       (IM,Model%levs))
        allocate (Interstitial%ncpr       (IM,Model%levs))
        allocate (Interstitial%ncps       (IM,Model%levs))
@@ -853,19 +902,30 @@ contains
        allocate (Interstitial%cnv_fice   (IM,Model%levs))
        allocate (Interstitial%cnv_ndrop  (IM,Model%levs))
        allocate (Interstitial%cnv_nice   (IM,Model%levs))
-    end if
-    if (Model%do_shoc) then
-       if (.not. associated(Interstitial%qrn))  allocate (Interstitial%qrn  (IM,Model%levs))
-       if (.not. associated(Interstitial%qsnw)) allocate (Interstitial%qsnw (IM,Model%levs))
-       ! DH* updated version of shoc from May 22 2019 (not yet in CCPP) doesn't use qgl? remove?
-       if (.not. associated(Interstitial%qgl))  allocate (Interstitial%qgl  (IM,Model%levs))
-       ! *DH
-       allocate (Interstitial%ncpi (IM,Model%levs))
-       allocate (Interstitial%ncpl (IM,Model%levs))
-    end if
+    else
+       allocate (Interstitial%ncgl       (0,0))
+       allocate (Interstitial%ncpr       (0,0))
+       allocate (Interstitial%ncps       (0,0))
+       allocate (Interstitial%qrn        (0,0))
+       allocate (Interstitial%qsnw       (0,0))
+       allocate (Interstitial%qgl        (0,0))
+       allocate (Interstitial%qlcn       (0,0))
+       allocate (Interstitial%qicn       (0,0))
+       allocate (Interstitial%w_upi      (0,0))
+       allocate (Interstitial%cf_upi     (0,0))
+       allocate (Interstitial%cnv_mfd    (0,0))
+       allocate (Interstitial%cnv_dqldt  (0,0))
+       allocate (Interstitial%clcn       (0,0))
+       allocate (Interstitial%cnv_fice   (0,0))
+       allocate (Interstitial%cnv_ndrop  (0,0))
+       allocate (Interstitial%cnv_nice   (0,0))
+    end if  
     if (Model%lsm == Model%lsm_noahmp) then
        allocate (Interstitial%t2mmp (IM))
        allocate (Interstitial%q2mp  (IM))
+    else
+       allocate (Interstitial%t2mmp (0))
+       allocate (Interstitial%q2mp  (0))
     end if
     !
     ! Set components that do not change
@@ -1168,15 +1228,6 @@ contains
       Interstitial%fluxswDOWN_clrsky    = clear_val
       Interstitial%aerosolslw           = clear_val
       Interstitial%aerosolssw           = clear_val
-      Interstitial%cld_frac             = clear_val
-      Interstitial%cld_lwp              = clear_val
-      Interstitial%cld_reliq            = clear_val
-      Interstitial%cld_iwp              = clear_val
-      Interstitial%cld_reice            = clear_val
-      Interstitial%cld_swp              = clear_val
-      Interstitial%cld_resnow           = clear_val
-      Interstitial%cld_rwp              = clear_val
-      Interstitial%cld_rerain           = clear_val
       Interstitial%precip_frac          = clear_val
       Interstitial%cld_cnv_frac         = clear_val
       Interstitial%cnv_cloud_overlap_param  = clear_val
@@ -1462,15 +1513,6 @@ contains
        Interstitial%cnv_fice  = clear_val
        Interstitial%cnv_ndrop = clear_val
        Interstitial%cnv_nice  = clear_val
-    end if
-    if (Model%do_shoc) then
-       Interstitial%qrn       = clear_val
-       Interstitial%qsnw      = clear_val
-       ! DH* updated version of shoc from May 22 2019 doesn't use qgl? remove?
-       Interstitial%qgl       = clear_val
-       ! *DH
-       Interstitial%ncpi      = clear_val
-       Interstitial%ncpl      = clear_val
     end if
     if (Model%lsm == Model%lsm_noahmp) then
        Interstitial%t2mmp     = clear_val
@@ -1773,4 +1815,3 @@ contains
   end subroutine gfdl_interstitial_print
 
 end module CCPP_typedefs
-
