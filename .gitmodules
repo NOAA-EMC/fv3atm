@@ -1,9 +1,7 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
-  #url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
-  #branch = production/AQM.v7
-  url = https://github.com/BrianCurtis-NOAA/GFDL_atmos_cubed_sphere
-  branch = remove_nowarn_acs 
+  url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
+  branch = production/AQM.v7
 [submodule "ccpp/framework"]
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
