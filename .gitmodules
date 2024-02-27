@@ -1,15 +1,21 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
-  url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
-  branch = production/RRFS.v1
+  #url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
+  #branch = production/RRFS.v1
+  url = https://github.com/grantfirl/GFDL_atmos_cubed_sphere
+  branch = feature/fix_check_all_zero_alloc_RRFS
 [submodule "ccpp/framework"]
   path = ccpp/framework
-  url = https://github.com/NCAR/ccpp-framework
-  branch = production/RRFS.v1
+  #url = https://github.com/NCAR/ccpp-framework
+  #branch = production/RRFS.v1
+  url = https://github.com/climbfuji/ccpp-framework
+  branch = feature/dummy_allocate_inactive
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/ufs-community/ccpp-physics
-  branch = production/RRFS.v1
+  #url = https://github.com/ufs-community/ccpp-physics
+  #branch = production/RRFS.v1
+  url = https://github.com/grantfirl/ccpp-physics
+  branch = feature/fix_check_all_zero_alloc_RRFS
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
