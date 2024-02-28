@@ -845,7 +845,8 @@ subroutine update_atmos_model_dynamics (Atmos)
     ! W. Ramstrom, AOML/HRD -- May 28, 2021
     ! Evaluates whether to move nest, then performs move if needed
     if (Atmos%moving_nest_parent .or. Atmos%is_moving_nest ) then
-      call update_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+      call update_moving_nest (Atm_block, GFS_control, GFS_sfcprop, GFS_tbd, &
+                               GFS_cldprop, GFS_intdiag, GFS_grid, Atmos%Time)
     endif
 #endif
     call mpp_clock_begin(fv3Clock)
@@ -854,7 +855,7 @@ subroutine update_atmos_model_dynamics (Atmos)
     ! W. Ramstrom, AOML/HRD -- June 9, 2021
     ! Debugging output of moving nest code.  Called from this level to access needed input variables.
     if (Atmos%moving_nest_parent .or. Atmos%is_moving_nest ) then
-      call dump_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+      call dump_moving_nest (Atm_block, GFS_control, GFS_sfcprop, GFS_tbd, Atmos%Time)
     endif
 #endif
 
