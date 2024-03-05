@@ -1063,6 +1063,8 @@ module fv3atm_cap_mod
 
     real(kind=8)                :: MPI_Wtime, timep2rs
 
+    character(len=ESMF_MAXSTR)  :: fb_name
+    type(ESMF_Info)             :: info
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -1123,6 +1125,17 @@ module fv3atm_cap_mod
                                      termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           end if
+
+          ! Update fcstFB attributes from fcst PEs to all PEs in this VM
+          ! This is needed in case some attributes are updated during run time
+          call ESMF_FieldBundleGet(fcstFB(j), name=fb_name, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          if (fb_name(1:8) /= "restart_") then
+            call ESMF_InfoGetFromHost(fcstFB(j), info=info, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_InfoBroadcast(info, rootPet=fcstPetList(1), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          endif
 
         enddo
 

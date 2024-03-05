@@ -93,7 +93,7 @@ module write_internal_state
       logical                  :: write_dopost !< True if inline post is requested.
       character(80)            :: post_namelist !< File name of the inline post namelist.
 !
-      integer                  :: fhzero !< Hours between clearing of diagnostic buckets.
+      real(4)                  :: fhzero !< Hours between clearing of diagnostic buckets.
       integer                  :: ntrac !< Number of tracers.
       integer                  :: ncld !< Number of hydrometeors.
       integer                  :: nsoil !< Number of soil layers.
