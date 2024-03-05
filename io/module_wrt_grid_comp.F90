@@ -1776,7 +1776,6 @@
                            fieldbundle=file_bundle, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-#if 1
         do m=1, wrt_int_state%FBCount
           if (trim_regridmethod_suffix(fcstItemNameList(i)) == trim_regridmethod_suffix(FBlist_outfilename(m))) then
 
@@ -1792,7 +1791,7 @@
 
           end if
         end do
-#endif
+
         ! see whether a "mirror_" FieldBundle exists, i.e. dealing with moving domain that needs updated Regrid() here.
         call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(i)), &
                            itemType=itemType, rc=rc)

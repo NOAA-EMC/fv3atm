@@ -538,7 +538,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer :: tile_num
   integer :: isc, iec, jsc, jec
   real(kind=GFS_kind_phys) :: dt_phys
-  logical              :: p_hydro, hydro, tmpflag
+  logical              :: p_hydro, hydro, tmpflag_fhzero
   logical, save        :: block_message = .true.
   type(GFS_init_type)  :: Init_parm
   integer              :: bdat(8), cdat(8)
@@ -790,15 +790,15 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    !--- the bucket, but the restart time.
    if( GFS_Control%fhzero_array(1) > 0. ) then
      fhzero_loop: do i=1,size(GFS_Control%fhzero_array)
-       tmpflag = .false.
+       tmpflag_fhzero= .false.
        if( GFS_Control%fhzero_array(i) > 0.) then
          if( i == 1 ) then
-           if( sec <= GFS_Control%fhzero_fhour(i)*3600. ) tmpflag = .true.
+           if( sec <= GFS_Control%fhzero_fhour(i)*3600. ) tmpflag_fhzero = .true.
          else if( i > 1 ) then
            if( sec > GFS_Control%fhzero_fhour(i-1)*3600. .and. sec <=GFS_Control%fhzero_fhour(i)*3600. ) &
-             tmpflag = .true.
+             tmpflag_fhzero = .true.
          endif
-         if( tmpflag ) then
+         if( tmpflag_fhzero ) then
            GFS_Control%fhzero = GFS_Control%fhzero_array(i)
            if( GFS_Control%fhzero > 0) then
              sec_lastfhzerofh = (int(sec/3600.)/int(GFS_Control%fhzero))*int(GFS_Control%fhzero)*3600
@@ -975,7 +975,7 @@ subroutine update_atmos_model_state (Atmos, rc)
 !--- local variables
   integer :: i, localrc, sec_lastfhzerofh
   integer :: isec, seconds, isec_fhzero
-  logical :: tmpflag
+  logical :: tmpflag_fhzero
   real(kind=GFS_kind_phys) :: time_int, time_intfull
 !
     if (present(rc)) rc = ESMF_SUCCESS
@@ -1030,15 +1030,15 @@ subroutine update_atmos_model_state (Atmos, rc)
     !---  find current fhzero
     if( GFS_Control%fhzero_array(1) > 0. ) then
       fhzero_loop: do i=1,size(GFS_Control%fhzero_array)
-        tmpflag = .false.
+        tmpflag_fhzero = .false.
         if( GFS_Control%fhzero_array(i) > 0.) then
           if( i == 1 ) then
-            if( seconds <= GFS_Control%fhzero_fhour(i)*3600. ) tmpflag = .true.
+            if( seconds <= GFS_Control%fhzero_fhour(i)*3600. ) tmpflag_fhzero = .true.
           else if( i > 1 ) then
             if( seconds > GFS_Control%fhzero_fhour(i-1)*3600. .and. seconds <= GFS_Control%fhzero_fhour(i)*3600. ) &
-              tmpflag = .true.
+              tmpflag_fhzero = .true.
           endif
-          if( tmpflag) then
+          if( tmpflag_fhzero) then
             GFS_Control%fhzero = GFS_Control%fhzero_array(i)
             if( GFS_Control%fhzero > 0) then
               sec_lastfhzerofh = (int(seconds/3600.)/int(GFS_Control%fhzero))*int(GFS_Control%fhzero)*3600

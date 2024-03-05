@@ -634,8 +634,8 @@ module post_fv3
       tsrfc   = tprec
       tmaxmin = tprec
       td3d    = tprec
-      if(mype==0)print*,'MP_PHYSICS= ',imp_physics,'tprec=',tprec,'tclod=',tclod, &
-       'dtp=',dtp,'tmaxmin=',tmaxmin,'jsta=',jsta,jend,im,jm
+!      if(mype==0)print*,'MP_PHYSICS= ',imp_physics,'tprec=',tprec,'tclod=',tclod, &
+!       'dtp=',dtp,'tmaxmin=',tmaxmin,'jsta=',jsta,jend,im,jm
 
 !      write(6,*) 'maptype and gridtype is ', maptype,gridtype
 !
