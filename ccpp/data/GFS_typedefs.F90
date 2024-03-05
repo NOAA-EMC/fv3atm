@@ -2060,14 +2060,6 @@ module GFS_typedefs
 !
 !---vay-2018 UGWP-diagnostics daily mean
 !
-    real (kind=kind_phys), pointer :: dudt_tot (:,:) => null()  !< daily aver GFS_phys tend for WE-U
-    real (kind=kind_phys), pointer :: dvdt_tot (:,:) => null()  !< daily aver GFS_phys tend for SN-V
-    real (kind=kind_phys), pointer :: dtdt_tot (:,:) => null()  !< daily aver GFS_phys tend for Temp-re
-!
-    real (kind=kind_phys), pointer :: du3dt_pbl(:,:) => null()  !< daily aver GFS_phys tend for WE-U pbl
-    real (kind=kind_phys), pointer :: dv3dt_pbl(:,:) => null()  !< daily aver GFS_phys tend for SN-V pbl
-    real (kind=kind_phys), pointer :: dt3dt_pbl(:,:) => null()  !< daily aver GFS_phys tend for Temp pbl
-!
     real (kind=kind_phys), pointer :: du3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for WE-U OGW
 !
     real (kind=kind_phys), pointer :: ldu3dt_ogw(:,:) => null()  !< time aver GFS_phys tend for WE-U OGW
@@ -2115,10 +2107,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: gwp_ayo(:,:)   => null()   ! instant oro-UGWP tend m/s/s NS
     real (kind=kind_phys), pointer :: gwp_axf(:,:)   => null()   ! instant jet-UGWP tend m/s/s EW
     real (kind=kind_phys), pointer :: gwp_ayf(:,:)   => null()   ! instant jet-UGWP tend m/s/s NS
-
-    real (kind=kind_phys), pointer :: uav_ugwp(:,:)  => null()   ! aver  wind UAV from physics
-    real (kind=kind_phys), pointer :: tav_ugwp(:,:)  => null()   ! aver  temp UAV from physics
-    real (kind=kind_phys), pointer :: du3dt_dyn(:,:) => null()   ! U Tend-dynamics "In"-"PhysOut"
 
 !--- COODRE ORO diagnostics
     real (kind=kind_phys), pointer :: zmtb(:)        => null()   !
@@ -2234,6 +2222,8 @@ module GFS_typedefs
     allocate (Statein%vgrs   (IM,Model%levs))
     if(Model%lightning_threat) then
       allocate (Statein%wgrs   (IM,Model%levs))
+    else
+      allocate (Statein%wgrs   (0,0))
     endif
     allocate (Statein%qgrs   (IM,Model%levs,Model%ntrac))
 
@@ -2307,7 +2297,10 @@ module GFS_typedefs
     if(Model%lkm > 0) then
       if(Model%iopt_lake==Model%iopt_lake_clm) then
         allocate (Sfcprop%clm_lakedepth(IM))
-      else if(Model%iopt_lake==Model%iopt_lake_flake) then
+      else
+        allocate (Sfcprop%clm_lakedepth(0))
+      endif
+      if(Model%iopt_lake==Model%iopt_lake_flake) then
         allocate (Sfcprop%h_ML     (IM))
         allocate (Sfcprop%t_ML     (IM))
         allocate (Sfcprop%t_mnw    (IM))
@@ -2316,9 +2309,30 @@ module GFS_typedefs
         allocate (Sfcprop%t_bot1   (IM))
         allocate (Sfcprop%t_bot2   (IM))
         allocate (Sfcprop%c_t      (IM))
+      else
+        allocate (Sfcprop%h_ML     (0))
+        allocate (Sfcprop%t_ML     (0))
+        allocate (Sfcprop%t_mnw    (0))
+        allocate (Sfcprop%h_talb   (0))
+        allocate (Sfcprop%t_talb   (0))
+        allocate (Sfcprop%t_bot1   (0))
+        allocate (Sfcprop%t_bot2   (0))
+        allocate (Sfcprop%c_t      (0))
       endif
       allocate (Sfcprop%T_snow   (IM))
       allocate (Sfcprop%T_ice    (IM))
+    else
+      allocate (Sfcprop%clm_lakedepth(0))
+      allocate (Sfcprop%h_ML     (0))
+      allocate (Sfcprop%t_ML     (0))
+      allocate (Sfcprop%t_mnw    (0))
+      allocate (Sfcprop%h_talb   (0))
+      allocate (Sfcprop%t_talb   (0))
+      allocate (Sfcprop%t_bot1   (0))
+      allocate (Sfcprop%t_bot2   (0))
+      allocate (Sfcprop%c_t      (0))
+      allocate (Sfcprop%T_snow   (0))
+      allocate (Sfcprop%T_ice    (0))
     endif
 
     allocate (Sfcprop%tsfc     (IM))
@@ -2479,11 +2493,20 @@ module GFS_typedefs
       allocate (Sfcprop%albdifvis_ice (IM))
       allocate (Sfcprop%albdirnir_ice (IM))
       allocate (Sfcprop%albdifnir_ice (IM))
+    else
+      allocate (Sfcprop%albdirvis_ice (0))
+      allocate (Sfcprop%albdifvis_ice (0))
+      allocate (Sfcprop%albdirnir_ice (0))
+      allocate (Sfcprop%albdifnir_ice (0))
     endif
     if (Model%lsm == Model%lsm_ruc) then
       allocate (Sfcprop%sfalb_lnd (IM))
       allocate (Sfcprop%sfalb_ice (IM))
       allocate (Sfcprop%sfalb_lnd_bck (IM))
+    else
+      allocate (Sfcprop%sfalb_lnd (0))
+      allocate (Sfcprop%sfalb_ice (0))
+      allocate (Sfcprop%sfalb_lnd_bck (0))
     endif
     allocate (Sfcprop%canopy (IM))
     allocate (Sfcprop%ffmm   (IM))
@@ -2567,12 +2590,37 @@ module GFS_typedefs
       Sfcprop%ifd     = zero
       Sfcprop%dt_cool = zero
       Sfcprop%qrain   = zero
+    else
+      allocate (Sfcprop%tref   (0))
+      allocate (Sfcprop%z_c    (0))
+      allocate (Sfcprop%c_0    (0))
+      allocate (Sfcprop%c_d    (0))
+      allocate (Sfcprop%w_0    (0))
+      allocate (Sfcprop%w_d    (0))
+      allocate (Sfcprop%xt     (0))
+      allocate (Sfcprop%xs     (0))
+      allocate (Sfcprop%xu     (0))
+      allocate (Sfcprop%xv     (0))
+      allocate (Sfcprop%xz     (0))
+      allocate (Sfcprop%zm     (0))
+      allocate (Sfcprop%xtts   (0))
+      allocate (Sfcprop%xzts   (0))
+      allocate (Sfcprop%d_conv (0))
+      allocate (Sfcprop%ifd    (0))
+      allocate (Sfcprop%dt_cool(0))
+      allocate (Sfcprop%qrain  (0))
     endif
-    if (Model%lsm == Model%lsm_noah) then
+    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_ruc) then
       allocate (Sfcprop%xlaixy   (IM))
-      allocate (Sfcprop%rca      (IM))
       Sfcprop%xlaixy     = clear_val
+    else
+      allocate (Sfcprop%xlaixy   (0))
+    end if
+    if (Model%lsm == Model%lsm_noah) then
+      allocate (Sfcprop%rca      (IM))
       Sfcprop%rca        = clear_val
+    else
+      allocate (Sfcprop%rca      (0))
     end if
     if (Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noahmp .or. &
          (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm)) then
@@ -2587,7 +2635,17 @@ module GFS_typedefs
       Sfcprop%iceprv     = clear_val
       Sfcprop%snowprv    = clear_val
       Sfcprop%graupelprv = clear_val
+     else
+       allocate(Sfcprop%iceprv    (0))
+       allocate(Sfcprop%snowprv   (0))
+       allocate(Sfcprop%graupelprv(0))
      end if
+    else
+      allocate(Sfcprop%raincprv  (0))
+      allocate(Sfcprop%rainncprv (0))
+      allocate(Sfcprop%iceprv    (0))
+      allocate(Sfcprop%snowprv   (0))
+      allocate(Sfcprop%graupelprv(0))
     end if
 ! Noah MP allocate and init when used
 !
@@ -2617,7 +2675,6 @@ module GFS_typedefs
       allocate (Sfcprop%stblcpxy (IM))
       allocate (Sfcprop%fastcpxy (IM))
       allocate (Sfcprop%xsaixy   (IM))
-      allocate (Sfcprop%xlaixy   (IM))
       allocate (Sfcprop%taussxy  (IM))
       allocate (Sfcprop%smcwtdxy (IM))
       allocate (Sfcprop%deeprechxy (IM))
@@ -2652,7 +2709,6 @@ module GFS_typedefs
       Sfcprop%stblcpxy   = clear_val
       Sfcprop%fastcpxy   = clear_val
       Sfcprop%xsaixy     = clear_val
-      Sfcprop%xlaixy     = clear_val
       Sfcprop%taussxy    = clear_val
       Sfcprop%smcwtdxy   = clear_val
       Sfcprop%deeprechxy = clear_val
@@ -2676,11 +2732,53 @@ module GFS_typedefs
       Sfcprop%dsnowprv    = clear_val
       Sfcprop%dgraupelprv = clear_val
 
+    else
+      allocate (Sfcprop%snowxy   (0))
+      allocate (Sfcprop%tvxy     (0))
+      allocate (Sfcprop%tgxy     (0))
+      allocate (Sfcprop%canicexy (0))
+      allocate (Sfcprop%canliqxy (0))
+      allocate (Sfcprop%eahxy    (0))
+      allocate (Sfcprop%tahxy    (0))
+      allocate (Sfcprop%cmxy     (0))
+      allocate (Sfcprop%chxy     (0))
+      allocate (Sfcprop%fwetxy   (0))
+      allocate (Sfcprop%sneqvoxy (0))
+      allocate (Sfcprop%alboldxy (0))
+      allocate (Sfcprop%qsnowxy  (0))
+      allocate (Sfcprop%wslakexy (0))
+      allocate (Sfcprop%zwtxy    (0))
+      allocate (Sfcprop%waxy     (0))
+      allocate (Sfcprop%wtxy     (0))
+      allocate (Sfcprop%lfmassxy (0))
+      allocate (Sfcprop%rtmassxy (0))
+      allocate (Sfcprop%stmassxy (0))
+      allocate (Sfcprop%woodxy   (0))
+      allocate (Sfcprop%stblcpxy (0))
+      allocate (Sfcprop%fastcpxy (0))
+      allocate (Sfcprop%xsaixy   (0))
+      allocate (Sfcprop%taussxy  (0))
+      allocate (Sfcprop%smcwtdxy (0))
+      allocate (Sfcprop%deeprechxy (0))
+      allocate (Sfcprop%rechxy     (0))
+      allocate (Sfcprop%snicexy    (0, 0))
+      allocate (Sfcprop%snliqxy    (0, 0))
+      allocate (Sfcprop%tsnoxy     (0, 0))
+      allocate (Sfcprop%smoiseq    (0, 0))
+      allocate (Sfcprop%zsnsoxy    (0, 0))
+      
+      allocate(Sfcprop%draincprv  (0))
+      allocate(Sfcprop%drainncprv (0))
+      allocate(Sfcprop%diceprv    (0))
+      allocate(Sfcprop%dsnowprv   (0))
+      allocate(Sfcprop%dgraupelprv(0))
     endif
 
     if (Model%do_myjsfc .or. Model%do_myjpbl) then
       allocate(Sfcprop%z0base(IM))
       Sfcprop%z0base = clear_val
+    else
+      allocate(Sfcprop%z0base(0))
     end if
 
     allocate(Sfcprop%semisbase(IM))
@@ -2705,7 +2803,6 @@ module GFS_typedefs
        allocate (Sfcprop%snowfallac_ice  (IM))
        allocate (Sfcprop%acsnow_land     (IM))
        allocate (Sfcprop%acsnow_ice      (IM))
-       allocate (Sfcprop%xlaixy   (IM))
        allocate (Sfcprop%fire_heat_flux  (IM))
        allocate (Sfcprop%frac_grid_burned(IM))
 
@@ -2727,18 +2824,38 @@ module GFS_typedefs
        Sfcprop%snowfallac_ice  = clear_val
        Sfcprop%acsnow_land     = clear_val
        Sfcprop%acsnow_ice      = clear_val
-       Sfcprop%xlaixy          = clear_val
        Sfcprop%fire_heat_flux  = clear_val
        Sfcprop%frac_grid_burned= clear_val
        !
+    else
+       allocate (Sfcprop%wetness         (0))
+       allocate (Sfcprop%sh2o            (0,0))
+       allocate (Sfcprop%keepsmfr        (0,0))
+       allocate (Sfcprop%smois           (0,0))
+       allocate (Sfcprop%tslb            (0,0))
+       allocate (Sfcprop%flag_frsoil     (0,0))
+       allocate (Sfcprop%clw_surf_land   (0))
+       allocate (Sfcprop%clw_surf_ice    (0))
+       allocate (Sfcprop%qwv_surf_land   (0))
+       allocate (Sfcprop%qwv_surf_ice    (0))
+       allocate (Sfcprop%rhofr           (0))
+       allocate (Sfcprop%tsnow_land      (0))
+       allocate (Sfcprop%tsnow_ice       (0))
+       allocate (Sfcprop%snowfallac_land (0))
+       allocate (Sfcprop%snowfallac_ice  (0))
+       allocate (Sfcprop%acsnow_land     (0))
+       allocate (Sfcprop%acsnow_ice      (0))
+       allocate (Sfcprop%fire_heat_flux  (0))
+       allocate (Sfcprop%frac_grid_burned(0))
     end if
 
-       allocate (Sfcprop%rmol   (IM ))
-       allocate (Sfcprop%flhc   (IM ))
-       allocate (Sfcprop%flqc   (IM ))
-       Sfcprop%rmol        = clear_val
-       Sfcprop%flhc        = clear_val
-       Sfcprop%flqc        = clear_val
+    allocate (Sfcprop%rmol   (IM ))
+    allocate (Sfcprop%flhc   (IM ))
+    allocate (Sfcprop%flqc   (IM ))
+    Sfcprop%rmol        = clear_val
+    Sfcprop%flhc        = clear_val
+    Sfcprop%flqc        = clear_val
+    
     if (Model%do_mynnsfclay) then
     ! For MYNN surface layer scheme
        !print*,"Allocating all MYNN-sfclay variables"
@@ -2756,6 +2873,13 @@ module GFS_typedefs
        Sfcprop%chs2        = clear_val
        Sfcprop%cqs2        = clear_val
        Sfcprop%lh          = clear_val
+    else
+       allocate (Sfcprop%ustm   (0))
+       allocate (Sfcprop%zol    (0))
+       allocate (Sfcprop%mol    (0))
+       allocate (Sfcprop%chs2   (0))
+       allocate (Sfcprop%cqs2   (0))
+       allocate (Sfcprop%lh     (0))
     end if
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) then
         allocate (Sfcprop%maxupmf(IM))
@@ -2764,6 +2888,10 @@ module GFS_typedefs
         Sfcprop%maxupmf = zero
         Sfcprop%conv_act = zero
         Sfcprop%conv_act_m = zero
+    else
+        allocate (Sfcprop%maxupmf(0))
+        allocate (Sfcprop%conv_act(0))
+        allocate (Sfcprop%conv_act_m(0))
     end if
 
     ! CLM Lake Model variables
@@ -2815,6 +2943,30 @@ module GFS_typedefs
        Sfcprop%lake_is_salty = zero
        Sfcprop%lake_cannot_freeze = zero
        Sfcprop%clm_lake_initialized = zero
+    else
+       allocate(Sfcprop%lake_t2m(0))
+       allocate(Sfcprop%lake_q2m(0))
+       allocate(Sfcprop%lake_albedo(0))
+       allocate(Sfcprop%input_lakedepth(0))
+       allocate(Sfcprop%lake_h2osno2d(0))
+       allocate(Sfcprop%lake_sndpth2d(0))
+       allocate(Sfcprop%lake_snl2d(0))
+       allocate(Sfcprop%lake_snow_z3d(0,0))
+       allocate(Sfcprop%lake_snow_dz3d(0,0))
+       allocate(Sfcprop%lake_snow_zi3d(0,0))
+       allocate(Sfcprop%lake_h2osoi_vol3d(0,0))
+       allocate(Sfcprop%lake_h2osoi_liq3d(0,0))
+       allocate(Sfcprop%lake_h2osoi_ice3d(0,0))
+       allocate(Sfcprop%lake_tsfc(0))
+       allocate(Sfcprop%lake_t_soisno3d(0,0))
+       allocate(Sfcprop%lake_t_lake3d(0,0))
+       allocate(Sfcprop%lake_savedtke12d(0))
+       allocate(Sfcprop%lake_icefrac3d(0,0))
+       allocate(Sfcprop%lake_rho0(0))
+       allocate(Sfcprop%lake_ht(0))
+       allocate(Sfcprop%lake_is_salty(0))
+       allocate(Sfcprop%lake_cannot_freeze(0))
+       allocate(Sfcprop%clm_lake_initialized(0))
     endif
 
     if(Model%rrfs_sd) then
@@ -2845,6 +2997,19 @@ module GFS_typedefs
       Sfcprop%peak_hr    = clear_val
       Sfcprop%lu_nofire  = clear_val
       Sfcprop%lu_qfire   = clear_val
+    else
+      allocate (Sfcprop%emdust    (0))
+      allocate (Sfcprop%emseas    (0))
+      allocate (Sfcprop%emanoc    (0))
+      allocate (Sfcprop%ebb_smoke_in (0))
+      allocate (Sfcprop%frp_output (0))
+      allocate (Sfcprop%fhist     (0))
+      allocate (Sfcprop%coef_bb_dc(0))
+      allocate (Sfcprop%fire_type (0))
+      allocate (Sfcprop%peak_hr   (0))
+      allocate (Sfcprop%lu_nofire (0))
+      allocate (Sfcprop%lu_qfire  (0))
+      allocate (Sfcprop%fire_in   (0,0))
     endif
 
   end subroutine sfcprop_create
@@ -2902,6 +3067,12 @@ module GFS_typedefs
        Coupling%fluxlwUP_jac       = clear_val
        Coupling%htrlw              = clear_val
        Coupling%tsfc_radtime       = clear_val
+    else
+       allocate (Coupling%fluxlwUP_radtime   (0, 0))
+       allocate (Coupling%fluxlwDOWN_radtime (0, 0))
+       allocate (Coupling%fluxlwUP_jac       (0, 0))
+       allocate (Coupling%htrlw              (0, 0))
+       allocate (Coupling%tsfc_radtime       (0))
     endif
 
     if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm .or. Model%ca_global .or. Model%cpllnd) then
@@ -2909,6 +3080,9 @@ module GFS_typedefs
       allocate (Coupling%snow_cpl (IM))
       Coupling%rain_cpl = clear_val
       Coupling%snow_cpl = clear_val
+    else
+      allocate (Coupling%rain_cpl (0))
+      allocate (Coupling%snow_cpl (0))
     endif
 
     if (Model%cplflx .or. Model%cplchm .or. Model%cplwav) then
@@ -2918,12 +3092,17 @@ module GFS_typedefs
 
       Coupling%u10mi_cpl = clear_val
       Coupling%v10mi_cpl = clear_val
+    else
+      allocate (Coupling%u10mi_cpl (0))
+      allocate (Coupling%v10mi_cpl (0))
     endif
 
     if (Model%cplflx .or. Model%cplchm .or. Model%cpllnd) then
       !--- instantaneous quantities
       allocate (Coupling%tsfci_cpl (IM))
       Coupling%tsfci_cpl = clear_val
+    else
+      allocate (Coupling%tsfci_cpl (0))
     endif
 
 !   if (Model%cplwav2atm) then
@@ -2933,14 +3112,39 @@ module GFS_typedefs
 !     Coupling%zorlwav_cpl  = clear_val
 !   endif
 
+    ! -- additional coupling options for air quality
+    if (Model%cplflx .or. Model%cpllnd .or. (Model%cplaqm .and. .not.Model%cplflx)) then
+      allocate (Coupling%psurfi_cpl  (IM))
+      allocate (Coupling%nswsfci_cpl (IM))
+      Coupling%psurfi_cpl  = clear_val
+      Coupling%nswsfci_cpl = clear_val
+    else
+      allocate (Coupling%psurfi_cpl  (0))
+      allocate (Coupling%nswsfci_cpl (0))
+    endif
+     
+    if (Model%cplflx .or. (Model%cplaqm .and. .not.Model%cplflx)) then
+      allocate (Coupling%dtsfci_cpl  (IM))
+      allocate (Coupling%dqsfci_cpl  (IM))
+      allocate (Coupling%t2mi_cpl    (IM))
+      allocate (Coupling%q2mi_cpl    (IM))
+      Coupling%dtsfci_cpl  = clear_val
+      Coupling%dqsfci_cpl  = clear_val
+      Coupling%t2mi_cpl    = clear_val
+      Coupling%q2mi_cpl    = clear_val
+    else
+      allocate (Coupling%dtsfci_cpl  (0))
+      allocate (Coupling%dqsfci_cpl  (0))
+      allocate (Coupling%t2mi_cpl    (0))
+      allocate (Coupling%q2mi_cpl    (0))
+    endif
+    
     if (Model%cplflx .or. Model%cpllnd) then
       allocate (Coupling%dlwsfci_cpl (IM))
       allocate (Coupling%dswsfci_cpl (IM))
       allocate (Coupling%dlwsfc_cpl  (IM))
       allocate (Coupling%dswsfc_cpl  (IM))
-      allocate (Coupling%psurfi_cpl  (IM))
       allocate (Coupling%nswsfc_cpl  (IM))
-      allocate (Coupling%nswsfci_cpl (IM))
       allocate (Coupling%nnirbmi_cpl (IM))
       allocate (Coupling%nnirdfi_cpl (IM))
       allocate (Coupling%nvisbmi_cpl (IM))
@@ -2954,9 +3158,7 @@ module GFS_typedefs
       Coupling%dswsfci_cpl  = clear_val
       Coupling%dlwsfc_cpl  = clear_val
       Coupling%dswsfc_cpl  = clear_val
-      Coupling%psurfi_cpl  = clear_val
       Coupling%nswsfc_cpl  = clear_val
-      Coupling%nswsfci_cpl = clear_val
       Coupling%nnirbmi_cpl = clear_val
       Coupling%nnirdfi_cpl = clear_val
       Coupling%nvisbmi_cpl = clear_val
@@ -2965,6 +3167,20 @@ module GFS_typedefs
       Coupling%nnirdf_cpl  = clear_val
       Coupling%nvisbm_cpl  = clear_val
       Coupling%nvisdf_cpl  = clear_val
+    else
+      allocate (Coupling%dlwsfci_cpl (0))
+      allocate (Coupling%dswsfci_cpl (0))
+      allocate (Coupling%dlwsfc_cpl  (0))
+      allocate (Coupling%dswsfc_cpl  (0))
+      allocate (Coupling%nswsfc_cpl  (0))
+      allocate (Coupling%nnirbmi_cpl (0))
+      allocate (Coupling%nnirdfi_cpl (0))
+      allocate (Coupling%nvisbmi_cpl (0))
+      allocate (Coupling%nvisdfi_cpl (0))
+      allocate (Coupling%nnirbm_cpl  (0))
+      allocate (Coupling%nnirdf_cpl  (0))
+      allocate (Coupling%nvisbm_cpl  (0))
+      allocate (Coupling%nvisdf_cpl  (0))
     end if
 
     if (Model%cplflx) then
@@ -3014,6 +3230,12 @@ module GFS_typedefs
         Coupling%dtsfcin_med  = clear_val
         Coupling%dqsfcin_med  = clear_val
         Coupling%ulwsfcin_med = clear_val
+      else
+        allocate (Coupling%dusfcin_med (0))
+        allocate (Coupling%dvsfcin_med (0))
+        allocate (Coupling%dtsfcin_med (0))
+        allocate (Coupling%dqsfcin_med (0))
+        allocate (Coupling%ulwsfcin_med(0))
       end if
 
       !--- accumulated quantities
@@ -3040,31 +3262,57 @@ module GFS_typedefs
       !--- instantaneous quantities
       allocate (Coupling%dusfci_cpl  (IM))
       allocate (Coupling%dvsfci_cpl  (IM))
-      allocate (Coupling%dtsfci_cpl  (IM))
-      allocate (Coupling%dqsfci_cpl  (IM))
       allocate (Coupling%dnirbmi_cpl (IM))
       allocate (Coupling%dnirdfi_cpl (IM))
       allocate (Coupling%dvisbmi_cpl (IM))
       allocate (Coupling%dvisdfi_cpl (IM))
       allocate (Coupling%nlwsfci_cpl (IM))
-      allocate (Coupling%t2mi_cpl    (IM))
-      allocate (Coupling%q2mi_cpl    (IM))
       allocate (Coupling%oro_cpl     (IM))
       allocate (Coupling%slmsk_cpl   (IM))
 
       Coupling%dusfci_cpl  = clear_val
       Coupling%dvsfci_cpl  = clear_val
-      Coupling%dtsfci_cpl  = clear_val
-      Coupling%dqsfci_cpl  = clear_val
       Coupling%dnirbmi_cpl = clear_val
       Coupling%dnirdfi_cpl = clear_val
       Coupling%dvisbmi_cpl = clear_val
       Coupling%dvisdfi_cpl = clear_val
       Coupling%nlwsfci_cpl = clear_val
-      Coupling%t2mi_cpl    = clear_val
-      Coupling%q2mi_cpl    = clear_val
-      Coupling%oro_cpl     = clear_val  !< pointer to sfcprop%oro
-      Coupling%slmsk_cpl   = clear_val  !< pointer to sfcprop%slmsk
+      Coupling%oro_cpl     = clear_val
+      Coupling%slmsk_cpl   = clear_val
+    else
+      allocate (Coupling%slimskin_cpl        (0))
+      allocate (Coupling%dusfcin_cpl         (0))
+      allocate (Coupling%dvsfcin_cpl         (0))
+      allocate (Coupling%dtsfcin_cpl         (0))
+      allocate (Coupling%dqsfcin_cpl         (0))
+      allocate (Coupling%ulwsfcin_cpl        (0))
+      allocate (Coupling%hsnoin_cpl          (0))
+      
+      allocate (Coupling%dusfcin_med (0))
+      allocate (Coupling%dvsfcin_med (0))
+      allocate (Coupling%dtsfcin_med (0))
+      allocate (Coupling%dqsfcin_med (0))
+      allocate (Coupling%ulwsfcin_med(0))
+      
+      allocate (Coupling%dusfc_cpl  (0))
+      allocate (Coupling%dvsfc_cpl  (0))
+      allocate (Coupling%dtsfc_cpl  (0))
+      allocate (Coupling%dqsfc_cpl  (0))
+      allocate (Coupling%dnirbm_cpl (0))
+      allocate (Coupling%dnirdf_cpl (0))
+      allocate (Coupling%dvisbm_cpl (0))
+      allocate (Coupling%dvisdf_cpl (0))
+      allocate (Coupling%nlwsfc_cpl (0))
+      
+      allocate (Coupling%dusfci_cpl  (0))
+      allocate (Coupling%dvsfci_cpl  (0))
+      allocate (Coupling%dnirbmi_cpl (0))
+      allocate (Coupling%dnirdfi_cpl (0))
+      allocate (Coupling%dvisbmi_cpl (0))
+      allocate (Coupling%dvisdfi_cpl (0))
+      allocate (Coupling%nlwsfci_cpl (0))
+      allocate (Coupling%oro_cpl     (0))
+      allocate (Coupling%slmsk_cpl   (0))
     endif
 
     ! -- Coupling options to retrive land fluxes from external land component 
@@ -3096,10 +3344,25 @@ module GFS_typedefs
       Coupling%cmm_lnd     = clear_val
       Coupling%chh_lnd     = clear_val
       Coupling%zvfun_lnd   = clear_val
+    else
+      allocate (Coupling%sncovr1_lnd (0))
+      allocate (Coupling%qsurf_lnd   (0))
+      allocate (Coupling%evap_lnd    (0))
+      allocate (Coupling%hflx_lnd    (0))
+      allocate (Coupling%ep_lnd      (0))
+      allocate (Coupling%t2mmp_lnd   (0))
+      allocate (Coupling%q2mp_lnd    (0))
+      allocate (Coupling%gflux_lnd   (0))
+      allocate (Coupling%runoff_lnd  (0))
+      allocate (Coupling%drain_lnd   (0))
+      allocate (Coupling%cmm_lnd     (0))
+      allocate (Coupling%chh_lnd     (0))
+      allocate (Coupling%zvfun_lnd   (0))
     end if
 
     !-- cellular automata
     allocate (Coupling%condition(IM))
+    Coupling%condition = clear_val
     if (Model%do_ca) then
       allocate (Coupling%ca1      (IM))
       allocate (Coupling%ca2      (IM))
@@ -3117,7 +3380,15 @@ module GFS_typedefs
       Coupling%ca_shal   = clear_val
       Coupling%ca_rad    = clear_val
       Coupling%ca_micro  = clear_val
-      Coupling%condition = clear_val
+    else
+      allocate (Coupling%ca1      (0))
+      allocate (Coupling%ca2      (0))
+      allocate (Coupling%ca3      (0))
+      allocate (Coupling%ca_deep  (0))
+      allocate (Coupling%ca_turb  (0))
+      allocate (Coupling%ca_shal  (0))
+      allocate (Coupling%ca_rad   (0))
+      allocate (Coupling%ca_micro (0))
     endif
 
     ! -- Aerosols coupling options
@@ -3130,46 +3401,41 @@ module GFS_typedefs
       Coupling%ushfsfci  = clear_val
       Coupling%pfi_lsan  = clear_val
       Coupling%pfl_lsan  = clear_val
+    else
+      allocate (Coupling%ushfsfci  (0))
+      allocate (Coupling%pfi_lsan  (0,0))
+      allocate (Coupling%pfl_lsan  (0,0))
     endif
 
     if (Model%cplchm .or. Model%cplflx .or. Model%cpllnd) then
       !--- accumulated convective rainfall
       allocate (Coupling%rainc_cpl (IM))
       Coupling%rainc_cpl = clear_val
+    else
+      allocate (Coupling%rainc_cpl (0))
     end if
-
-    ! -- additional coupling options for air quality
-    if (Model%cplaqm .and. .not.Model%cplflx) then
-      !--- outgoing instantaneous quantities
-      allocate (Coupling%dtsfci_cpl  (IM))
-      allocate (Coupling%dqsfci_cpl  (IM))
-      allocate (Coupling%nswsfci_cpl (IM))
-      allocate (Coupling%t2mi_cpl    (IM))
-      allocate (Coupling%q2mi_cpl    (IM))
-      allocate (Coupling%psurfi_cpl  (IM))
-      Coupling%dtsfci_cpl  = clear_val
-      Coupling%dqsfci_cpl  = clear_val
-      Coupling%nswsfci_cpl = clear_val
-      Coupling%t2mi_cpl    = clear_val
-      Coupling%q2mi_cpl    = clear_val
-      Coupling%psurfi_cpl  = clear_val
-    endif
 
     if(Model%progsigma)then
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
        Coupling%dqdt_qmicro = clear_val
+    else
+       allocate(Coupling%dqdt_qmicro (0,0))
     endif
 
     !--- stochastic physics option
     if (Model%do_sppt .or. Model%ca_global) then
       allocate (Coupling%sppt_wts  (IM,Model%levs))
       Coupling%sppt_wts = clear_val
+    else
+      allocate (Coupling%sppt_wts  (0,0))
     endif
 
     !--- stochastic shum option
     if (Model%do_shum) then
       allocate (Coupling%shum_wts  (IM,Model%levs))
       Coupling%shum_wts = clear_val
+    else
+      allocate (Coupling%shum_wts  (0,0))
     endif
 
     !--- stochastic skeb option
@@ -3179,12 +3445,17 @@ module GFS_typedefs
 
       Coupling%skebu_wts = clear_val
       Coupling%skebv_wts = clear_val
+    else
+      allocate (Coupling%skebu_wts (0,0))
+      allocate (Coupling%skebv_wts (0,0))
     endif
 
     !--- stochastic land perturbation option
     if (Model%lndp_type /= 0) then
       allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
+    else
+      allocate (Coupling%sfc_wts  (0,0))
     endif
 
     !--- stochastic spp perturbation option
@@ -3201,6 +3472,13 @@ module GFS_typedefs
       Coupling%spp_wts_rad = clear_val
       allocate (Coupling%spp_wts_cu_deep   (IM,Model%levs))
       Coupling%spp_wts_cu_deep = clear_val
+    else
+      allocate (Coupling%spp_wts_pbl     (0,0))
+      allocate (Coupling%spp_wts_sfc     (0,0))
+      allocate (Coupling%spp_wts_mp      (0,0))
+      allocate (Coupling%spp_wts_gwd     (0,0))
+      allocate (Coupling%spp_wts_rad     (0,0))
+      allocate (Coupling%spp_wts_cu_deep (0,0))
     endif
 
     !--- needed for Thompson's aerosol option
@@ -3209,6 +3487,9 @@ module GFS_typedefs
       allocate (Coupling%nifa2d (IM))
       Coupling%nwfa2d   = clear_val
       Coupling%nifa2d   = clear_val
+    else
+      allocate (Coupling%nwfa2d (0))
+      allocate (Coupling%nifa2d (0))
     endif
 
     if(Model%rrfs_sd) then
@@ -3237,11 +3518,26 @@ module GFS_typedefs
       Coupling%hpbl_thetav = clear_val
       Coupling%rrfs_hwp   = clear_val
       Coupling%rrfs_hwp_ave = clear_val
+    else
+      allocate (Coupling%ebu_smoke (0,0))
+      allocate (Coupling%chem3d    (0,0,0))
+      allocate (Coupling%ddvel     (0,0))
+      allocate (Coupling%wetdpc_flux(0,0))
+      allocate (Coupling%wetdpr_flux(0,0))
+      allocate (Coupling%drydep_flux(0,0))
+      allocate (Coupling%min_fplume(0))
+      allocate (Coupling%max_fplume(0))
+      allocate (Coupling%uspdavg(0))
+      allocate (Coupling%hpbl_thetav(0))
+      allocate (Coupling%rrfs_hwp  (0))
+      allocate (Coupling%rrfs_hwp_ave  (0))
     endif
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) then
       allocate (Coupling%qci_conv (IM,Model%levs))
       Coupling%qci_conv   = clear_val
+    else
+      allocate (Coupling%qci_conv (0,0))
     endif
 
   end subroutine coupling_create
@@ -4269,10 +4565,14 @@ module GFS_typedefs
     if (Model%naux2d>0) then
         allocate(Model%aux2d_time_avg(1:naux2d))
         Model%aux2d_time_avg(1:naux2d) = aux2d_time_avg(1:naux2d)
+    else
+        allocate(Model%aux2d_time_avg(0))
     end if
     if (Model%naux3d>0) then
         allocate(Model%aux3d_time_avg(1:naux3d))
         Model%aux3d_time_avg(1:naux3d) = aux3d_time_avg(1:naux3d)
+    else
+        allocate(Model%aux3d_time_avg(0))
     end if
     !
     Model%fhcyc            = fhcyc
@@ -4502,6 +4802,8 @@ module GFS_typedefs
       do ipat=1,Model%nGases
         Model%active_gases_array(ipat) = ''
       enddo
+    else
+      allocate (Model%active_gases_array(0))
     endif
     Model%rrtmgp_root         = rrtmgp_root
     Model%lw_file_gas         = lw_file_gas
@@ -5050,6 +5352,9 @@ module GFS_typedefs
       allocate(Model%lndp_prt_list(Model%n_var_lndp))
       Model%lndp_var_list(:) = ''
       Model%lndp_prt_list(:) = clear_val
+    else
+      allocate(Model%lndp_var_list(0))
+      allocate(Model%lndp_prt_list(0))
     end if
 
     if (Model%do_spp) then
@@ -5059,6 +5364,10 @@ module GFS_typedefs
       Model%spp_var_list(:) = ''
       Model%spp_prt_list(:) = clear_val
       Model%spp_stddev_cutoff(:) = clear_val
+    else
+      allocate(Model%spp_var_list(0))
+      allocate(Model%spp_prt_list(0))
+      allocate(Model%spp_stddev_cutoff(0))
     end if
 
     !--- cellular automata options
@@ -5256,8 +5565,6 @@ module GFS_typedefs
             .and. Model%flag_for_dcnv_generic_tend
 
        ! Increment idtend and fill dtidx:
-        allocate(Model%dtend_var_labels(Model%ntracp100))
-        allocate(Model%dtend_process_labels(Model%nprocess))
 
         call allocate_dtend_labels_and_causes(Model)
 
@@ -5443,6 +5750,9 @@ module GFS_typedefs
              endif
           enddo
        endif
+    else
+      allocate(Model%dtend_var_labels(0))
+      allocate(Model%dtend_process_labels(0))
     end if
 
     IF ( Model%imp_physics == Model%imp_physics_nssl2mccn ) THEN ! recognize this option for compatibility
@@ -7016,6 +7326,10 @@ module GFS_typedefs
       Grid%ddy_o3      = clear_val
       Grid%jindx1_o3   = clear_val
       Grid%jindx2_o3   = clear_val
+    else
+      allocate (Grid%ddy_o3    (0))
+      allocate (Grid%jindx1_o3 (0))
+      allocate (Grid%jindx2_o3 (0))
     endif
 
 !--- stratosphere h2o active
@@ -7027,6 +7341,10 @@ module GFS_typedefs
       Grid%ddy_h       = clear_val
       Grid%jindx1_h    = clear_val
       Grid%jindx2_h    = clear_val
+    else
+      allocate (Grid%ddy_h    (0))
+      allocate (Grid%jindx1_h (0))
+      allocate (Grid%jindx2_h (0))
     endif
 
 !--- iccn active
@@ -7044,6 +7362,13 @@ module GFS_typedefs
       Grid%ddx_ci      = clear_val
       Grid%iindx1_ci   = clear_val
       Grid%iindx2_ci   = clear_val
+    else
+      allocate (Grid%ddy_ci    (0))
+      allocate (Grid%jindx1_ci (0))
+      allocate (Grid%jindx2_ci (0))
+      allocate (Grid%ddx_ci    (0))
+      allocate (Grid%iindx1_ci (0))
+      allocate (Grid%iindx2_ci (0))
     endif
 
 !--- iaerclm active
@@ -7061,6 +7386,13 @@ module GFS_typedefs
       Grid%ddx_aer     = clear_val
       Grid%iindx1_aer  = clear_val
       Grid%iindx2_aer  = clear_val
+    else
+      allocate (Grid%ddy_aer   (0))
+      allocate (Grid%jindx1_aer(0))
+      allocate (Grid%jindx2_aer(0))
+      allocate (Grid%ddx_aer   (0))
+      allocate (Grid%iindx1_aer(0))
+      allocate (Grid%iindx2_aer(0))
     endif
 
 !---  Model%do_ugwpv1
@@ -7074,6 +7406,11 @@ module GFS_typedefs
       Grid%ddy_j2tau   = clear_val
       Grid%jindx1_tau  = clear_val
       Grid%jindx2_tau  = clear_val
+   else
+      allocate (Grid%ddy_j1tau  (0))
+      allocate (Grid%ddy_j2tau  (0))
+      allocate (Grid%jindx1_tau (0))
+      allocate (Grid%jindx2_tau (0))
    endif
 
  end subroutine grid_create
@@ -7100,7 +7437,13 @@ module GFS_typedefs
       if (Model%lrseeds) then
         allocate (Tbd%rseeds(IM,Model%nrstreams))
         Tbd%rseeds = zero
+      else
+        allocate (Tbd%rseeds(0,0))
       endif
+    else
+      allocate (Tbd%icsdsw (0))
+      allocate (Tbd%icsdlw (0))
+      allocate (Tbd%rseeds(0,0))
     endif
 
 !--- DFI radar forcing
@@ -7113,7 +7456,12 @@ module GFS_typedefs
        if(Model%do_cap_suppress) then
          allocate(Tbd%cap_suppress(IM,Model%num_dfi_radar))
          Tbd%cap_suppress(:,:) = zero
+       else
+         allocate(Tbd%cap_suppress(0,0))
        endif
+    else
+       allocate(Tbd%dfi_radar_tten(0,0,0))
+       allocate(Tbd%cap_suppress(0,0))
     endif
 
 !--- ozone and stratosphere h2o needs
@@ -7162,6 +7510,9 @@ module GFS_typedefs
       allocate (Tbd%dsnow_cpl (IM))
       Tbd%drain_cpl = clear_val
       Tbd%dsnow_cpl = clear_val
+    else
+      allocate (Tbd%drain_cpl (0))
+      allocate (Tbd%dsnow_cpl (0))
     endif
 
     if (Model%do_sppt .or. Model%ca_global) then
@@ -7171,6 +7522,10 @@ module GFS_typedefs
       Tbd%dtdtnp    = clear_val
       Tbd%dtotprcp  = clear_val
       Tbd%dcnvprcp  = clear_val
+    else
+      allocate (Tbd%dtdtnp    (0,0))
+      allocate (Tbd%dtotprcp  (0))
+      allocate (Tbd%dcnvprcp  (0))
     endif
 
     allocate (Tbd%phy_f2d  (IM,Model%ntot2d))
@@ -7181,6 +7536,8 @@ module GFS_typedefs
     if (Model%nctp > 0 .and. Model%cscnv) then
       allocate (Tbd%phy_fctd (IM,Model%nctp))
       Tbd%phy_fctd = clear_val
+    else
+      allocate (Tbd%phy_fctd (0,0))
     endif
 
 !   if (Model%do_shoc) Tbd%phy_f3d(:,1,Model%ntot3d-1) = 3.0
@@ -7192,21 +7549,28 @@ module GFS_typedefs
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == Model%imfshalcnv_samf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3 .or. Model%imfshalcnv == Model%imfshalcnv_c3) then
        allocate(Tbd%prevsq(IM, Model%levs))
        Tbd%prevsq = clear_val
+    else
+       allocate(Tbd%prevsq(0, 0))
     endif
 
     if (Model%imfdeepcnv .ge. 0 .or. Model%imfshalcnv .ge. 0) then
        allocate(Tbd%ud_mf(IM, Model%levs))
        Tbd%ud_mf = zero
+    else
+       allocate(Tbd%ud_mf(0, 0))
     endif
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or.  Model%imfdeepcnv == Model%imfdeepcnv_c3) then
        allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%forceq(IM, Model%levs))
-       allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%prevst(IM, Model%levs))
        Tbd%forcet = clear_val
        Tbd%forceq = clear_val
        Tbd%prevst = clear_val
+    else
+       allocate(Tbd%forcet(0, 0))
+       allocate(Tbd%forceq(0, 0))
+       allocate(Tbd%prevst(0, 0))
     end if
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or.  Model%imfdeepcnv == Model%imfdeepcnv_c3) then
@@ -7216,6 +7580,10 @@ module GFS_typedefs
        Tbd%cactiv = zero
        Tbd%cactiv_m = zero
        Tbd%aod_gf = zero
+    else
+       allocate(Tbd%cactiv(0))
+       allocate(Tbd%cactiv_m(0))
+       allocate(Tbd%aod_gf(0))
     end if
 
     !--- MYNN variables:
@@ -7242,6 +7610,17 @@ module GFS_typedefs
        Tbd%tsq           = clear_val
        Tbd%qsq           = clear_val
        Tbd%cov           = clear_val
+    else
+       allocate (Tbd%cldfra_bl (0,0))
+       allocate (Tbd%qc_bl     (0,0))
+       allocate (Tbd%qi_bl     (0,0))
+       allocate (Tbd%el_pbl    (0,0))
+       allocate (Tbd%sh3d      (0,0))
+       allocate (Tbd%sm3d      (0,0))
+       allocate (Tbd%qke       (0,0))
+       allocate (Tbd%tsq       (0,0))
+       allocate (Tbd%qsq       (0,0))
+       allocate (Tbd%cov       (0,0))
     end if
 
     ! MYJ variables
@@ -7272,6 +7651,19 @@ module GFS_typedefs
        Tbd%phy_myj_a1u    = clear_val
        Tbd%phy_myj_a1t    = clear_val
        Tbd%phy_myj_a1q    = clear_val
+    else
+       allocate (Tbd%phy_myj_qsfc   (0))
+       allocate (Tbd%phy_myj_thz0   (0))
+       allocate (Tbd%phy_myj_qz0    (0))
+       allocate (Tbd%phy_myj_uz0    (0))
+       allocate (Tbd%phy_myj_vz0    (0))
+       allocate (Tbd%phy_myj_akhs   (0))
+       allocate (Tbd%phy_myj_akms   (0))
+       allocate (Tbd%phy_myj_chkqlm (0))
+       allocate (Tbd%phy_myj_elflx  (0))
+       allocate (Tbd%phy_myj_a1u    (0))
+       allocate (Tbd%phy_myj_a1t    (0))
+       allocate (Tbd%phy_myj_a1q    (0))
     end if
 
   end subroutine tbd_create
@@ -7593,6 +7985,8 @@ module GFS_typedefs
     if(Model%print_diff_pgr) then
       allocate(Diag%old_pgr(IM))
       Diag%old_pgr = clear_val
+    else
+      allocate(Diag%old_pgr(0))
     endif
 
     if(Model%lightning_threat) then
@@ -7602,6 +7996,10 @@ module GFS_typedefs
        Diag%ltg1_max = zero
        Diag%ltg2_max = zero
        Diag%ltg3_max = zero
+    else
+       allocate (Diag%ltg1_max(0))
+       allocate (Diag%ltg2_max(0))
+       allocate (Diag%ltg3_max(0))
     endif
 
     !--- Radiation
@@ -7700,6 +8098,8 @@ module GFS_typedefs
     allocate (Diag%tsnowpb (IM))
     if (.not. Model%lsm == Model%lsm_ruc) then
       allocate (Diag%wet1    (IM))
+    else
+      allocate (Diag%wet1    (0))
     end if
     allocate (Diag%sr       (IM))
     allocate (Diag%tdomr    (IM))
@@ -7712,11 +8112,17 @@ module GFS_typedefs
       allocate (Diag%paha    (IM))
       allocate (Diag%twa     (IM))
       allocate (Diag%pahi    (IM))
+    else
+      allocate (Diag%paha    (0))
+      allocate (Diag%twa     (0))
+      allocate (Diag%pahi    (0))
     endif
 
     ! F-A MP scheme
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
      allocate (Diag%train     (IM,Model%levs))
+    else
+     allocate (Diag%train     (0,0))  
     end if
     allocate (Diag%cldfra     (IM,Model%levr+LTP))
     allocate (Diag%cldfra2d   (IM))
@@ -7734,13 +8140,31 @@ module GFS_typedefs
         allocate (Diag%upd_mf (IM,Model%levs))
         allocate (Diag%dwn_mf (IM,Model%levs))
         allocate (Diag%det_mf (IM,Model%levs))
+      else
+        allocate (Diag%upd_mf (0,0))
+        allocate (Diag%dwn_mf (0,0))
+        allocate (Diag%det_mf (0,0))
       endif
       if (Model%oz_phys_2015) then
          allocate(Diag%do3_dt_prd( IM, Model%levs))
          allocate(Diag%do3_dt_ozmx(IM, Model%levs))
          allocate(Diag%do3_dt_temp(IM, Model%levs))
          allocate(Diag%do3_dt_ohoz(IM, Model%levs))
+      else
+         allocate(Diag%do3_dt_prd( 0,0))
+         allocate(Diag%do3_dt_ozmx(0,0))
+         allocate(Diag%do3_dt_temp(0,0))
+         allocate(Diag%do3_dt_ohoz(0,0))
       endif
+    else
+      allocate(Diag%dtend(0,0,0))
+      allocate(Diag%upd_mf (0,0))
+      allocate(Diag%dwn_mf (0,0))
+      allocate(Diag%det_mf (0,0))
+      allocate(Diag%do3_dt_prd( 0,0))
+      allocate(Diag%do3_dt_ozmx(0,0))
+      allocate(Diag%do3_dt_temp(0,0))
+      allocate(Diag%do3_dt_ohoz(0,0))
     endif
 
 ! UGWP
@@ -7757,20 +8181,11 @@ module GFS_typedefs
     allocate (Diag%kdis_gw   (IM,Model%levs))
 
     if (Model%ldiag_ugwp) then
-      allocate (Diag%du3dt_dyn  (IM,Model%levs) )
-      allocate (Diag%du3dt_pbl  (IM,Model%levs) )
-      allocate (Diag%dv3dt_pbl  (IM,Model%levs) )
-      allocate (Diag%dt3dt_pbl  (IM,Model%levs) )
       allocate (Diag%du3dt_ogw  (IM,Model%levs) )
       allocate (Diag%du3dt_mtb  (IM,Model%levs) )
       allocate (Diag%du3dt_tms  (IM,Model%levs) )
       allocate (Diag%du3dt_ngw  (IM,Model%levs) )
       allocate (Diag%dv3dt_ngw  (IM,Model%levs) )
-      allocate (Diag%dudt_tot  (IM,Model%levs) )
-      allocate (Diag%dvdt_tot  (IM,Model%levs) )
-      allocate (Diag%dtdt_tot  (IM,Model%levs) )
-      allocate (Diag%uav_ugwp  (IM,Model%levs) )
-      allocate (Diag%tav_ugwp  (IM,Model%levs) )
       allocate (Diag%dws3dt_ogw (IM,Model%levs) )
       allocate (Diag%dws3dt_obl (IM,Model%levs) )
       allocate (Diag%dws3dt_oss (IM,Model%levs) )
@@ -7782,10 +8197,27 @@ module GFS_typedefs
       allocate (Diag%ldu3dt_ngw (IM,Model%levs) )
       allocate (Diag%ldv3dt_ngw (IM,Model%levs) )
       allocate (Diag%ldt3dt_ngw (IM,Model%levs) )
+    else
+      allocate (Diag%du3dt_ogw  (0,0) )
+      allocate (Diag%du3dt_mtb  (0,0) )
+      allocate (Diag%du3dt_tms  (0,0) )
+      allocate (Diag%du3dt_ngw  (0,0) )
+      allocate (Diag%dv3dt_ngw  (0,0) )
+      allocate (Diag%dws3dt_ogw (0,0) )
+      allocate (Diag%dws3dt_obl (0,0) )
+      allocate (Diag%dws3dt_oss (0,0) )
+      allocate (Diag%dws3dt_ofd (0,0) )
+      allocate (Diag%ldu3dt_ogw (0,0) )
+      allocate (Diag%ldu3dt_obl (0,0) )
+      allocate (Diag%ldu3dt_oss (0,0) )
+      allocate (Diag%ldu3dt_ofd (0,0) )
+      allocate (Diag%ldu3dt_ngw (0,0) )
+      allocate (Diag%ldv3dt_ngw (0,0) )
+      allocate (Diag%ldt3dt_ngw (0,0) )
     endif
-
+    
+    allocate (Diag%dudt_ogw  (IM,Model%levs))
     if (Model%do_ugwp_v1 .or. Model%ldiag_ugwp) then
-      allocate (Diag%dudt_ogw  (IM,Model%levs))
       allocate (Diag%dvdt_ogw  (IM,Model%levs))
       allocate (Diag%dudt_obl  (IM,Model%levs))
       allocate (Diag%dvdt_obl  (IM,Model%levs))
@@ -7810,7 +8242,29 @@ module GFS_typedefs
       allocate (Diag%du3_ofdcol (IM)          )
       allocate (Diag%dv3_ofdcol (IM)          )
     else
-      allocate (Diag%dudt_ogw  (IM,Model%levs))
+      allocate (Diag%dvdt_ogw  (0,0))
+      allocate (Diag%dudt_obl  (0,0))
+      allocate (Diag%dvdt_obl  (0,0))
+      allocate (Diag%dudt_oss  (0,0))
+      allocate (Diag%dvdt_oss  (0,0))
+      allocate (Diag%dudt_ofd  (0,0))
+      allocate (Diag%dvdt_ofd  (0,0))
+      allocate (Diag%du_ogwcol  (0))
+      allocate (Diag%dv_ogwcol  (0))
+      allocate (Diag%du_oblcol  (0))
+      allocate (Diag%dv_oblcol  (0))
+      allocate (Diag%du_osscol  (0))
+      allocate (Diag%dv_osscol  (0))
+      allocate (Diag%du_ofdcol  (0))
+      allocate (Diag%dv_ofdcol  (0))
+      allocate (Diag%du3_ogwcol (0))
+      allocate (Diag%dv3_ogwcol (0))
+      allocate (Diag%du3_oblcol (0))
+      allocate (Diag%dv3_oblcol (0))
+      allocate (Diag%du3_osscol (0))
+      allocate (Diag%dv3_osscol (0))
+      allocate (Diag%du3_ofdcol (0))
+      allocate (Diag%dv3_ofdcol (0))
     endif
 
     !--- 3D diagnostics for Thompson MP / GFDL MP
@@ -7843,6 +8297,17 @@ module GFS_typedefs
         allocate (Diag%sub_sqv   (IM,Model%levs))
         allocate (Diag%det_thl   (IM,Model%levs))
         allocate (Diag%det_sqv   (IM,Model%levs))
+      else
+        allocate (Diag%edmf_a    (0,0))
+        allocate (Diag%edmf_w    (0,0))
+        allocate (Diag%edmf_qt   (0,0))
+        allocate (Diag%edmf_thl  (0,0))
+        allocate (Diag%edmf_ent  (0,0))
+        allocate (Diag%edmf_qc   (0,0))
+        allocate (Diag%sub_thl   (0,0))
+        allocate (Diag%sub_sqv   (0,0))
+        allocate (Diag%det_thl   (0,0))
+        allocate (Diag%det_sqv   (0,0))
       endif
       if (Model%tke_budget .gt. 0) then
         allocate (Diag%dqke      (IM,Model%levs))
@@ -7850,6 +8315,12 @@ module GFS_typedefs
         allocate (Diag%qshear    (IM,Model%levs))
         allocate (Diag%qbuoy     (IM,Model%levs))
         allocate (Diag%qdiss     (IM,Model%levs))
+      else
+        allocate (Diag%dqke      (0,0))
+        allocate (Diag%qwt       (0,0))
+        allocate (Diag%qshear    (0,0))
+        allocate (Diag%qbuoy     (0,0))
+        allocate (Diag%qdiss     (0,0))
       endif
       allocate (Diag%maxwidth  (IM))
       allocate (Diag%maxmf     (IM))
@@ -7882,12 +8353,36 @@ module GFS_typedefs
       Diag%ktop_plume    = 0
       Diag%exch_h        = clear_val
       Diag%exch_m        = clear_val
+    else
+      allocate (Diag%edmf_a    (0,0))
+      allocate (Diag%edmf_w    (0,0))
+      allocate (Diag%edmf_qt   (0,0))
+      allocate (Diag%edmf_thl  (0,0))
+      allocate (Diag%edmf_ent  (0,0))
+      allocate (Diag%edmf_qc   (0,0))
+      allocate (Diag%sub_thl   (0,0))
+      allocate (Diag%sub_sqv   (0,0))
+      allocate (Diag%det_thl   (0,0))
+      allocate (Diag%det_sqv   (0,0))
+      allocate (Diag%dqke      (0,0))
+      allocate (Diag%qwt       (0,0))
+      allocate (Diag%qshear    (0,0))
+      allocate (Diag%qbuoy     (0,0))
+      allocate (Diag%qdiss     (0,0))
+      allocate (Diag%maxwidth  (0))
+      allocate (Diag%maxmf     (0))
+      allocate (Diag%ztop_plume(0))
+      allocate (Diag%ktop_plume(0))
+      allocate (Diag%exch_h    (0,0))
+      allocate (Diag%exch_m    (0,0))
     endif
 
     ! Extended diagnostics for Thompson MP
     if (Model%ext_diag_thompson) then
       allocate (Diag%thompson_ext_diag3d(IM,Model%levs,Model%thompson_ext_ndiag3d))
       Diag%thompson_ext_diag3d = clear_val
+    else
+      allocate (Diag%thompson_ext_diag3d(0,0,0))
     endif
 
     ! Air quality diagnostics
@@ -7895,16 +8390,22 @@ module GFS_typedefs
     if (Model%cplaqm) then
       allocate (Diag%aod(IM))
       Diag%aod = zero
+    else
+      allocate (Diag%aod(0))
     end if
 
     ! Auxiliary arrays in output for debugging
     if (Model%naux2d>0) then
       allocate (Diag%aux2d(IM,Model%naux2d))
       Diag%aux2d = clear_val
+    else
+      allocate (Diag%aux2d(0,0))
     endif
     if (Model%naux3d>0) then
       allocate (Diag%aux3d(IM,Model%levs,Model%naux3d))
       Diag%aux3d = clear_val
+    else
+      allocate (Diag%aux3d(0,0,0))
     endif
 
     call Diag%rad_zero  (Model)
@@ -8105,8 +8606,8 @@ module GFS_typedefs
     Diag%dtdt_gw     = zero
     Diag%kdis_gw     = zero
 
+    Diag%dudt_ogw    = zero
     if (Model%do_ugwp_v1 .or. Model%ldiag_ugwp) then
-      Diag%dudt_ogw    = zero
       Diag%dvdt_ogw    = zero
       Diag%dudt_obl    = zero
       Diag%dvdt_obl    = zero
@@ -8130,24 +8631,14 @@ module GFS_typedefs
       Diag%dv3_osscol  = zero
       Diag%du3_ofdcol  = zero
       Diag%dv3_ofdcol  = zero
-    else
-      Diag%dudt_ogw    = zero
     end if
 
     if (Model%ldiag_ugwp) then
-      Diag%du3dt_pbl   = zero
-      Diag%dv3dt_pbl   = zero
-      Diag%dt3dt_pbl   = zero
       Diag%du3dt_ogw   = zero
       Diag%du3dt_mtb   = zero
       Diag%du3dt_tms   = zero
       Diag%du3dt_ngw   = zero
       Diag%dv3dt_ngw   = zero
-      Diag%dudt_tot    = zero
-      Diag%dvdt_tot    = zero
-      Diag%dtdt_tot    = zero
-      Diag%uav_ugwp    = zero
-      Diag%tav_ugwp    = zero
       Diag%dws3dt_ogw  = zero
       Diag%dws3dt_obl  = zero
       Diag%dws3dt_oss  = zero
@@ -8159,8 +8650,6 @@ module GFS_typedefs
       Diag%ldu3dt_ngw  = zero
       Diag%ldv3dt_ngw  = zero
       Diag%ldt3dt_ngw  = zero
-!COORDE
-      Diag%du3dt_dyn   = zero
     endif
 
 !

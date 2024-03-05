@@ -931,7 +931,7 @@ module GFS_diagnostics
 
 !--- air quality diagnostics ---
   if (Model%cplaqm) then
-    if (associated(IntDiag(1)%aod)) then
+    if (size(IntDiag(1)%aod) > 0) then
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'aod'
@@ -1887,7 +1887,7 @@ module GFS_diagnostics
     enddo
     endif
 
-    if(associated(Coupling(1)%htrlw)) then
+    if(size(Coupling(1)%htrlw) > 0) then
     idx = idx + 1
     ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'htrlw'
@@ -2818,10 +2818,7 @@ module GFS_diagnostics
   endif
 
   if (Model%ldiag_ugwp) THEN
-!
-! VAY-2018: Momentum and Temp-re tendencies
-! du3dt_pbl dv3dt_pbl  dT3dt_pbl
-!
+    
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'zmtb'
@@ -2901,67 +2898,6 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'du3dt_pbl_ugwp'
-    ExtDiag(idx)%desc = 'U-tendency due to PBL physics'
-    ExtDiag(idx)%unit = 'm/s/s'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt_pbl(:,:)
-    enddo
-!    
-! dv3dt_pbl     
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'dv3dt_pbl_ugwp'
-    ExtDiag(idx)%desc = 'V-tendency due to PBL physics'
-    ExtDiag(idx)%unit = 'm/s/s'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt_pbl(:,:)
-    enddo
-!    
-! dt3dt_pbl     
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'dt3dt_pbl_ugwp'
-    ExtDiag(idx)%desc = 'T-tendency due to PBL physics'
-    ExtDiag(idx)%unit = 'K/s'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt_pbl(:,:)
-    enddo
-!
-! uav_ugwp 
-! 
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'uav_ugwp'
-    ExtDiag(idx)%desc = 'U-daily mean for UGWP'
-    ExtDiag(idx)%unit = 'm/s'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%uav_ugwp(:,:)
-    enddo
-!
-! tav_ugwp 
-! 
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'tav_ugwp'
-    ExtDiag(idx)%desc = 'T-daily mean for UGWP'
-    ExtDiag(idx)%unit = 'K'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%tav_ugwp(:,:)
-    enddo
-
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'du3dt_ogw'
     ExtDiag(idx)%desc = 'axz_oro averaged E-W OROGW-tendency'
     ExtDiag(idx)%unit = 'm/s/s'
@@ -3003,28 +2939,6 @@ module GFS_diagnostics
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt_tms(:,:)
-    enddo
-
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'dudt_tot'
-    ExtDiag(idx)%desc = ' dudt_tot averaged E-W dycore-tendency'
-    ExtDiag(idx)%unit = 'm/s/s'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dudt_tot(:,:)
-    enddo
-
-    idx = idx + 1
-    ExtDiag(idx)%axes = 3
-    ExtDiag(idx)%name = 'dtdt_tot'
-    ExtDiag(idx)%desc = ' dtdt_tot averaged Temp dycore-tendency'
-    ExtDiag(idx)%unit = 'Ks'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dtdt_tot(:,:)
     enddo
 
     idx = idx + 1
