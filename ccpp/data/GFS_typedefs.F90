@@ -235,6 +235,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: soiltype_frac(:,:) => null()  !< fractions [0:1] of soil categories
                                                               !< [tsea in gbphys.f]
     real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in K
+    real (kind=kind_phys), pointer :: usfco  (:)   => null()  !< surface zonal current in m s-1
+    real (kind=kind_phys), pointer :: vsfco  (:)   => null()  !< surface meridional current in m s-1
     real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in K
     real (kind=kind_phys), pointer :: tisfc  (:)   => null()  !< surface temperature over ice fraction
     real (kind=kind_phys), pointer :: tiice(:,:)   => null()  !< internal ice temperature
@@ -457,15 +459,18 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: emanoc  (:)     => null()  !< instantaneous anthro. oc emission
 
     !--- Smoke. These 2 arrays are input smoke emission and frp
-    real (kind=kind_phys), pointer :: ebb_smoke_in(:)    => null()  !< input smoke emission
-    real (kind=kind_phys), pointer :: frp_input   (:)    => null()  !< input FRP
-
+    real (kind=kind_phys), pointer :: ebb_smoke_in(:)   => null()  !< input smoke emission
+    real (kind=kind_phys), pointer :: frp_output  (:)   => null()  !< output FRP
     !--- For fire diurnal cycle
     real (kind=kind_phys), pointer :: fhist       (:)   => null()  !< instantaneous fire coef_bb
     real (kind=kind_phys), pointer :: coef_bb_dc  (:)   => null()  !< instantaneous fire coef_bb
+    integer, pointer               :: fire_type   (:)   => null()  !< fire type
+    real (kind=kind_phys), pointer :: peak_hr     (:)   => null()  !< peak hour of fire emissions
+    real (kind=kind_phys), pointer :: lu_nofire   (:)   => null()  !<lu_nofire pixels
+    real (kind=kind_phys), pointer :: lu_qfire    (:)   => null()  !<lu_qfire pixels
     !--- wildfire heat flux
-    real (kind=kind_phys), pointer :: fire_heat_flux_out (:) => null() !< heat flux from wildfire
-    real (kind=kind_phys), pointer :: frac_grid_burned_out (:) => null() !< fraction of grid cell burning
+    real (kind=kind_phys), pointer :: fire_heat_flux   (:) => null() !< heat flux from wildfire
+    real (kind=kind_phys), pointer :: frac_grid_burned (:) => null() !< fraction of grid cell burning
 
     !--- For smoke and dust auxiliary inputs
     real (kind=kind_phys), pointer :: fire_in   (:,:)   => null()  !< fire auxiliary inputs
@@ -535,6 +540,20 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfcin_med(:)         => null()   !< sfc latent heat flux over ocean
     real (kind=kind_phys), pointer :: dqsfcin_med(:)         => null()   !< sfc sensible heat flux over ocean
     real (kind=kind_phys), pointer :: ulwsfcin_med(:)        => null()   !< sfc upward lw flux over ocean
+    !--- variables needed for cpllnd = .TRUE. and cpllnd2atm=.TRUE.
+    real (kind=kind_phys), pointer :: sncovr1_lnd(:)         => null()   !< sfc snow area fraction over land
+    real (kind=kind_phys), pointer :: qsurf_lnd(:)           => null()   !< sfc specific humidity
+    real (kind=kind_phys), pointer :: evap_lnd(:)            => null()   !< sfc latent heat flux over land, converted to evaporative flux
+    real (kind=kind_phys), pointer :: hflx_lnd(:)            => null()   !< sfc sensible heat flux over land
+    real (kind=kind_phys), pointer :: ep_lnd(:)              => null()   !< sfc up pot latent heat flux over land
+    real (kind=kind_phys), pointer :: t2mmp_lnd(:)           => null()   !< 2 meter temperature over land 
+    real (kind=kind_phys), pointer :: q2mp_lnd(:)            => null()   !< 2 meter spec humidity over land
+    real (kind=kind_phys), pointer :: gflux_lnd(:)           => null()   !< soil heat flux over land
+    real (kind=kind_phys), pointer :: runoff_lnd(:)          => null()   !< surface runoff over land
+    real (kind=kind_phys), pointer :: drain_lnd(:)           => null()   !< subsurface runoff over land
+    real (kind=kind_phys), pointer :: cmm_lnd(:)             => null()   !< surface drag wind speed for momentum
+    real (kind=kind_phys), pointer :: chh_lnd(:)             => null()   !< surface drag mass flux for heat and moisture 
+    real (kind=kind_phys), pointer :: zvfun_lnd(:)           => null()   !< function of surface roughness length and green vegetation fraction 
 
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
@@ -615,10 +634,6 @@ module GFS_typedefs
     !--- For fire diurnal cycle
     real (kind=kind_phys), pointer :: ebu_smoke (:,:) => null()  !< 3D ebu array
 
-    !--- For smoke and dust optical extinction
-    real (kind=kind_phys), pointer :: smoke_ext (:,:)   => null()  !< 3D aod array
-    real (kind=kind_phys), pointer :: dust_ext  (:,:)   => null()  !< 3D aod array
-
     !--- For MYNN PBL transport of  smoke and dust
     real (kind=kind_phys), pointer :: chem3d  (:,:,:)   => null()  !< 3D aod array
     real (kind=kind_phys), pointer :: ddvel   (:,:  )   => null()  !< 2D dry deposition velocity
@@ -632,6 +647,8 @@ module GFS_typedefs
     !--- Fire plume rise diagnostics
     real (kind=kind_phys), pointer :: min_fplume (:)  => null()  !< minimum plume rise level
     real (kind=kind_phys), pointer :: max_fplume (:)  => null()  !< maximum plume rise level
+    real (kind=kind_phys), pointer :: uspdavg (:)     => null()  !< BL average wind speed
+    real (kind=kind_phys), pointer :: hpbl_thetav (:) => null()  !< BL depth parcel method
     !--- hourly fire potential index
     real (kind=kind_phys), pointer :: rrfs_hwp   (:)  => null()  !< hourly fire potential index
     real (kind=kind_phys), pointer :: rrfs_hwp_ave   (:)   => null()  !< *Average* hourly fire potential index
@@ -744,6 +761,7 @@ module GFS_typedefs
     logical              :: cplaqm          !< default no cplaqm collection
     logical              :: cplchm          !< default no cplchm collection
     logical              :: cpllnd          !< default no cpllnd collection
+    logical              :: cpllnd2atm      !< default no lnd->atm coupling 
     logical              :: rrfs_sd         !< default no rrfs_sd collection
     logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
     logical              :: cpl_imp_mrg     !< default no merge import with internal forcings
@@ -1302,6 +1320,10 @@ module GFS_typedefs
                                             !< 0=no change
                                             !< 6=areodynamical roughness over water with input 10-m wind
                                             !< 7=slightly decrease Cd for higher wind speed compare to 6
+!--- air_sea_flux scheme
+    integer              :: icplocn2atm     !< air_sea flux options over ocean:
+                                            !< 0=no change
+                                            !< l=including ocean current in the computation of air_sea fluxes
 
 !--- potential temperature definition in surface layer physics
     logical              :: thsfc_loc       !< flag for local vs. standard potential temperature
@@ -1531,6 +1553,7 @@ module GFS_typedefs
     logical              :: do_plumerise
     integer              :: addsmoke_flag
     integer              :: plumerisefire_frq
+    integer              :: n_dbg_lines
     integer              :: smoke_forecast
     logical              :: aero_ind_fdb    ! WFA/IFA indirect
     logical              :: aero_dir_fdb    ! smoke/dust direct
@@ -2294,6 +2317,8 @@ module GFS_typedefs
     endif
 
     allocate (Sfcprop%tsfc     (IM))
+    allocate (Sfcprop%usfco    (IM))
+    allocate (Sfcprop%vsfco    (IM))
     allocate (Sfcprop%tsfco    (IM))
     allocate (Sfcprop%tsfcl    (IM))
     allocate (Sfcprop%tisfc    (IM))
@@ -2351,6 +2376,8 @@ module GFS_typedefs
     endif
 
     Sfcprop%tsfc      = clear_val
+    Sfcprop%usfco     = clear_val
+    Sfcprop%vsfco     = clear_val
     Sfcprop%tsfco     = clear_val
     Sfcprop%tsfcl     = clear_val
     Sfcprop%tisfc     = clear_val
@@ -2678,8 +2705,8 @@ module GFS_typedefs
        allocate (Sfcprop%acsnow_land     (IM))
        allocate (Sfcprop%acsnow_ice      (IM))
        allocate (Sfcprop%xlaixy   (IM))
-       allocate (Sfcprop%fire_heat_flux_out (IM))
-       allocate (Sfcprop%frac_grid_burned_out (IM))
+       allocate (Sfcprop%fire_heat_flux  (IM))
+       allocate (Sfcprop%frac_grid_burned(IM))
 
        !
        Sfcprop%wetness         = clear_val
@@ -2700,8 +2727,8 @@ module GFS_typedefs
        Sfcprop%acsnow_land     = clear_val
        Sfcprop%acsnow_ice      = clear_val
        Sfcprop%xlaixy          = clear_val
-       Sfcprop%fire_heat_flux_out = clear_val
-       Sfcprop%frac_grid_burned_out = clear_val
+       Sfcprop%fire_heat_flux  = clear_val
+       Sfcprop%frac_grid_burned= clear_val
        !
     end if
 
@@ -2795,9 +2822,13 @@ module GFS_typedefs
       allocate (Sfcprop%emseas    (IM))
       allocate (Sfcprop%emanoc    (IM))
       allocate (Sfcprop%ebb_smoke_in (IM))
-      allocate (Sfcprop%frp_input (IM))
+      allocate (Sfcprop%frp_output (IM))
       allocate (Sfcprop%fhist     (IM))
       allocate (Sfcprop%coef_bb_dc(IM))
+      allocate (Sfcprop%fire_type (IM))
+      allocate (Sfcprop%peak_hr   (IM))
+      allocate (Sfcprop%lu_nofire (IM))
+      allocate (Sfcprop%lu_qfire  (IM))
       allocate (Sfcprop%fire_in   (IM,Model%fire_aux_data_levels))
 
       ! IMPORTANT: This initialization must match rrfs_sd_fill_data
@@ -2805,10 +2836,14 @@ module GFS_typedefs
       Sfcprop%emseas     = clear_val
       Sfcprop%emanoc     = clear_val
       Sfcprop%ebb_smoke_in = clear_val
-      Sfcprop%frp_input  = clear_val
+      Sfcprop%frp_output  = clear_val
       Sfcprop%fhist      = 1.
       Sfcprop%coef_bb_dc = clear_val
+      Sfcprop%fire_type  = 0
       Sfcprop%fire_in    = clear_val
+      Sfcprop%peak_hr    = clear_val
+      Sfcprop%lu_nofire  = clear_val
+      Sfcprop%lu_qfire   = clear_val
     endif
 
   end subroutine sfcprop_create
@@ -3033,7 +3068,38 @@ module GFS_typedefs
       Coupling%slmsk_cpl   = clear_val  !< pointer to sfcprop%slmsk
     endif
 
-   !-- cellular automata
+    ! -- Coupling options to retrive land fluxes from external land component 
+    if (Model%cpllnd .and. Model%cpllnd2atm) then
+      allocate (Coupling%sncovr1_lnd (IM))
+      allocate (Coupling%qsurf_lnd   (IM))
+      allocate (Coupling%evap_lnd    (IM))
+      allocate (Coupling%hflx_lnd    (IM))
+      allocate (Coupling%ep_lnd      (IM))
+      allocate (Coupling%t2mmp_lnd   (IM))
+      allocate (Coupling%q2mp_lnd    (IM))
+      allocate (Coupling%gflux_lnd   (IM))
+      allocate (Coupling%runoff_lnd  (IM))
+      allocate (Coupling%drain_lnd   (IM))
+      allocate (Coupling%cmm_lnd     (IM))
+      allocate (Coupling%chh_lnd     (IM))
+      allocate (Coupling%zvfun_lnd   (IM))
+
+      Coupling%sncovr1_lnd = clear_val
+      Coupling%qsurf_lnd   = clear_val
+      Coupling%evap_lnd    = clear_val
+      Coupling%hflx_lnd    = clear_val
+      Coupling%ep_lnd      = clear_val
+      Coupling%t2mmp_lnd   = clear_val
+      Coupling%q2mp_lnd    = clear_val
+      Coupling%gflux_lnd   = clear_val
+      Coupling%runoff_lnd  = clear_val
+      Coupling%drain_lnd   = clear_val
+      Coupling%cmm_lnd     = clear_val
+      Coupling%chh_lnd     = clear_val
+      Coupling%zvfun_lnd   = clear_val
+    end if
+
+    !-- cellular automata
     allocate (Coupling%condition(IM))
     if (Model%do_ca) then
       allocate (Coupling%ca1      (IM))
@@ -3149,8 +3215,6 @@ module GFS_typedefs
     if(Model%rrfs_sd) then
     !--- needed for smoke aerosol option
       allocate (Coupling%ebu_smoke (IM,Model%levs))
-      allocate (Coupling%smoke_ext (IM,Model%levs))
-      allocate (Coupling%dust_ext  (IM,Model%levs))
       allocate (Coupling%chem3d    (IM,Model%levs,Model%nchem))
       allocate (Coupling%ddvel     (IM,Model%ndvel))
       allocate (Coupling%wetdpc_flux(IM,Model%nchem))
@@ -3158,11 +3222,11 @@ module GFS_typedefs
       allocate (Coupling%drydep_flux(IM,Model%ndvel))
       allocate (Coupling%min_fplume(IM))
       allocate (Coupling%max_fplume(IM))
+      allocate (Coupling%uspdavg(IM))
+      allocate (Coupling%hpbl_thetav(IM))
       allocate (Coupling%rrfs_hwp  (IM))
       allocate (Coupling%rrfs_hwp_ave  (IM))
       Coupling%ebu_smoke  = clear_val
-      Coupling%smoke_ext  = clear_val
-      Coupling%dust_ext   = clear_val
       Coupling%chem3d     = clear_val
       Coupling%ddvel      = clear_val
       Coupling%wetdpc_flux = clear_val
@@ -3170,6 +3234,8 @@ module GFS_typedefs
       Coupling%drydep_flux = clear_val
       Coupling%min_fplume = clear_val
       Coupling%max_fplume = clear_val
+      Coupling%uspdavg = clear_val
+      Coupling%hpbl_thetav = clear_val
       Coupling%rrfs_hwp   = clear_val
       Coupling%rrfs_hwp_ave = clear_val
     endif
@@ -3273,6 +3339,7 @@ module GFS_typedefs
     logical              :: cplaqm         = .false.         !< default no cplaqm collection
     logical              :: cplchm         = .false.         !< default no cplchm collection
     logical              :: cpllnd         = .false.         !< default no cpllnd collection
+    logical              :: cpllnd2atm     = .false.         !< default no cpllnd2atm coupling
     logical              :: rrfs_sd        = .false.         !< default no rrfs_sd collection
     logical              :: use_cice_alb   = .false.         !< default no cice albedo
     logical              :: cpl_imp_mrg    = .false.         !< default no merge import with internal forcings
@@ -3750,6 +3817,9 @@ module GFS_typedefs
                                                              !< 6=areodynamical roughness over water with input 10-m wind
                                                              !< 7=slightly decrease Cd for higher wind speed compare to 6
                                                              !< negative when cplwav2atm=.true. - i.e. two way wave coupling
+    integer              :: icplocn2atm    = 0               !< air_sea_flux options over ocean
+                                                             !< 0=ocean current is not used in the computation of air_sea fluxes
+                                                             !< 1=including ocean current in the computation of air_sea fluxes
 
 !--- potential temperature definition in surface layer physics
     logical              :: thsfc_loc      = .true.          !< flag for local vs. standard potential temperature
@@ -3857,11 +3927,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: dust_moist_correction = 1.0
     real(kind=kind_phys) :: dust_alpha = 0.
     real(kind=kind_phys) :: dust_gamma = 0.
-    real(kind=kind_phys) :: wetdep_ls_alpha = 0.
+    real(kind=kind_phys) :: wetdep_ls_alpha = 0.5
     integer :: dust_moist_opt = 1         ! fecan :1  else shao
     integer :: ebb_dcycle = 1             ! 1:retro; 2:forecast
     integer :: seas_opt = 2
-    integer :: dust_opt = 5
+    integer :: dust_opt = 1
     integer :: drydep_opt  = 1
     integer :: coarsepm_settling  = 1
     integer :: plume_wind_eff = 1
@@ -3870,6 +3940,7 @@ module GFS_typedefs
     logical :: do_plumerise   = .false.
     integer :: addsmoke_flag  = 1
     integer :: plumerisefire_frq = 60
+    integer :: n_dbg_lines = 3
     integer :: smoke_forecast = 0         ! RRFS-sd read in ebb_smoke
     logical :: aero_ind_fdb = .false.     ! RRFS-sd wfa/ifa emission
     logical :: aero_dir_fdb = .false.     ! RRFS-sd smoke/dust radiation feedback
@@ -3906,8 +3977,8 @@ module GFS_typedefs
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
-                               cplchm, cpllnd, cpl_imp_mrg, cpl_imp_dbg, rrfs_sd,           &
-                               use_cice_alb,                                                &
+                               cplchm, cpllnd, cpllnd2atm, cpl_imp_mrg, cpl_imp_dbg,        &
+                               rrfs_sd, use_cice_alb,                                       & 
 #ifdef IDEA_PHYS
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
                                f107_kp_skip_size, f107_kp_data_size, f107_kp_read_in_start, &
@@ -4008,7 +4079,7 @@ module GFS_typedefs
                                frac_grid, min_lakeice, min_seaice, min_lake_height,         &
                                ignore_lake, frac_ice,                                       &
                           !--- surface layer
-                               sfc_z0_type,                                                 &
+                               sfc_z0_type, icplocn2atm,                                    &
                           !--- switch beteeen local and standard potential temperature
                                thsfc_loc,                                                   &
                           !--- switches in 2-m diagnostics
@@ -4041,7 +4112,7 @@ module GFS_typedefs
                                wetdep_ls_opt, smoke_forecast, aero_ind_fdb, aero_dir_fdb,   &
                                rrfs_smoke_debug, do_plumerise, plumerisefire_frq,           &
                                addsmoke_flag, enh_mix, mix_chem, smoke_dir_fdb_coef,        &
-                               do_smoke_transport,smoke_conv_wet_coef,                      &
+                               do_smoke_transport,smoke_conv_wet_coef,n_dbg_lines,          &
                           !--- C3/GF closures
                                ichoice,ichoicem,ichoice_s,                                  &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
@@ -4267,6 +4338,7 @@ module GFS_typedefs
     Model%cplaqm           = cplaqm
     Model%cplchm           = cplchm .or. cplaqm
     Model%cpllnd           = cpllnd
+    Model%cpllnd2atm       = cpllnd2atm
     Model%use_cice_alb     = use_cice_alb
     Model%cpl_imp_mrg      = cpl_imp_mrg
     Model%cpl_imp_dbg      = cpl_imp_dbg
@@ -4289,6 +4361,7 @@ module GFS_typedefs
     Model%extended_sd_diags = extended_sd_diags
     Model%wetdep_ls_opt     = wetdep_ls_opt
     Model%do_plumerise      = do_plumerise
+    Model%n_dbg_lines       = n_dbg_lines
     Model%plumerisefire_frq = plumerisefire_frq
     Model%addsmoke_flag     = addsmoke_flag
     Model%smoke_forecast    = smoke_forecast
@@ -4947,6 +5020,7 @@ module GFS_typedefs
 !--- surface layer
     Model%sfc_z0_type      = sfc_z0_type
     if (Model%cplwav2atm) Model%sfc_z0_type = -1
+    Model%icplocn2atm      = icplocn2atm
 
 !--- potential temperature reference in sfc layer
     Model%thsfc_loc        = thsfc_loc
@@ -6395,6 +6469,7 @@ module GFS_typedefs
       print *, ' cplaqm            : ', Model%cplaqm
       print *, ' cplchm            : ', Model%cplchm
       print *, ' cpllnd            : ', Model%cpllnd
+      print *, ' cpllnd2atm        : ', Model%cpllnd2atm
       print *, ' rrfs_sd           : ', Model%rrfs_sd
       print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
@@ -6770,6 +6845,7 @@ module GFS_typedefs
       print *, ' '
       print *, 'surface layer options'
       print *, ' sfc_z0_type       : ', Model%sfc_z0_type
+      print *, ' icplocn2atm       : ', Model%icplocn2atm
       print *, ' '
       print *, 'vertical diffusion coefficients'
       print *, ' xkzm_m            : ', Model%xkzm_m

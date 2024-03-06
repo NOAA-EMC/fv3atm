@@ -378,28 +378,30 @@ contains
             mn_phys%hprime(i,j,k)  = GFS_sfcprop%hprime(im,k)
           enddo
 
-          mn_phys%lakefrac(i,j) = GFS_sfcprop%lakefrac(im)
-          mn_phys%lakedepth(i,j) = GFS_sfcprop%lakedepth(im)
+          mn_phys%lakefrac(i,j) = GFS_Sfcprop%lakefrac(im)
+          mn_phys%lakedepth(i,j) = GFS_Sfcprop%lakedepth(im)
 
-          mn_phys%canopy(i,j) = GFS_sfcprop%canopy(im)
-          mn_phys%vegfrac(i,j)= GFS_sfcprop%vfrac(im)
-          mn_phys%uustar(i,j) = GFS_sfcprop%uustar(im)
-          mn_phys%shdmin(i,j) = GFS_sfcprop%shdmin(im)
-          mn_phys%shdmax(i,j) = GFS_sfcprop%shdmax(im)
-          mn_phys%zorl(i,j)   = GFS_sfcprop%zorl(im)
-          mn_phys%zorll(i,j)  = GFS_sfcprop%zorll(im)
-          mn_phys%zorlwav(i,j)= GFS_sfcprop%zorlwav(im)
-          mn_phys%zorlw(i,j)  = GFS_sfcprop%zorlw(im)
-          mn_phys%tsfco(i,j)  = GFS_sfcprop%tsfco(im)
-          mn_phys%tsfcl(i,j)  = GFS_sfcprop%tsfcl(im)
-          mn_phys%tsfc(i,j)   = GFS_sfcprop%tsfc(im)
+          mn_phys%canopy(i,j) = GFS_Sfcprop%canopy(im)
+          mn_phys%vegfrac(i,j)= GFS_Sfcprop%vfrac(im)
+          mn_phys%uustar(i,j) = GFS_Sfcprop%uustar(im)
+          mn_phys%shdmin(i,j) = GFS_Sfcprop%shdmin(im)
+          mn_phys%shdmax(i,j) = GFS_Sfcprop%shdmax(im)
+          mn_phys%zorl(i,j)   = GFS_Sfcprop%zorl(im)
+          mn_phys%zorll(i,j)  = GFS_Sfcprop%zorll(im)
+          mn_phys%zorlwav(i,j)= GFS_Sfcprop%zorlwav(im)
+          mn_phys%zorlw(i,j)  = GFS_Sfcprop%zorlw(im)
+          mn_phys%usfco(i,j)  = GFS_Sfcprop%usfco(im)
+          mn_phys%vsfco(i,j)  = GFS_Sfcprop%vsfco(im)
+          mn_phys%tsfco(i,j)  = GFS_Sfcprop%tsfco(im)
+          mn_phys%tsfcl(i,j)  = GFS_Sfcprop%tsfcl(im)
+          mn_phys%tsfc(i,j)   = GFS_Sfcprop%tsfc(im)
 
-          mn_phys%albdirvis_lnd(i,j)   = GFS_sfcprop%albdirvis_lnd(im)
-          mn_phys%albdirnir_lnd(i,j)   = GFS_sfcprop%albdirnir_lnd(im)
-          mn_phys%albdifvis_lnd(i,j)   = GFS_sfcprop%albdifvis_lnd(im)
-          mn_phys%albdifnir_lnd(i,j)   = GFS_sfcprop%albdifnir_lnd(im)
+          mn_phys%albdirvis_lnd(i,j)   = GFS_Sfcprop%albdirvis_lnd(im)
+          mn_phys%albdirnir_lnd(i,j)   = GFS_Sfcprop%albdirnir_lnd(im)
+          mn_phys%albdifvis_lnd(i,j)   = GFS_Sfcprop%albdifvis_lnd(im)
+          mn_phys%albdifnir_lnd(i,j)   = GFS_Sfcprop%albdifnir_lnd(im)
 
-          do nv = 1, GFS_control%ntot2d
+          do nv = 1, IPD_Control%ntot2d
             mn_phys%phy_f2d(i,j,nv) = GFS_tbd%phy_f2d(im, nv)
           enddo
 
@@ -553,6 +555,17 @@ contains
               GFS_sfcprop%zorl(im)   = 85.0
             else
               GFS_sfcprop%zorl(im)   = mn_phys%zorl(i,j)
+            endif
+
+            if (nint(GFS_sfcprop%slmsk(im)) .eq. 0 .and. mn_phys%usfco(i,j) .gt. 1e6) then
+              GFS_sfcprop%usfco(im)  = 0.0
+            else
+              GFS_sfcprop%usfco(im)  = mn_phys%usfco(i,j)
+            endif
+            if (nint(GFS_sfcprop%slmsk(im)) .eq. 0 .and. mn_phys%vsfco(i,j) .gt. 1e6) then
+              GFS_sfcprop%vsfco(im)  = 0.0
+            else
+              GFS_sfcprop%vsfco(im)  = mn_phys%vsfco(i,j)
             endif
 
             GFS_sfcprop%tsfco(im)  = mn_phys%tsfco(i,j)
@@ -816,6 +829,15 @@ contains
           x_refine, y_refine, &
           is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 78.0D0)
 
+      call fill_nest_halos_from_parent_masked("usfco", mn_phys%usfco, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
+          Atm(child_grid_num)%neststruct%ind_h, &
+          x_refine, y_refine, &
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 0.0D0)
+      call fill_nest_halos_from_parent_masked("vsfco", mn_phys%vsfco, interp_type_lmask, Atm(child_grid_num)%neststruct%wt_h, &
+          Atm(child_grid_num)%neststruct%ind_h, &
+          x_refine, y_refine, &
+          is_fine_pe, nest_domain, position, mn_phys%slmsk, 0, 0.0D0)
+
       call fill_nest_halos_from_parent("tsfco", mn_phys%tsfco, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, &
           x_refine, y_refine, &
@@ -986,6 +1008,8 @@ contains
       call mn_var_fill_intern_nest_halos(mn_phys%zorll, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%zorlwav, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%zorlw, domain_fine, is_fine_pe)
+      call mn_var_fill_intern_nest_halos(mn_phys%usfco, domain_fine, is_fine_pe)
+      call mn_var_fill_intern_nest_halos(mn_phys%vsfco, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%tsfco, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%tsfcl, domain_fine, is_fine_pe)
       call mn_var_fill_intern_nest_halos(mn_phys%tsfc, domain_fine, is_fine_pe)
@@ -1118,6 +1142,10 @@ contains
           delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
       call mn_var_shift_data(mn_phys%zorlw, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
           delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
+      call mn_var_shift_data(mn_phys%usfco, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
+          delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
+      call mn_var_shift_data(mn_phys%vsfco, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
+          delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
       call mn_var_shift_data(mn_phys%tsfco, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
           delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
       call mn_var_shift_data(mn_phys%tsfcl, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
@@ -1213,6 +1241,7 @@ contains
     real, allocatable, dimension(:,:) :: facsf_pr_local, facwf_pr_local
     real, allocatable, dimension(:,:) :: alvsf_pr_local, alvwf_pr_local, alnsf_pr_local, alnwf_pr_local
     real, allocatable, dimension(:,:) :: zorl_pr_local, zorll_pr_local, zorlw_pr_local, zorli_pr_local
+    real, allocatable, dimension(:,:) :: usfco_pr_local, vsfco_pr_local
     real, allocatable :: phy_f2d_pr_local (:,:,:)
     real, allocatable :: phy_f3d_pr_local (:,:,:,:)
     real, allocatable :: lakefrac_pr_local (:,:)  !< lake fraction
@@ -1271,6 +1300,8 @@ contains
       allocate ( zorll_pr_local(is:ie, js:je) )
       allocate ( zorlw_pr_local(is:ie, js:je) )
       allocate ( zorli_pr_local(is:ie, js:je) )
+      allocate ( usfco_pr_local(is:ie, js:je) )
+      allocate ( vsfco_pr_local(is:ie, js:je) )
     endif
 
     if (move_nsst) then
@@ -1341,6 +1372,8 @@ contains
           zorlw_pr_local(i, j) = GFS_sfcprop%zorlw(im)
           zorll_pr_local(i, j) = GFS_sfcprop%zorll(im)
           zorli_pr_local(i, j) = GFS_sfcprop%zorli(im)
+          usfco_pr_local(i, j) = GFS_sfcprop%usfco(im)
+          vsfco_pr_local(i, j) = GFS_sfcprop%vsfco(im)
           max_snow_alb_pr_local(i, j) = GFS_sfcprop%snoalb(im)
           tsfco_pr_local(i, j) = GFS_sfcprop%tsfco(im)
           tsfcl_pr_local(i, j) = GFS_sfcprop%tsfcl(im)
@@ -1351,7 +1384,7 @@ contains
           alnsf_pr_local(i, j) = GFS_sfcprop%alnsf(im)
           alnwf_pr_local(i, j) = GFS_sfcprop%alnwf(im)
 
-          do nv = 1, GFS_control%ntot2d
+          do nv = 1, IPD_Control%ntot2d
             ! Use real() to lower the precision
             phy_f2d_pr_local(i,j,nv) = real(GFS_tbd%phy_f2d(im, nv))
           enddo
@@ -1403,6 +1436,8 @@ contains
       call mn_var_dump_to_netcdf(zorlw_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "ZORLW")
       call mn_var_dump_to_netcdf(zorll_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "ZORLL")
       call mn_var_dump_to_netcdf(zorli_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "ZORLI")
+      call mn_var_dump_to_netcdf(usfco_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "SSU")
+      call mn_var_dump_to_netcdf(vsfco_pr_local, is_fine_pe, domain_coarse, domain_fine, position, time_val, Atm%global_tile, file_prefix, "SSV")
 
       do nv = 1, GFS_control%ntot2d
         write (phys_var_name, "(A4,I0.3)")  'PH2D', nv
@@ -1438,6 +1473,7 @@ contains
       deallocate(alvsf_pr_local, alvwf_pr_local, alnsf_pr_local, alnwf_pr_local)
       deallocate(facsf_pr_local, facwf_pr_local)
       deallocate(zorl_pr_local, zorlw_pr_local, zorll_pr_local, zorli_pr_local)
+      deallocate(usfco_pr_local, vsfco_pr_local)
       deallocate(phy_f2d_pr_local)
       deallocate(phy_f3d_pr_local)
     endif
