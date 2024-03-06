@@ -3769,7 +3769,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%sfalb_lnd(:)
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop%sfalb_lnd(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
 
       idx = idx + 1
@@ -3939,7 +3939,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%usfco(:)
+      ExtDiag(idx)%data(nb)%var2 => Sfcprop%usfco(Model%chunk_begin(nb):Model%chunk_end(nb))
     enddo
 
     idx = idx + 1
@@ -3950,7 +3950,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%vsfco(:)
+      ExtDiag(idx)%data(nb)%var2 => Sfcprop%vsfco(Model%chunk_begin(nb):Model%chunk_end(nb))
     enddo
 
     if (Model%frac_grid) then
@@ -4210,7 +4210,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => sfcprop(nb)%sh2o(:,:)
+      ExtDiag(idx)%data(nb)%var3 => sfcprop%sh2o(Model%chunk_begin(nb):Model%chunk_end(nb),:)
     enddo
   else
     do num = 1,Model%lsoil_lsm
@@ -4242,7 +4242,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => sfcprop(nb)%slc(:,:)
+      ExtDiag(idx)%data(nb)%var3 => sfcprop%slc(Model%chunk_begin(nb):Model%chunk_end(nb),:)
     enddo
   endif
 
@@ -4268,7 +4268,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => sfcprop(nb)%smois(:,:)
+      ExtDiag(idx)%data(nb)%var3 => sfcprop%smois(Model%chunk_begin(nb):Model%chunk_end(nb),:)
     enddo
   else
     do num = 1,Model%lsoil_lsm
@@ -4292,7 +4292,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => sfcprop(nb)%smc(:,:)
+      ExtDiag(idx)%data(nb)%var3 => sfcprop%smc(Model%chunk_begin(nb):Model%chunk_end(nb),:)
     enddo
   endif
 
@@ -4318,7 +4318,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => sfcprop(nb)%tslb(:,:)
+        ExtDiag(idx)%data(nb)%var3 => sfcprop%tslb(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     else
       do num = 1,Model%lsoil_lsm
@@ -4342,7 +4342,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => sfcprop(nb)%stc(:,:)
+        ExtDiag(idx)%data(nb)%var3 => sfcprop%stc(Model%chunk_begin(nb):Model%chunk_end(nb),:)
       enddo
     endif
 
@@ -4772,7 +4772,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%uspdavg
+        ExtDiag(idx)%data(nb)%var2 => Coupling%uspdavg(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
 
       idx = idx + 1
@@ -4783,7 +4783,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%hpbl_thetav
+        ExtDiag(idx)%data(nb)%var2 => Coupling%hpbl_thetav(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
 
       idx = idx + 1
@@ -4794,7 +4794,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%drydep_flux(:,1)
+        ExtDiag(idx)%data(nb)%var2 => Coupling%drydep_flux(Model%chunk_begin(nb):Model%chunk_end(nb),1)
       enddo
 
       idx = idx + 1
@@ -4805,7 +4805,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%drydep_flux(:,2)
+        ExtDiag(idx)%data(nb)%var2 => Coupling%drydep_flux(Model%chunk_begin(nb):Model%chunk_end(nb),2)
       enddo
 
       idx = idx + 1
@@ -4816,7 +4816,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%drydep_flux(:,3)
+        ExtDiag(idx)%data(nb)%var2 => Coupling%drydep_flux(Model%chunk_begin(nb):Model%chunk_end(nb),3)
       enddo
 
       idx = idx + 1
@@ -4827,7 +4827,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpr_flux(:,1)
+        ExtDiag(idx)%data(nb)%var2 => Coupling%wetdpr_flux(Model%chunk_begin(nb):Model%chunk_end(nb),1)
       enddo
 
       idx = idx + 1
@@ -4838,7 +4838,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpr_flux(:,2)
+        ExtDiag(idx)%data(nb)%var2 => Coupling%wetdpr_flux(Model%chunk_begin(nb):Model%chunk_end(nb),2)
       enddo
 
       idx = idx + 1
@@ -4849,7 +4849,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpr_flux(:,3)
+        ExtDiag(idx)%data(nb)%var2 => Coupling%wetdpr_flux(Model%chunk_begin(nb):Model%chunk_end(nb),3)
       enddo
 
       idx = idx + 1
@@ -4904,7 +4904,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%fire_type
+        ExtDiag(idx)%data(nb)%int2 => Sfcprop%fire_type(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
 
       idx = idx + 1
@@ -4915,7 +4915,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lu_nofire
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop%lu_nofire(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
 
       idx = idx + 1
@@ -4926,8 +4926,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lu_qfire
->>>>>>> 4941026c5881ed623b39934905d2e4ecd9907b8a
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop%lu_qfire(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
 
       idx = idx + 1
@@ -4951,7 +4950,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%smoke2d_RRFS(:,3)
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop%smoke2d_RRFS(Model%chunk_begin(nb):Model%chunk_end(nb),3)
       enddo
 
       endif
@@ -4967,7 +4966,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ebb_smoke_in
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop%ebb_smoke_in(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
 
 
@@ -4992,7 +4991,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%smoke2d_RRFS(:,1)
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop%smoke2d_RRFS(Model%chunk_begin(nb):Model%chunk_end(nb),1)
       enddo
 
       idx = idx + 1
@@ -5003,7 +5002,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%smoke2d_RRFS(:,2)
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop%smoke2d_RRFS(Model%chunk_begin(nb):Model%chunk_end(nb),2)
       enddo
 
 
@@ -5015,7 +5014,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%smoke2d_RRFS(:,4)
+       ExtDiag(idx)%data(nb)%var2 => Sfcprop%smoke2d_RRFS(Model%chunk_begin(nb):Model%chunk_end(nb),4)
       enddo
 
       endif smoke_forecast_mode

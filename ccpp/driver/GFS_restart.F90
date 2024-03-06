@@ -518,7 +518,7 @@ module GFS_restart
       num = num + 1
       Restart%name2d(num) = 'rrfs_hwp_ave'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Coupling(nb)%rrfs_hwp_ave(:)
+        Restart%data(nb,num)%var2p => Coupling%rrfs_hwp_ave(Model%chunk_begin(nb):Model%chunk_end(nb))
       enddo
     endif
 

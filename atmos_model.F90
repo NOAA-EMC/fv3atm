@@ -1970,18 +1970,19 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cplocn2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  GFS_Data(nb)%Sfcprop%usfco(ix) = zero
-                  if (GFS_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then  ! ocean points
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  GFS_Sfcprop%usfco(im) = zero
+                  if (GFS_Sfcprop%oceanfrac(im) > zero) then  ! ocean points
                     if(mergeflg(i,j)) then
-                     GFS_Data(nb)%Sfcprop%usfco(ix)       =  zero
+                      GFS_Sfcprop%usfco(im)       =  zero
                       datar8(i,j) = zero
                     else
-                      GFS_Data(nb)%Sfcprop%usfco(ix)       = datar8(i,j)
+                      GFS_Sfcprop%usfco(im)       = datar8(i,j)
                     endif
                   endif
                 enddo
@@ -1996,18 +1997,19 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cplocn2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  GFS_Data(nb)%Sfcprop%vsfco(ix) = zero
-                  if (GFS_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then  ! ocean points
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  GFS_Sfcprop%vsfco(im) = zero
+                  if (GFS_Sfcprop%oceanfrac(im) > zero) then  ! ocean points
                     if(mergeflg(i,j)) then
-                     GFS_Data(nb)%Sfcprop%vsfco(ix)       =  zero
+                      GFS_Sfcprop%vsfco(im)       =  zero
                       datar8(i,j) = zero
                     else
-                      GFS_Data(nb)%Sfcprop%vsfco(ix)       = datar8(i,j)
+                      GFS_Sfcprop%vsfco(im)       = datar8(i,j)
                     endif
                   endif
                 enddo
@@ -2410,13 +2412,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%sncovr1_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%sncovr1_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2430,13 +2433,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%evap_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%evap_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2450,13 +2454,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%hflx_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%hflx_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2470,13 +2475,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%ep_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%ep_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2490,13 +2496,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%t2mmp_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%t2mmp_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2510,13 +2517,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%q2mp_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%q2mp_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2530,13 +2538,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%qsurf_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%qsurf_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2550,13 +2559,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%gflux_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%gflux_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2570,13 +2580,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%runoff_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%runoff_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2590,13 +2601,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%drain_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%drain_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2610,13 +2622,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%cmm_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%cmm_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2630,13 +2643,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%chh_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%chh_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2650,13 +2664,14 @@ end subroutine update_atmos_chemistry
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,im)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%zvfun_lnd(ix) = datar8(i,j)
+                  im = GFS_control%chunk_begin(nb)+ix-1
+                  if (GFS_Sfcprop%landfrac(im) > zero) then
+                    GFS_Coupling%zvfun_lnd(im) = datar8(i,j)
                   endif
                 enddo
               enddo
