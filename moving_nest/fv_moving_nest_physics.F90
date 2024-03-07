@@ -401,7 +401,7 @@ contains
           mn_phys%albdifvis_lnd(i,j)   = GFS_Sfcprop%albdifvis_lnd(im)
           mn_phys%albdifnir_lnd(i,j)   = GFS_Sfcprop%albdifnir_lnd(im)
 
-          do nv = 1, IPD_Control%ntot2d
+          do nv = 1, GFS_Control%ntot2d
             mn_phys%phy_f2d(i,j,nv) = GFS_tbd%phy_f2d(im, nv)
           enddo
 
@@ -1384,7 +1384,7 @@ contains
           alnsf_pr_local(i, j) = GFS_sfcprop%alnsf(im)
           alnwf_pr_local(i, j) = GFS_sfcprop%alnwf(im)
 
-          do nv = 1, IPD_Control%ntot2d
+          do nv = 1, GFS_Control%ntot2d
             ! Use real() to lower the precision
             phy_f2d_pr_local(i,j,nv) = real(GFS_tbd%phy_f2d(im, nv))
           enddo
