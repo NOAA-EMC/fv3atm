@@ -10,8 +10,10 @@
   branch = feature/merge_feature_capgen_into_main_20240308
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/ufs-community/ccpp-physics
-  branch = ufs/dev
+  #url = https://github.com/ufs-community/ccpp-physics
+  #branch = ufs/dev
+  url = https://github.com/climbfuji/ccpp-physics
+  branch = feature/fix_units_flashes_per_5min
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
