@@ -810,14 +810,14 @@
   standard_name = x_ocean_current
   long_name = zonal current at ocean surface
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [vsfco]
   standard_name = y_ocean_current
   long_name = meridional current at ocean surface
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [tsfcl]
@@ -2331,14 +2331,14 @@
   standard_name = fire_type
   long_name = type of fire
   units = 1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   active = (do_smoke_coupling)
 [peak_hr]
  standard_name = peak_hr_fire
  long_name = time_of_peak_fire_emissions
  units = s
- dimensions = (horizontal_loop_extent)
+ dimensions = (horizontal_dimension)
  type = real
  kind = kind_phys
  active = (do_smoke_coupling)
@@ -2346,7 +2346,7 @@
  standard_name = sum_of_land_use_fractions_for_no_fire_pixels
  long_name = land use of no fire pixels for type
  units = 1
- dimensions = (horizontal_loop_extent)
+ dimensions = (horizontal_dimension)
  type = real
  kind = kind_phys
  active = (do_smoke_coupling)
@@ -2354,7 +2354,7 @@
  standard_name = sum_of_land_use_fractions_for_cropland_fire_pixels
  long_name = land use of fire pixels for type
  units = 1
- dimensions = (horizontal_loop_extent)
+ dimensions = (horizontal_dimension)
  type = real
  kind = kind_phys
  active = (do_smoke_coupling)
@@ -2872,7 +2872,7 @@
   standard_name = surface_snow_area_fraction_over_land_from_land
   long_name = surface snow area fraction over land for coupling 
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2880,7 +2880,7 @@
   standard_name = surface_specific_humidity_over_land_from_land
   long_name = surface air saturation specific humidity over land
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2888,7 +2888,7 @@
   standard_name = surface_upward_sensible_heat_flux_over_land_from_land
   long_name = sfc sensible heat flux input over land for coupling
   units = K m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2896,7 +2896,7 @@
   standard_name = surface_upward_latent_heat_flux_over_land_from_land
   long_name = sfc latent heat flux input over land for coupling
   units = kg kg-1 m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2904,7 +2904,7 @@
   standard_name = surface_upward_potential_latent_heat_flux_over_land_from_land
   long_name = surface upward potential latent heat flux over land for coupling
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2912,7 +2912,7 @@
   standard_name = temperature_at_2m_over_land_from_land
   long_name = 2 meter temperature over land for coupling
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2920,7 +2920,7 @@
   standard_name = specific_humidity_at_2m_over_land_from_land
   long_name = 2 meter specific humidity over land for coupling
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2928,7 +2928,7 @@
   standard_name = upward_heat_flux_in_soil_over_land_from_land
   long_name = soil heat flux over land for coupling
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2936,7 +2936,7 @@
   standard_name = surface_runoff_flux_from_land
   long_name = surface runoff flux over land for coupling
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2944,7 +2944,7 @@
   standard_name = subsurface_runoff_flux_from_land
   long_name = subsurface runoff flux over land for coupling
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2952,7 +2952,7 @@
   standard_name = surface_drag_wind_speed_for_momentum_in_air_over_land_from_land
   long_name = momentum exchange coefficient over land for coupling
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2960,7 +2960,7 @@
   standard_name = surface_drag_mass_flux_for_heat_and_moisture_in_air_over_land_from_land
   long_name = thermal exchange coefficient over land for coupling
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -2968,7 +2968,7 @@
   standard_name = function_of_surface_roughness_length_and_green_vegetation_fraction_from_land
   long_name = function of surface roughness length and green vegetation fraction
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
@@ -3206,7 +3206,7 @@
   standard_name = mean_wind_speed_in_boundary_layer
   long_name = average wind speed within the boundary layer
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
@@ -3214,7 +3214,7 @@
   standard_name = atmosphere_boundary_layer_thickness_from_modified_parcel
   long_name = pbl height based on modified parcel method
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
