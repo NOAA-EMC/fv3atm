@@ -4094,17 +4094,19 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%vfrac(:)
     enddo
 
-    idx = idx + 1
-    ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'wetness'
-    ExtDiag(idx)%desc = 'soil moisture availability in top soil layer'
-    ExtDiag(idx)%unit = 'fraction'
-    ExtDiag(idx)%mod_name = 'gfs_sfc'
-    ExtDiag(idx)%cnvfac = cn_100
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%wetness(:)
-    enddo
+    if (Model%lsm==Model%lsm_ruc) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'wetness'
+      ExtDiag(idx)%desc = 'soil moisture availability in top soil layer'
+      ExtDiag(idx)%unit = 'fraction'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ExtDiag(idx)%cnvfac = cn_100
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%wetness(:)
+      enddo
+    end if
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
