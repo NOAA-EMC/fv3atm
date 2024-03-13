@@ -4796,8 +4796,6 @@ module GFS_diagnostics
        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%ebu_smoke(:,:)
       enddo
 
-      idx = idx + 1
-
       if (Model%ebb_dcycle == 2 ) then
 
       idx = idx + 1
@@ -4877,6 +4875,8 @@ module GFS_diagnostics
 
       endif smoke_forecast_mode
 
+
+      idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'ext550'
       ExtDiag(idx)%desc = '3d total extinction at 550nm'
