@@ -56,6 +56,7 @@ contains
     integer, optional,intent(out)      :: rc
 !
 !** local vars
+    integer, parameter :: NF90_NODIMSCALE_ATTACH = int(Z'40000')
     integer :: i,j,t, istart,iend,jstart,jend
     integer :: im, jm, lm, lsoil
 
@@ -245,11 +246,11 @@ contains
 
        if (par) then
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(NF90_CLOBBER,netcdf_file_type),&
+                  cmode=IOR(IOR(NF90_CLOBBER,netcdf_file_type),NF90_NODIMSCALE_ATTACH),&
                   comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
        else
           ncerr = nf90_create(trim(filename),&
-                  cmode=IOR(NF90_CLOBBER,netcdf_file_type),&
+                  cmode=IOR(IOR(NF90_CLOBBER,netcdf_file_type),NF90_NODIMSCALE_ATTACH),&
                   ncid=ncid); NC_ERR_STOP(ncerr)
        end if
 
