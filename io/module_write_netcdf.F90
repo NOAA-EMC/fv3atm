@@ -30,6 +30,10 @@ module module_write_netcdf
 
   logical :: par !< True if parallel I/O should be used.
 
+  integer, parameter :: netcdf_file_type = NF90_NETCDF4 !< NetCDF file type HDF5
+  ! integer, parameter :: netcdf_file_type = NF90_64BIT_DATA !< NetCDF file type CDF5
+  ! integer, parameter :: netcdf_file_type = NF90_64BIT_OFFSET !< NetCDF file type CDF2
+
 contains
 
   !> Write netCDF file.
@@ -116,10 +120,16 @@ contains
     logical :: do_io
     integer :: par_access
     character(len=ESMF_MAXSTR) :: output_grid_name
-
-    integer, parameter :: netcdf_file_type = NF90_NETCDF4
-    ! integer, parameter :: netcdf_file_type = NF90_64BIT_OFFSET
 !
+    interface
+      function nf_set_log_level(new_level) result(status)
+        integer, intent(in) :: new_level
+        integer             :: status
+      end function nf_set_log_level
+    end interface
+
+    ! ncerr = nf_set_log_level(3); NC_ERR_STOP(ncerr)
+
     is_cubed_sphere = .false.
     tileCount = 0
     my_tile = 0
@@ -131,7 +141,7 @@ contains
     if (netcdf_file_type /= NF90_NETCDF4) then
        par = .false.
        if (ideflate(grid_id) > 0 .or. zstandard_level(grid_id) > 0) then
-          if (mype==0) write(0,*)'Compression is unsupporeted in classic netcdf'
+          write(0,*)'Compression is unsupporeted in classic netcdf'
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
@@ -830,11 +840,14 @@ contains
       else if (typekind==ESMF_TYPEKIND_I8) then
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
                                 name=trim(attname), value=varival_i8, rc=rc); ESMF_ERR_RETURN(rc)
-         ! ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i8); NC_ERR_STOP(ncerr)
-         ! FIXME: NetCDF: Not a valid data type or _FillValue type mismatch
-         !        Currently only one global attribute is int64 (:grid_id = 1LL)
-         varival_i4 = varival_i8
-         ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i4); NC_ERR_STOP(ncerr)
+         if (netcdf_file_type == NF90_64BIT_OFFSET) then
+            ! NetCDF NF90_64BIT_OFFSET (CDF2) does not support int64 attributes
+            ! Currently only one global attribute is int64 (:grid_id = 1LL)
+            varival_i4 = varival_i8
+            ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i4); NC_ERR_STOP(ncerr)
+         else
+            ncerr = nf90_put_att(ncid, nf90_global, trim(attname), varival_i8); NC_ERR_STOP(ncerr)
+         end if
 
       else if (typekind==ESMF_TYPEKIND_R4) then
          allocate (varr4list(itemCount))
@@ -1051,21 +1064,21 @@ contains
                               name=trim(dim_name), valueList=valueListR8, rc=rc); ESMF_ERR_RETURN(rc)
        ncerr = nf90_put_var(ncid, dim_varid, values=valueListR8); NC_ERR_STOP(ncerr)
        deallocate(valueListR8)
-     else if (typekind==ESMF_TYPEKIND_R4) then
+    else if (typekind==ESMF_TYPEKIND_R4) then
        allocate(valueListR4(n))
        call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                               name=trim(dim_name), valueList=valueListR4, rc=rc); ESMF_ERR_RETURN(rc)
        ncerr = nf90_put_var(ncid, dim_varid, values=valueListR4); NC_ERR_STOP(ncerr)
        deallocate(valueListR4)
-     else if (typekind==ESMF_TYPEKIND_I4) then
+    else if (typekind==ESMF_TYPEKIND_I4) then
        allocate(valueListI4(n))
        call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                               name=trim(dim_name), valueList=valueListI4, rc=rc); ESMF_ERR_RETURN(rc)
        ncerr = nf90_put_var(ncid, dim_varid, values=valueListI4); NC_ERR_STOP(ncerr)
        deallocate(valueListI4)
-     else
-        if (mype==0) write(0,*)'Error in module_write_netcdf.F90(write_dim) unknown typekind for ',trim(dim_name)
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    else
+       if (mype==0) write(0,*)'Error in module_write_netcdf.F90(write_dim) unknown typekind for ',trim(dim_name)
+       call ESMF_Finalize(endflag=ESMF_END_ABORT)
     end if
 
   end subroutine write_dim
