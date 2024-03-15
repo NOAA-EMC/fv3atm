@@ -92,8 +92,7 @@ contains
     character(len=ESMF_MAXSTR) :: attName, fldName
 
     integer :: varival
-    real(4) :: varr4val, dataMin, dataMax
-    real(4), allocatable, dimension(:) :: compress_err
+    real(4) :: varr4val
     real(8) :: varr8val
     character(len=ESMF_MAXSTR) :: varcval
 
@@ -152,7 +151,6 @@ contains
     call ESMF_AttributeGet(wrtfb, convention="NetCDF", purpose="FV3", &
                            name='grid', value=output_grid_name, rc=rc); ESMF_ERR_RETURN(rc)
 
-    allocate(compress_err(fieldCount)); compress_err=-999.
     allocate(fldlev(fieldCount)) ; fldlev = 0
     allocate(fcstField(fieldCount))
     allocate(varids(fieldCount))
@@ -414,7 +412,7 @@ contains
 
             ishuffle = NF90_NOSHUFFLE
             ! shuffle filter on when using lossy compression
-            if ( quantize_nsd(grid_id) > 0) then
+            if (quantize_nsd(grid_id) > 0) then
                 ishuffle = NF90_SHUFFLE
             end if
             if (ideflate(grid_id) > 0) then
@@ -787,7 +785,6 @@ contains
 
     deallocate(fcstField)
     deallocate(varids)
-    deallocate(compress_err)
 
     if (do_io) then
        ncerr = nf90_close(ncid=ncid); NC_ERR_STOP(ncerr)
