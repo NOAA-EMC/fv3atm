@@ -3536,6 +3536,7 @@ module GFS_typedefs
       allocate (Coupling%min_fplume(0))
       allocate (Coupling%max_fplume(0))
       allocate (Coupling%uspdavg(0))
+      allocate (Coupling%rho_dry   (0,0))
       allocate (Coupling%hpbl_thetav(0))
       allocate (Coupling%rrfs_hwp  (0))
       allocate (Coupling%rrfs_hwp_ave  (0))
