@@ -4,16 +4,12 @@
   branch = dev/emc
 [submodule "ccpp/framework"]
   path = ccpp/framework
-  #url = https://github.com/NCAR/ccpp-framework
-  #branch = main
-  url = https://github.com/climbfuji/ccpp-framework
-  branch = feature/merge_feature_capgen_into_main_20240308
+  url = https://github.com/NCAR/ccpp-framework
+  branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  #url = https://github.com/ufs-community/ccpp-physics
-  #branch = ufs/dev
-  url = https://github.com/climbfuji/ccpp-physics
-  branch = feature/fix_units_flashes_per_5min
+  url = https://github.com/ufs-community/ccpp-physics
+  branch = ufs/dev
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
