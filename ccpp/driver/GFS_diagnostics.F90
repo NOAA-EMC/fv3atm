@@ -5071,6 +5071,8 @@ module GFS_diagnostics
       ExtDiag(idx)%desc = 'Max Lightning Threat 1'
       ExtDiag(idx)%unit = 'flashes/(5 min)'
       ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ! CCPP physics units are flashes per minute
+      ExtDiag(idx)%cnvfac = 5.0_kind_phys
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ltg1_max
@@ -5082,6 +5084,8 @@ module GFS_diagnostics
       ExtDiag(idx)%desc = 'Max Lightning Threat 2'
       ExtDiag(idx)%unit = 'flashes/(5 min)'
       ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ! CCPP physics units are flashes per minute
+      ExtDiag(idx)%cnvfac = 5.0_kind_phys
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ltg2_max
@@ -5093,6 +5097,8 @@ module GFS_diagnostics
       ExtDiag(idx)%desc = 'Max Lightning Threat 3'
       ExtDiag(idx)%unit = 'flashes/(5 min)'
       ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ! CCPP physics units are flashes per minute
+      ExtDiag(idx)%cnvfac = 5.0_kind_phys
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ltg3_max
