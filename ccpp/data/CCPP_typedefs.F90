@@ -690,7 +690,7 @@ contains
     allocate (Interstitial%sigma           (IM))
     allocate (Interstitial%sigmaf          (IM))
     allocate (Interstitial%sigmafrac       (IM,Model%levs))
-    allocate (Interstitial%sigmatot        (IM,Model%levs))
+    allocate (Interstitial%sigmatot        (IM,Model%levs+1))
     allocate (Interstitial%snowc           (IM))
     allocate (Interstitial%snohf           (IM))
     allocate (Interstitial%snowmt          (IM))
