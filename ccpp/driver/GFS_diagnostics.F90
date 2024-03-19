@@ -547,6 +547,18 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'csdsf'
+    ExtDiag(idx)%desc = 'Clear Sky Instantateous Downward Short Wave Flux'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,32)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'csulf_ave'
     ExtDiag(idx)%desc = 'Clear Sky Upward Long Wave Flux'
     ExtDiag(idx)%unit = 'W/m**2'
@@ -4773,6 +4785,17 @@ module GFS_diagnostics
        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%fhist
       enddo
 
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'ebu_smoke'
+      ExtDiag(idx)%desc = 'smoke emission'
+      ExtDiag(idx)%unit = 'ug/m2/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%ebu_smoke(:,:)
+      enddo
+
       if (Model%ebb_dcycle == 2 ) then
 
       idx = idx + 1
@@ -4852,16 +4875,6 @@ module GFS_diagnostics
 
       endif smoke_forecast_mode
 
-      idx = idx + 1
-      ExtDiag(idx)%axes = 3
-      ExtDiag(idx)%name = 'ebu_smoke'
-      ExtDiag(idx)%desc = 'smoke emission'
-      ExtDiag(idx)%unit = 'ug/m2/s'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
-      allocate (ExtDiag(idx)%data(nblks))
-      do nb = 1,nblks
-       ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%ebu_smoke(:,:)
-      enddo
 
       idx = idx + 1
       ExtDiag(idx)%axes = 3
