@@ -28,7 +28,9 @@
 !
       use mpi
       use esmf
+      use fms_mod, only : uppercase
       use fms
+      use mpp_mod, only : mpp_init, mpp_error
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
@@ -3363,6 +3365,7 @@
 
     integer                          :: localPet, petCount, i, j, k, ind
     type(ESMF_Grid)                  :: grid
+    real(ESMF_KIND_I4), allocatable  :: valueListi4(:)
     real(ESMF_KIND_R4), allocatable  :: valueListr4(:)
     real(ESMF_KIND_R8), allocatable  :: valueListr8(:)
     integer                          :: valueCount, fieldCount, udimCount
@@ -3748,6 +3751,12 @@
                               name=trim(dimLabel), valueList=valueListr8, rc=rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      else if ( typekind == ESMF_TYPEKIND_I4) then
+        allocate(valueListi4(valueCount))
+        call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
+                              name=trim(dimLabel), valueList=valueListi4, rc=rc)
+
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       else
         write(0,*) 'in write_out_ungridded_dim_atts: ERROR unknown typekind'
       endif
@@ -3784,6 +3793,17 @@
         ncerr = nf90_put_var(ncid, varid, values=valueListr8)
         if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
         deallocate(valueListr8)
+      else if(typekind == ESMF_TYPEKIND_I4) then
+        ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_INT4, &
+                             dimids=(/dimid/), varid=varid)
+        if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        ncerr = nf90_enddef(ncid=ncid)
+        if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        ncerr = nf90_put_var(ncid, varid, values=valueListi4)
+        if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+        deallocate(valueListi4)
       endif
       ! add attributes to this vertical variable
       call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
