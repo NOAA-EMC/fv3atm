@@ -450,7 +450,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 !   variable type are allocated for the global grid (without halo regions).
 ! </INOUT>
 subroutine atmos_timestep_diagnostics(Atmos)
-  use mpi
+  use mpi_f08
   implicit none
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
