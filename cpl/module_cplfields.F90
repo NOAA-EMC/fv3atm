@@ -26,7 +26,7 @@ module module_cplfields
   !  l : model levels (3D)
   !  s : surface (2D)
   !  t : tracers (4D)
-  integer,          public, parameter :: NexportFields = 119
+  integer,          public, parameter :: NexportFields = 120
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
@@ -153,7 +153,8 @@ module module_cplfields
     FieldInfo("snwdph                                   ", "s"), &
     FieldInfo("f10m                                     ", "s"), &
     FieldInfo("zorl                                     ", "s"), &
-    FieldInfo("t2m                                      ", "s") ]
+    FieldInfo("t2m                                      ", "s"), &
+    FieldInfo("cpl_scalars                              ", "s")]
 
 ! Import Fields ----------------------------------------
   integer,          public, parameter :: NimportFields = 64
@@ -192,7 +193,7 @@ module module_cplfields
     ! For receiving fluxes from external land component
     FieldInfo("land_fraction                            ", "s"), &
     FieldInfo("inst_snow_area_fraction_lnd              ", "s"), &
-    FieldInfo("inst_spec_humid_lnd                      ", "s"), &      
+    FieldInfo("inst_spec_humid_lnd                      ", "s"), &
     FieldInfo("inst_laten_heat_flx_lnd                  ", "s"), &
     FieldInfo("inst_sensi_heat_flx_lnd                  ", "s"), &
     FieldInfo("inst_potential_laten_heat_flx_lnd        ", "s"), &
@@ -441,6 +442,7 @@ module module_cplfields
 
     use field_manager_mod,  only: MODEL_ATMOS
     use tracer_manager_mod, only: get_number_tracers, get_tracer_names
+    use module_cplscalars,  only: flds_scalar_name, flds_scalar_num, SetScalarField
 
     type(ESMF_State),            intent(inout)  :: state
     type(ESMF_Grid),                intent(in)  :: grid
@@ -488,22 +490,27 @@ module module_cplfields
       isConnected = NUOPC_IsConnected(state, fieldName=trim(fields_info(item)%name), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       if (isConnected) then
-        call ESMF_StateGet(state, field=field, itemName=trim(fields_info(item)%name), rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        call ESMF_FieldEmptySet(field, grid=grid, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        select case (fields_info(item)%type)
+        if (trim(fields_info(item)%name) == trim(flds_scalar_name)) then
+          ! Create the scalar field
+          call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        else
+          call ESMF_StateGet(state, field=field, itemName=trim(fields_info(item)%name), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          call ESMF_FieldEmptySet(field, grid=grid, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          select case (fields_info(item)%type)
           case ('l','layer')
             call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                     ungriddedLBound=(/1/), ungriddedUBound=(/numLevels/), rc=rc)
+                 ungriddedLBound=(/1/), ungriddedUBound=(/numLevels/), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           case ('i','interface')
             call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                     ungriddedLBound=(/1/), ungriddedUBound=(/numLevels+1/), rc=rc)
+                 ungriddedLBound=(/1/), ungriddedUBound=(/numLevels+1/), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           case ('t','tracer')
             call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                     ungriddedLBound=(/1, 1/), ungriddedUBound=(/numLevels, numTracers/), rc=rc)
+                 ungriddedLBound=(/1, 1/), ungriddedUBound=(/numLevels, numTracers/), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             if (allocated(tracerNames)) then
               call addFieldMetadata(field, 'tracerNames', tracerNames, rc=rc)
@@ -518,14 +525,15 @@ module module_cplfields
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           case ('g','soil')
             call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                     ungriddedLBound=(/1/), ungriddedUBound=(/numSoilLayers/), rc=rc)
+                 ungriddedLBound=(/1/), ungriddedUBound=(/numSoilLayers/), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           case default
             call ESMF_LogSetError(ESMF_RC_NOT_VALID, &
-              msg="exportFieldType = '"//trim(fields_info(item)%type)//"' not recognized", &
-              line=__LINE__, file=__FILE__, rcToReturn=rc)
+                 msg="exportFieldType = '"//trim(fields_info(item)%type)//"' not recognized", &
+                 line=__LINE__, file=__FILE__, rcToReturn=rc)
             return
-        end select
+          end select
+        end if
         call NUOPC_Realize(state, field=field, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -536,13 +544,13 @@ module module_cplfields
         ! -- save field
         fieldList(item) = field
         call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fields_info(item)%name)  &
-                           // ' is connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
+             // ' is connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
       else
         ! remove a not connected Field from State
         call ESMF_StateRemove(state, (/trim(fields_info(item)%name)/), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fields_info(item)%name)  &
-                           // ' is not connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
+             // ' is not connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
       end if
     end do
 
