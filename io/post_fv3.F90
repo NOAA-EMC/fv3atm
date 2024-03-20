@@ -1,6 +1,6 @@
 module post_fv3
 
-  use mpi
+  use mpi_f08
 
   use module_fv3_io_def,    only : wrttasks_per_group, filename_base,    &
                                    lon1, lat1, lon2, lat2, dlon, dlat,   &
@@ -56,7 +56,7 @@ module post_fv3
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
       integer,intent(in)                        :: grid_id
       integer,intent(in)                        :: mype
-      integer,intent(in)                        :: mpicomp
+      type(MPI_Comm),intent(in)                 :: mpicomp
       integer,intent(in)                        :: lead_write
       integer,intent(in)                        :: itasks, jtasks
       integer,intent(in)                        :: mynfhr
@@ -586,7 +586,7 @@ module post_fv3
       type(wrt_internal_state),intent(in) :: wrt_int_state
       integer,intent(in)                  :: grid_id
       integer,intent(in)                  :: mype
-      integer,intent(in)                  :: mpicomp
+      type(MPI_Comm),intent(in)           :: mpicomp
 !
 !-----------------------------------------------------------------------
 !

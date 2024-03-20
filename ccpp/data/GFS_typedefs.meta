@@ -3332,7 +3332,7 @@
   long_name = MPI communicator
   units = index
   dimensions = ()
-  type = integer
+  type = MPI_Comm
 [ntasks]
   standard_name = number_of_mpi_tasks
   long_name = number of MPI tasks in communicator
