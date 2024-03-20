@@ -58,6 +58,7 @@ jobs:
         spack config add "packages:mpi:require:'${{ matrix.mpi }}'"
         spack concretize |& tee ${SPACK_ENV}/log.concretize
         spack install -j2 --fail-fast
+        spack clean --all
 
     - name: build-fv3atm
       run: |
