@@ -15,7 +15,48 @@ on:
     - develop
 
 jobs:
-  GCC:
+  build_spack:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        gcc_ver: ["12"]
+        mpi: ["openmpi"]
+
+    steps:
+
+    - name: checkout-fv3atm
+      uses: actions/checkout@v3
+      with:
+        path: ${{ github.workspace }}/fv3atm
+        submodules: recursive
+
+    - name: cache-spack
+      id: cache-spack
+      uses: actions/cache@v3
+      with:
+        path: ${{ github.workspace }}/spack-develop
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-${{ matrix.mpi }}
+
+    # Building dependencies takes 40+ min
+    - name: spack-install
+      if: steps.cache-spack.outputs.cache-hit != 'true'
+      run: |
+        wget --no-verbose https://github.com/spack/spack/archive/refs/heads/develop.zip
+        unzip develop.zip -d ${GITHUB_WORKSPACE}/ &> unzip.out
+        . ${GITHUB_WORKSPACE}/spack-develop/share/spack/setup-env.sh
+        spack env create gcc${{ matrix.gcc_ver }} ${GITHUB_WORKSPACE}/fv3atm/ci/spack.yaml
+        spack env activate gcc${{ matrix.gcc_ver }}
+        spack compiler find | grep gcc@${{ matrix.gcc_ver }}
+        spack external find gmake cmake git git-lfs perl python ${{ matrix.mpi }}
+        spack config add "packages:all:require:['%gcc@${{ matrix.gcc_ver }}']"
+        spack config add "packages:mpi:require:'${{ matrix.mpi }}'"
+        spack concretize |& tee ${SPACK_ENV}/log.concretize
+        spack install -j2 --fail-fast
+        spack clean --all
+
+  build_fv3atm:
+    needs: build_spack
     runs-on: ubuntu-latest
 
     strategy:
@@ -41,24 +82,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{ github.workspace }}/spack-develop
-        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-${{ matrix.mpi }}-${{ matrix.cmake_opts }}
-
-    # Building dependencies takes 40+ min
-    - name: spack-install
-      if: steps.cache-spack.outputs.cache-hit != 'true'
-      run: |
-        wget --no-verbose https://github.com/spack/spack/archive/refs/heads/develop.zip
-        unzip develop.zip -d ${GITHUB_WORKSPACE}/ &> unzip.out
-        . ${GITHUB_WORKSPACE}/spack-develop/share/spack/setup-env.sh
-        spack env create gcc${{ matrix.gcc_ver }} ${GITHUB_WORKSPACE}/fv3atm/ci/spack.yaml
-        spack env activate gcc${{ matrix.gcc_ver }}
-        spack compiler find | grep gcc@${{ matrix.gcc_ver }}
-        spack external find gmake cmake git git-lfs perl python ${{ matrix.mpi }}
-        spack config add "packages:all:require:['%gcc@${{ matrix.gcc_ver }}']"
-        spack config add "packages:mpi:require:'${{ matrix.mpi }}'"
-        spack concretize |& tee ${SPACK_ENV}/log.concretize
-        spack install -j2 --fail-fast
-        spack clean --all
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-${{ matrix.mpi }}
 
     - name: build-fv3atm
       run: |
