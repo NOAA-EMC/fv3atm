@@ -26,14 +26,14 @@ jobs:
     steps:
 
     - name: checkout-fv3atm
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ${{ github.workspace }}/fv3atm
         submodules: recursive
 
     - name: cache-spack
       id: cache-spack
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/spack-develop
         key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-${{ matrix.mpi }}
@@ -72,14 +72,14 @@ jobs:
         sudo apt-get install doxygen graphviz
 
     - name: checkout-fv3atm
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ${{ github.workspace }}/fv3atm
         submodules: recursive
 
     - name: cache-spack
       id: cache-spack
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/spack-develop
         key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc${{ matrix.gcc_ver }}-${{ matrix.mpi }}
@@ -102,16 +102,16 @@ jobs:
         make -j2
         ls -l /home/runner/work/fv3atm/fv3atm/fv3atm/io
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: docs
+        name: docs-gcc${{ matrix.gcc_ver }}-${{ matrix.mpi }}-${{ matrix.cmake_opts }}
         path: |
           build/docs/html
 
     - name: debug-artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: ${{ failure() }}
       with:
-        name: ccpp_prebuild_logs
+        name: ccpp_prebuild_logs-gcc${{ matrix.gcc_ver }}-${{ matrix.mpi }}-${{ matrix.cmake_opts }}
         path: ${{ github.workspace }}/build/ccpp/ccpp_prebuild.*
 
