@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         gcc_ver: ["12"]
-        mpi: ["openmpi"]
+        mpi: ["mpich", "openmpi"]
 
     steps:
 
@@ -63,7 +63,7 @@ jobs:
       matrix:
         cmake_opts: ["-D32BIT=ON", "-D32BIT=OFF"]
         gcc_ver: ["12"]
-        mpi: ["openmpi"]
+        mpi: ["mpich", "openmpi"]
 
     steps:
 
