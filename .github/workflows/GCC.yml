@@ -26,9 +26,19 @@ jobs:
 
     steps:
 
-    - name: install-doxygen
+    # Only do Doxygen and gcovr build for one job
+    - name: decide-doc-gcovr-build
       run: |
-        sudo apt-get install doxygen graphviz
+        if [[ "${{ matrix.cmake_opts }}" == "-D32BIT=ON" && "${{ matrix.gcc_ver }}" == 11 && "${{ matrix.mpi }}" == mpich ]]; then
+          echo 'devbuild=ON' | tee -a ${GITHUB_ENV}
+          echo 'gcov_cmake="-DCMAKE_Fortran_FLAGS=-fprofile-abs-path -fprofile-arcs -ftest-coverage -O0"' | tee -a ${GITHUB_ENV}
+        else
+          echo 'devbuild=OFF' | tee -a ${GITHUB_ENV}
+        fi
+
+    - name: apt-install
+      run: |
+        sudo apt-get install gcovr doxygen graphviz
         
     - name: checkout-fv3atm
       uses: actions/checkout@v3
@@ -58,6 +68,14 @@ jobs:
         spack config add "packages:mpi:require:'${{ matrix.mpi }}'"
         spack concretize |& tee ${SPACK_ENV}/log.concretize
         spack install -j2 --fail-fast
+        echo "spackrc=$?" >> ${GITHUB_ENV}
+
+    - name: cache-save
+      uses: actions/cache/save@v3
+      if: ${{ (env.spackrc) == 0 }}
+      with:
+        path: ${{ github.workspace }}/spack-develop
+        key: spack-${{ hashFiles('fv3atm/ci/spack.yaml') }}-gcc11-2
 
     - name: build-fv3atm
       run: |
@@ -67,23 +85,44 @@ jobs:
         cd ${GITHUB_WORKSPACE}/fv3atm
         git clone https://github.com/NOAA-EMC/CMakeModules
         git clone --recurse-submodules https://github.com/NOAA-PSL/stochastic_physics stochastic_physics_repo
-        mkdir ${GITHUB_WORKSPACE}/build
         sed -i 's/doc /upp_doc /' upp/docs/CMakeLists.txt
-        cd ${GITHUB_WORKSPACE}/build
-        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON
+        mkdir ${GITHUB_WORKSPACE}/fv3atm/build
+        cd ${GITHUB_WORKSPACE}/fv3atm/build
+        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=${{ env.devbuild }} ${{ env.gcov_cmake }}
         make -j2
         ls -l /home/runner/work/fv3atm/fv3atm/fv3atm/io
 
-    - uses: actions/upload-artifact@v3
+    - name: run-tests
+      run: |
+        cd $GITHUB_WORKSPACE/fv3atm/build
+        ctest -j2 --output-on-failure --rerun-failed
+
+    - name: get-test-coverage
+      if: ${{ env.devbuild == 'ON' }}
+      run: |
+        f=${GITHUB_WORKSPACE}/fv3atm
+        cd $f/build
+        gcovr -r .. -v --html-details --exclude ${f}/tests --exclude $f/stochastic_physics_repo --exclude $f/build/ccpp --exclude $f/ccpp/physics --exclude $f/ccpp/framework --exclude $f/atmos_cubed_sphere  --exclude CMakeFiles --print-summary -o test-coverage.html
+
+    - name: upload-test-coverage
+      uses: actions/upload-artifact@v4
+      if: ${{ env.devbuild == 'ON' }}
+      with:
+        name: test-coverage-fv3atm-${{ github.sha }}
+        path: |
+              ${{ github.workspace }}/fv3atm/build/*.html 
+              ${{ github.workspace }}/fv3atm/build/*.css
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ env.devbuild == 'ON' }}
       with:
         name: docs
         path: |
-          build/docs/html
+          ${{ github.workspace }}/fv3atm/build/docs/html
           
     - name: debug-artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: ${{ failure() }}
       with:
         name: ccpp_prebuild_logs
-        path: ${{ github.workspace }}/build/ccpp/ccpp_prebuild.*
-
+        path: ${{ github.workspace }}/fv3atm/build/ccpp/ccpp_prebuild.*
