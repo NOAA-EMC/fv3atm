@@ -584,7 +584,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    tile_num=-1
    call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, global_tile_num=tile_num)
-   write(0,'(A,I0)') 'tile_num in atmos_model is ',tile_num
 
    allocate (Atmos%lon(nlon,nlat), Atmos%lat(nlon,nlat))
    call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
