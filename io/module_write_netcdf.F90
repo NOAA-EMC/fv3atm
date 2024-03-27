@@ -16,7 +16,7 @@
 !> @author Dusan Jovic @date Nov 1, 2017
 module module_write_netcdf
 
-  use mpi
+  use mpi_f08
   use esmf
   use netcdf
   use module_fv3_io_def,only : ideflate, quantize_mode, quantize_nsd, zstandard_level, &
@@ -41,20 +41,22 @@ contains
   !> @param[in] wrtfb ESMF write field bundle.
   !> @param[in] filename NetCDF filename.
   !> @param[in] use_parallel_netcdf True if parallel I/O should be used.
-  !> @param[in] mpi_comm MPI communicator for parallel I/O.
+  !> @param[in] comm MPI communicator for parallel I/O.
   !> @param[in] mype MPI rank.
   !> @param[in] grid_id Output grid identifier.
   !> @param[out] rc Return code - 0 for success, ESMF error code otherwise.
   !>
   !> @author Dusan Jovic @date Nov 1, 2017
   subroutine write_netcdf(wrtfb, filename, &
-                          use_parallel_netcdf, mpi_comm, mype, &
+                          use_parallel_netcdf, comm, mype, &
                           grid_id, rc)
 !
+    use mpi_f08
+
     type(ESMF_FieldBundle), intent(in) :: wrtfb
     character(*), intent(in)           :: filename
     logical, intent(in)                :: use_parallel_netcdf
-    integer, intent(in)                :: mpi_comm
+    type(MPI_Comm), intent(in)         :: comm
     integer, intent(in)                :: mype
     integer, intent(in)                :: grid_id
     integer, optional,intent(out)      :: rc
@@ -255,7 +257,7 @@ contains
        if (par) then
           ncerr = nf90_create(trim(filename),&
                   cmode=IOR(IOR(NF90_CLOBBER,netcdf_file_type),NF90_NODIMSCALE_ATTACH),&
-                  comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
+                  comm=comm%mpi_val, info = MPI_INFO_NULL%mpi_val, ncid=ncid); NC_ERR_STOP(ncerr)
        else
           ncerr = nf90_create(trim(filename),&
                   cmode=IOR(IOR(NF90_CLOBBER,netcdf_file_type),NF90_NODIMSCALE_ATTACH),&

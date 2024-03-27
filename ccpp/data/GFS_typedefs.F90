@@ -1,5 +1,6 @@
 module GFS_typedefs
 
+   use mpi_f08
    use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
    use physcons,                 only: con_cp, con_fvirt, con_g, rholakeice,           &
                                        con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
@@ -94,7 +95,7 @@ module GFS_typedefs
   type GFS_init_type
     integer :: me                                !< my MPI-rank
     integer :: master                            !< master MPI-rank
-    integer :: fcst_mpi_comm                     !< forecast tasks mpi communicator
+    type(MPI_Comm) :: fcst_mpi_comm              !< forecast tasks mpi communicator
     integer :: fcst_ntasks                       !< total number of forecast tasks
     integer :: tile_num                          !< tile number for this MPI rank
     integer :: isc                               !< starting i-index for this MPI-domain
@@ -700,7 +701,7 @@ module GFS_typedefs
 
     integer              :: me              !< MPI rank designator
     integer              :: master          !< MPI rank of master atmosphere processor
-    integer              :: communicator    !< MPI communicator
+    type(MPI_Comm)       :: communicator    !< MPI communicator
     integer              :: ntasks          !< MPI size in communicator
     integer              :: nthreads        !< OpenMP threads available for physics
     integer              :: nlunit          !< unit for namelist
@@ -3306,7 +3307,7 @@ module GFS_typedefs
     real(kind=kind_phys), dimension(:), intent(in) :: bk
     logical,                intent(in) :: restart
     logical,                intent(in) :: hydrostatic
-    integer,                intent(in) :: communicator
+    type(MPI_Comm),         intent(in) :: communicator
     integer,                intent(in) :: ntasks
     integer,                intent(in) :: nthreads
 
@@ -3316,9 +3317,7 @@ module GFS_typedefs
     integer :: seed0
     logical :: exists
     real(kind=kind_phys) :: tem
-    real(kind=kind_phys) :: rinc(5)
-    real(kind=kind_sngl_prec) :: rinc4(5)
-    real(kind=kind_dbl_prec) :: rinc8(5)
+    real(kind=kind_dbl_prec) :: rinc(5)
     real(kind=kind_phys) :: wrk(1)
     real(kind=kind_phys), parameter :: con_hr = 3600.
 
@@ -3974,7 +3973,6 @@ module GFS_typedefs
 
     real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
     integer :: itime
-    integer :: w3kindreal,w3kindint
 
 !--- END NAMELIST VARIABLES
 
@@ -5608,19 +5606,7 @@ module GFS_typedefs
     Model%cdec             = -9999.
     Model%clstp            = -9999
     rinc(1:5)              = 0
-    call w3kind(w3kindreal,w3kindint)
-    if (w3kindreal == 8) then
-       rinc8(1:5) = 0
-       call w3difdat(jdat,idat,4,rinc8)
-       rinc = rinc8
-    else if (w3kindreal == 4) then
-       rinc4(1:5) = 0
-       call w3difdat(jdat,idat,4,rinc4)
-       rinc = rinc4
-    else
-       write(0,*)' FATAL ERROR: Invalid w3kindreal'
-       call abort
-    endif
+    call w3difdat(jdat,idat,4,rinc)
     Model%phour            = rinc(4)/con_hr
     Model%fhour            = (rinc(4) + Model%dtp)/con_hr
     Model%zhour            = mod(Model%phour,Model%fhzero)
@@ -6418,7 +6404,7 @@ module GFS_typedefs
       print *, 'basic control parameters'
       print *, ' me                : ', Model%me
       print *, ' master            : ', Model%master
-      print *, ' communicator      : ', Model%communicator
+      print *, ' communicator      : ', Model%communicator%mpi_val
       print *, ' nlunit            : ', Model%nlunit
       print *, ' fn_nml            : ', trim(Model%fn_nml)
       print *, ' fhzero            : ', Model%fhzero
