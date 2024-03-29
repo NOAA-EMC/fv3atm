@@ -1160,6 +1160,7 @@ module GFS_typedefs
     logical              :: lheatstrg       !< flag for canopy heat storage parameterization
     logical              :: lseaspray       !< flag for sea spray parameterization
     logical              :: cnvcld
+    logical              :: xr_cnvcld       !< flag for adding suspended convective clouds to Xu-Randall cloud fraction
     logical              :: random_clds     !< flag controls whether clouds are random
     logical              :: shal_cnv        !< flag for calling shallow convection
     logical              :: do_deep         !< whether to do deep convection
@@ -3680,6 +3681,7 @@ module GFS_typedefs
     logical              :: lheatstrg      = .false.                  !< flag for canopy heat storage parameterization
     logical              :: lseaspray      = .false.                  !< flag for sea spray parameterization
     logical              :: cnvcld         = .false.
+    logical              :: xr_cnvcld      = .true.                   !< flag for including suspended convective clouds in Xu-Randall cloud fraction
     logical              :: random_clds    = .false.                  !< flag controls whether clouds are random
     logical              :: shal_cnv       = .false.                  !< flag for calling shallow convection
     integer              :: imfshalcnv     =  1                       !< flag for mass-flux shallow convection scheme
@@ -4062,8 +4064,8 @@ module GFS_typedefs
                                hwrf_samfdeep, hwrf_samfshal,progsigma,betascu,betamcu,      &
                                betadcu,h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,&
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
-                               random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
-                               do_deep, jcap,                                               &
+                               xr_cnvcld, random_clds, shal_cnv, imfshalcnv, imfdeepcnv,    &
+                               isatmedmf, do_deep, jcap,                                    &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
@@ -4892,6 +4894,7 @@ module GFS_typedefs
     Model%lheatstrg         = lheatstrg
     Model%lseaspray         = lseaspray
     Model%cnvcld            = cnvcld
+    Model%xr_cnvcld         = xr_cnvcld
     Model%random_clds       = random_clds
     Model%shal_cnv          = shal_cnv
     Model%imfshalcnv        = imfshalcnv
@@ -6181,7 +6184,7 @@ module GFS_typedefs
                  ' do_shoc=',   Model%do_shoc,   ' nshoc3d=',  Model%nshoc_3d,  &
                  ' nshoc_2d=',  Model%nshoc_2d,  ' shoc_cld=', Model%shoc_cld,  &
                  ' nkbfshoc=',  Model%nkbfshoc,  ' nahdshoc=', Model%nahdshoc,  &
-                 ' nscfshoc=',  Model%nscfshoc,                                 &
+                 ' nscfshoc=',  Model%nscfshoc,  ' xr_cnvcld=',Model%xr_cnvcld, &
                  ' uni_cld=',   Model%uni_cld,                                  &
                  ' ntot3d=',    Model%ntot3d,    ' ntot2d=',   Model%ntot2d,    &
                  ' shocaftcnv=',Model%shocaftcnv,' indcld=',   Model%indcld,    &
