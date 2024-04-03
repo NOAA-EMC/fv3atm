@@ -157,7 +157,6 @@ SCHEME_FILES = [
     'physics/physics/MP/GFDL/v1_2019/gfdl_cloud_microphys.F90',
     'physics/physics/MP/GFDL/fv_sat_adj.F90',
     'physics/physics/MP/GFDL/v3_2022/gfdl_cloud_microphys_v3.F90',
-    'physics/physics/MP/GFDL/fv_sat_adj_v3.F90',
     'physics/physics/MP/Morrison_Gettelman/m_micro.F90',
     'physics/physics/MP/Morrison_Gettelman/m_micro_pre.F90',
     'physics/physics/MP/Morrison_Gettelman/m_micro_post.F90',
