@@ -14,9 +14,10 @@ module fv3atm_restart_io_mod
                                 register_axis, register_restart_field, &
                                 register_variable_attribute, register_field, &
                                 read_restart, write_restart, write_data,     &
-                                get_global_io_domain_indices, get_dimension_size
-  use mpp_domains_mod,    only: domain2d, mpp_get_tile_comm, mpp_copy_domain, &
-                                mpp_define_io_domain, mpp_get_layout, mpp_set_tile_comm
+                                get_global_io_domain_indices, get_dimension_size, &
+                                global_att_exists, get_global_attribute
+  use mpp_domains_mod,    only: domain2d, mpp_get_domain_tile_commid, mpp_copy_domain, &
+                                  mpp_define_io_domain, mpp_get_layout
   use fv3atm_common_io,   only: create_2d_field_and_add_to_bundle, &
        create_3d_field_and_add_to_bundle, copy_from_gfs_data, axis_type
   use fv3atm_sfc_io
@@ -517,6 +518,7 @@ contains
     !--- directory of the input files
     character(5)  :: indir='INPUT'
     character(37) :: infile
+    character(2)  :: file_ver
     !--- fms2_io file open logic
     logical :: amiopen
     logical :: override_frac_grid
@@ -532,19 +534,18 @@ contains
     type(FmsNetcdfDomainFile_t) :: Oro_restart, Sfc_restart, dust12m_restart, emi_restart, rrfssd_restart
     type(FmsNetcdfDomainFile_t) :: Oro_ls_restart, Oro_ss_restart
     type(domain2D) :: domain_for_read
-    integer :: read_layout(2), layout(2)
+    integer :: read_layout(2)
 
     !--- OROGRAPHY FILE
 
     !--- open file
 #ifdef ENABLE_PARALLELRESTART
+    Oro_restart%use_collective = .true.
     call mpp_get_layout(Atm(mygrid)%domain, read_layout)
     call mpp_copy_domain(Atm(mygrid)%domain, domain_for_read)
     call mpp_define_io_domain(domain_for_read, read_layout)
-    call mpp_set_tile_comm(domain_for_read)
+    Oro_restart%tile_comm = mpp_get_domain_tile_commid(Atm(mygrid)%domain)
 
-    Oro_restart%use_collective = .true.
-    Oro_restart%TileComm = mpp_get_tile_comm(domain_for_read)
     infile=trim(indir)//'/'//trim(fn_oro)
     amiopen=open_file(Oro_restart, trim(infile), 'read', domain=domain_for_read, is_restart=.true., dont_add_res_to_filename=.true.)
 #else
@@ -658,9 +659,9 @@ contains
     !--- open file
 #ifdef ENABLE_PARALLELRESTART
     Sfc_restart%use_collective = .true.
-    Sfc_restart%TileComm = mpp_get_tile_comm(domain_for_read)
+    Sfc_restart%tile_comm = mpp_get_domain_tile_commid(Atm(mygrid)%domain)
+
     infile=trim(indir)//'/'//trim(fn_srf)
-    write(6,'("sfc_prop_restart_read: "A,2I4)') trim(infile),read_layout
     amiopen=open_file(Sfc_restart, trim(infile), "read", domain=domain_for_read, is_restart=.true., dont_add_res_to_filename=.true.)
 #else
     infile=trim(indir)//'/'//trim(fn_srf)
@@ -668,8 +669,19 @@ contains
 #endif
     if( .not.amiopen ) call mpp_error(FATAL, 'Error opening file'//trim(infile))
 
+    if (global_att_exists(Sfc_restart, "file_version")) then
+      call get_global_attribute(Sfc_restart, "file_version", file_ver)
+      if (file_ver == "V2") then
+        sfc%is_v2_file=.true.
+      endif
+    endif
+
     if(sfc%allocate_arrays(Model, Atm_block, .true., warm_start)) then
-      call sfc%fill_2d_names(Model, warm_start)
+      if (sfc%is_v2_file) then
+        call sfc%fill_2d_names_v2(Model, warm_start)
+      else
+        call sfc%fill_2d_names(Model, warm_start)
+      endif
       call sfc%register_axes(Model, Sfc_restart, .true., warm_start)
 
       ! Tell CLM Lake to allocate data, and register its axes and fields
@@ -845,7 +857,7 @@ contains
     type(phy_data_type) :: phy
     type(FmsNetcdfDomainFile_t) :: Phy_restart
     type(domain2D) :: domain_for_read
-    integer :: read_layout(2), layout(2)
+    integer :: read_layout(2)
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -859,13 +871,12 @@ contains
     !--- open restart file and register axes
     fname = trim(indir)//'/'//trim(fn_phy)
 #ifdef ENABLE_PARALLELRESTART
+    Phy_restart%use_collective = .true.
     call mpp_get_layout(Atm(mygrid)%domain, read_layout)
     call mpp_copy_domain(Atm(mygrid)%domain, domain_for_read)
     call mpp_define_io_domain(domain_for_read, read_layout)
-    call mpp_set_tile_comm(domain_for_read)
+    Phy_restart%tile_comm = mpp_get_domain_tile_commid(Atm(mygrid)%domain)
 
-    Phy_restart%use_collective = .true.
-    Phy_restart%TileComm = mpp_get_tile_comm(domain_for_read)
     amiopen=open_file(Phy_restart, trim(fname), 'read', domain=domain_for_read, is_restart=.true., dont_add_res_to_filename=.true.)
 #else
     amiopen=open_file(Phy_restart, trim(fname), 'read', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
