@@ -3333,7 +3333,7 @@
   long_name = MPI communicator
   units = index
   dimensions = ()
-  type = integer
+  type = MPI_Comm
 [ntasks]
   standard_name = number_of_mpi_tasks
   long_name = number of MPI tasks in communicator
@@ -5438,6 +5438,12 @@
 [random_clds]
   standard_name = flag_for_random_clouds_for_RAS
   long_name = flag for using random clouds with the RAS scheme
+  units = flag
+  dimensions = ()
+  type = logical
+[xr_cnvcld]
+  standard_name = flag_for_suspended_convective_clouds_in_Xu_Randall
+  long_name = flag for using suspended convective clouds in Xu Randall
   units = flag
   dimensions = ()
   type = logical
@@ -9985,7 +9991,7 @@
 [ltg1_max]
   standard_name = lightning_threat_index_1
   long_name = lightning threat index 1
-  units = flashes 5 min-1
+  units = flashes min-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -9994,7 +10000,7 @@
 [ltg2_max]
   standard_name = lightning_threat_index_2
   long_name = lightning threat index 2
-  units = flashes 5 min-1
+  units = flashes min-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -10003,7 +10009,7 @@
 [ltg3_max]
   standard_name = lightning_threat_index_3
   long_name = lightning threat index 3
-  units = flashes 5 min-1
+  units = flashes min-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys

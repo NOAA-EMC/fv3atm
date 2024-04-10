@@ -15,7 +15,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !---------------------------------------------------------------------------------
 !
-  use mpi
+  use mpi_f08
   use esmf
   use nuopc
 
@@ -474,6 +474,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
   subroutine init_realize(nest, importState, exportState, clock, rc)
 !
+
+    use module_cplscalars, only : flds_scalar_name, flds_scalar_num,          &
+                                  flds_scalar_index_nx, flds_scalar_index_ny, &
+                                  flds_scalar_index_ntile
+    use module_cplscalars, only : State_SetScalar
+
     type(ESMF_GridComp)                    :: nest
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
@@ -481,10 +487,18 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
+    real(ESMF_KIND_R8)  :: scalardim(3)
     type(ESMF_Grid)     :: grid
 
+    scalardim = 0.0
+    ! cpl_scalars for export state
+    scalardim(1) = real(Atmos%mlon,8)
+    scalardim(2) = real(Atmos%mlat,8)
+    scalardim(3) = 1.0
+    if (.not. Atmos%regional)scalardim(3) = 6.0
+
     rc     = ESMF_SUCCESS
-!
+
     ! access this domain grid
     call ESMF_GridCompGet(nest, grid=grid, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
@@ -494,6 +508,16 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                    numLevels, numSoilLayers, numTracers, &
                                    exportFieldsInfo, 'FV3 Export', exportFields, 0.0_ESMF_KIND_R8, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
+
+    if (flds_scalar_num > 0) then
+      ! Set the scalar data into the exportstate
+      call State_SetScalar(scalardim(1), flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
+      call State_SetScalar(scalardim(2), flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
+      call State_SetScalar(scalardim(3), flds_scalar_index_ntile, exportState, flds_scalar_name, flds_scalar_num, rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
+    end if
 
     ! -- initialize export fields if applicable
     call setup_exportdata(rc=rc)
@@ -593,7 +617,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_VMGetCurrent(vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_VMGet(vm=vm, localPet=mype, mpiCommunicator=fcst_mpi_comm, &
+    call ESMF_VMGet(vm=vm, localPet=mype, mpiCommunicator=fcst_mpi_comm%mpi_val, &
                     petCount=fcst_ntasks, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (mype == 0) write(*,*)'in fcst comp init, fcst_ntasks=',fcst_ntasks
@@ -615,7 +639,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (mype == 0) print *,'af ufs config,restart_interval=',restart_interval
 !
-    call fms_init(fcst_mpi_comm)
+    call fms_init(fcst_mpi_comm%mpi_val)
     call mpp_init()
     initClock = mpp_clock_id( 'Initialization' )
     call mpp_clock_begin (initClock) !nesting problem

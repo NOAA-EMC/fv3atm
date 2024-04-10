@@ -1,5 +1,6 @@
 module GFS_typedefs
 
+   use mpi_f08
    use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
    use physcons,                 only: con_cp, con_fvirt, con_g, rholakeice,           &
                                        con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
@@ -93,7 +94,7 @@ module GFS_typedefs
   type GFS_init_type
     integer :: me                                !< my MPI-rank
     integer :: master                            !< master MPI-rank
-    integer :: fcst_mpi_comm                     !< forecast tasks mpi communicator
+    type(MPI_Comm) :: fcst_mpi_comm              !< forecast tasks mpi communicator
     integer :: fcst_ntasks                       !< total number of forecast tasks
     integer :: tile_num                          !< tile number for this MPI rank
     integer :: isc                               !< starting i-index for this MPI-domain
@@ -699,7 +700,7 @@ module GFS_typedefs
 
     integer              :: me              !< MPI rank designator
     integer              :: master          !< MPI rank of master atmosphere processor
-    integer              :: communicator    !< MPI communicator
+    type(MPI_Comm)       :: communicator    !< MPI communicator
     integer              :: ntasks          !< MPI size in communicator
     integer              :: nthreads        !< OpenMP threads available for physics
     integer              :: nlunit          !< unit for namelist
@@ -1162,6 +1163,7 @@ module GFS_typedefs
     logical              :: lheatstrg       !< flag for canopy heat storage parameterization
     logical              :: lseaspray       !< flag for sea spray parameterization
     logical              :: cnvcld
+    logical              :: xr_cnvcld       !< flag for adding suspended convective clouds to Xu-Randall cloud fraction
     logical              :: random_clds     !< flag controls whether clouds are random
     logical              :: shal_cnv        !< flag for calling shallow convection
     logical              :: do_deep         !< whether to do deep convection
@@ -3298,7 +3300,7 @@ module GFS_typedefs
     real(kind=kind_phys), dimension(:), intent(in) :: bk
     logical,                intent(in) :: restart
     logical,                intent(in) :: hydrostatic
-    integer,                intent(in) :: communicator
+    type(MPI_Comm),         intent(in) :: communicator
     integer,                intent(in) :: ntasks
     integer,                intent(in) :: nthreads
 
@@ -3308,9 +3310,7 @@ module GFS_typedefs
     integer :: seed0
     logical :: exists
     real(kind=kind_phys) :: tem
-    real(kind=kind_phys) :: rinc(5)
-    real(kind=kind_sngl_prec) :: rinc4(5)
-    real(kind=kind_dbl_prec) :: rinc8(5)
+    real(kind=kind_dbl_prec) :: rinc(5)
     real(kind=kind_phys) :: wrk(1)
     real(kind=kind_phys), parameter :: con_hr = 3600.
 
@@ -3673,6 +3673,7 @@ module GFS_typedefs
     logical              :: lheatstrg      = .false.                  !< flag for canopy heat storage parameterization
     logical              :: lseaspray      = .false.                  !< flag for sea spray parameterization
     logical              :: cnvcld         = .false.
+    logical              :: xr_cnvcld      = .true.                   !< flag for including suspended convective clouds in Xu-Randall cloud fraction
     logical              :: random_clds    = .false.                  !< flag controls whether clouds are random
     logical              :: shal_cnv       = .false.                  !< flag for calling shallow convection
     integer              :: imfshalcnv     =  1                       !< flag for mass-flux shallow convection scheme
@@ -3966,7 +3967,6 @@ module GFS_typedefs
 
     real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
     integer :: itime
-    integer :: w3kindreal,w3kindint
 
 !--- END NAMELIST VARIABLES
 
@@ -4056,8 +4056,8 @@ module GFS_typedefs
                                hwrf_samfdeep, hwrf_samfshal,progsigma,betascu,betamcu,      &
                                betadcu,h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,&
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
-                               random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
-                               do_deep, jcap,                                               &
+                               xr_cnvcld, random_clds, shal_cnv, imfshalcnv, imfdeepcnv,    &
+                               isatmedmf, do_deep, jcap,                                    &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
@@ -4901,6 +4901,7 @@ module GFS_typedefs
     Model%lheatstrg         = lheatstrg
     Model%lseaspray         = lseaspray
     Model%cnvcld            = cnvcld
+    Model%xr_cnvcld         = xr_cnvcld
     Model%random_clds       = random_clds
     Model%shal_cnv          = shal_cnv
     Model%imfshalcnv        = imfshalcnv
@@ -5615,19 +5616,7 @@ module GFS_typedefs
     Model%cdec             = -9999.
     Model%clstp            = -9999
     rinc(1:5)              = 0
-    call w3kind(w3kindreal,w3kindint)
-    if (w3kindreal == 8) then
-       rinc8(1:5) = 0
-       call w3difdat(jdat,idat,4,rinc8)
-       rinc = rinc8
-    else if (w3kindreal == 4) then
-       rinc4(1:5) = 0
-       call w3difdat(jdat,idat,4,rinc4)
-       rinc = rinc4
-    else
-       write(0,*)' FATAL ERROR: Invalid w3kindreal'
-       call abort
-    endif
+    call w3difdat(jdat,idat,4,rinc)
     Model%phour            = rinc(4)/con_hr
     Model%fhour            = (rinc(4) + Model%dtp)/con_hr
     Model%zhour            = mod(Model%phour,Model%fhzero)
@@ -6202,7 +6191,7 @@ module GFS_typedefs
                  ' do_shoc=',   Model%do_shoc,   ' nshoc3d=',  Model%nshoc_3d,  &
                  ' nshoc_2d=',  Model%nshoc_2d,  ' shoc_cld=', Model%shoc_cld,  &
                  ' nkbfshoc=',  Model%nkbfshoc,  ' nahdshoc=', Model%nahdshoc,  &
-                 ' nscfshoc=',  Model%nscfshoc,                                 &
+                 ' nscfshoc=',  Model%nscfshoc,  ' xr_cnvcld=',Model%xr_cnvcld, &
                  ' uni_cld=',   Model%uni_cld,                                  &
                  ' ntot3d=',    Model%ntot3d,    ' ntot2d=',   Model%ntot2d,    &
                  ' shocaftcnv=',Model%shocaftcnv,' indcld=',   Model%indcld,    &
@@ -6425,7 +6414,7 @@ module GFS_typedefs
       print *, 'basic control parameters'
       print *, ' me                : ', Model%me
       print *, ' master            : ', Model%master
-      print *, ' communicator      : ', Model%communicator
+      print *, ' communicator      : ', Model%communicator%mpi_val
       print *, ' nlunit            : ', Model%nlunit
       print *, ' fn_nml            : ', trim(Model%fn_nml)
       print *, ' fhzero            : ', Model%fhzero
