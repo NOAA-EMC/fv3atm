@@ -1,3 +1,7 @@
+!> @file
+!> @brief Provides top-level interface for moving nest functionality.
+!> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
+
 !***********************************************************************
 !*                   GNU General Public License                        *
 !* This file is a part of fvGFS.                                       *
@@ -24,6 +28,10 @@
 !! @author W. Ramstrom, AOML/HRD   05/27/2021
 !! @email William.Ramstrom@noaa.gov
 ! =======================================================================!
+
+!> @brief Provides top-level interface for moving nest functionality.
+!>
+!> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
 
 module fv_moving_nest_main_mod
 
@@ -167,9 +175,20 @@ module fv_moving_nest_main_mod
 
 contains
 
-  !>@brief The subroutine 'update_moving_nest' decides whether the nest should be moved, and if so, performs the move.
-  !>@details This subroutine evaluates the automatic storm tracker (or prescribed motion configuration), then decides
-  !!  if the nest should be moved.  If it should be moved, it calls fv_moving_nest_exec() to perform the nest move.
+  !> The subroutine 'update_moving_nest' decides whether the nest
+  !> should be moved, and if so, performs the move.
+  !>
+  !> This subroutine evaluates the automatic storm tracker (or
+  !> prescribed motion configuration), then decides if the nest should
+  !> be moved.  If it should be moved, it calls fv_moving_nest_exec()
+  !> to perform the nest move.
+  !>
+  !> @param[in] Atm_block Physics block layout.
+  !> @param[in] IPD_control Physics metadata.
+  !> @param[inout] IPD_data Physics variable data.
+  !> @param[in] time_step Current timestep.
+  !>
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine update_moving_nest(Atm_block, IPD_control, IPD_data, time_step)
     type(block_control_type), intent(in) :: Atm_block     !< Physics block layout
     type(IPD_control_type), intent(in)   :: IPD_control   !< Physics metadata
@@ -214,7 +233,9 @@ contains
   end subroutine update_moving_nest
 
 
-
+  !> ???
+  !> 
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine moving_nest_end()
     integer :: n
 
@@ -234,21 +255,36 @@ contains
   end subroutine moving_nest_end
 
 
-  ! This subroutine sits in this file to have access to Atm structure
+  !> This subroutine sits in this file to have access to Atm structure.
+  !>
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine nest_tracker_init()
     call fv_tracker_init(size(Atm))
 
     if (mygrid .eq. 2) call allocate_tracker(mygrid, Atm(mygrid)%bd%isc, Atm(mygrid)%bd%iec, Atm(mygrid)%bd%jsc, Atm(mygrid)%bd%jec)
   end subroutine nest_tracker_init
 
+  !> ???
+  !>
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine nest_tracker_end()
     call deallocate_tracker(ngrids)
   end subroutine nest_tracker_end
 
 
 
-  !>@brief The subroutine 'dump_moving_nest' outputs native grid format data to netCDF files
-  !>@details This subroutine exports model variables using FMS IO to netCDF files if tsvar_out is set to .True.
+  !> The subroutine 'dump_moving_nest' outputs native grid format data
+  !> to netCDF files.
+  !>
+  !> This subroutine exports model variables using FMS IO to netCDF
+  !> files if tsvar_out is set to .True.
+  !>
+  !> @param[in] Atm_block Physics block layout.
+  !> @param[in] IPD_control Physics metadata.
+  !> @param[in] IPD_data Physics variable data.
+  !> @param[in] time_step Current timestep.
+  !>
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine dump_moving_nest(Atm_block, IPD_control, IPD_data, time_step)
     type(block_control_type), intent(in) :: Atm_block     !< Physics block layout
     type(IPD_control_type), intent(in)   :: IPD_control   !< Physics metadata
@@ -278,9 +314,16 @@ contains
 
   end subroutine dump_moving_nest
 
-  !>@brief The subroutine 'fv_moving_nest_init_clocks' intializes performance profiling timers of sections of the moving nest code.
-  !>@details Starts timers for subcomponents of moving nest code to determine performance.  mpp routines group them into separate
-  !! sections for parent and nest PEs.
+  !> The subroutine fv_moving_nest_init_clocks() intializes
+  !> performance profiling timers of sections of the moving nest code.
+  !>  
+  !> Starts timers for subcomponents of moving nest code to determine
+  !> performance.  mpp routines group them into separate sections for
+  !> parent and nest PEs.
+  !>
+  !> @param[in] use_timers ???
+  !>
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine fv_moving_nest_init_clocks(use_timers)
     logical, intent(in) :: use_timers
 
@@ -311,8 +354,22 @@ contains
     id_movnestTot     = mpp_clock_id ('Moving Nest Total',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
   end subroutine fv_moving_nest_init_clocks
 
-  !>@brief The subroutine 'eval_move_nest' determines whether the nest should be moved and in which direction.
-  !>@details  This subroutine can execute prescribed motion or automated storm tracking based on namelist options.
+  !> The subroutine 'eval_move_nest' determines whether the nest
+  !> should be moved and in which direction.
+  !>
+  !> This subroutine can execute prescribed motion or automated storm
+  !> tracking based on namelist options.
+  !>
+  !> @param[inout] Atm Input atmospheric data.
+  !> @param[in] a_step Timestep.
+  !> @param[in] parent_grid_num  Grid numbers of parent.
+  !> @param[in] child_grid_num  Grid numbers of child.
+  !> @param[out] do_move Logical for whether to move nest.
+  !> @param[out] delta_i_c Can be -1, 0, or +1.
+  !> @param[out] delta_j_c Can be -1, 0, or +1.
+  !> @param[in] dt_atmos only needed for the simple version of this subroutine.
+  !>
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine eval_move_nest(Atm, a_step, parent_grid_num, child_grid_num, do_move, delta_i_c, delta_j_c, dt_atmos)
     type(fv_atmos_type), intent(inout)   :: Atm(:)       !< Input atmospheric data
     integer, intent(in)                  :: a_step       !< Timestep
@@ -480,9 +537,25 @@ contains
 
   end subroutine eval_move_nest
 
-  !>@brief The subroutine 'fv_moving_nest_exec' performs the nest move - most work occurs on nest PEs but some on parent PEs.
-  !>@details This subroutine shifts the prognostic and physics/surface variables.
-  !!  It also updates metadata and interpolation weights.
+  !> The subroutine 'fv_moving_nest_exec' performs the nest move -
+  !> most work occurs on nest PEs but some on parent PEs.
+  !>
+  !> This subroutine shifts the prognostic and physics/surface
+  !> variables. It also updates metadata and interpolation weights.
+  !>
+  !> @param[inout] Atm Atmospheric variables.
+  !> @param[in] Atm_block Physics block.
+  !> @param[in] IPD_control Physics metadata.
+  !> @param[inout] IPD_data Physics variable data.
+  !> @param[in] delta_i_c Nest motion increment.
+  !> @param[in] delta_j_c Nest motion increment.
+  !> @param[in] n Nest index.
+  !> @param[in] nest_num Nest index.
+  !> @param[in] parent_grid_num  Grid numbers of parent.
+  !> @param[in] child_grid_num  Grid numbers of child.
+  !> @param[in] dt_atmos Timestep in seconds.
+  !>
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine fv_moving_nest_exec(Atm, Atm_block, IPD_control, IPD_data, delta_i_c, delta_j_c, n, nest_num, parent_grid_num, child_grid_num, dt_atmos)
     implicit none
     type(fv_atmos_type), allocatable, target, intent(inout) :: Atm(:)                !< Atmospheric variables
@@ -1148,7 +1221,15 @@ contains
 
   end subroutine fv_moving_nest_exec
 
-  !>@brief The subroutine 'mn_replace_low_values' replaces low values with a default value.
+
+  !> The subroutine 'mn_replace_low_values' replaces low values with a
+  !> default value.
+  !>
+  !> @param[inout] data_grid 2D grid of data.
+  !> @param[in] low_value Low value to check for; e.g. negative or fill value.
+  !> @param[in] new_value Value to replace low value with.
+  !>
+  !> @author W. Ramstrom, AOML/HRD (William.Ramstrom@noaa.gov) @date  05/27/2021
   subroutine mn_replace_low_values(data_grid, low_value, new_value)
     real, _ALLOCATABLE, intent(inout)   :: data_grid(:,:)  !< 2D grid of data
     real, intent(in)                    :: low_value       !< Low value to check for; e.g. negative or fill value
