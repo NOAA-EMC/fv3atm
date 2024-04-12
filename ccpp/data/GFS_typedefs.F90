@@ -511,7 +511,6 @@ module GFS_typedefs
     !--- In (physics only)
     real (kind=kind_phys), pointer :: sfcdsw(:)      => null()   !< total sky sfc downward sw flux ( w/m**2 )
                                                                  !< GFS_radtend_type%sfcfsw%dnfxc
-    real (kind=kind_phys), pointer :: sfcdswclr(:)   => null()
     real (kind=kind_phys), pointer :: sfcnsw(:)      => null()   !< total sky sfc netsw flx into ground(w/m**2)
                                                                  !< difference of dnfxc & upfxc from GFS_radtend_type%sfcfsw
     real (kind=kind_phys), pointer :: sfcdlw(:)      => null()   !< total sky sfc downward lw flux ( w/m**2 )
@@ -2894,13 +2893,11 @@ module GFS_typedefs
     Coupling%visbmui = clear_val
     Coupling%visdfui = clear_val
 
-    allocate (Coupling%sfcdswclr (IM))
     allocate (Coupling%sfcdsw (IM))
     allocate (Coupling%sfcnsw (IM))
     allocate (Coupling%sfcdlw (IM))
     allocate (Coupling%sfculw (IM))
 
-    Coupling%sfcdswclr = clear_val
     Coupling%sfcdsw = clear_val
     Coupling%sfcnsw = clear_val
     Coupling%sfcdlw = clear_val
