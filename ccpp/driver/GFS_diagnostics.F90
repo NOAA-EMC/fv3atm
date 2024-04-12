@@ -2108,6 +2108,18 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'dswsfcci'
+    ExtDiag(idx)%desc = 'instantaneous sfc downward sw flux assuming clear sky'
+    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%dswsfcci(:)
+    enddo
+    
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'uswsfci'
     ExtDiag(idx)%desc = 'instantaneous sfc upward sw flux'
     ExtDiag(idx)%unit = 'w/m**2'
