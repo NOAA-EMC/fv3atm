@@ -829,10 +829,8 @@ contains
     end if
 !
     ! Allocate arrays that are conditional on physics choices
-    if (Model%imp_physics == Model%imp_physics_gfdl          &
-        .or. Model%imp_physics == Model%imp_physics_gfdl_v3  &
-        .or. Model%imp_physics == Model%imp_physics_thompson &
-        .or. Model%imp_physics == Model%imp_physics_nssl     &
+    if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson &
+        .or. Model%imp_physics == Model%imp_physics_nssl &
         ) then
        allocate (Interstitial%graupelmp  (IM))
        allocate (Interstitial%icemp      (IM))
@@ -990,8 +988,7 @@ contains
         Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
         Interstitial%ntrwx = 4
-      elseif (Model%imp_physics == Model%imp_physics_gfdl           &
-         .or. Model%imp_physics == Model%imp_physics_gfdl_v3 ) then
+      elseif (Model%imp_physics == Model%imp_physics_gfdl) then
         Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
         Interstitial%ntrwx = 4
@@ -1019,8 +1016,7 @@ contains
         else
           Interstitial%nvdiff = 10
         endif
-      elseif (Model%imp_physics == Model%imp_physics_gfdl          &
-         .or. Model%imp_physics == Model%imp_physics_gfdl_v3) then
+      elseif (Model%imp_physics == Model%imp_physics_gfdl) then
         Interstitial%nvdiff = 7
       elseif (Model%imp_physics == Model%imp_physics_thompson) then
         if (Model%ltaerosol) then
@@ -1442,10 +1438,8 @@ contains
     end if
 !
     ! Reset fields that are conditional on physics choices
-    if (Model%imp_physics == Model%imp_physics_gfdl          &
-       .or. Model%imp_physics == Model%imp_physics_gfdl_v3   &
-       .or. Model%imp_physics == Model%imp_physics_thompson  &
-       .or. Model%imp_physics == Model%imp_physics_nssl      &
+    if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson  &
+        .or. Model%imp_physics == Model%imp_physics_nssl &
              ) then
        Interstitial%graupelmp = clear_val
        Interstitial%icemp     = clear_val
