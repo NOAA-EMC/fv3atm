@@ -98,6 +98,7 @@ jobs:
         export CC=mpicc
         export CXX=mpicxx
         export FC=mpif90
+        cat /home/runner/work/fv3atm/fv3atm/spack-develop/opt/spack/linux-ubuntu22.04-zen2/gcc-12.3.0/fms-2023.04-*/lib/cmake/fms/fms-config.cmake
         cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON
         make -j2
         ls -l /home/runner/work/fv3atm/fv3atm/fv3atm/io
