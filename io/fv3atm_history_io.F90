@@ -595,7 +595,6 @@ CONTAINS
     integer k,j,i,nv,i1,j1
     logical used
     !
-    write(0,*) ' history_type_store_data3D kinds ', kind_phys, kind(work), lbound(work), ubound(work), size(work)
     if( id > 0 ) then
       if( hist%use_wrtgridcomp_output ) then
         if( trim(intpl_method) == 'bilinear') then
