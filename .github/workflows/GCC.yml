@@ -31,6 +31,12 @@ jobs:
         path: ${{ github.workspace }}/fv3atm
         submodules: recursive
 
+    - name: install-cmake
+      run: | 
+        cd ${{ github.workspace }}
+        curl -f -s -S -R -L https://github.com/Kitware/CMake/releases/download/v3.29.2/cmake-3.29.2-Linux-x86_64.tar.gz | tar -zx
+        echo "${{ github.workspace }}/cmake-3.29.2-linux-x86_64/bin" >> $GITHUB_PATH
+
     - name: cache-spack
       id: cache-spack
       uses: actions/cache@v4
@@ -70,6 +76,12 @@ jobs:
     - name: install-doxygen
       run: |
         sudo apt-get install doxygen graphviz
+
+    - name: install-cmake
+      run: | 
+        cd ${{ github.workspace }}
+        curl -f -s -S -R -L https://github.com/Kitware/CMake/releases/download/v3.29.2/cmake-3.29.2-Linux-x86_64.tar.gz | tar -zx
+        echo "${{ github.workspace }}/cmake-3.29.2-linux-x86_64/bin" >> $GITHUB_PATH
 
     - name: checkout-fv3atm
       uses: actions/checkout@v4
