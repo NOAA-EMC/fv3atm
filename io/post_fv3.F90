@@ -136,7 +136,7 @@ module post_fv3
                          wrt_int_state%out_grid_info(grid_id)%jm, &
                          wrt_int_state%out_grid_info(grid_id)%lm, &
                          mype,wrttasks_per_group,lead_write, &
-                         mpicomp,jts,jte,jstagrp,jendgrp,its,ite,istagrp,iendgrp)
+                         mpicomp%mpi_val,jts,jte,jstagrp,jendgrp,its,ite,istagrp,iendgrp)
 !
 !-----------------------------------------------------------------------
 !*** read namelist for pv,th,po
