@@ -992,7 +992,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [fire_heat_flux]
   standard_name = surface_fire_heat_flux
   long_name = heat flux of fire at the surface
@@ -3378,7 +3377,6 @@
   dimensions = (number_of_lines_in_internal_namelist)
   type = character
   kind = len=256
-  active = (number_of_lines_in_internal_namelist > 0)
 [logunit]
   standard_name = iounit_of_log
   long_name = fortran unit number for logfile
