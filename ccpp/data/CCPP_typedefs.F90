@@ -452,10 +452,14 @@ module CCPP_typedefs
      integer                             :: ie
      integer                             :: isd
      integer                             :: ied
+     integer                             :: isc
+     integer                             :: iec
      integer                             :: js
      integer                             :: je
      integer                             :: jsd
      integer                             :: jed
+     integer                             :: jsc
+     integer                             :: jec
      integer                             :: ng
      integer                             :: npz
      integer                             :: npzp1
@@ -1557,6 +1561,13 @@ contains
     integer,        intent(in)           :: mpirank
     integer,        intent(in)           :: mpiroot
     !
+    integer :: isc, jsc, iec, jec
+    !
+    isc = lbound(delp, dim=1)
+    jsc = lbound(delp, dim=2)
+    iec = ubound(delp, dim=1)
+    jec = ubound(delp, dim=2)
+    !
 #ifdef MOIST_CAPPA
     Interstitial%npzcappa = npz
     allocate (Interstitial%cappa  (isd:ied, jsd:jed, 1:npz) )
@@ -1594,10 +1605,14 @@ contains
     Interstitial%ie         =  ie
     Interstitial%isd        =  isd
     Interstitial%ied        =  ied
+    Interstitial%isc        =  isc
+    Interstitial%iec        =  iec
     Interstitial%js         =  js
     Interstitial%je         =  je
     Interstitial%jsd        =  jsd
     Interstitial%jed        =  jed
+    Interstitial%jsc        =  jsc
+    Interstitial%jec        =  jec
     Interstitial%ng         =  ng
     Interstitial%npz        =  npz
     Interstitial%npzp1      =  npz+1
