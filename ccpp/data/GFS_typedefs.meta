@@ -1941,7 +1941,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
 [flhc]
   standard_name = surface_exchange_coefficient_for_heat
   long_name = surface exchange coefficient for heat
@@ -1949,7 +1948,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
 [flqc]
   standard_name = surface_exchange_coefficient_for_moisture
   long_name = surface exchange coefficient for moisture
@@ -1957,7 +1955,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_nakanishi_niino_surface_layer_scheme)
 [chs2]
   standard_name = surface_exchange_coefficient_for_heat_at_2m
   long_name = exchange coefficient for heat at 2 meters
