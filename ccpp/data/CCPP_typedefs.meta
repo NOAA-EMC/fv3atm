@@ -344,7 +344,7 @@
   dimensions = (horizontal_loop_extent,4)
   type = real
   kind = kind_phys
-  active = (control_for_drag_suite_gravity_wave_drag == 3 .or. control_for_drag_suite_gravity_wave_drag == 33)
+  active = (control_for_drag_suite_gravity_wave_drag == 2 .or. control_for_drag_suite_gravity_wave_drag == 3 .or. control_for_drag_suite_gravity_wave_drag == 22 .or. control_for_drag_suite_gravity_wave_drag == 33)
 [cmm_water]
   standard_name = surface_drag_wind_speed_for_momentum_in_air_over_water
   long_name = momentum exchange coefficient over water
@@ -1526,7 +1526,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_drag_suite_gravity_wave_drag == 3 .or. control_for_drag_suite_gravity_wave_drag == 33)
+  active = (control_for_drag_suite_gravity_wave_drag == 2 .or. control_for_drag_suite_gravity_wave_drag == 3 .or. control_for_drag_suite_gravity_wave_drag == 22 .or. control_for_drag_suite_gravity_wave_drag == 33)
 [oa4ss]
   standard_name = asymmetry_of_subgrid_orography_small_scale
   long_name = asymmetry of subgrid height_above_mean_sea_level small scale
@@ -1534,7 +1534,7 @@
   dimensions = (horizontal_loop_extent,4)
   type = real
   kind = kind_phys
-  active = (control_for_drag_suite_gravity_wave_drag == 3 .or. control_for_drag_suite_gravity_wave_drag == 33)
+  active = (control_for_drag_suite_gravity_wave_drag == 2 .or. control_for_drag_suite_gravity_wave_drag == 3 .or. control_for_drag_suite_gravity_wave_drag == 22 .or. control_for_drag_suite_gravity_wave_drag == 33)
 [oc]
   standard_name = convexity_of_subgrid_orography
   long_name = convexity of subgrid height_above_mean_sea_level
@@ -1549,7 +1549,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_drag_suite_gravity_wave_drag == 3 .or. control_for_drag_suite_gravity_wave_drag == 33)
+  active = (control_for_drag_suite_gravity_wave_drag == 2 .or. control_for_drag_suite_gravity_wave_drag == 3 .or. control_for_drag_suite_gravity_wave_drag == 22 .or. control_for_drag_suite_gravity_wave_drag == 33)
 [olyr]
   standard_name = ozone_concentration_at_layer_for_radiation
   long_name = ozone concentration layer
