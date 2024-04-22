@@ -16,6 +16,8 @@ module GFS_typedefs
    use module_radlw_parameters,  only: topflw_type, sfcflw_type
    use h2o_def,                  only: levh2o, h2o_coeff
    use module_ozphys,            only: ty_ozphys
+   use module_gfdl_cloud_microphys,    only: module_gfdl_cloud_microphys_init
+   use module_gfdl_cloud_microphys_v3, only: module_gfdl_cloud_microphys_v3_init
 
    implicit none
 
@@ -919,7 +921,8 @@ module GFS_typedefs
                                                            !< and if yes, perform them; hardcoded to .true. for now
     !--- new microphysical switch
     integer              :: imp_physics                    !< choice of microphysics scheme
-    integer              :: imp_physics_gfdl          = 11 !< choice of GFDL     microphysics scheme
+    integer              :: imp_physics_gfdl          = 11 !< choice of GFDL v1  microphysics scheme
+    integer              :: imp_physics_gfdl_v3       = 12 !< choice of GFDL v3  microphysics scheme
     integer              :: imp_physics_thompson      = 8  !< choice of Thompson microphysics scheme
     integer              :: imp_physics_wsm6          = 6  !< choice of WSMG     microphysics scheme
     integer              :: imp_physics_zhao_carr     = 99 !< choice of Zhao-Carr microphysics scheme
@@ -4148,6 +4151,10 @@ module GFS_typedefs
 !--- NRL ozone physics
     character(len=128) :: err_message
 
+!--- GFDL Microphysics
+    character(len=128) :: ccpp_errmsg
+    integer            :: ccpp_errflg
+
     ! dtend selection: default is to match all variables:
     dtend_select(1)='*'
     do ipat=2,pat_count
@@ -4669,6 +4676,20 @@ module GFS_typedefs
 
 !--- GFDL MP parameters
     Model%lgfdlmprad       = lgfdlmprad
+    if (Model%imp_physics == Model%imp_physics_gfdl) then
+       call module_gfdl_cloud_microphys_init(Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
+            Model%logunit, Model%fn_nml, ccpp_errmsg, ccpp_errflg)
+    end if
+    if (Model%imp_physics == Model%imp_physics_gfdl_v3) then
+       call module_gfdl_cloud_microphys_v3_init(Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
+            Model%logunit, Model%fn_nml, hydrostatic, ccpp_errmsg, ccpp_errflg)
+       Model%imp_physics = Model%imp_physics_gfdl !DJS2024 We only need to distinguish v1/v3 for this step.
+    end if
+    if (ccpp_errflg .ne. 0) then
+       write(0,*) 'ERROR initializing GFDL Microphysics: ',ccpp_errmsg
+       stop
+    endif
+    
 !--- Thompson,GFDL,NSSL MP parameter
     Model%lrefres          = lrefres
 
@@ -4765,7 +4786,7 @@ module GFS_typedefs
     Model%exticeden        = exticeden
     if (Model%exticeden .and. &
       (Model%imp_physics /= Model%imp_physics_gfdl .and. Model%imp_physics /= Model%imp_physics_thompson .and. &
-       Model%imp_physics /= Model%imp_physics_nssl )) then
+       Model%imp_physics /= Model%imp_physics_nssl .and. Model%imp_physics /= Model%imp_physics_gfdl_v3)) then
       !see GFS_MP_generic_post.F90; exticeden is only compatible with GFDL,
       !Thompson, or NSSL MP
       print *,' Using exticeden = T is only valid when using GFDL, Thompson, or NSSL microphysics.'
@@ -6101,8 +6122,9 @@ module GFS_typedefs
                  ' mg_alf=',          Model%mg_alf,          ' mg_qcmin=',      Model%mg_qcmin,     &
                  ' mg_do_ice_gmao=',  Model%mg_do_ice_gmao,  ' mg_do_liq_liu=', Model%mg_do_liq_liu
 
-    elseif (Model%imp_physics == Model%imp_physics_gfdl) then !GFDL microphysics
-      Model%npdf3d  = 0
+    elseif (Model%imp_physics == Model%imp_physics_gfdl .or. &
+            Model%imp_physics == Model%imp_physics_gfdl_v3) then !GFDL microphysics
+       Model%npdf3d  = 0
       if(Model%effr_in) then
         Model%num_p3d = 5
         Model%nleffr  = 1
@@ -6631,11 +6653,17 @@ module GFS_typedefs
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_gfdl) then
-        print *, ' GFDL microphysical parameters'
+        print *, ' GFDL microphysical parameters (version 1)'
         print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad
         print *, ' lrefres                : ', Model%lrefres
         print *, ' '
       endif
+      if (Model%imp_physics == Model%imp_physics_gfdl_v3) then
+        print *, ' GFDL microphysical parameters (version 3)'
+        print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad
+        print *, ' lrefres                : ', Model%lrefres
+        print *, ' '
+     endif
       if (Model%imp_physics == Model%imp_physics_fer_hires) then
         print *, ' Ferrier-Aligo microphysical parameters'
         print *, ' spec_adv          : ', Model%spec_adv
