@@ -35,6 +35,7 @@
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
                                       n_group, num_files,                       &
+                                      fv3atm_output_dir,                        &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,                &
                                       ichunk3d,jchunk3d,kchunk3d,               &
@@ -2140,7 +2141,7 @@
         wend = MPI_Wtime()
         if (mype == lead_write_task) then
           !** write out inline post log file
-          open(newunit=nolog,file='log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
+          open(newunit=nolog,file=trim(fv3atm_output_dir)//'log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
           write(nolog,"('completed: fv3atm')")
           write(nolog,"('forecast hour: ',f10.3)") nfhour
           write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
@@ -2313,7 +2314,7 @@
               endif
 
             else ! history bundle
-              filename = trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
+              filename = trim(fv3atm_output_dir)//trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
             endif
             if(mype == lead_write_task) print *,'in wrt run,filename= ',nbdl,trim(filename)
 
@@ -2444,7 +2445,7 @@
 
           if (out_phase == 1 .and. mype == lead_write_task) then
             !** write history log file
-            open(newunit=nolog, file='log.atm.f'//trim(cfhour))
+            open(newunit=nolog, file=trim(fv3atm_output_dir)//'log.atm.f'//trim(cfhour))
             write(nolog,"('completed: fv3atm')")
             write(nolog,"('forecast hour: ',f10.3)") nfhour
             write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
