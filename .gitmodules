@@ -11,7 +11,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/AnningCheng-NOAA/ccpp-physics
-  branch = innl
+  branch = mr2_innl
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
