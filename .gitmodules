@@ -6,8 +6,8 @@
   path = ccpp/framework
   #url = https://github.com/NCAR/ccpp-framework
   #branch = main
-  url = https://github.com/climbfuji/ccpp-framework
-  branch = bugfix/mpi_target_src_cmakelists
+  url = https://github.com/mkavulich/ccpp-framework
+  branch = feature/track_variables_tests
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/AnningCheng-NOAA/ccpp-physics
