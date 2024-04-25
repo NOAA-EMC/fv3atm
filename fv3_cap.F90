@@ -33,7 +33,6 @@ module fv3atm_cap_mod
                                     cplprint_flag, first_kdt
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
-                                    fv3atm_output_dir,                       &
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
@@ -378,15 +377,6 @@ module fv3atm_cap_mod
                                    label ='num_files:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
-      call ESMF_ConfigGetAttribute(config=CF,value=fv3atm_output_dir, &
-                                   label ='fv3atm_output_dir:', default='./', rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      ! Make sure fv3atm_output_dir ends with '/'
-      if (fv3atm_output_dir(len(trim(fv3atm_output_dir)):len(trim(fv3atm_output_dir))) /= '/') then
-        fv3atm_output_dir = trim(fv3atm_output_dir) // '/'
-      end if
-
       allocate(filename_base(num_files))
       call ESMF_ConfigFindLabel(CF,'filename_base:',rc=rc)
       do i=1,num_files

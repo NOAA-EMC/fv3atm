@@ -28,9 +28,8 @@
 !
       use mpi_f08
       use esmf
-      use fms_mod, only : uppercase
-      use fms
-      use mpp_mod, only : mpp_init, mpp_error
+      use fms, only : fms_init, fms_end, fms_mpp_uppercase, fms_mpp_error, FATAL
+      use fms, only : NO_CALENDAR, JULIAN, GREGORIAN, THIRTY_DAY_MONTHS, NOLEAP
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
@@ -282,6 +281,15 @@
                                    label='write_nsflip:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__)) return
+
+      call ESMF_ConfigGetAttribute(config=CF,value=fv3atm_output_dir, &
+                                   label ='fv3atm_output_dir:', default='./', rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      ! Make sure fv3atm_output_dir ends with '/'
+      if (fv3atm_output_dir(len(trim(fv3atm_output_dir)):len(trim(fv3atm_output_dir))) /= '/') then
+        fv3atm_output_dir = trim(fv3atm_output_dir) // '/'
+      end if
 
       if( wrt_int_state%write_dopost ) then
 #ifdef INLINE_POST
