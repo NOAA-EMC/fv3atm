@@ -1598,6 +1598,9 @@ module GFS_typedefs
     real(kind=kind_phys), pointer :: si(:)  !< vertical sigma coordinate for model initialization
     real(kind=kind_phys)          :: sec    !< seconds since model initialization
 
+!--- Increment grid    
+    logical              :: gaussian_increment ! increment on guassian grid or else native grid
+    
 !--- IAU
     integer              :: iau_offset
     real(kind=kind_phys) :: iau_delthrs     ! iau time interval (to scale increments) in hours
@@ -3884,6 +3887,9 @@ module GFS_typedefs
     logical              :: ca_entr        = .false.
     logical              :: ca_trigger     = .false.
 
+!--- Increment grid
+    logical               :: gaussian_increment = .true. ! increment on guassian grid or else native grid
+    
 !--- IAU options
     real(kind=kind_phys)  :: iau_delthrs      = 0           !< iau time interval (to scale increments)
     character(len=240)    :: iau_inc_files(7) = ''          !< list of increment files
@@ -4102,6 +4108,8 @@ module GFS_typedefs
                                nseed,  nseed_g,  nthresh, do_ca, ca_advect,                 &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,                        &
                                nspinup,ca_amplitude,nsmooth,ca_closure,ca_entr,ca_trigger,  &
+                          !--- Increment grid
+                               gaussian_increment,                                          &
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
                                iau_drymassfixer,                                            &
