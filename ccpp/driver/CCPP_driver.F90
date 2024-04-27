@@ -85,6 +85,7 @@ module CCPP_driver
       ! number are not used; set to safe values
       cdata_domain%blk_no = 1
       cdata_domain%thrd_no = 1
+      cdata_domain%thrd_cnt = 1
 
       ! Allocate cdata structures for blocks and threads
       if (.not.allocated(cdata_block)) allocate(cdata_block(1:nblks,1:nthrdsX))
@@ -95,6 +96,7 @@ module CCPP_driver
           ! Assign the correct block and thread numbers
           cdata_block(nb,nt)%blk_no = nb
           cdata_block(nb,nt)%thrd_no = nt
+          cdata_block(nb,nt)%thrd_cnt = nthrdsX
         end do
       end do
 
