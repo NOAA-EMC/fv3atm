@@ -452,14 +452,18 @@ module CCPP_typedefs
      integer                             :: ie
      integer                             :: isd
      integer                             :: ied
-     integer                             :: isc
-     integer                             :: iec
+     integer                             :: isc1
+     integer                             :: iec1
+     integer                             :: isc2
+     integer                             :: iec2
      integer                             :: js
      integer                             :: je
      integer                             :: jsd
      integer                             :: jed
-     integer                             :: jsc
-     integer                             :: jec
+     integer                             :: jsc1
+     integer                             :: jec1
+     integer                             :: jsc2
+     integer                             :: jec2
      integer                             :: ng
      integer                             :: npz
      integer                             :: npzp1
@@ -1561,12 +1565,17 @@ contains
     integer,        intent(in)           :: mpirank
     integer,        intent(in)           :: mpiroot
     !
-    integer :: isc, jsc, iec, jec
+    integer :: isc1, jsc1, iec1, jec1
+    integer :: isc2, jsc2, iec2, jec2
     !
-    isc = lbound(delp, dim=1)
-    jsc = lbound(delp, dim=2)
-    iec = ubound(delp, dim=1)
-    jec = ubound(delp, dim=2)
+    isc1 = lbound(delp, dim=1)
+    jsc1 = lbound(delp, dim=2)
+    iec1 = ubound(delp, dim=1)
+    jec1 = ubound(delp, dim=2)
+    isc2 = lbound(delz, dim=1)
+    jsc2 = lbound(delz, dim=2)
+    iec2 = ubound(delz, dim=1)
+    jec2 = ubound(delz, dim=2)
     !
 #ifdef MOIST_CAPPA
     Interstitial%npzcappa = npz
@@ -1605,17 +1614,41 @@ contains
     Interstitial%ie         =  ie
     Interstitial%isd        =  isd
     Interstitial%ied        =  ied
-    Interstitial%isc        =  isc
-    Interstitial%iec        =  iec
+    Interstitial%isc1       =  isc1
+    Interstitial%iec1       =  iec1
+    Interstitial%isc2       =  isc2
+    Interstitial%iec2       =  iec2
     Interstitial%js         =  js
     Interstitial%je         =  je
     Interstitial%jsd        =  jsd
     Interstitial%jed        =  jed
-    Interstitial%jsc        =  jsc
-    Interstitial%jec        =  jec
+    Interstitial%jsc1       =  jsc1
+    Interstitial%jec1       =  jec1
+    Interstitial%jsc2       =  jsc2
+    Interstitial%jec2       =  jec2
     Interstitial%ng         =  ng
     Interstitial%npz        =  npz
     Interstitial%npzp1      =  npz+1
+    !
+    !write(0,'(a,3i4)') "DH DEBUG: is   js     1:", is, js, 1
+    !write(0,'(a,3i4)') "DH DEBUG: ie   je   npz:", ie, je, npz
+    !write(0,'(a,3i4)') "DH DEBUG: isd  jsd    1:", isd, jsd, 1
+    !write(0,'(a,3i4)') "DH DEBUG: ied  jed  npz:", ied, jed, npz
+    !write(0,'(a,3i4)') "DH DEBUG: isc1 jsc1   1:", isc1, jsc1, 1
+    !write(0,'(a,3i4)') "DH DEBUG: iec1 jec1 npz:", iec1, jec1, npz
+    !write(0,'(a,3i4)') "DH DEBUG: isc2 jsc2   1:", isc2, jsc2, 1
+    !write(0,'(a,3i4)') "DH DEBUG: iec2 jec2 npz:", iec2, jec2, npz
+    !write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound( delz)=", lbound( delz), ubound( delz)
+    !write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound( area)=", lbound( area), ubound( area)
+    !write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound( peln)=", lbound( peln), ubound( peln)
+    !write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound( phis)=", lbound( phis), ubound( phis)
+    !write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(  pkz)=", lbound(  pkz), ubound(  pkz)
+    !write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(   pt)=", lbound(   pt), ubound(   pt)
+    !write(0,'(a,8i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(  qvi)=", lbound(  qvi), ubound(  qvi)
+    !write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(   qv)=", lbound(   qv), ubound(   qv)
+    !write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(q_con)=", lbound(q_con), ubound(q_con)
+    !write(0,'(a,1x,l,i4)') "DH DEBUG: hydrostatic, npzdelz:", hydrostatic, Interstitial%npzdelz
+    !
     ! Set up links from GFDL_interstitial DDT to ATM DDT
     Interstitial%delp       => delp
     Interstitial%delz       => delz
@@ -1632,6 +1665,14 @@ contains
     if (do_qs) Interstitial%qs => qs
     if (do_qg) Interstitial%qg => qg
     if (do_qa) Interstitial%qc => qc
+    !
+    !if (do_ql) write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(   ql)=", lbound(   ql), ubound(  ql)
+    !if (do_qi) write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(   qi)=", lbound(   qi), ubound(  qi)
+    !if (do_qr) write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(   qr)=", lbound(   qr), ubound(  qr)
+    !if (do_qs) write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(   qs)=", lbound(   qs), ubound(  qs)
+    !if (do_qg) write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(   qg)=", lbound(   qg), ubound(  qg)
+    !if (do_qa) write(0,'(a,6i4)') "DH DEBUG: DIMENSIONS FROM FY3 DYCORE: l/ubound(   qc)=", lbound(   qc), ubound(  qc)
+    !
 #ifdef USE_COND
     Interstitial%npzq_con = npz
 #else
