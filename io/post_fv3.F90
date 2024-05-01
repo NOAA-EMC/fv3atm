@@ -4343,7 +4343,8 @@ module post_fv3
         do j=jsta,jend
           do i=ista,iend
             if(wh(i,j,l) /= spval) then
-              if (omga(i,j,l) == spval) omga(i,j,l) = (-1.) * wh(i,j,l) * dpres(i,j,l)/zint(i,j,l)
+              if (omga(i,j,l) == spval .and. dpres(i,j,l) /= spval .and. zint(i,j,l) /=spval)  &
+                  omga(i,j,l) = (-1.) * wh(i,j,l) * dpres(i,j,l)/zint(i,j,l)
               zint(i,j,l) = zint(i,j,l) + zint(i,j,l+1)
             else
               if(zint(i,j,l+1) /=spval .and. t(i,j,l) /= spval .and.  alpint(i,j,l+1) /= spval  &
