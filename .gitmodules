@@ -4,14 +4,12 @@
   branch = dev/emc
 [submodule "ccpp/framework"]
   path = ccpp/framework
-  #url = https://github.com/NCAR/ccpp-framework
-  #branch = main
-  url = https://github.com/mkavulich/ccpp-framework
-  branch = feature/track_variables_tests
+  url = https://github.com/NCAR/ccpp-framework
+  branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/AnningCheng-NOAA/ccpp-physics
-  branch = mr2_innl
+  url = https://github.com/NCAR/ccpp-physics
+  branch = ufs/dev
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
