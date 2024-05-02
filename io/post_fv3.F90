@@ -1,6 +1,6 @@
 module post_fv3
 
-  use mpi
+  use mpi_f08
 
   use module_fv3_io_def,    only : wrttasks_per_group, filename_base,    &
                                    lon1, lat1, lon2, lat2, dlon, dlat,   &
@@ -56,7 +56,7 @@ module post_fv3
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
       integer,intent(in)                        :: grid_id
       integer,intent(in)                        :: mype
-      integer,intent(in)                        :: mpicomp
+      type(MPI_Comm),intent(in)                 :: mpicomp
       integer,intent(in)                        :: lead_write
       integer,intent(in)                        :: itasks, jtasks
       integer,intent(in)                        :: mynfhr
@@ -136,7 +136,7 @@ module post_fv3
                          wrt_int_state%out_grid_info(grid_id)%jm, &
                          wrt_int_state%out_grid_info(grid_id)%lm, &
                          mype,wrttasks_per_group,lead_write, &
-                         mpicomp,jts,jte,jstagrp,jendgrp,its,ite,istagrp,iendgrp)
+                         mpicomp%mpi_val,jts,jte,jstagrp,jendgrp,its,ite,istagrp,iendgrp)
 !
 !-----------------------------------------------------------------------
 !*** read namelist for pv,th,po
@@ -586,7 +586,7 @@ module post_fv3
       type(wrt_internal_state),intent(in) :: wrt_int_state
       integer,intent(in)                  :: grid_id
       integer,intent(in)                  :: mype
-      integer,intent(in)                  :: mpicomp
+      type(MPI_Comm),intent(in)           :: mpicomp
 !
 !-----------------------------------------------------------------------
 !
@@ -3557,6 +3557,49 @@ module post_fv3
                   do i=ista, iend
                     wh(i,j,l) = arrayr43d(i,j,l)
                     if(abs(arrayr43d(i,j,l)-fillvalue)<small) wh(i,j,l) = spval
+                  enddo
+                enddo
+              enddo
+            endif
+
+            ! soilt
+            if(trim(fieldname)=='soilt') then
+              !$omp parallel do default(none) private(i,j,l) shared(nsoil,jsta,jend,ista,iend,stc,arrayr43d,sm,sice,fillvalue,spval)
+              do l=1,nsoil
+                do j=jsta,jend
+                  do i=ista, iend
+                    stc(i,j,l) = arrayr43d(i,j,l)
+                    if( abs(arrayr43d(i,j,l)-fillValue) < small) stc(i,j,l) = spval
+                    !mask open water areas, combine with sea ice tmp
+                    if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,l) = spval
+                  enddo
+                enddo
+              enddo
+            endif
+
+            ! soilw
+            if(trim(fieldname)=='soilw') then
+              !$omp parallel do default(none) private(i,j,l) shared(nsoil,jsta,jend,ista,iend,smc,arrayr43d,sm,fillvalue,spval)
+              do l=1,nsoil
+                do j=jsta,jend
+                  do i=ista, iend
+                    smc(i,j,l) = arrayr43d(i,j,l)
+                    if( abs(arrayr43d(i,j,l)-fillValue) < small) smc(i,j,l) = spval
+                    if (sm(i,j) /= 0.0) smc(i,j,l) = spval
+                  enddo
+                enddo
+              enddo
+            endif
+
+            ! soill
+            if(trim(fieldname)=='soill') then
+              !$omp parallel do default(none) private(i,j,l) shared(nsoil,jsta,jend,ista,iend,sh2o,arrayr43d,sm,fillvalue,spval)
+              do l=1,nsoil
+                do j=jsta,jend
+                  do i=ista, iend
+                    sh2o(i,j,l) = arrayr43d(i,j,l)
+                    if( abs(arrayr43d(i,j,l)-fillValue) < small) sh2o(i,j,l) = spval
+                    if (sm(i,j) /= 0.0) sh2o(i,j,l) = spval
                   enddo
                 enddo
               enddo

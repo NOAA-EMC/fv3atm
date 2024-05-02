@@ -140,6 +140,7 @@ module CCPP_typedefs
     logical,               pointer      :: flag_cice(:)       => null()  !<
     logical,               pointer      :: flag_guess(:)      => null()  !<
     logical,               pointer      :: flag_iter(:)       => null()  !<
+    logical,               pointer      :: flag_lakefreeze(:) => null()  !<
     real (kind=kind_phys), pointer      :: ffmm_ice(:)        => null()  !<
     real (kind=kind_phys), pointer      :: ffmm_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: ffmm_water(:)      => null()  !<
@@ -607,6 +608,7 @@ contains
     allocate (Interstitial%flag_cice       (IM))
     allocate (Interstitial%flag_guess      (IM))
     allocate (Interstitial%flag_iter       (IM))
+    allocate (Interstitial%flag_lakefreeze (IM))
     allocate (Interstitial%ffmm_ice        (IM))
     allocate (Interstitial%ffmm_land       (IM))
     allocate (Interstitial%ffmm_water      (IM))
@@ -688,7 +690,7 @@ contains
     allocate (Interstitial%sigma           (IM))
     allocate (Interstitial%sigmaf          (IM))
     allocate (Interstitial%sigmafrac       (IM,Model%levs))
-    allocate (Interstitial%sigmatot        (IM,Model%levs))
+    allocate (Interstitial%sigmatot        (IM,Model%levs+1))
     allocate (Interstitial%snowc           (IM))
     allocate (Interstitial%snohf           (IM))
     allocate (Interstitial%snowmt          (IM))
@@ -1297,6 +1299,7 @@ contains
     Interstitial%flag_cice       = .false.
     Interstitial%flag_guess      = .false.
     Interstitial%flag_iter       = .true.
+    Interstitial%flag_lakefreeze = .false.
     Interstitial%ffmm_ice        = Model%huge
     Interstitial%ffmm_land       = Model%huge
     Interstitial%ffmm_water      = Model%huge
