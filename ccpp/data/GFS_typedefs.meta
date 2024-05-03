@@ -1245,6 +1245,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [tprcp]
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep
   long_name = total precipitation amount in each time step
