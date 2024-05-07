@@ -8,8 +8,8 @@
   branch = production/RRFS.v1
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/dustinswales/ccpp-physics
-  branch = production/RRFS.v1/swdnclrskyflx_diag
+  url = https://github.com/ufs-community/ccpp-physics
+  branch = production/RRFS.v1
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
