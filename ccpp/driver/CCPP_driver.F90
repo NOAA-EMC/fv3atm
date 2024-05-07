@@ -168,9 +168,11 @@ module CCPP_driver
       ! because threads are used on the host model side for blocking
       GFS_control%nthreads = 1
 
-!$OMP parallel num_threads (nthrds)      &
-!$OMP          default (shared)          &
-!$OMP          private (nb,nt,ntX,ierr2) &
+!$OMP parallel num_threads (nthrds)                        &
+!$OMP          default (none)                              &
+!$OMP          shared (nblks, nthrdsX, non_uniform_blocks, &
+!$OMP                  cdata_block,ccpp_suite, step)       &
+!$OMP          private (nb,nt,ntX,ierr2)                   &
 !$OMP          reduction (+:ierr)
 #ifdef _OPENMP
       nt = omp_get_thread_num()+1
