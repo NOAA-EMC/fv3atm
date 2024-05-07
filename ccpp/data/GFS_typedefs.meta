@@ -2424,6 +2424,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[sfcdswc]
+  standard_name = surface_downwelling_shortwave_flux_on_radiation_timestep_assuming_clear_sky
+  long_name = total sky sfc downward sw flux assuming clear sky conditions
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [sfcnsw]
   standard_name = surface_net_downwelling_shortwave_flux_on_radiation_timestep
   long_name = total sky sfc netsw flx into ground
@@ -9037,6 +9044,13 @@
 [dswsfci]
   standard_name = surface_downwelling_shortwave_flux
   long_name = surface downwelling shortwave flux at current time
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dswsfcci]
+  standard_name = surface_downwelling_shortwave_flux_assuming_clear_sky
+  long_name = surface downwelling shortwave flux at current time assuming clear sky
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
