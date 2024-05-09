@@ -1177,6 +1177,15 @@ module fv3atm_cap_mod
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           end if
 
+        enddo
+
+        call ESMF_VMEpochExit(rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        call ESMF_TraceRegionExit("ESMF_VMEpoch:fcstFB->wrtFB", rc=rc)
+
+        do j=1, FBCount
+
           ! Update fcstFB attributes from fcst PEs to all PEs in this VM
           ! This is needed in case some attributes are updated during run time
           call ESMF_FieldBundleGet(fcstFB(j), name=fb_name, rc=rc)
@@ -1189,11 +1198,6 @@ module fv3atm_cap_mod
           endif
 
         enddo
-
-        call ESMF_VMEpochExit(rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-        call ESMF_TraceRegionExit("ESMF_VMEpoch:fcstFB->wrtFB", rc=rc)
 
         call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
