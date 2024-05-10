@@ -28,13 +28,13 @@
 !
       use mpi_f08
       use esmf
-      use fms_mod, only : uppercase
-      use fms
-      use mpp_mod, only : mpp_init, mpp_error
+      use fms, only : fms_init, fms_end, fms_mpp_uppercase, fms_mpp_error, FATAL
+      use fms, only : NO_CALENDAR, JULIAN, GREGORIAN, THIRTY_DAY_MONTHS, NOLEAP
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
                                       n_group, num_files,                       &
+                                      fv3atm_output_dir,                        &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,                &
                                       ichunk3d,jchunk3d,kchunk3d,               &
@@ -281,6 +281,15 @@
                                    label='write_nsflip:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__)) return
+
+      call ESMF_ConfigGetAttribute(config=CF,value=fv3atm_output_dir, &
+                                   label ='fv3atm_output_dir:', default='./', rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      ! Make sure fv3atm_output_dir ends with '/'
+      if (fv3atm_output_dir(len(trim(fv3atm_output_dir)):len(trim(fv3atm_output_dir))) /= '/') then
+        fv3atm_output_dir = trim(fv3atm_output_dir) // '/'
+      end if
 
       if( wrt_int_state%write_dopost ) then
 #ifdef INLINE_POST
@@ -2140,7 +2149,7 @@
         wend = MPI_Wtime()
         if (mype == lead_write_task) then
           !** write out inline post log file
-          open(newunit=nolog,file='log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
+          open(newunit=nolog,file=trim(fv3atm_output_dir)//'log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
           write(nolog,"('completed: fv3atm')")
           write(nolog,"('forecast hour: ',f10.3)") nfhour
           write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
@@ -2313,7 +2322,7 @@
               endif
 
             else ! history bundle
-              filename = trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
+              filename = trim(fv3atm_output_dir)//trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
             endif
             if(mype == lead_write_task) print *,'in wrt run,filename= ',nbdl,trim(filename)
 
@@ -2444,7 +2453,7 @@
 
           if (out_phase == 1 .and. mype == lead_write_task) then
             !** write history log file
-            open(newunit=nolog, file='log.atm.f'//trim(cfhour))
+            open(newunit=nolog, file=trim(fv3atm_output_dir)//'log.atm.f'//trim(cfhour))
             write(nolog,"('completed: fv3atm')")
             write(nolog,"('forecast hour: ',f10.3)") nfhour
             write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
