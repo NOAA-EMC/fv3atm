@@ -9,7 +9,7 @@ option(ENABLE_DOCS "Enable generation of doxygen-based documentation." OFF)
 # Determine whether or not to generate documentation.
 if(ENABLE_DOCS)
   find_package(Doxygen REQUIRED)
-  add_subdirectory(docs)  
+  add_subdirectory(docs)
 endif()
 
 # Enable CI build & unit testing:
@@ -22,6 +22,7 @@ endif()
 ### CCPP
 ###############################################################################
 
+set(MPI ON)
 add_subdirectory(ccpp)
 
 ###############################################################################
@@ -37,6 +38,7 @@ if(MOVING_NEST)
   set(MOVING_NEST ON)
 endif()
 add_subdirectory(atmos_cubed_sphere)
+target_compile_definitions(fv3 PRIVATE BYPASS_BREED_SLP_INLINE)
 
 ###############################################################################
 ### fv3atm
@@ -104,6 +106,7 @@ add_library(fv3atm
   cpl/module_block_data.F90
   cpl/module_cplfields.F90
   cpl/module_cap_cpl.F90
+  cpl/module_cplscalars.F90
   io/fv3atm_common_io.F90
   io/fv3atm_clm_lake_io.F90
   io/fv3atm_rrfs_sd_io.F90

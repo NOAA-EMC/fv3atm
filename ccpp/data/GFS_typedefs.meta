@@ -805,6 +805,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[usfco]
+  standard_name = x_ocean_current
+  long_name = zonal current at ocean surface
+  units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[vsfco]
+  standard_name = y_ocean_current
+  long_name = meridional current at ocean surface
+  units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [tsfcl]
   standard_name = surface_skin_temperature_over_land
   long_name = surface skin temperature over land
@@ -979,7 +993,7 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[fire_heat_flux_out]
+[fire_heat_flux]
   standard_name = surface_fire_heat_flux
   long_name = heat flux of fire at the surface
   units = W m-2
@@ -987,7 +1001,7 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[frac_grid_burned_out]
+[frac_grid_burned]
   standard_name = fraction_of_grid_cell_burning
   long_name = ration of the burnt area to the grid cell area
   units = frac
@@ -2288,7 +2302,7 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
-[frp_input]
+[frp_output]
   standard_name = frp_hourly
   long_name = hourly fire radiative power
   units = MW
@@ -2312,6 +2326,37 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
+[fire_type]
+  standard_name = fire_type
+  long_name = type of fire
+  units = 1
+  dimensions = (horizontal_loop_extent)
+  type = integer
+  active = (do_smoke_coupling)
+[peak_hr]
+ standard_name = peak_hr_fire
+ long_name = time_of_peak_fire_emissions
+ units = s
+ dimensions = (horizontal_loop_extent)
+ type = real
+ kind = kind_phys
+ active = (do_smoke_coupling)
+[lu_nofire]
+ standard_name = sum_of_land_use_fractions_for_no_fire_pixels
+ long_name = land use of no fire pixels for type
+ units = 1
+ dimensions = (horizontal_loop_extent)
+ type = real
+ kind = kind_phys
+ active = (do_smoke_coupling)
+[lu_qfire]
+ standard_name = sum_of_land_use_fractions_for_cropland_fire_pixels
+ long_name = land use of fire pixels for type
+ units = 1
+ dimensions = (horizontal_loop_extent)
+ type = real
+ kind = kind_phys
+ active = (do_smoke_coupling)
 [fire_in]
   standard_name = smoke_fire_auxiliary_input
   long_name = smoke fire auxiliary input variables
@@ -2822,6 +2867,110 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[sncovr1_lnd]
+  standard_name = surface_snow_area_fraction_over_land_from_land
+  long_name = surface snow area fraction over land for coupling 
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[qsurf_lnd]
+  standard_name = surface_specific_humidity_over_land_from_land
+  long_name = surface air saturation specific humidity over land
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[hflx_lnd]
+  standard_name = surface_upward_sensible_heat_flux_over_land_from_land
+  long_name = sfc sensible heat flux input over land for coupling
+  units = K m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[evap_lnd]
+  standard_name = surface_upward_latent_heat_flux_over_land_from_land
+  long_name = sfc latent heat flux input over land for coupling
+  units = kg kg-1 m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[ep_lnd]
+  standard_name = surface_upward_potential_latent_heat_flux_over_land_from_land
+  long_name = surface upward potential latent heat flux over land for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[t2mmp_lnd]
+  standard_name = temperature_at_2m_over_land_from_land
+  long_name = 2 meter temperature over land for coupling
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[q2mp_lnd]
+  standard_name = specific_humidity_at_2m_over_land_from_land
+  long_name = 2 meter specific humidity over land for coupling
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[gflux_lnd]
+  standard_name = upward_heat_flux_in_soil_over_land_from_land
+  long_name = soil heat flux over land for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[runoff_lnd]
+  standard_name = surface_runoff_flux_from_land
+  long_name = surface runoff flux over land for coupling
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[drain_lnd]
+  standard_name = subsurface_runoff_flux_from_land
+  long_name = subsurface runoff flux over land for coupling
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[cmm_lnd]
+  standard_name = surface_drag_wind_speed_for_momentum_in_air_over_land_from_land
+  long_name = momentum exchange coefficient over land for coupling
+  units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[chh_lnd]
+  standard_name = surface_drag_mass_flux_for_heat_and_moisture_in_air_over_land_from_land
+  long_name = thermal exchange coefficient over land for coupling
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[zvfun_lnd]
+  standard_name = function_of_surface_roughness_length_and_green_vegetation_fraction_from_land
+  long_name = function of surface roughness length and green vegetation fraction
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
 [hsnoin_cpl]
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling
@@ -3052,6 +3201,22 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
+[uspdavg]
+  standard_name = mean_wind_speed_in_boundary_layer
+  long_name = average wind speed within the boundary layer
+  units = m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[hpbl_thetav]
+  standard_name = atmosphere_boundary_layer_thickness_from_modified_parcel
+  long_name = pbl height based on modified parcel method
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 [rrfs_hwp]
   standard_name = hourly_wildfire_potential
   long_name = rrfs hourly fire weather potential
@@ -3167,7 +3332,7 @@
   long_name = MPI communicator
   units = index
   dimensions = ()
-  type = integer
+  type = MPI_Comm
 [ntasks]
   standard_name = number_of_mpi_tasks
   long_name = number of MPI tasks in communicator
@@ -3427,6 +3592,12 @@
 [cpllnd]
   standard_name = flag_for_land_coupling
   long_name = flag controlling cpllnd collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cpllnd2atm]
+  standard_name = flag_for_one_way_land_coupling_to_atmosphere
+  long_name = flag controlling land coupling to the atmosphere (default off)
   units = flag
   dimensions = ()
   type = logical
@@ -5239,6 +5410,12 @@
   units = flag
   dimensions = ()
   type = logical
+[xr_cnvcld]
+  standard_name = flag_for_suspended_convective_clouds_in_Xu_Randall
+  long_name = flag for using suspended convective clouds in Xu Randall
+  units = flag
+  dimensions = ()
+  type = logical
 [shal_cnv]
   standard_name = flag_for_simplified_arakawa_schubert_shallow_convection
   long_name = flag for calling shallow convection
@@ -5696,6 +5873,12 @@
   standard_name = flag_for_surface_roughness_option_over_water
   long_name = surface roughness options over water
   units = flag
+  dimensions = ()
+  type = integer
+[icplocn2atm]
+  standard_name = control_for_air_sea_flux_computation_over_water
+  long_name = air-sea flux option
+  units = 1
   dimensions = ()
   type = integer
 [xkzminv]
@@ -6675,6 +6858,13 @@
   standard_name = smoke_plumerise_frequency
   long_name = rrfs smoke add smoke option
   units = min
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[n_dbg_lines]
+  standard_name = smoke_debug_lines
+  long_name = rrfs smoke add smoke option
+  units = index
   dimensions = ()
   type = integer
   active = (do_smoke_coupling)
@@ -9770,7 +9960,7 @@
 [ltg1_max]
   standard_name = lightning_threat_index_1
   long_name = lightning threat index 1
-  units = flashes 5 min-1
+  units = flashes min-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -9779,7 +9969,7 @@
 [ltg2_max]
   standard_name = lightning_threat_index_2
   long_name = lightning threat index 2
-  units = flashes 5 min-1
+  units = flashes min-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -9788,7 +9978,7 @@
 [ltg3_max]
   standard_name = lightning_threat_index_3
   long_name = lightning threat index 3
-  units = flashes 5 min-1
+  units = flashes min-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys

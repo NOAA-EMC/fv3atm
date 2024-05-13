@@ -29,6 +29,7 @@ VARIABLE_DEFINITION_FILES = [
 TYPEDEFS_NEW_METADATA = {
     'ccpp_types' : {
         'ccpp_t' : 'cdata',
+        'MPI_Comm' : '',
         'ccpp_types' : '',
         },
     'machine' : {
@@ -192,6 +193,7 @@ SCHEME_FILES = [
     'physics/physics/SFC_Layer/UFS/sfc_nst_post.f90',
     'physics/physics/SFC_Models/Land/RUC/lsm_ruc.F90',
     'physics/physics/SFC_Models/SeaIce/CICE/sfc_cice.f',
+    'physics/physics/SFC_Models/Land/sfc_land.F90',
     'physics/physics/SFC_Models/Land/Noah/lsm_noah.f',
     'physics/physics/SFC_Models/Land/Noahmp/noahmpdrv.F90',
     'physics/physics/SFC_Models/Lake/Flake/flake_driver.F90',
