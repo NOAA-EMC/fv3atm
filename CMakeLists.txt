@@ -65,7 +65,7 @@ endif()
 
 if(MOVING_NEST)
   list(APPEND _fv3atm_defs_private MOVING_NEST)
-  if (NOT HYDRO)
+  if(NOT HYDRO)
     list(APPEND _fv3atm_defs_private MOIST_CAPPA USE_COND)
   endif()
 
