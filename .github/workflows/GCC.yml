@@ -87,7 +87,7 @@ jobs:
     - name: install-utilities
       run: |
         sudo apt-get install doxygen graphviz
-        python3 -m pip install gcovr
+        python3 -m pip install gcovr==5.2
 
     - name: install-cmake
       run: |
