@@ -24,21 +24,6 @@ jobs:
         mpi: ["mpich", "openmpi"]
 
     steps:
-
-    # Only do Doxygen and gcovr build for one job
-    - name: decide-doc-gcovr-build
-      run: |
-        if [[ "${{ matrix.gcc_ver }}" == 12 && "${{ matrix.mpi }}" == mpich ]]; then
-          echo 'devbuild=ON' | tee -a ${GITHUB_ENV}
-          echo 'gcov_cmake="-DCMAKE_Fortran_FLAGS=-fprofile-abs-path -fprofile-arcs -ftest-coverage -O0"' | tee -a ${GITHUB_ENV}
-        else
-          echo 'devbuild=OFF' | tee -a ${GITHUB_ENV}
-        fi
-
-    - name: apt-install
-      if: ${{ env.devbuild == 'ON' }}
-      run: |
-        sudo apt-get install gcovr doxygen graphviz
         
     - name: checkout-fv3atm
       uses: actions/checkout@v4
@@ -88,6 +73,21 @@ jobs:
         mpi: ["mpich", "openmpi"]
 
     steps:
+
+    # Only do Doxygen and gcovr build for one job
+    - name: decide-doc-gcovr-build
+      run: |
+        if [[ "${{ matrix.cmake_opts }}" == "-D32BIT=ON" && "${{ matrix.gcc_ver }}" == 12 && "${{ matrix.mpi }}" == mpich ]]; then
+          echo 'devbuild=ON' | tee -a ${GITHUB_ENV}
+          echo 'gcov_cmake="-DCMAKE_Fortran_FLAGS=-fprofile-abs-path -fprofile-arcs -ftest-coverage -O0"' | tee -a ${GITHUB_ENV}
+        else
+          echo 'devbuild=OFF' | tee -a ${GITHUB_ENV}
+        fi
+
+    - name: apt-install
+      if: ${{ env.devbuild == 'ON' }}
+      run: |
+        sudo apt-get install gcovr doxygen graphviz
 
     - name: install-doxygen
       run: |
