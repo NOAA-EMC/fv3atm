@@ -84,14 +84,11 @@ jobs:
           echo 'devbuild=OFF' | tee -a ${GITHUB_ENV}
         fi
 
-    - name: apt-install
+    - name: install-utilities
       if: ${{ env.devbuild == 'ON' }}
       run: |
-        sudo apt-get install gcovr doxygen graphviz
-
-    - name: install-doxygen
-      run: |
         sudo apt-get install doxygen graphviz
+        python3 -m pip install gcovr
 
     - name: install-cmake
       run: |
