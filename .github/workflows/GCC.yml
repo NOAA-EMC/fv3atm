@@ -126,7 +126,7 @@ jobs:
         export CXX=mpicxx
         export FC=mpif90
         cat /home/runner/work/fv3atm/fv3atm/spack-develop/opt/spack/linux-ubuntu22.04-zen2/gcc-12.3.0/fms-2023.04-*/lib/cmake/fms/fms-config.cmake
-        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON
+        cmake ${GITHUB_WORKSPACE}/fv3atm -DBUILD_TESTING=ON ${{ matrix.cmake_opts }} -DENABLE_DOCS=ON ${{ env.gcov_cmake }}
         make -j2
         ls -l /home/runner/work/fv3atm/fv3atm/fv3atm/io
 
@@ -138,9 +138,8 @@ jobs:
     - name: get-test-coverage
       if: ${{ env.devbuild == 'ON' }}
       run: |
-        f=${GITHUB_WORKSPACE}
-        cd $f/build
-        gcovr -r .. -v --html-details --exclude ${f}/tests --exclude $f/stochastic_physics_repo --exclude $f/build/ccpp --exclude $f/ccpp/physics --exclude $f/ccpp/framework --exclude $f/atmos_cubed_sphere  --exclude CMakeFiles --print-summary -o test-coverage.html
+        cd $GITHUB_WORKSPACE/build
+        gcovr -r .. -v --html-details --exclude $GITHUB_WORKSPACE/tests --exclude $GITHUB_WORKSPACE/stochastic_physics_repo --exclude $GITHUB_WORKSPACE/build/ccpp --exclude $GITHUB_WORKSPACE/ccpp/physics --exclude $GITHUB_WORKSPACE/ccpp/framework --exclude $GITHUB_WORKSPACE/atmos_cubed_sphere  --exclude CMakeFiles --print-summary -o test-coverage.html
 
     - name: upload-test-coverage
       uses: actions/upload-artifact@v4
