@@ -148,13 +148,14 @@ jobs:
       with:
         name: test-coverage-fv3atm-${{ github.sha }}
         path: |
-              ${{ github.workspace }}/fv3atm/build/*.html 
-              ${{ github.workspace }}/fv3atm/build/*.css
+              ${{ github.workspace }}/build/*.html 
+              ${{ github.workspace }}/build/*.css
 
-    - uses: actions/upload-artifact@v4
+    - name: upload-docs
+      uses: actions/upload-artifact@v4
       if: ${{ env.devbuild == 'ON' }}
       with:
-        name: docs-gcc${{ matrix.gcc_ver }}-${{ matrix.mpi }}-${{ matrix.cmake_opts }}
+        name: docs-fv3atm
         path: |
           build/docs/html
 
