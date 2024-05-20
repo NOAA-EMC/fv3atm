@@ -1244,6 +1244,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [tprcp]
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep
   long_name = total precipitation amount in each time step
@@ -5211,7 +5212,7 @@
   long_name = model 2m diagnostics use the temperature and humidity calculated by the lake model
   units = flag
   dimensions = ()
-  type = integer
+  type = logical
 [lkm]
   standard_name = control_for_lake_model_execution_method
   long_name = control for lake model execution: 0=no lake, 1=lake, 2=lake+nsst

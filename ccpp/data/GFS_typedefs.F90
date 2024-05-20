@@ -309,7 +309,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ffmm   (:)   => null()  !< fm parameter from PBL scheme
     real (kind=kind_phys), pointer :: ffhh   (:)   => null()  !< fh parameter from PBL scheme
     real (kind=kind_phys), pointer :: f10m   (:)   => null()  !< fm at 10m - Ratio of sigma level 1 wind and 10m wind
-    real (kind=kind_phys), pointer :: rca     (:)  => null()  !< canopy resistance
+    real (kind=kind_phys), pointer :: rca    (:)   => null()  !< canopy resistance
     real (kind=kind_phys), pointer :: tprcp  (:)   => null()  !< sfc_fld%tprcp - total precipitation
     real (kind=kind_phys), pointer :: srflag (:)   => null()  !< sfc_fld%srflag - snow/rain flag for precipitation
     real (kind=kind_phys), pointer :: slc    (:,:) => null()  !< liquid soil moisture
@@ -2579,11 +2579,13 @@ module GFS_typedefs
       Sfcprop%dt_cool = zero
       Sfcprop%qrain   = zero
     endif
+    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
+      allocate (Sfcprop%rca      (IM))
+      Sfcprop%rca        = clear_val
+    end if
     if (Model%lsm == Model%lsm_noah) then
       allocate (Sfcprop%xlaixy   (IM))
-      allocate (Sfcprop%rca      (IM))
       Sfcprop%xlaixy     = clear_val
-      Sfcprop%rca        = clear_val
     end if
     if (Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noahmp .or. &
          (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm)) then
