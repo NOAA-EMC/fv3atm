@@ -1,21 +1,15 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
-  #url = https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
-  #branch = dev/emc
-  url = https://github.com/climbfuji/GFDL_atmos_cubed_sphere
-  branch = feature/ccpp_data_thrd_cnt
+  url = https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
+  branch = dev/emc
 [submodule "ccpp/framework"]
   path = ccpp/framework
-  #url = https://github.com/NCAR/ccpp-framework
-  #branch = main
-  url = https://github.com/climbfuji/ccpp-framework
-  branch = feature/prebuild_optarg_based_on_merge_feature_capgen_into_main_20240308
+  url = https://github.com/NCAR/ccpp-framework
+  branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  #url = https://github.com/ufs-community/ccpp-physics
-  #branch = ufs/dev
-  url = https://github.com/climbfuji/ccpp-physics
-  branch = feature/ccpp_prebuild_opt_args
+  url = https://github.com/ufs-community/ccpp-physics
+  branch = ufs/dev
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
