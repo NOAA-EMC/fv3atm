@@ -450,7 +450,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 !   variable type are allocated for the global grid (without halo regions).
 ! </INOUT>
 subroutine atmos_timestep_diagnostics(Atmos)
-  use mpi
+  use mpi_f08
   implicit none
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
@@ -582,7 +582,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
 
-   call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, tile_num)
+   tile_num=-1
+   call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, global_tile_num=tile_num)
 
    allocate (Atmos%lon(nlon,nlat), Atmos%lat(nlon,nlat))
    call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
@@ -3142,7 +3143,8 @@ end subroutine update_atmos_chemistry
 
     use ESMF
 
-    use module_cplfields, only: exportFields, chemistryFieldNames
+    use module_cplfields,  only: exportFields, chemistryFieldNames
+    use module_cplscalars, only: flds_scalar_name
 
     !--- arguments
     integer, optional, intent(out) :: rc
@@ -3192,33 +3194,36 @@ end subroutine update_atmos_chemistry
       if (isFound) then
         call ESMF_FieldGet(exportFields(n), name=fieldname, rank=rank, typekind=datatype, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-        if (datatype == ESMF_TYPEKIND_R8) then
-           select case (rank)
-             case (2)
-               call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
-               if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-             case (3)
-               call ESMF_FieldGet(exportFields(n),farrayPtr=datar83d,localDE=0, rc=localrc)
-               if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-             case default
-               !--- skip field
-               isFound = .false.
-           end select
-        else if (datatype == ESMF_TYPEKIND_R4) then
-           select case (rank)
-             case (2)
-               call ESMF_FieldGet(exportFields(n),farrayPtr=datar42d,localDE=0, rc=localrc)
-               if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-             case default
-               !--- skip field
-               isFound = .false.
-           end select
-        else
-          !--- skip field
+        if (trim(fieldname) == trim(flds_scalar_name)) then
           isFound = .false.
+        else
+          if (datatype == ESMF_TYPEKIND_R8) then
+            select case (rank)
+            case (2)
+              call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
+              if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+            case (3)
+              call ESMF_FieldGet(exportFields(n),farrayPtr=datar83d,localDE=0, rc=localrc)
+              if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+            case default
+              !--- skip field
+              isFound = .false.
+            end select
+          else if (datatype == ESMF_TYPEKIND_R4) then
+            select case (rank)
+            case (2)
+              call ESMF_FieldGet(exportFields(n),farrayPtr=datar42d,localDE=0, rc=localrc)
+              if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+            case default
+              !--- skip field
+              isFound = .false.
+            end select
+          else
+            !--- skip field
+            isFound = .false.
+          end if
         end if
       end if
-
       !--- skip field if only required for chemistry
       if (isFound .and. GFS_control%cplchm) isFound = .not.any(trim(fieldname) == chemistryFieldNames)
 

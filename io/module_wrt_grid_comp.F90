@@ -26,13 +26,15 @@
 !
 !---------------------------------------------------------------------------------
 !
-      use mpi
+      use mpi_f08
       use esmf
-      use fms
+      use fms, only : fms_init, fms_end, fms_mpp_uppercase, fms_mpp_error, FATAL
+      use fms, only : NO_CALENDAR, JULIAN, GREGORIAN, THIRTY_DAY_MONTHS, NOLEAP
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
                                       n_group, num_files,                       &
+                                      fv3atm_output_dir,                        &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,                &
                                       ichunk3d,jchunk3d,kchunk3d,               &
@@ -65,7 +67,7 @@
       integer,save      :: itasks, jtasks                                 !<-- # of write tasks in i/j direction in the current group
       integer,save      :: ngrids
 
-      integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
+      type(MPI_Comm),save :: wrt_mpi_comm                                 !<-- the mpi communicator in the write comp
       integer,save      :: idate(7), start_time(7)
       logical,save      :: write_nsflip
       logical,save      :: change_wrtidate=.false.
@@ -157,7 +159,7 @@
       integer,dimension(2,6)                  :: decomptile
       integer,dimension(2)                    :: regDecomp !define delayout for the nest grid
       integer                                 :: fieldCount
-      integer                                 :: vm_mpi_comm
+      type(MPI_Comm)                          :: vm_mpi_comm
       character(40)                           :: fieldName
       type(ESMF_Config)                       :: cf, cf_output_grid
       type(ESMF_Info)                         :: info
@@ -240,7 +242,7 @@
 !
       call ESMF_VMGetCurrent(vm=VM,rc=RC)
       call ESMF_VMGet(vm=VM, localPet=wrt_int_state%mype,               &
-                      petCount=wrt_int_state%petcount,mpiCommunicator=vm_mpi_comm,rc=rc)
+                      petCount=wrt_int_state%petcount,mpiCommunicator=vm_mpi_comm%mpi_val,rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call mpi_comm_dup(vm_mpi_comm, wrt_mpi_comm, rc)
@@ -251,7 +253,7 @@
       last_write_task = ntasks -1
       lprnt = lead_write_task == wrt_int_state%mype
 
-      call fms_init(wrt_mpi_comm)
+      call fms_init(wrt_mpi_comm%mpi_val)
 
 !      print *,'in wrt, lead_write_task=', &
 !         lead_write_task,'last_write_task=',last_write_task, &
@@ -279,6 +281,15 @@
                                    label='write_nsflip:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__)) return
+
+      call ESMF_ConfigGetAttribute(config=CF,value=fv3atm_output_dir, &
+                                   label ='fv3atm_output_dir:', default='./', rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      ! Make sure fv3atm_output_dir ends with '/'
+      if (fv3atm_output_dir(len(trim(fv3atm_output_dir)):len(trim(fv3atm_output_dir))) /= '/') then
+        fv3atm_output_dir = trim(fv3atm_output_dir) // '/'
+      end if
 
       if( wrt_int_state%write_dopost ) then
 #ifdef INLINE_POST
@@ -382,6 +393,12 @@
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=output_grid(n), label ='output_grid:',rc=rc)
         if (lprnt) then
           print *,'grid_id= ', n, ' output_grid= ', trim(output_grid(n))
+        end if
+
+        if (trim(output_grid(n)) == 'cubed_sphere_grid' .and. wrt_int_state%write_dopost) then
+          write(0,*) 'wrt_initialize_p1: Inline post is not supported with cubed_sphere_grid outputs'
+          call ESMF_LogWrite("wrt_initialize_p1: Inline post is not supported with cubed_sphere_grid output",ESMF_LOGMSG_ERROR,rc=RC)
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
         end if
 
         call ESMF_ConfigGetAttribute(config=CF, value=itasks,default=1,label ='itasks:',rc=rc)
@@ -2132,7 +2149,7 @@
         wend = MPI_Wtime()
         if (mype == lead_write_task) then
           !** write out inline post log file
-          open(newunit=nolog,file='log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
+          open(newunit=nolog,file=trim(fv3atm_output_dir)//'log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
           write(nolog,"('completed: fv3atm')")
           write(nolog,"('forecast hour: ',f10.3)") nfhour
           write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
@@ -2305,7 +2322,7 @@
               endif
 
             else ! history bundle
-              filename = trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
+              filename = trim(fv3atm_output_dir)//trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
             endif
             if(mype == lead_write_task) print *,'in wrt run,filename= ',nbdl,trim(filename)
 
@@ -2436,7 +2453,7 @@
 
           if (out_phase == 1 .and. mype == lead_write_task) then
             !** write history log file
-            open(newunit=nolog, file='log.atm.f'//trim(cfhour))
+            open(newunit=nolog, file=trim(fv3atm_output_dir)//'log.atm.f'//trim(cfhour))
             write(nolog,"('completed: fv3atm')")
             write(nolog,"('forecast hour: ',f10.3)") nfhour
             write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
@@ -3363,6 +3380,7 @@
 
     integer                          :: localPet, petCount, i, j, k, ind
     type(ESMF_Grid)                  :: grid
+    real(ESMF_KIND_I4), allocatable  :: valueListi4(:)
     real(ESMF_KIND_R4), allocatable  :: valueListr4(:)
     real(ESMF_KIND_R8), allocatable  :: valueListr8(:)
     integer                          :: valueCount, fieldCount, udimCount
@@ -3383,7 +3401,7 @@
     logical                          :: thereAreVerticals
     integer                          :: ch_dimid, timeiso_varid
     character(len=ESMF_MAXSTR)       :: time_iso
-    integer                          :: wrt_mpi_comm
+    type(MPI_Comm)                   :: wrt_mpi_comm
     type(ESMF_VM)                    :: vm
 
     rc = ESMF_SUCCESS
@@ -3436,7 +3454,7 @@
         call ESMF_GridCompGet(comp, localPet=localPet, petCount=petCount, vm=vm, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        call ESMF_VMGet(vm=vm, mpiCommunicator=wrt_mpi_comm, rc=rc)
+        call ESMF_VMGet(vm=vm, mpiCommunicator=wrt_mpi_comm%mpi_val, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if (petCount > 1) then
@@ -3748,6 +3766,12 @@
                               name=trim(dimLabel), valueList=valueListr8, rc=rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      else if ( typekind == ESMF_TYPEKIND_I4) then
+        allocate(valueListi4(valueCount))
+        call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
+                              name=trim(dimLabel), valueList=valueListi4, rc=rc)
+
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       else
         write(0,*) 'in write_out_ungridded_dim_atts: ERROR unknown typekind'
       endif
@@ -3784,6 +3808,17 @@
         ncerr = nf90_put_var(ncid, varid, values=valueListr8)
         if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
         deallocate(valueListr8)
+      else if(typekind == ESMF_TYPEKIND_I4) then
+        ncerr = nf90_def_var(ncid, trim(dimLabel), NF90_INT4, &
+                             dimids=(/dimid/), varid=varid)
+        if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        ncerr = nf90_enddef(ncid=ncid)
+        if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        ncerr = nf90_put_var(ncid, varid, values=valueListi4)
+        if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+        deallocate(valueListi4)
       endif
       ! add attributes to this vertical variable
       call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
