@@ -1213,7 +1213,7 @@ module GFS_typedefs
                                             !< workfunction for RAS
     real(kind=kind_phys) :: cdmbgwd(4)      !< multiplication factors for cdmb, gwd and NS gwd, tke based enhancement
     real(kind=kind_phys) :: psl_gwd_dx_factor  !< multiplication factors for grid spacing
-    real(kind=kind_phys) :: psl_gwd_z0m_factor  !< multiplication factors for z0m
+    real(kind=kind_phys) :: gwd_z0m_factor  !< multiplication factors for z0m
     real(kind=kind_phys) :: sup             !< supersaturation in pdf cloud when t is very low
     real(kind=kind_phys) :: ctei_rm(2)      !< critical cloud top entrainment instability criteria
                                             !< (used if mstrat=.true.)
@@ -3753,7 +3753,7 @@ module GFS_typedefs
                                                                       !< workfunction for RAS
     real(kind=kind_phys) :: cdmbgwd(4)     = (/2.0d0,0.25d0,1.0d0,1.0d0/)   !< multiplication factors for cdmb, gwd, and NS gwd, tke based enhancement
     real(kind=kind_phys) :: psl_gwd_dx_factor  = 6.0                  !< multiplication factors for grid spacing
-    real(kind=kind_phys) :: psl_gwd_z0m_factor  = 0.003               !< multiplication factors for z0m
+    real(kind=kind_phys) :: gwd_z0m_factor = 0.003               !< multiplication factors for z0m
     real(kind=kind_phys) :: sup            = 1.0                      !< supersaturation in pdf cloud (IMP_physics=98) when t is very low
                                                                       !< or ice super saturation in SHOC (when do_shoc=.true.)
     real(kind=kind_phys) :: ctei_rm(2)     = (/10.0d0,10.0d0/)        !< critical cloud top entrainment instability criteria
@@ -4074,7 +4074,7 @@ module GFS_typedefs
                                xr_cnvcld, random_clds, shal_cnv, imfshalcnv, imfdeepcnv,    &
                                isatmedmf, do_deep, jcap,                                    &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd,                        &
-                               psl_gwd_dx_factor, psl_gwd_z0m_factor,                       &
+                               psl_gwd_dx_factor, gwd_z0m_factor,                           &
                                sup, ctei_rm, crtrh,                                         &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
@@ -4917,7 +4917,7 @@ module GFS_typedefs
     Model%ccwf              = ccwf
     Model%cdmbgwd           = cdmbgwd
     Model%psl_gwd_dx_factor = psl_gwd_dx_factor
-    Model%psl_gwd_z0m_factor= psl_gwd_z0m_factor
+    Model%gwd_z0m_factor    = gwd_z0m_factor
     Model%sup               = sup
     Model%ctei_rm           = ctei_rm
     Model%crtrh             = crtrh
@@ -6779,7 +6779,7 @@ module GFS_typedefs
       print *, ' ccwf              : ', Model%ccwf
       print *, ' cdmbgwd           : ', Model%cdmbgwd
       print *, ' psl_gwd_dx_factor : ', Model%psl_gwd_dx_factor
-      print *, ' psl_gwd_z0m_factor: ', Model%psl_gwd_z0m_factor
+      print *, ' gwd_z0m_factor    : ', Model%gwd_z0m_factor
       print *, ' sup               : ', Model%sup
       print *, ' ctei_rm           : ', Model%ctei_rm
       print *, ' crtrh             : ', Model%crtrh

@@ -7489,7 +7489,7 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[psl_gwd_z0m_factor]
+[gwd_z0m_factor]
   standard_name = momentum_roughness_factor_in_turbulent_form_drag
   long_name = multiplication of Z0m in PSL turbulent form drag
   units = count
