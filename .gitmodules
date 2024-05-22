@@ -6,10 +6,8 @@
   branch = feature/chunked_array_support_use_it
 [submodule "ccpp/framework"]
   path = ccpp/framework
-  #url = https://github.com/NCAR/ccpp-framework
-  #branch = main
-  url = https://github.com/climbfuji/ccpp-framework
-  branch = bugfix/mpi_target_src_cmakelists
+  url = https://github.com/NCAR/ccpp-framework
+  branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
   #url = https://github.com/ufs-community/ccpp-physics
