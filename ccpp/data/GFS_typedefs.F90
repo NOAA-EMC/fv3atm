@@ -309,7 +309,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ffmm   (:)   => null()  !< fm parameter from PBL scheme
     real (kind=kind_phys), pointer :: ffhh   (:)   => null()  !< fh parameter from PBL scheme
     real (kind=kind_phys), pointer :: f10m   (:)   => null()  !< fm at 10m - Ratio of sigma level 1 wind and 10m wind
-    real (kind=kind_phys), pointer :: rca    (:)   => null()  !< canopy resistance
+    real (kind=kind_phys), pointer :: rca     (:)  => null()  !< canopy resistance
     real (kind=kind_phys), pointer :: tprcp  (:)   => null()  !< sfc_fld%tprcp - total precipitation
     real (kind=kind_phys), pointer :: srflag (:)   => null()  !< sfc_fld%srflag - snow/rain flag for precipitation
     real (kind=kind_phys), pointer :: slc    (:,:) => null()  !< liquid soil moisture
@@ -1161,7 +1161,6 @@ module GFS_typedefs
     logical              :: lheatstrg       !< flag for canopy heat storage parameterization
     logical              :: lseaspray       !< flag for sea spray parameterization
     logical              :: cnvcld
-    logical              :: xr_cnvcld       !< flag for adding suspended convective clouds to Xu-Randall cloud fraction
     logical              :: random_clds     !< flag controls whether clouds are random
     logical              :: shal_cnv        !< flag for calling shallow convection
     logical              :: do_deep         !< whether to do deep convection
@@ -1213,7 +1212,7 @@ module GFS_typedefs
                                             !< workfunction for RAS
     real(kind=kind_phys) :: cdmbgwd(4)      !< multiplication factors for cdmb, gwd and NS gwd, tke based enhancement
     real(kind=kind_phys) :: psl_gwd_dx_factor  !< multiplication factors for grid spacing
-    real(kind=kind_phys) :: psl_gwd_z0m_factor  !< multiplication factors for z0m
+    real(kind=kind_phys) :: gwd_z0m_factor  !< multiplication factors for z0m
     real(kind=kind_phys) :: sup             !< supersaturation in pdf cloud when t is very low
     real(kind=kind_phys) :: ctei_rm(2)      !< critical cloud top entrainment instability criteria
                                             !< (used if mstrat=.true.)
@@ -2582,13 +2581,11 @@ module GFS_typedefs
       Sfcprop%dt_cool = zero
       Sfcprop%qrain   = zero
     endif
-    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-      allocate (Sfcprop%rca      (IM))
-      Sfcprop%rca        = clear_val
-    end if
     if (Model%lsm == Model%lsm_noah) then
       allocate (Sfcprop%xlaixy   (IM))
+      allocate (Sfcprop%rca      (IM))
       Sfcprop%xlaixy     = clear_val
+      Sfcprop%rca        = clear_val
     end if
     if (Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noahmp .or. &
          (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm)) then
@@ -3687,7 +3684,6 @@ module GFS_typedefs
     logical              :: lheatstrg      = .false.                  !< flag for canopy heat storage parameterization
     logical              :: lseaspray      = .false.                  !< flag for sea spray parameterization
     logical              :: cnvcld         = .false.
-    logical              :: xr_cnvcld      = .true.                   !< flag for including suspended convective clouds in Xu-Randall cloud fraction
     logical              :: random_clds    = .false.                  !< flag controls whether clouds are random
     logical              :: shal_cnv       = .false.                  !< flag for calling shallow convection
     integer              :: imfshalcnv     =  1                       !< flag for mass-flux shallow convection scheme
@@ -3755,7 +3751,7 @@ module GFS_typedefs
                                                                       !< workfunction for RAS
     real(kind=kind_phys) :: cdmbgwd(4)     = (/2.0d0,0.25d0,1.0d0,1.0d0/)   !< multiplication factors for cdmb, gwd, and NS gwd, tke based enhancement
     real(kind=kind_phys) :: psl_gwd_dx_factor  = 6.0                  !< multiplication factors for grid spacing
-    real(kind=kind_phys) :: psl_gwd_z0m_factor  = 0.003               !< multiplication factors for z0m
+    real(kind=kind_phys) :: gwd_z0m_factor  = 0.003                   !< multiplication factors for z0m
     real(kind=kind_phys) :: sup            = 1.0                      !< supersaturation in pdf cloud (IMP_physics=98) when t is very low
                                                                       !< or ice super saturation in SHOC (when do_shoc=.true.)
     real(kind=kind_phys) :: ctei_rm(2)     = (/10.0d0,10.0d0/)        !< critical cloud top entrainment instability criteria
@@ -4073,10 +4069,10 @@ module GFS_typedefs
                                hwrf_samfdeep, hwrf_samfshal,progsigma,betascu,betamcu,      &
                                betadcu,h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,&
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
-                               xr_cnvcld, random_clds, shal_cnv, imfshalcnv, imfdeepcnv,    &
-                               isatmedmf, do_deep, jcap,                                    &
+                               random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
+                               do_deep, jcap,                                               &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd,                        &
-                               psl_gwd_dx_factor, psl_gwd_z0m_factor,                       &
+                               psl_gwd_dx_factor, gwd_z0m_factor,                           &
                                sup, ctei_rm, crtrh,                                         &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
@@ -4905,7 +4901,6 @@ module GFS_typedefs
     Model%lheatstrg         = lheatstrg
     Model%lseaspray         = lseaspray
     Model%cnvcld            = cnvcld
-    Model%xr_cnvcld         = xr_cnvcld
     Model%random_clds       = random_clds
     Model%shal_cnv          = shal_cnv
     Model%imfshalcnv        = imfshalcnv
@@ -4919,7 +4914,7 @@ module GFS_typedefs
     Model%ccwf              = ccwf
     Model%cdmbgwd           = cdmbgwd
     Model%psl_gwd_dx_factor = psl_gwd_dx_factor
-    Model%psl_gwd_z0m_factor= psl_gwd_z0m_factor
+    Model%gwd_z0m_factor    = gwd_z0m_factor
     Model%sup               = sup
     Model%ctei_rm           = ctei_rm
     Model%crtrh             = crtrh
@@ -6199,7 +6194,7 @@ module GFS_typedefs
                  ' do_shoc=',   Model%do_shoc,   ' nshoc3d=',  Model%nshoc_3d,  &
                  ' nshoc_2d=',  Model%nshoc_2d,  ' shoc_cld=', Model%shoc_cld,  &
                  ' nkbfshoc=',  Model%nkbfshoc,  ' nahdshoc=', Model%nahdshoc,  &
-                 ' nscfshoc=',  Model%nscfshoc,  ' xr_cnvcld=',Model%xr_cnvcld, &
+                 ' nscfshoc=',  Model%nscfshoc,                                 &
                  ' uni_cld=',   Model%uni_cld,                                  &
                  ' ntot3d=',    Model%ntot3d,    ' ntot2d=',   Model%ntot2d,    &
                  ' shocaftcnv=',Model%shocaftcnv,' indcld=',   Model%indcld,    &
@@ -6781,7 +6776,7 @@ module GFS_typedefs
       print *, ' ccwf              : ', Model%ccwf
       print *, ' cdmbgwd           : ', Model%cdmbgwd
       print *, ' psl_gwd_dx_factor : ', Model%psl_gwd_dx_factor
-      print *, ' psl_gwd_z0m_factor: ', Model%psl_gwd_z0m_factor
+      print *, ' gwd_z0m_factor    : ', Model%gwd_z0m_factor
       print *, ' sup               : ', Model%sup
       print *, ' ctei_rm           : ', Model%ctei_rm
       print *, ' crtrh             : ', Model%crtrh

@@ -1245,7 +1245,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [tprcp]
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep
   long_name = total precipitation amount in each time step
@@ -5217,7 +5216,7 @@
   long_name = model 2m diagnostics use the temperature and humidity calculated by the lake model
   units = flag
   dimensions = ()
-  type = logical
+  type = integer
 [lkm]
   standard_name = control_for_lake_model_execution_method
   long_name = control for lake model execution: 0=no lake, 1=lake, 2=lake+nsst
@@ -5408,12 +5407,6 @@
 [random_clds]
   standard_name = flag_for_random_clouds_for_RAS
   long_name = flag for using random clouds with the RAS scheme
-  units = flag
-  dimensions = ()
-  type = logical
-[xr_cnvcld]
-  standard_name = flag_for_suspended_convective_clouds_in_Xu_Randall
-  long_name = flag for using suspended convective clouds in Xu Randall
   units = flag
   dimensions = ()
   type = logical
@@ -7490,7 +7483,7 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[psl_gwd_z0m_factor]
+[gwd_z0m_factor]
   standard_name = momentum_roughness_factor_in_turbulent_form_drag
   long_name = multiplication of Z0m in PSL turbulent form drag
   units = count
