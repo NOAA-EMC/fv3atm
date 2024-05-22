@@ -748,6 +748,7 @@ module GFS_typedefs
     integer              :: ncols           !< total number of columns for all blocks
     !
     integer              :: nchunks         !< number of chunks of an array that are used in the CCPP run phase
+    ! DH* CAN THESE BE POINTER?
     integer, allocatable :: chunk_begin(:)  !< first indices of chunks of an array for the CCPP run phase
     integer, allocatable :: chunk_end(:)    !< last indices of chunks of an array for the CCPP run phase
     !
@@ -1642,50 +1643,50 @@ module GFS_typedefs
 !!
   type GFS_grid_type
 
-    real (kind=kind_phys), allocatable :: xlon   (:)        !< grid longitude in radians, ok for both 0->2pi
-                                                            !! or -pi -> +pi ranges
-    real (kind=kind_phys), allocatable :: xlat   (:)        !< grid latitude in radians, default to pi/2 ->
-                                                            !! -pi/2 range, otherwise adj in subr called
-    real (kind=kind_phys), allocatable :: xlat_d (:)        !< grid latitude in degrees, default to 90 ->
-                                                            !! -90 range, otherwise adj in subr called
-    real (kind=kind_phys), allocatable :: xlon_d (:)        !< grid longitude in degrees, default to 0 ->
-                                                            !! 360 range, otherwise adj in subr called
-    real (kind=kind_phys), allocatable :: sinlat (:)        !< sine of the grids corresponding latitudes
-    real (kind=kind_phys), allocatable :: coslat (:)        !< cosine of the grids corresponding latitudes
-    real (kind=kind_phys), allocatable :: area   (:)        !< area of the grid cell
-    real (kind=kind_phys), allocatable :: dx     (:)        !< relative dx for the grid cell
+    real (kind=kind_phys), pointer :: xlon   (:)        !< grid longitude in radians, ok for both 0->2pi
+                                                        !! or -pi -> +pi ranges
+    real (kind=kind_phys), pointer :: xlat   (:)        !< grid latitude in radians, default to pi/2 ->
+                                                        !! -pi/2 range, otherwise adj in subr called
+    real (kind=kind_phys), pointer :: xlat_d (:)        !< grid latitude in degrees, default to 90 ->
+                                                        !! -90 range, otherwise adj in subr called
+    real (kind=kind_phys), pointer :: xlon_d (:)        !< grid longitude in degrees, default to 0 ->
+                                                        !! 360 range, otherwise adj in subr called
+    real (kind=kind_phys), pointer :: sinlat (:)        !< sine of the grids corresponding latitudes
+    real (kind=kind_phys), pointer :: coslat (:)        !< cosine of the grids corresponding latitudes
+    real (kind=kind_phys), pointer :: area   (:)        !< area of the grid cell
+    real (kind=kind_phys), pointer :: dx     (:)        !< relative dx for the grid cell
 
 !--- grid-related interpolation data for prognostic ozone
-    real (kind=kind_phys), allocatable :: ddy_o3    (:)     !< interpolation     weight for ozone
-    integer,               allocatable :: jindx1_o3 (:)     !< interpolation  low index for ozone
-    integer,               allocatable :: jindx2_o3 (:)     !< interpolation high index for ozone
+    real (kind=kind_phys), pointer :: ddy_o3    (:)     !< interpolation     weight for ozone
+    integer,               pointer :: jindx1_o3 (:)     !< interpolation  low index for ozone
+    integer,               pointer :: jindx2_o3 (:)     !< interpolation high index for ozone
 
 !--- grid-related interpolation data for stratosphere water
-    real (kind=kind_phys), allocatable :: ddy_h     (:)     !< interpolation     weight for h2o
-    integer,               allocatable :: jindx1_h  (:)     !< interpolation  low index for h2o
-    integer,               allocatable :: jindx2_h  (:)     !< interpolation high index for h2o
+    real (kind=kind_phys), pointer :: ddy_h     (:)     !< interpolation     weight for h2o
+    integer,               pointer :: jindx1_h  (:)     !< interpolation  low index for h2o
+    integer,               pointer :: jindx2_h  (:)     !< interpolation high index for h2o
 
 !--- grid-related interpolation data for prognostic iccn
-    real (kind=kind_phys), allocatable :: ddy_ci    (:)     !< interpolation     weight for iccn
-    integer,               allocatable :: jindx1_ci (:)     !< interpolation  low index for iccn
-    integer,               allocatable :: jindx2_ci (:)     !< interpolation high index for iccn
-    real (kind=kind_phys), allocatable :: ddx_ci    (:)     !< interpolation     weight for iccn
-    integer,               allocatable :: iindx1_ci (:)     !< interpolation  low index for iccn
-    integer,               allocatable :: iindx2_ci (:)     !< interpolation high index for iccn
+    real (kind=kind_phys), pointer :: ddy_ci    (:)     !< interpolation     weight for iccn
+    integer,               pointer :: jindx1_ci (:)     !< interpolation  low index for iccn
+    integer,               pointer :: jindx2_ci (:)     !< interpolation high index for iccn
+    real (kind=kind_phys), pointer :: ddx_ci    (:)     !< interpolation     weight for iccn
+    integer,               pointer :: iindx1_ci (:)     !< interpolation  low index for iccn
+    integer,               pointer :: iindx2_ci (:)     !< interpolation high index for iccn
 
 !--- grid-related interpolation data for prescribed aerosols
-    real (kind=kind_phys), allocatable :: ddy_aer    (:)    !< interpolation     weight for iaerclm
-    integer,               allocatable :: jindx1_aer (:)    !< interpolation  low index for iaerclm
-    integer,               allocatable :: jindx2_aer (:)    !< interpolation high index for iaerclm
-    real (kind=kind_phys), allocatable :: ddx_aer    (:)    !< interpolation     weight for iaerclm
-    integer,               allocatable :: iindx1_aer (:)    !< interpolation  low index for iaerclm
-    integer,               allocatable :: iindx2_aer (:)    !< interpolation high index for iaerclm
+    real (kind=kind_phys), pointer :: ddy_aer    (:)    !< interpolation     weight for iaerclm
+    integer,               pointer :: jindx1_aer (:)    !< interpolation  low index for iaerclm
+    integer,               pointer :: jindx2_aer (:)    !< interpolation high index for iaerclm
+    real (kind=kind_phys), pointer :: ddx_aer    (:)    !< interpolation     weight for iaerclm
+    integer,               pointer :: iindx1_aer (:)    !< interpolation  low index for iaerclm
+    integer,               pointer :: iindx2_aer (:)    !< interpolation high index for iaerclm
 
 !--- grid-related interpolation data for cires_ugwp_v1
-    real (kind=kind_phys), allocatable :: ddy_j1tau  (:)    !< interpolation     weight for  tau_ugwp
-    real (kind=kind_phys), allocatable :: ddy_j2tau  (:)    !< interpolation     weight for  tau_ugwp
-    integer,               allocatable :: jindx1_tau (:)    !< interpolation  low index for tau_ugwp
-    integer,               allocatable :: jindx2_tau (:)    !< interpolation high index for tau_ugwp
+    real (kind=kind_phys), pointer :: ddy_j1tau  (:)    !< interpolation     weight for  tau_ugwp
+    real (kind=kind_phys), pointer :: ddy_j2tau  (:)    !< interpolation     weight for  tau_ugwp
+    integer,               pointer :: jindx1_tau (:)    !< interpolation  low index for tau_ugwp
+    integer,               pointer :: jindx2_tau (:)    !< interpolation high index for tau_ugwp
 
     contains
       procedure :: create   => grid_create   !<   allocate array data
