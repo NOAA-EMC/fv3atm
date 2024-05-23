@@ -16,6 +16,8 @@ module GFS_typedefs
    use module_radlw_parameters,  only: topflw_type, sfcflw_type
    use h2o_def,                  only: levh2o, h2o_coeff
    use module_ozphys,            only: ty_ozphys
+   use module_gfdl_cloud_microphys,    only: module_gfdl_cloud_microphys_init
+   use module_gfdl_cloud_microphys_v3, only: module_gfdl_cloud_microphys_v3_init
 
    implicit none
 
@@ -4152,6 +4154,10 @@ module GFS_typedefs
 !--- NRL ozone physics
     character(len=128) :: err_message
 
+!--- GFDL Microphysics
+    character(len=128) :: ccpp_errmsg
+    integer            :: ccpp_errflg
+
     ! dtend selection: default is to match all variables:
     dtend_select(1)='*'
     do ipat=2,pat_count
@@ -4673,6 +4679,19 @@ module GFS_typedefs
 
 !--- GFDL MP parameters
     Model%lgfdlmprad       = lgfdlmprad
+    if (Model%imp_physics == Model%imp_physics_gfdl) then
+       call module_gfdl_cloud_microphys_init(Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
+            Model%logunit, Model%fn_nml, ccpp_errmsg, ccpp_errflg)
+    end if
+    if (Model%imp_physics == Model%imp_physics_gfdl_v3) then
+       call module_gfdl_cloud_microphys_v3_init(Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
+            Model%logunit, Model%fn_nml, hydrostatic, ccpp_errmsg, ccpp_errflg)
+       Model%imp_physics = Model%imp_physics_gfdl !DJS2024 We only need to distinguish v1/v3 for this step.
+    end if
+    if (ccpp_errflg .ne. 0) then
+       write(0,*) 'ERROR initializing GFDL Microphysics: ',ccpp_errmsg
+       stop
+    endif
     
 !--- Thompson,GFDL,NSSL MP parameter
     Model%lrefres          = lrefres
