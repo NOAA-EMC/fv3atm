@@ -1211,6 +1211,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: ccwf(2)         !< multiplication factor for critical cloud
                                             !< workfunction for RAS
     real(kind=kind_phys) :: cdmbgwd(4)      !< multiplication factors for cdmb, gwd and NS gwd, tke based enhancement
+    real(kind=kind_phys) :: alpha_fd        !< alpha coefficient for turbulent orographic form drag
     real(kind=kind_phys) :: sup             !< supersaturation in pdf cloud when t is very low
     real(kind=kind_phys) :: ctei_rm(2)      !< critical cloud top entrainment instability criteria
                                             !< (used if mstrat=.true.)
@@ -3751,6 +3752,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: ccwf(2)        = (/1.0d0,1.0d0/)          !< multiplication factor for critical cloud
                                                                       !< workfunction for RAS
     real(kind=kind_phys) :: cdmbgwd(4)     = (/2.0d0,0.25d0,1.0d0,1.0d0/)   !< multiplication factors for cdmb, gwd, and NS gwd, tke based enhancement
+    real(kind=kind_phys) :: alpha_fd       = 12.0                     !< alpha coefficient for turbulent orographic form drag
     real(kind=kind_phys) :: sup            = 1.0                      !< supersaturation in pdf cloud (IMP_physics=98) when t is very low
                                                                       !< or ice super saturation in SHOC (when do_shoc=.true.)
     real(kind=kind_phys) :: ctei_rm(2)     = (/10.0d0,10.0d0/)        !< critical cloud top entrainment instability criteria
@@ -4069,7 +4071,8 @@ module GFS_typedefs
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                xr_cnvcld, random_clds, shal_cnv, imfshalcnv, imfdeepcnv,    &
                                isatmedmf, do_deep, jcap,                                    &
-                               cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
+                               cs_parm, flgmin, cgwf, ccwf, cdmbgwd, alpha_fd, sup,         &
+                               ctei_rm, crtrh,                                              &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
                                do_spp, n_var_spp,                                           &
@@ -4910,6 +4913,7 @@ module GFS_typedefs
     Model%cgwf              = cgwf
     Model%ccwf              = ccwf
     Model%cdmbgwd           = cdmbgwd
+    Model%alpha_fd          = alpha_fd
     Model%sup               = sup
     Model%ctei_rm           = ctei_rm
     Model%crtrh             = crtrh
@@ -6768,6 +6772,7 @@ module GFS_typedefs
       print *, ' cgwf              : ', Model%cgwf
       print *, ' ccwf              : ', Model%ccwf
       print *, ' cdmbgwd           : ', Model%cdmbgwd
+      print *, ' alpha_fd          : ', Model%alpha_fd
       print *, ' sup               : ', Model%sup
       print *, ' ctei_rm           : ', Model%ctei_rm
       print *, ' crtrh             : ', Model%crtrh
