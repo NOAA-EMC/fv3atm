@@ -2779,7 +2779,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
+  active = (flag_for_surface_flux_coupling .or. flag_for_chemistry_coupling .or. flag_for_land_coupling)
 [psurfi_cpl]
   standard_name = surface_air_pressure_for_coupling
   long_name = instantaneous sfc pressure
