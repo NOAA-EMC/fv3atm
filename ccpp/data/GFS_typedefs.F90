@@ -1161,7 +1161,7 @@ module GFS_typedefs
     logical              :: lheatstrg       !< flag for canopy heat storage parameterization
     logical              :: lseaspray       !< flag for sea spray parameterization
     logical              :: cnvcld
-    logical              :: xr_cnvcld       !< flag for including suspended convective clouds in Xu-Randall cloud fraction
+    logical              :: xr_cnvcld       !< flag for adding suspended convective clouds to Xu-Randall cloud fraction
     logical              :: random_clds     !< flag controls whether clouds are random
     logical              :: shal_cnv        !< flag for calling shallow convection
     logical              :: do_deep         !< whether to do deep convection
