@@ -50,7 +50,8 @@ module fv3atm_history_io_mod
     integer :: tot_diag_idx = 0
 
     integer :: isco=0,ieco=0,jsco=0,jeco=0,num_axes_phys=0
-    integer :: fhzero=0, ncld=0, nsoil=0, nsoil_lsm=0, imp_physics=0, landsfcmdl=0
+    integer :: ncld=0, nsoil=0, nsoil_lsm=0, imp_physics=0, landsfcmdl=0
+    real(4) :: fhzero=0.
     real(4) :: dtp=0
     integer,dimension(:),        pointer         :: levo => null()
     integer,dimension(:),        pointer         :: nstt => null()
@@ -183,7 +184,7 @@ CONTAINS
     hist%ieco   = Atm_block%iec
     hist%jsco   = Atm_block%jsc
     hist%jeco   = Atm_block%jec
-    hist%fhzero = nint(Model%fhzero)
+    hist%fhzero = Model%fhzero
     !   hist%ncld   = Model%ncld
     hist%ncld   = Model%imp_physics
     hist%nsoil  = Model%lsoil

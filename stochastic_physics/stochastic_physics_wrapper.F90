@@ -282,6 +282,7 @@ module stochastic_physics_wrapper_mod
                   endif
 
                   select case (trim(GFS_Control%lndp_var_list(v)))
+                  ! DH* is this correct? shouldn't this be slc ?
                   case('smc')
                       ! stype used to fetch soil params
                       stype(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%stype(1:GFS_Control%blksz(nb))
