@@ -430,7 +430,6 @@ module post_fv3
             if (trim(attName) == 'ncnsto') wrt_int_state%ntrac=varival
             if (trim(attName) == 'ncld')   wrt_int_state%ncld=varival
             if (trim(attName) == 'nsoil')  wrt_int_state%nsoil=varival
-            if (trim(attName) == 'fhzero') wrt_int_state%fhzero=varival
             if (trim(attName) == 'imp_physics') wrt_int_state%imp_physics=varival
           endif
         else if (typekind==ESMF_TYPEKIND_R4) then
@@ -439,9 +438,9 @@ module post_fv3
               name=trim(attName), value=varr4val, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
               line=__LINE__, file=__FILE__)) return  ! bail out
-            if (trim(attName) == 'dtp')   then
-               wrt_int_state%dtp=varr4val
-            endif
+            if (trim(attName) == 'dtp') wrt_int_state%dtp=varr4val
+            if (trim(attName) == 'fhzero') wrt_int_state%fhzero=varr4val
+!            print *,'in post_fv3, fhzero=',wrt_int_state%fhzero
           else if(n>1) then
             if(trim(attName) =="ak") then
               if(allocated(wrt_int_state%ak)) deallocate(wrt_int_state%ak)
@@ -630,7 +629,7 @@ module post_fv3
       spval = 9.99e20
 !
 ! nems gfs has zhour defined
-      tprec   = float(wrt_int_state%fhzero)
+      tprec   = wrt_int_state%fhzero
       tclod   = tprec
       trdlw   = tprec
       trdsw   = tprec
