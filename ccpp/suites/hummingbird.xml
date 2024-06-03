@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+DESCRIPTION:
+Suite "hummingbird" (formerly known as FV3_WoFS_v0)
+-->
 
-<suite name="FV3_WoFS_v0"  version="1">
+<suite name="hummingbird"  version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
