@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+DESCRIPTION:
+Suite "kingfisher" (formerly known as FV3_GFS_v15p2)
+-->
 
-<suite name="FV3_GFS_v15p2" version="1">
+<suite name="kingfisher" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">

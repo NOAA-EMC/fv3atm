@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+DESCRIPTION:
+Suite "bald_eagle" (formerly known as FV3_HRRR)
+-->
 
-<suite name="FV3_HRRR" version="1">
+<suite name="bald_eagle" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">

@@ -1,0 +1,10 @@
+{
+    "FV3_HRRR.xml": "bald_eagle.xml",
+    "FV3_GFS_v16.xml": "raven.xml",
+    "FV3_GFS_v15p2.xml": "kingfisher.xml",
+    "FV3_GFS_v17_p8.xml": "bluebird.xml",
+    "FV3_GFS_v17_p8_c3.xml": "parakeet.xml",
+    "FV3_RAP.xml": "albatross.xml",
+    "FV3_RRFS_v1beta.xml": "pigeon.xml",
+    "FV3_RRFS_v1nssl.xml": "crossbill.xml"
+}
