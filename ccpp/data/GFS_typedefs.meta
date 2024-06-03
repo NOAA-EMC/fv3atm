@@ -4483,7 +4483,7 @@
 [mg_alf]
   standard_name = alpha_tuning_coefficient_for_morrison_gettelman_microphysics_scheme
   long_name = tuning factor for alphas (alpha = 1 - critical relative humidity)
-  units = 1
+  units = none
   dimensions = ()
   type = real
   kind = kind_phys
