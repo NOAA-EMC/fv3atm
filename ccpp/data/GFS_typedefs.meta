@@ -5629,7 +5629,7 @@
 [alpha_fd]
   standard_name = alpha_coefficient_for_turbulent_orographic_form_drag
   long_name = alpha coefficient for Beljaars et al turbulent orographic form drag
-  units = none
+  units = 1
   dimensions = ()
   type = real
   kind = kind_phys
@@ -7468,7 +7468,7 @@
 [gwd_z0m_factor]
   standard_name = momentum_roughness_factor_in_turbulent_form_drag
   long_name = multiplication of Z0m in PSL turbulent form drag
-  units = count
+  units = 1
   dimensions = ()
   type = real
   kind = kind_phys
