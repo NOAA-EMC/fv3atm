@@ -3,12 +3,8 @@
 DESCRIPTION:
 Suite "wren" (formerly known as FV3_HRRR_c3)
 -->
-<!--
-DESCRIPTION:
-Suite "aracari" (formerly known as wren)
--->
 
-<suite name="aracari" version="1">
+<suite name="wren" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
