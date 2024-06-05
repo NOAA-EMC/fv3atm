@@ -85,6 +85,7 @@ module CCPP_driver
       ! number are not used; set to safe values
       cdata_domain%blk_no = 1
       cdata_domain%thrd_no = 1
+      cdata_domain%thrd_cnt = 1
 
       ! Allocate cdata structures for blocks and threads
       if (.not.allocated(cdata_block)) allocate(cdata_block(1:nblks,1:nthrdsX))
@@ -95,6 +96,7 @@ module CCPP_driver
           ! Assign the correct block and thread numbers
           cdata_block(nb,nt)%blk_no = nb
           cdata_block(nb,nt)%thrd_no = nt
+          cdata_block(nb,nt)%thrd_cnt = nthrdsX
         end do
       end do
 
@@ -166,9 +168,11 @@ module CCPP_driver
       ! because threads are used on the host model side for blocking
       GFS_control%nthreads = 1
 
-!$OMP parallel num_threads (nthrds)      &
-!$OMP          default (shared)          &
-!$OMP          private (nb,nt,ntX,ierr2) &
+!$OMP parallel num_threads (nthrds)                        &
+!$OMP          default (none)                              &
+!$OMP          shared (nblks, nthrdsX, non_uniform_blocks, &
+!$OMP                  cdata_block,ccpp_suite, step)       &
+!$OMP          private (nb,nt,ntX,ierr2)                   &
 !$OMP          reduction (+:ierr)
 #ifdef _OPENMP
       nt = omp_get_thread_num()+1

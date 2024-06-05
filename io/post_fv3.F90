@@ -430,7 +430,6 @@ module post_fv3
             if (trim(attName) == 'ncnsto') wrt_int_state%ntrac=varival
             if (trim(attName) == 'ncld')   wrt_int_state%ncld=varival
             if (trim(attName) == 'nsoil')  wrt_int_state%nsoil=varival
-            if (trim(attName) == 'fhzero') wrt_int_state%fhzero=varival
             if (trim(attName) == 'imp_physics') wrt_int_state%imp_physics=varival
           endif
         else if (typekind==ESMF_TYPEKIND_R4) then
@@ -439,9 +438,9 @@ module post_fv3
               name=trim(attName), value=varr4val, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
               line=__LINE__, file=__FILE__)) return  ! bail out
-            if (trim(attName) == 'dtp')   then
-               wrt_int_state%dtp=varr4val
-            endif
+            if (trim(attName) == 'dtp') wrt_int_state%dtp=varr4val
+            if (trim(attName) == 'fhzero') wrt_int_state%fhzero=varr4val
+!            print *,'in post_fv3, fhzero=',wrt_int_state%fhzero
           else if(n>1) then
             if(trim(attName) =="ak") then
               if(allocated(wrt_int_state%ak)) deallocate(wrt_int_state%ak)
@@ -630,7 +629,7 @@ module post_fv3
       spval = 9.99e20
 !
 ! nems gfs has zhour defined
-      tprec   = float(wrt_int_state%fhzero)
+      tprec   = wrt_int_state%fhzero
       tclod   = tprec
       trdlw   = tprec
       trdsw   = tprec
@@ -3564,6 +3563,19 @@ module post_fv3
               enddo
             endif
 
+            ! model level omga
+            if(trim(fieldname)=='omga') then
+              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,omga,arrayr43d,fillvalue,spval)
+              do l=1,lm
+                do j=jsta,jend
+                  do i=ista, iend
+                    omga(i,j,l) = arrayr43d(i,j,l)
+                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) omga(i,j,l) = spval
+                  enddo
+                enddo
+              enddo
+            endif
+
             ! soilt
             if(trim(fieldname)=='soilt') then
               !$omp parallel do default(none) private(i,j,l) shared(nsoil,jsta,jend,ista,iend,stc,arrayr43d,sm,sice,fillvalue,spval)
@@ -4268,22 +4280,6 @@ module post_fv3
         enddo
       enddo
 
-      do l=lm,1,-1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,omga,wh,dpres,zint,spval,ista,iend)
-        do j=jsta,jend
-          do i=ista,iend
-            if(wh(i,j,l) /= spval) then
-              omga(i,j,l) = (-1.) * wh(i,j,l) * dpres(i,j,l)/zint(i,j,l)
-              zint(i,j,l) = zint(i,j,l) + zint(i,j,l+1)
-            else
-              omga(i,j,l) = spval
-              zint(i,j,l) = spval
-            endif
-          enddo
-        enddo
-      enddo
-!      print *,'in post_lam,omga 3d=',maxval(omga(ista:iend,jsta:jend,1)),minval(omga(ista:iend,jsta:jend,1)), &
-!           'lm=',maxval(omga(ista:iend,jsta:jend,lm)),minval(omga(ista:iend,jsta:jend,lm))
 
 ! compute pint from top down
 !$omp parallel do default(none) private(i,j) shared(jsta,jend,ak5,pint,ista,iend)
@@ -4343,6 +4339,29 @@ module post_fv3
         end do
       end do
 
+      do l=lm,1,-1
+!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,omga,wh,dpres,zint,alpint,q,t,spval,ista,iend)
+        do j=jsta,jend
+          do i=ista,iend
+            if(wh(i,j,l) /= spval) then
+              if(omga(i,j,l) == spval .and. dpres(i,j,l) /= spval .and. zint(i,j,l) /=spval)  &
+                  omga(i,j,l) = (-1.) * wh(i,j,l) * dpres(i,j,l)/zint(i,j,l)
+              if(zint(i,j,l+1) /=spval .and. zint(i,j,l) /=spval) &
+                  zint(i,j,l) = zint(i,j,l) + zint(i,j,l+1)
+            else
+              if(zint(i,j,l+1) /=spval .and. t(i,j,l) /= spval .and.  alpint(i,j,l+1) /= spval  &
+                             .and. alpint(i,j,l) /=spval .and. q(i,j,l) /= spval) then
+                 zint(i,j,l) = zint(i,j,l+1)+(rgas/grav)*t(i,j,l)*(1.+fv*q(i,j,l))*(alpint(i,j,l+1)-alpint(i,j,l))
+               else 
+                 zint(i,j,l) = spval
+              endif
+            endif
+          enddo
+        enddo
+      enddo
+!      print *,'in post_lam,omga 3d=',maxval(omga(ista:iend,jsta:jend,1)),minval(omga(ista:iend,jsta:jend,1)), &
+!           'lm=',maxval(omga(ista:iend,jsta:jend,lm)),minval(omga(ista:iend,jsta:jend,lm))
+
 ! compute zmid
       do l=lm,1,-1
 !$omp parallel do default(none) private(i,j) shared(l,jsta,jend,zmid,zint,pmid,alpint,spval,ista,iend)
@@ -4358,6 +4377,7 @@ module post_fv3
           end do
         end do
       end do
+
 
 ! surface potential T, and potential T at roughness length
 !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,lp1,sm,ths,sst,thz0,sice,pint)
