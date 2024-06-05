@@ -1,7 +1,7 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
   url = https://github.com/pjpegion/GFDL_atmos_cubed_sphere
-  branch = dev/emc
+  branch = cs_perts
 [submodule "ccpp/framework"]
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
