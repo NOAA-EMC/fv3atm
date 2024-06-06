@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "toucan" (formerly known as FV3_HAFS_v1_thompson_tedmf_gfdlsf)
+Suite "toucan" (formerly known as FV3_HAFS_v1_thompson_tedmf_gfdlsf) is similar (though not identical) to the physics suite used by the operational HAFS-B configuration. One specific difference is that this suite uses the GFDL surface layer scheme (similar to that used in the operational HWRF) rather than the GFS surface layer scheme used in HAFS-B.
 -->
-
 <suite name="toucan" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

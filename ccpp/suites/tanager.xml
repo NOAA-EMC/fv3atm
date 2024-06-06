@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "tanager" (formerly known as FV3_HAFS_v1_gfdlmp_tedmf_nonsst)
+Suite "tanager" (formerly known as FV3_HAFS_v1_gfdlmp_tedmf_nonsst) is similar (though not identical) to the physics suite used by the operational HAFS-A configuration. Identical to suite "flamingo", except with a modified near-sea-surface temperature scheme (sfc_ocean) for use with GRIB2 input data.
 -->
 
 <suite name="tanager" version="1">

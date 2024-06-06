@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "kingfisher" (formerly known as FV3_GFS_v15p2)
+Suite "kingfisher" (formerly known as FV3_GFS_v15p2) was originally developed for research and prototyping of early UFS systems. It was meant to emulate the operational GFS v15.2 physics, though it had some differences from the operational implementation (which was not CCPP-based).
 -->
-
 <suite name="kingfisher" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">

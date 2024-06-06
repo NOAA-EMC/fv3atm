@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "antbird" (formerly known as FV3_HAFS_v1_gfdlmp_tedmf)
+Suite "flamingo" (formerly known as FV3_HAFS_v1_gfdlmp_tedmf) is similar (though not identical) to the physics suite used by the operational HAFS-A configuration. When using GRIB2 input data, use suite "tanager" instead.
 -->
-
-<suite name="antbird" version="1">
+<suite name="flamingo" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "pigeon" (formerly known as FV3_RRFS_v1beta)
+Suite "pigeon" (formerly known as FV3_RRFS_v1beta) was originally developed for an early prototype of the Rapid Refresh Forecast System (RRFS).
 -->
 
 <suite name="pigeon" version="1">

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "bluebird" (formerly known as FV3_GFS_v17_p8)
+Suite "bluebird" (formerly known as FV3_GFS_v17_p8) was used for testing an early prototype of the Global Forecast System (GFS) version 17 release. While it is similar to the physics used for this prototype (P8), it is not identical, and the eventual operational implementation of GFS version 17 will likely be quite different.
 -->
-
 <suite name="bluebird" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

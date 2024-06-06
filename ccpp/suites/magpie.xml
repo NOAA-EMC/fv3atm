@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "goldfinch" (formerly known as FV3_GFS_v17_coupled_p8_ugwpv1)
+Suite "magpie" (formerly known as FV3_GFS_v17_coupled_p8_ugwpv1) was originally developed for use by the GFS v17 High-resolution prototype 3 (HR3). While it acccurately represents the physics suite used for this prototype, the eventual implementation of the operational GFS version 17 will likely be different.
 -->
-
-<suite name="goldfinch" version="1">
+<suite name="magpie" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
