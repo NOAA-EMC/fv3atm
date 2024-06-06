@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "crow" (formerly known as FV3_GFS_v15_thompson_mynn_lam3km)
+Suite "crow" (formerly known as FV3_GFS_v15_thompson_mynn_lam3km) is an early physics suite used for research and experiments with early high-resolution (3-km) regional UFS grids.
 -->
-
 <suite name="crow" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "lorikeet" (formerly known as FV3_HAFS_v1_thompson) is similar (though not identical) to the physics suite used by the operational HAFS-B configuration. When using GRIB2 input data, use suite "hornbill" instead.
+Suite "lorikeet" (formerly known as FV3_HAFS_v1_thompson) is similar (though not identical) to the physics suite used by the operational HAFS-B configuration. When using GRIB2 input data, or coupled with an ocean model, use suite "hornbill" instead.
 -->
 
 <suite name="lorikeet" version="1">

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "ibis" (formerly known as FV3_RAP_unified_ugwp)
+Suite "ibis" (formerly known as FV3_RAP_unified_ugwp) is similar to "albatross" but using the unified gravity wave drag scheme (version 0) rather than the GSL orographic gravity wave drag scheme.
 -->
-
 <suite name="ibis" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

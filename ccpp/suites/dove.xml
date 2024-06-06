@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "dove" (formerly known as FV3_RAP_noah)
+Suite "dove" (formerly known as FV3_RAP_noah) was originally developed for research and prototyping of early UFS systems. Similar to "albatross", except using the Noah Land Surface Model (instead of RUC LSM) and the GFS surface sea-ice model.
 -->
 
 <suite name="dove" version="1">

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "flycatcher" (formerly known as FV3_HRRR_gf_nogwd)
+Suite "flycatcher" (formerly known as FV3_HRRR_gf_nogwd) is a suite developed for a prototype of the Rapid Refresh Forecast System (RRFS) for fire weather prediction. Similar to suite "auklet", except without gravity wave drag parameterization.
 -->
-
 <suite name="flycatcher" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

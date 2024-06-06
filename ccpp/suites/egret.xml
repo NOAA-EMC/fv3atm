@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "egret" (formerly known as FV3_GFS_v16_csawmg)
+Suite "egret" (formerly known as FV3_GFS_v16_csawmg) was a suite added for experiments with the Morrison-Gettelman version 3 microphysics.
 -->
 
 <suite name="egret" version="1">

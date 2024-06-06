@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "canary" (formerly known as FV3_GFS_v17_p8_rrtmgp)
+Suite "canary" (formerly known as FV3_GFS_v17_p8_rrtmgp) is a suite used for testing an early prototype of the Global Forecast System (GFS) version 17 release ("Prototype 8"). Similar to "bluebird", but uses RRTMGP: a re-written an parallelized version of the older RRTMG radiation schemes (see https://earth-system-radiation.github.io/rte-rrtmgp/).
 -->
-
 <suite name="canary" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

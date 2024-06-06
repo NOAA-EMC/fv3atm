@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "heron" (formerly known as FV3_GFS_v16_flake)
+Suite "heron" (formerly known as FV3_GFS_v16_flake) was added to test the capabilities of the Freshwater Lake (FLake) model (http://www.flake.igb-berlin.de/site/doc) for simulating freshwater lake temperatures.
 -->
 
 <suite name="heron" version="1">
