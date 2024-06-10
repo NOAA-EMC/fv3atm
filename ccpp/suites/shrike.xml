@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "shrike" (formerly known as FV3_RAP_sfcdiff)
+Suite "shrike" (formerly known as FV3_RAP_sfcdiff) is identical to suite "albatross", but with the GFS surface layer scheme rather than the MYNN surface layer scheme.
 -->
-
 <suite name="shrike" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

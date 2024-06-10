@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "meadowlark" (formerly known as FV3_RAP_noah_sfcdiff_cires_ugwp)
+Suite "meadowlark" (formerly known as FV3_RAP_noah_sfcdiff_cires_ugwp) was originally developed for research and prototyping of early UFS systems. Designed to emulate the RAP physics, but with several differences, including the surface scheme, land surface model, and gravity wave parameterizations.
 -->
-
 <suite name="meadowlark" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

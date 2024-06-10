@@ -3,7 +3,6 @@
 DESCRIPTION:
 Suite "raven" (formerly known as FV3_GFS_v16) was originally developed for research and prototyping of early UFS systems. It was meant to emulate the operational GFS v16 suite, though it had some differences from the operational implementation (which was not CCPP-based).
 -->
-
 <suite name="raven" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">

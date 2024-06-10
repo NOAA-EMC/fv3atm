@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "penguin" (formerly known as RRFSens_phy5) is one of the suites used in early prototypes of the Rapid Refresh Forecast System (R
-RFS) multi-physics ensemble.
+Suite "penguin" (formerly known as RRFSens_phy5) is one of the suites used in early prototypes of the Rapid Refresh Forecast System (RRFS) multi-physics ensemble.
 -->
-
 <suite name="penguin" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

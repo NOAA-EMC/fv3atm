@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "starling" (formerly known as FV3_GFS_v16_ras)
+Suite "starling" (formerly known as FV3_GFS_v16_ras) is identical to suite "raven", but with the Relaxed Arakawa-Schubert Convection Scheme rather than the scale-aware mass-flux deep convection scheme.
 -->
 
 <suite name="starling" version="1">

@@ -3,7 +3,6 @@
 DESCRIPTION:
 Suite "dotterel" (formerly known as FV3_GFS_v17_coupled_p8_sfcocn) was used for testing an early prototype of the Global Forecast System (GFS) version 17 release. Similar to suite "pelican", except with a modified near-sea-surface temperature scheme (sfc_ocean) for use with GRIB2 input data.
 -->
-
 <suite name="dotterel" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

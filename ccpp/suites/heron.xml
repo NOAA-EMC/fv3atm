@@ -3,7 +3,6 @@
 DESCRIPTION:
 Suite "heron" (formerly known as FV3_GFS_v16_flake) was added to test the capabilities of the Freshwater Lake (FLake) model (http://www.flake.igb-berlin.de/site/doc) for simulating freshwater lake temperatures.
 -->
-
 <suite name="heron" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "snowy_owl" (formerly known as FV3_RAP_clm_lake)
+Suite "snowy_owl" (formerly known as FV3_RAP_clm_lake) was originally developed for research and prototyping of early UFS systems. It was meant to emulate the physics of the Rapid Refresh (RAP) model, though it had some differences from the operational implementation (which was not CCPP-based). This suite is identical to suite "albatross", but with the addition of the Community Land Model (CLM) lake model (as is found in the operational RAP).
 -->
-
 <suite name="snowy_owl" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

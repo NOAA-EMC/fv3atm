@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "loon" (formerly known as FV3_GFS_v16_fv3wam)
+Suite "loon" (formerly known as FV3_GFS_v16_fv3wam) was originally developed for early prototypes of the FV3-based Whole Atmosphere Model (WAM).
 -->
-
 <suite name="loon" version="1">
   <!-- <init></init> -->
   <group name="time_vary">

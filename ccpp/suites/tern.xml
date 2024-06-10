@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 DESCRIPTION:
-Suite "tern" (formerly known as FV3_GFS_v17_p8_mynn)
+Suite "tern" (formerly known as FV3_GFS_v17_p8_mynn) was used for testing an early prototype of the Global Forecast System (GFS) version 17 release.
 -->
 
 <suite name="tern" version="1">
