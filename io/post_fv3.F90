@@ -505,7 +505,7 @@ module post_fv3
 !
       use esmf
       use vrbls4d,     only: dust, smoke, fv3dust, coarsepm, SALT, SUSO, SOOT, &
-                             WASO,no3,nh4, PP25, PP10
+                             WASO,no3,nh4, PP25, PP10, ebb
       use vrbls3d,     only: t, q, uh, vh, wh, alpint, dpres, zint, zmid, o3,  &
                              qqr, qqs, cwm, qqi, qqw, qqg, omga, cfr, pmid,    &
                              q2, rlwtt, rswtt, tcucn, tcucns, train, el_pbl,   &
@@ -546,7 +546,7 @@ module post_fv3
                              sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
                              albedo, tg, prate_max, pwat, snow_acm, snow_bkt,  &
                              acgraup, graup_bucket, acfrain, frzrn_bucket,     &
-                             ltg1_max, ltg2_max, ltg3_max, ebb, hwp,           &
+                             ltg1_max, ltg2_max, ltg3_max, hwp,                &
                              aod550,du_aod550,ss_aod550,su_aod550,oc_aod550,   &
                              bc_aod550,maod,                                   &
                              dustpm10, dustcb, bccb, occb, sulfcb, sscb,       &
@@ -1003,17 +1003,6 @@ module post_fv3
                 do i=ista, iend
                   hail_maxhailcast(i,j)=arrayr42d(i,j)
                   if(abs(arrayr42d(i,j)-fillValue) < small) hail_maxhailcast(i,j)=spval
-                enddo
-              enddo
-            endif
-
-            ! biomass burning emissions
-            if(trim(fieldname)=='ebb_smoke_hr') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ebb,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  ebb(i,j)=arrayr42d(i,j)
-                  if(abs(arrayr42d(i,j)-fillValue) < small) ebb(i,j)=spval
                 enddo
               enddo
             endif
@@ -3447,6 +3436,19 @@ module post_fv3
                 do j=jsta,jend
                   do i=ista,iend
                     arrayr43d(i,j,k) = arrayr83d(i,j,k)
+                  enddo
+                enddo
+              enddo
+            endif
+
+            ! biomass burning emissions
+            if(trim(fieldname)=='ebu_smoke') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,ebb,arrayr43d,fillValue,spval,lm)
+              do l=1,lm
+                do j=jsta,jend
+                  do i=ista, iend
+                    ebb(i,j,l,1)=arrayr43d(i,j,l)
+                    if(abs(arrayr43d(i,j,l)-fillValue) < small) ebb(i,j,l,1)=spval
                   enddo
                 enddo
               enddo
