@@ -14,8 +14,8 @@ module GFS_typedefs
 
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
    use module_radlw_parameters,  only: topflw_type, sfcflw_type
-   use h2o_def,                  only: levh2o, h2o_coeff
    use module_ozphys,            only: ty_ozphys
+   use module_h2ophys,           only: ty_h2ophys
 
    implicit none
 
@@ -1623,7 +1623,11 @@ module GFS_typedefs
     type(ty_ozphys) :: ozphys          !< DDT with data needed by ozone physics
     integer         :: levozp          !< Number of vertical layers in ozone forcing data
     integer         :: oz_coeff        !< Number of coefficients in ozone forcing data
-
+!--- NRL h2o photchemistry physics
+    type(ty_h2ophys) :: h2ophys        !< DDT with data needed by h2o photchemistry physics.
+    integer          :: levh2o         !< Number of vertical layers in stratospheric h2o data.
+    integer          :: h2o_coeff      !< Number of coefficients in stratospheric h2o data.
+    
     contains
       procedure :: init            => control_initialize
       procedure :: init_chemistry  => control_chemistry_initialize
@@ -3976,6 +3980,9 @@ module GFS_typedefs
     integer              :: kozpl        = 28       !< File identifier for ozone forcing data
     integer              :: kozc         = 48       !< File identifier for ozone climotology data
 
+!--- NRL h2o photochemistry physics
+    integer              :: kh2oc        = 29       !< File identifier for h2o photochemistry data.
+    
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 183
     character(len=40)  :: fscav_aero(max_scav_factors) = ''
@@ -4882,18 +4889,6 @@ module GFS_typedefs
     Model%oz_phys_2015     = oz_phys_2015
     Model%h2o_phys         = h2o_phys
 
-    ! To ensure that these values match what's in the physics,
-    ! array sizes are compared during model init in GFS_phys_time_vary_init()
-    !
-    ! from module h2ointerp
-    if (h2o_phys) then
-       levh2o    = 72
-       h2o_coeff = 3
-    else
-       levh2o    = 1
-       h2o_coeff = 1
-    end if
-
     Model%pdfcld            = pdfcld
     Model%shcnvcw           = shcnvcw
     Model%redrag            = redrag
@@ -5603,6 +5598,17 @@ module GFS_typedefs
        err_message = Model%ozphys%load_o3clim('global_o3prdlos.f77',kozc)
     end if
 
+    !--- NRL h2o photochemistry physics.
+    if (Model%h2o_phys) then
+       ! Load data for h2o photochemistry physics.
+       err_message     = Model%h2ophys%load('global_h2oprdlos.f77',kh2oc)
+       Model%levh2o    = Model%h2ophys%nlev
+       Model%h2o_coeff = Model%h2ophys%ncf
+    else
+       Model%levh2o    = 1
+       Model%h2o_coeff = 1
+    end if
+    
 !--- quantities to be used to derive phy_f*d totals
     Model%nshoc_2d         = nshoc_2d
     Model%nshoc_3d         = nshoc_3d
@@ -7139,7 +7145,7 @@ module GFS_typedefs
 
 !--- ozone and stratosphere h2o needs
     allocate (Tbd%ozpl  (IM,Model%levozp,Model%oz_coeff))
-    allocate (Tbd%h2opl (IM,levh2o,h2o_coeff))
+    allocate (Tbd%h2opl (IM,Model%levh2o,Model%h2o_coeff))
     Tbd%h2opl = clear_val
     Tbd%ozpl  = clear_val
 
