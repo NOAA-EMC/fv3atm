@@ -3091,6 +3091,51 @@ end subroutine update_atmos_chemistry
           endif
         endif
 
+        fldname = 'hflx_fire'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%hflx_fire(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'evap_fire'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%evap_fire(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'smoke_fire'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%smoke_fire(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
           ! write post merge import data to NetCDF file.
           if (GFS_control%cpl_imp_dbg) then
             call ESMF_FieldGet(importFields(n), grid=grid, rc=rc)
@@ -3280,6 +3325,21 @@ end subroutine update_atmos_chemistry
         do nb = 1, Atm_block%nblks
           select case (trim(fieldname))
             !--- Instantaneous quantities
+            ! Instantaneous mean layer pressure (Pa)
+            case ('inst_pres_levels')
+              call block_data_copy_or_fill(datar83d, GFS_data(nb)%Statein%prsl, zeror8, Atm_block, nb, rc=localrc)
+            ! Instantaneous geopotential at model layer centers (m2 s-2)
+            case ('inst_geop_levels')
+              call block_data_copy_or_fill(datar83d, GFS_data(nb)%Statein%phil, zeror8, Atm_block, nb, rc=localrc)
+            ! Instantaneous zonal wind (m s-1)
+            case ('inst_zonal_wind_levels')
+              call block_data_copy_or_fill(datar83d, GFS_data(nb)%Statein%ugrs, zeror8, Atm_block, nb, rc=localrc)
+            ! Instantaneous meridional wind (m s-1)
+            case ('inst_merid_wind_levels')
+              call block_data_copy_or_fill(datar83d, GFS_data(nb)%Statein%vgrs, zeror8, Atm_block, nb, rc=localrc)
+            ! Instantaneous surface roughness length (cm)
+            case ('inst_surface_roughness')
+              call block_data_copy(datar82d, GFS_data(nb)%sfcprop%zorl, Atm_block, nb, rc=localrc)
             ! Instantaneous u wind (m/s) 10 m above ground
             case ('inst_zonal_wind_height10m')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, rc=localrc)
@@ -3364,6 +3424,9 @@ end subroutine update_atmos_chemistry
             ! Land/Sea mask (sea:0,land:1)
             case ('inst_land_sea_mask', 'slmsk')
               call block_data_copy(datar82d, GFS_data(nb)%sfcprop%slmsk, Atm_block, nb, rc=localrc)
+            ! Total precipitation amount in each time step
+            case ('inst_rainfall_amount')
+              call block_data_copy(datar82d, GFS_data(nb)%sfcprop%tprcp, Atm_block, nb, rc=localrc)
             !--- Mean quantities
             ! MEAN Zonal compt of momentum flux (N/m**2)
             case ('mean_zonal_moment_flx_atm')
@@ -3416,6 +3479,15 @@ end subroutine update_atmos_chemistry
             ! MEAN NET sfc uv+vis diffused flux (W/m**2)
             case ('mean_net_sw_vis_dif_flx')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%nvisdf_cpl, Atm_block, nb, rtime, spval, rc=localrc)
+            ! MEAN precipitation rate (kg/m2/s)
+            case ('mean_prec_rate')
+              call block_data_copy(datar82d, GFS_data(nb)%sfcprop%tprcp, Atm_block, nb, rtimek, spval, rc=localrc)
+            ! MEAN convective precipitation rate (kg/m2/s)
+            case ('mean_prec_rate_conv')
+              call block_data_copy(datar82d, GFS_Data(nb)%Coupling%rainc_cpl, Atm_block, nb, rtimek, spval, rc=localrc)
+            ! MEAN snow precipitation rate (kg/m2/s)
+            case ('mean_fprec_rate')
+              call block_data_copy(datar82d, GFS_data(nb)%coupling%snow_cpl, Atm_block, nb, rtimek, spval, rc=localrc)
             ! oceanfrac used by atm to calculate fluxes
             case ('openwater_frac_in_atm')
               call block_data_combine_fractions(datar82d, GFS_data(nb)%sfcprop%oceanfrac, GFS_Data(nb)%sfcprop%fice, Atm_block, nb, rc=localrc)
