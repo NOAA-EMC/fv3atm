@@ -76,26 +76,30 @@ module fv_moving_nest_types_mod
     real, _ALLOCATABLE                  :: delz(:,:,:)      _NULL   !< layer thickness (meters)
   end type fv_moving_nest_prog_type
 
-  ! TODO deallocate these at end of model run.  They are only allocated once, at first nest move, inside mn_static_read_hires().
-  !  Note these are only 32 bits for now; matching the precision of the input netCDF files
-  !  though the model generally handles physics variables with 64 bit precision
-  type mn_surface_grids
+
+  type mn_land_mask_grids
     real, allocatable  :: orog_grid(:,:)               _NULL  ! orography -- raw or filtered depending on namelist option, in meters
     real, allocatable  :: orog_std_grid(:,:)           _NULL  ! terrain standard deviation for gravity wave drag, in meters (?)
     real, allocatable  :: ls_mask_grid(:,:)            _NULL  ! land sea mask -- 0 for ocean/lakes, 1, for land.  Perhaps 2 for sea ice.
-    real, allocatable  :: land_frac_grid(:,:)          _NULL  ! Continuous land fraction - 0.0 ocean, 0.5 half of each, 1.0 all land
+    real, allocatable  :: soil_type_grid(:,:)          _NULL  ! STATSGO soil type
+    ! Land frac needs to be kind_phys because CCPP defines it that way.  Can have rounding mismatches around 0.5 if types don't match.
+    real(kind=kind_phys), allocatable  :: land_frac_grid(:,:)          _NULL  ! Continuous land fraction - 0.0 ocean, 0.5 half of each, 1.0 all land
 
-    real, allocatable  :: parent_orog_grid(:,:)        _NULL  ! parent orography -- only used for terrain_smoother=1.
     !     raw or filtered depending on namelist option,in meters
+    real(kind=kind_phys), allocatable  :: geolat_grid(:,:)          _NULL
+    real(kind=kind_phys), allocatable  :: geolon_grid(:,:)          _NULL
+  end type mn_land_mask_grids
 
+
+  type mn_fix_grids
     ! Soil variables
     real, allocatable  :: deep_soil_temp_grid(:,:)     _NULL  ! deep soil temperature at 5m, in degrees K
-    real, allocatable  :: soil_type_grid(:,:)          _NULL  ! STATSGO soil type
 
     ! Vegetation variables
     real, allocatable  :: veg_frac_grid(:,:)           _NULL  ! vegetation fraction
     real, allocatable  :: veg_type_grid(:,:)           _NULL  ! IGBP vegetation type
-    real, allocatable  :: veg_greenness_grid(:,:)      _NULL  ! NESDIS vegetation greenness; netCDF file has monthly values
+    ! TODO do we need veg_greenness?
+    !real, allocatable  :: veg_greenness_grid(:,:)      _NULL  ! NESDIS vegetation greenness; netCDF file has monthly values
 
     ! Orography variables
     real, allocatable  :: slope_type_grid(:,:)         _NULL  ! legacy 1 degree GFS slope type
@@ -118,6 +122,22 @@ module fv_moving_nest_types_mod
     real, allocatable  :: alvwf_grid(:,:)              _NULL  ! Visible white sky albedo; netCDF file has monthly values
     real, allocatable  :: alnsf_grid(:,:)              _NULL  ! Near IR black sky albedo; netCDF file has monthly values
     real, allocatable  :: alnwf_grid(:,:)              _NULL  ! Near IR white sky albedo; netCDF file has monthly values
+  end type mn_fix_grids
+
+
+
+  ! TODO deallocate these at end of model run.  They are only allocated once, at first nest move, inside mn_static_read_hires().
+  !  Note these are only 32 bits for now; matching the precision of the input netCDF files
+  !  though the model generally handles physics variables with 64 bit precision
+  type mn_surface_grids
+
+    type(mn_land_mask_grids)  :: parent_ls
+    type(mn_land_mask_grids)  :: fp_ls
+    type(mn_land_mask_grids)  :: nest_ls
+
+    ! type(mn_fix_grids)        :: parent_fix    ! Not needed at present
+    type(mn_fix_grids)        :: fp_fix
+    type(mn_fix_grids)        :: nest_fix
 
   end type mn_surface_grids
 
@@ -246,6 +266,12 @@ module fv_moving_nest_types_mod
 
   type(fv_moving_nest_type), _ALLOCATABLE, target    :: Moving_nest(:)
 
+  interface mn_overwrite_with_nest_init_values
+    module procedure mn_overwrite_with_nest_init_values_r4
+    module procedure mn_overwrite_with_nest_init_values_r8
+  end interface mn_overwrite_with_nest_init_values
+
+
 contains
 
   subroutine fv_moving_nest_init(Atm, this_grid)
@@ -335,6 +361,169 @@ contains
   end subroutine deallocate_fv_moving_nest
 
 
+  subroutine mn_apply_lakes(land_mask_grids)
+    type(mn_land_mask_grids), intent(inout) :: land_mask_grids
+
+    integer :: i_idx, j_idx
+
+    ! Alter hires full panel ls_mask_grid to set lakes to water(sea) values
+    do i_idx = lbound(land_mask_grids%ls_mask_grid,1), ubound(land_mask_grids%ls_mask_grid,1)
+      do j_idx = lbound(land_mask_grids%ls_mask_grid,1), ubound(land_mask_grids%ls_mask_grid,2)
+        !if (land_mask_grids%ls_mask_grid(i_idx, j_idx) .eq. 1 .and. nint(land_mask_grids%land_frac_grid(i_idx, j_idx)) == 0 ) then
+        !!if (land_mask_grids%ls_mask_grid(i_idx, j_idx) .eq. 1 .and. land_mask_grids%land_frac_grid(i_idx, j_idx) .lt. 0.999 ) then
+
+        ! Use epsilon of 1.0e-6 on land_frac_grid, based on CCPP code in physics/physics/gcycle.F90
+        !  Fixes a bug where land mask changes with first nest move if land_frac_grid = 0.5000
+        ! TODO test wrapping these reals with int() or nint()
+        if (land_mask_grids%ls_mask_grid(i_idx, j_idx) .eq. 1 .and. nint(land_mask_grids%land_frac_grid(i_idx, j_idx)-1.0e-6_kind_phys) .eq. 0 ) then
+          land_mask_grids%ls_mask_grid(i_idx, j_idx) = 0
+        endif
+        ! Soil type adjustments from io/fv3atm_sfc_io.F90
+        if (land_mask_grids%ls_mask_grid(i_idx, j_idx) .eq. 1 .and. int(land_mask_grids%soil_type_grid(i_idx, j_idx)) .eq. 14 ) then
+          land_mask_grids%ls_mask_grid(i_idx, j_idx) = 0
+        endif
+        if (land_mask_grids%ls_mask_grid(i_idx, j_idx) .eq. 1 .and. land_mask_grids%soil_type_grid(i_idx, j_idx) .lt. 0.8 ) then
+          land_mask_grids%ls_mask_grid(i_idx, j_idx) = 0
+        endif
+      enddo
+    enddo
+
+  end subroutine mn_apply_lakes
+
+  subroutine mn_overwrite_with_nest_init_values_r8(tag, var_grid, nest_var_grid, refine, ioffset, joffset)
+    character(len=*)                     :: tag
+    real*8, allocatable, intent(inout)   :: var_grid(:,:)
+    real*8, allocatable, intent(in)      :: nest_var_grid(:,:)
+
+    integer, intent(in) :: refine, ioffset, joffset
+    integer :: i,j, this_pe
+
+    !    this_pe = mpp_pe()
+
+    do i = lbound(nest_var_grid,1), ubound(nest_var_grid,1)
+      do j = lbound(nest_var_grid,2), ubound(nest_var_grid,2)
+        var_grid((ioffset-1)*refine+i, (joffset-1)*refine+j) = nest_var_grid(i,j)
+      enddo
+    enddo
+
+  end subroutine mn_overwrite_with_nest_init_values_r8
+
+  subroutine mn_overwrite_with_nest_init_values_r4(tag, var_grid, nest_var_grid, refine, ioffset, joffset)
+    character(len=*)                     :: tag
+    real*4, allocatable, intent(inout)   :: var_grid(:,:)
+    real*4, allocatable, intent(in)      :: nest_var_grid(:,:)
+
+    integer, intent(in) :: refine, ioffset, joffset
+    integer :: i,j, this_pe
+
+    !    this_pe = mpp_pe()
+
+    do i = lbound(nest_var_grid,1), ubound(nest_var_grid,1)
+      do j = lbound(nest_var_grid,2), ubound(nest_var_grid,2)
+        var_grid((ioffset-1)*refine+i, (joffset-1)*refine+j) = nest_var_grid(i,j)
+      enddo
+    enddo
+
+  end subroutine mn_overwrite_with_nest_init_values_r4
+
+  subroutine deallocate_land_mask_grids(land_mask_grids)
+    type(mn_land_mask_grids), intent(inout) :: land_mask_grids
+
+    if (allocated(land_mask_grids%orog_grid))      deallocate(land_mask_grids%orog_grid)
+    if (allocated(land_mask_grids%orog_std_grid))  deallocate(land_mask_grids%orog_std_grid)
+    if (allocated(land_mask_grids%ls_mask_grid))   deallocate(land_mask_grids%ls_mask_grid)
+    if (allocated(land_mask_grids%soil_type_grid)) deallocate(land_mask_grids%soil_type_grid)
+    if (allocated(land_mask_grids%land_frac_grid)) deallocate(land_mask_grids%land_frac_grid)
+    if (allocated(land_mask_grids%geolat_grid))    deallocate(land_mask_grids%geolat_grid)
+    if (allocated(land_mask_grids%geolon_grid))    deallocate(land_mask_grids%geolon_grid)
+  end subroutine deallocate_land_mask_grids
+
+
+
+  subroutine alloc_set_facwf(fix_grids)
+    type(mn_fix_grids), intent(inout) :: fix_grids
+
+    integer :: i,j
+
+    allocate(fix_grids%facwf_grid(lbound(fix_grids%facsf_grid,1):ubound(fix_grids%facsf_grid,1),lbound(fix_grids%facsf_grid,2):ubound(fix_grids%facsf_grid,2)))
+
+    ! For land points, set facwf = 1.0 - facsf
+    ! To match initialization behavior, set any -999s to 0
+    do i=lbound(fix_grids%facsf_grid,1),ubound(fix_grids%facsf_grid,1)
+      do j=lbound(fix_grids%facsf_grid,2),ubound(fix_grids%facsf_grid,2)
+        if (fix_grids%facsf_grid(i,j) .lt. -100) then
+          fix_grids%facsf_grid(i,j) = 0
+          fix_grids%facwf_grid(i,j) = 0
+        else
+          fix_grids%facwf_grid(i,j) = 1.0 - fix_grids%facsf_grid(i,j)
+        endif
+      enddo
+    enddo
+  end subroutine alloc_set_facwf
+
+
+
+  subroutine mn_static_overwrite_ls_from_nest(fp_ls, nest_ls, refine, ioffset, joffset)
+    type(mn_land_mask_grids), intent(inout) :: fp_ls
+    type(mn_land_mask_grids), intent(in)    :: nest_ls
+    integer, intent(in)                     :: refine, ioffset, joffset
+
+    ! Update full panel with nest init values (there are a few mismatches)
+    ! TODO maybe add orog_raw/orog_filt
+    call mn_overwrite_with_nest_init_values("ls_mask", fp_ls%ls_mask_grid, nest_ls%ls_mask_grid, refine, ioffset, joffset)
+
+    !if (is_fine_pe) then
+    !  call validate_navigation_fields("INIT", Atm_block, IPD_control, IPD_data, parent_grid_num, child_grid_num)
+    !endif
+
+    call mn_overwrite_with_nest_init_values("soil_type", fp_ls%soil_type_grid, nest_ls%soil_type_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("land_frac", fp_ls%land_frac_grid, nest_ls%land_frac_grid, refine, ioffset, joffset)
+
+  end subroutine mn_static_overwrite_ls_from_nest
+
+  subroutine mn_static_overwrite_fix_from_nest(fp_fix, nest_fix, refine, ioffset, joffset)
+    type(mn_fix_grids), intent(inout) :: fp_fix
+    type(mn_fix_grids), intent(in)    :: nest_fix
+    integer, intent(in)               :: refine, ioffset, joffset
+
+    call mn_overwrite_with_nest_init_values("deep_soil_temp", fp_fix%deep_soil_temp_grid, nest_fix%deep_soil_temp_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("veg_type", fp_fix%veg_type_grid, nest_fix%veg_type_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("slope_type", fp_fix%slope_type_grid, nest_fix%slope_type_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("max_snow_alb", fp_fix%max_snow_alb_grid, nest_fix%max_snow_alb_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("facsf", fp_fix%facsf_grid, nest_fix%facsf_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("facwf", fp_fix%facwf_grid, nest_fix%facwf_grid, refine, ioffset, joffset)
+
+    call mn_overwrite_with_nest_init_values("alvsf", fp_fix%alvsf_grid, nest_fix%alvsf_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("alvwf", fp_fix%alvwf_grid, nest_fix%alvwf_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("alnsf", fp_fix%alnsf_grid, nest_fix%alnsf_grid, refine, ioffset, joffset)
+    call mn_overwrite_with_nest_init_values("alnwf", fp_fix%alnwf_grid, nest_fix%alnwf_grid, refine, ioffset, joffset)
+
+  end subroutine mn_static_overwrite_fix_from_nest
+
+  subroutine deallocate_fix_grids(fix_grids)
+    type(mn_fix_grids), intent(inout) :: fix_grids
+
+    if (allocated(fix_grids%deep_soil_temp_grid)) deallocate(fix_grids%deep_soil_temp_grid)
+    if (allocated(fix_grids%veg_frac_grid))       deallocate(fix_grids%veg_frac_grid)
+    if (allocated(fix_grids%veg_type_grid))       deallocate(fix_grids%veg_type_grid)
+    !if (allocated(fix_grids%veg_greenness_grid))  deallocate(fix_grids%veg_greenness_grid)
+    if (allocated(fix_grids%slope_type_grid))     deallocate(fix_grids%slope_type_grid)
+    if (allocated(fix_grids%max_snow_alb_grid))   deallocate(fix_grids%max_snow_alb_grid)
+    if (allocated(fix_grids%facsf_grid))          deallocate(fix_grids%facsf_grid)
+    if (allocated(fix_grids%facwf_grid))          deallocate(fix_grids%facwf_grid)
+    if (allocated(fix_grids%alvsf_grid))          deallocate(fix_grids%alvsf_grid)
+    if (allocated(fix_grids%alvwf_grid))          deallocate(fix_grids%alvwf_grid)
+    if (allocated(fix_grids%alnsf_grid))          deallocate(fix_grids%alnsf_grid)
+    if (allocated(fix_grids%alnwf_grid))          deallocate(fix_grids%alnwf_grid)
+
+  end subroutine deallocate_fix_grids
+
+
+
+
+
+
+
   subroutine  allocate_fv_moving_nest_prog_type(isd, ied, jsd, jed, npz, mn_prog)
     integer, intent(in)                           :: isd, ied, jsd, jed, npz
     type(fv_moving_nest_prog_type), intent(inout) :: mn_prog
@@ -351,14 +540,16 @@ contains
 
   end subroutine deallocate_fv_moving_nest_prog_type
 
-  subroutine  allocate_fv_moving_nest_physics_type(isd, ied, jsd, jed, npz, move_physics, move_nsst, lsoil, nmtvr, levs, ntot2d, ntot3d, mn_phys)
+  subroutine  allocate_fv_moving_nest_physics_type(isd, ied, jsd, jed, npz, move_physics, move_nsst, lsnow_lbound, lsnow_ubound, lsoil, nmtvr, levs, ntot2d, ntot3d, mn_phys)
     integer, intent(in)                           :: isd, ied, jsd, jed, npz
     logical, intent(in)                           :: move_physics, move_nsst
-    integer, intent(in)                           :: lsoil, nmtvr, levs, ntot2d, ntot3d    ! From IPD_Control
+    integer, intent(in)                           :: lsnow_lbound, lsnow_ubound, lsoil, nmtvr, levs, ntot2d, ntot3d    ! From IPD_Control
     type(fv_moving_nest_physics_type), intent(inout) :: mn_phys
 
     ! The local/temporary variables need to be allocated to the larger data (compute + halos) domain so that the nest motion code has halos to use
     allocate ( mn_phys%ts(isd:ied, jsd:jed) )
+
+    !print '("[INFO] WDR allocate_fv_moving_nest_physics_type npe=",I0," lsnow_lbound=",I0," lsnow_ubound=",I0," lsoil=",I0)', mpp_pe(), lsnow_lbound, lsnow_ubound, lsoil
 
     if (move_physics) then
       allocate ( mn_phys%slmsk(isd:ied, jsd:jed) )
@@ -446,6 +637,7 @@ contains
     end if
 
     mn_phys%ts = +99999.9
+
     if (move_physics) then
       mn_phys%slmsk = +99999.9
       mn_phys%smc = +99999.9
