@@ -12,5 +12,5 @@
   branch = ufs/dev
 [submodule "upp"]
   path = upp
-  url = https://github.com/SamuelTrahanNOAA/UPP
-  branch = number-concentration
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
