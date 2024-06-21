@@ -4771,6 +4771,12 @@
   units = flag
   dimensions = ()
   type = logical
+[lthailaware]
+  standard_name = flag_for_hail_physics
+  long_name = flag for hail physics
+  units = flag
+  dimensions = ()
+  type = logical
 [mraerosol]
   standard_name = do_merra2_aerosol_awareness
   long_name = flag for merra2 aerosol-aware physics for example the thompson microphysics
