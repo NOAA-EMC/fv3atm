@@ -7465,13 +7465,6 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[gwd_z0m_factor]
-  standard_name = momentum_roughness_factor_in_turbulent_form_drag
-  long_name = multiplication of Z0m in PSL turbulent form drag
-  units = 1
-  dimensions = ()
-  type = real
-  kind = kind_phys
 [do_ugwp_v1]
   standard_name = flag_for_ugwp_version_1
   long_name = flag to activate ver 1 CIRES UGWP
