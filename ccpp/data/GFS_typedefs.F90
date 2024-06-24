@@ -709,7 +709,9 @@ module GFS_typedefs
                                                                         !< for use with internal file reads
     integer              :: input_nml_file_length    !< length (number of lines) in namelist for internal reads
     integer              :: logunit
-    real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
+    real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets (current bucket)
+    real(kind=kind_phys) :: fhzero_array(2) !< array to hold the the hours between clearing of diagnostic buckets
+    real(kind=kind_phys) :: fhzero_fhour(2) !< the maximum forecast length for the hours between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: qdiag3d         !< flag for 3d tracer diagnostic fields
     logical              :: flag_for_gwd_generic_tend  !< true if GFS_GWD_generic should calculate tendencies
@@ -3319,6 +3321,8 @@ module GFS_typedefs
 
 !--- BEGIN NAMELIST VARIABLES
     real(kind=kind_phys) :: fhzero         = 0.0             !< hours between clearing of diagnostic buckets
+    real(kind=kind_phys) :: fhzero_array(1:2)  = 0.0         !< array with hours between clearing of diagnostic buckets
+    real(kind=kind_phys) :: fhzero_fhour(1:2)  = 0.0         !< the maximum forecast length for the hours between clearing of diagnostic buckets
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: qdiag3d        = .false.         !< flag for 3d tracer diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
@@ -3975,9 +3979,9 @@ module GFS_typedefs
 
     NAMELIST /gfs_physics_nml/                                                              &
                           !--- general parameters
-                               fhzero, ldiag3d, qdiag3d, lssav, naux2d, dtend_select,       &
-                               naux3d, aux2d_time_avg, aux3d_time_avg, fhcyc,               &
-                               thermodyn_id, sfcpress_id,                                   &
+                               fhzero, fhzero_array, fhzero_fhour, ldiag3d, qdiag3d, lssav, &
+                               naux2d, dtend_select, naux3d, aux2d_time_avg,                &
+                               aux3d_time_avg, fhcyc, thermodyn_id, sfcpress_id,            &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
                                cplchm, cpllnd, cpllnd2atm, cpl_imp_mrg, cpl_imp_dbg,        &
@@ -4188,6 +4192,11 @@ module GFS_typedefs
     Model%fn_nml           = fn_nml
     Model%logunit          = logunit
     Model%fhzero           = fhzero
+    Model%fhzero_array     = fhzero_array
+    Model%fhzero_fhour     = fhzero_fhour
+    if( Model%fhzero_array(1) > 0. ) then
+      Model%fhzero = Model%fhzero_array(1)
+    endif
     Model%ldiag3d          = ldiag3d
     Model%qdiag3d          = qdiag3d
     if (qdiag3d .and. .not. ldiag3d) then
@@ -5623,6 +5632,10 @@ module GFS_typedefs
     Model%restart          = restart
     Model%lsm_cold_start   = .not. restart
     Model%hydrostatic      = hydrostatic
+    if (Model%me == Model%master) then
+      print *,'in atm phys init, phour=',Model%phour,'fhour=',Model%fhour,'zhour=',Model%zhour,'kdt=',Model%kdt
+    endif
+    
 
     if(Model%hydrostatic .and. Model%lightning_threat) then
       write(0,*) 'Turning off lightning threat index for hydrostatic run.'
@@ -6416,6 +6429,8 @@ module GFS_typedefs
       print *, ' nlunit            : ', Model%nlunit
       print *, ' fn_nml            : ', trim(Model%fn_nml)
       print *, ' fhzero            : ', Model%fhzero
+      print *, ' fhzero_array      : ', Model%fhzero_array
+      print *, ' fhzero_fhour      : ', Model%fhzero_fhour
       print *, ' ldiag3d           : ', Model%ldiag3d
       print *, ' qdiag3d           : ', Model%qdiag3d
       print *, ' lssav             : ', Model%lssav
