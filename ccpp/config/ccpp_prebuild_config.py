@@ -19,7 +19,6 @@ VARIABLE_DEFINITION_FILES = [
     'physics/physics/hooks/machine.F',
     'physics/physics/Radiation/RRTMG/radsw_param.f',
     'physics/physics/Radiation/RRTMG/radlw_param.f',
-    'physics/physics/photochem/h2o_def.f',
     'physics/physics/photochem/module_ozphys.F90',
     'physics/physics/photochem/module_h2ophys.F90',
     'data/CCPP_typedefs.F90',
