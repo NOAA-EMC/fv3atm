@@ -1081,7 +1081,8 @@ module fv3atm_cap_mod
     if( dbug > 0 .or. cplprint_flag ) then
          fcstpe = .false.
          if( mype < num_pes_fcst ) fcstpe = .true.
-         call diagnose_cplFields(gcomp, clock, fcstpe, cplprint_flag, dbug, 'import')
+         call diagnose_cplFields(gcomp, clock, fcstpe, cplprint_flag, dbug, 'import', rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
 
     timep1re = MPI_Wtime()
@@ -1235,7 +1236,8 @@ module fv3atm_cap_mod
     if( dbug > 0 .or. cplprint_flag ) then
       fcstpe = .false.
       if( mype < num_pes_fcst ) fcstpe = .true.
-      call diagnose_cplFields(gcomp, clock_out, fcstpe, cplprint_flag, dbug, 'export')
+      call diagnose_cplFields(gcomp, clock_out, fcstpe, cplprint_flag, dbug, 'export', rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     end if
 
     timep2re = MPI_Wtime()

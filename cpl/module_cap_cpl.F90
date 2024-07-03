@@ -17,7 +17,7 @@ module module_cap_cpl
   !-----------------------------------------------------------------------------
 
     subroutine diagnose_cplFields(gcomp, clock_fv3, fcstpe, &
-                                  statewrite_flag, stdiagnose_flag, state_tag)
+                                  statewrite_flag, stdiagnose_flag, state_tag, rc)
 
       type(ESMF_GridComp), intent(in)       :: gcomp
       type(ESMF_Clock),intent(in)           :: clock_fv3
@@ -25,6 +25,7 @@ module module_cap_cpl
       logical, intent(in)                   :: statewrite_flag
       integer, intent(in)                   :: stdiagnose_flag
       character(len=*), intent(in)          :: state_tag                        !< "import" or "export".
+      integer, intent(out)                  :: rc
 
       character(len=*),parameter :: subname='(module_cap_cpl:diagnose_cplFields)'
       type(ESMF_Time) :: currTime
@@ -32,7 +33,6 @@ module module_cap_cpl
       character(len=240) :: timestr
       character(len=160) :: nuopcMsg
       character(len=160) :: filename
-      integer :: rc
 !
       call ESMF_ClockGet(clock_fv3, currTime=currTime, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
