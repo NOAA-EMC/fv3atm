@@ -135,6 +135,9 @@ module module_cap_cpl
         endif
       enddo
 
+      fieldbundle = ESMF_FieldBundleCreate(rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       call ESMF_LogWrite(trim(subname)//": write "//trim(filename), ESMF_LOGMSG_INFO, rc=rc)
 
       do ifld=1, fieldCount
@@ -157,6 +160,13 @@ module module_cap_cpl
 
         call ESMF_ArrayGet(array, distgrid=distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        ! skip 'cpl_scalars' field because it has tileCount == 1, while all other fields have 6.
+        ! This causes the following error:
+        ! 20240705 134459.788 ERROR            PET000 ESMCI_IO.C:1614 ESMCI::IO::checkNtiles() Wrong data value  - New number of tiles (6) does not match previously-set number of tiles (1) for this IO object. All arrays handled by a given IO object must have the same number of tiles.
+        if (trim(fldNameList(ifld)) == 'cpl_scalars') then
+          cycle
+        endif
 
         allocate(fieldDimLen(fieldDimCount))
 
@@ -221,13 +231,10 @@ module module_cap_cpl
         deallocate(gridded_dim_labels)
         deallocate(ungridded_dim_labels)
 
+        call ESMF_FieldBundleAdd(fieldbundle, (/flds(ifld)/), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       enddo
-
-      fieldbundle = ESMF_FieldBundleCreate(rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      call ESMF_FieldBundleAdd(fieldbundle, flds, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_FieldBundleWrite(fieldbundle, fileName=trim(filename), convention=convention, purpose=purpose, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
