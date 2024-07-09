@@ -999,7 +999,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'sw_upfxc'
     ExtDiag(idx)%desc = 'total sky upward sw flux at toa - GFS radiation'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -1011,7 +1011,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'sw_dnfxc'
     ExtDiag(idx)%desc = 'total sky downward sw flux at toa - GFS radiation'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -1023,7 +1023,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'sw_upfx0'
     ExtDiag(idx)%desc = 'clear sky upward sw flux at toa - GFS radiation'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -1035,7 +1035,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'lw_upfxc'
     ExtDiag(idx)%desc = 'total sky upward lw flux at toa - GFS radiation'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -1047,7 +1047,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'lw_upfx0'
     ExtDiag(idx)%desc = 'clear sky upward lw flux at toa - GFS radiation'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -1235,7 +1235,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'shtfl_ave'
     ExtDiag(idx)%desc = 'surface sensible heat flux'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_one
     ExtDiag(idx)%time_avg = .TRUE.
@@ -1249,7 +1249,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'lhtfl_ave'
     ExtDiag(idx)%desc = 'surface latent heat flux'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_one
     ExtDiag(idx)%time_avg = .TRUE.
@@ -1307,7 +1307,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'dlwsfc'
     ExtDiag(idx)%desc = 'time accumulated downward lw flux at surface'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -1319,7 +1319,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'ulwsfc'
     ExtDiag(idx)%desc = 'time accumulated upward lw flux at surface'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -2074,7 +2074,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'dlwsfci'
     ExtDiag(idx)%desc = 'instantaneous sfc downward lw flux'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -2086,7 +2086,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'ulwsfci'
     ExtDiag(idx)%desc = 'instantaneous sfc upward lw flux'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -2098,7 +2098,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'dswsfci'
     ExtDiag(idx)%desc = 'instantaneous sfc downward sw flux'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -2110,7 +2110,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'uswsfci'
     ExtDiag(idx)%desc = 'instantaneous sfc upward sw flux'
-    ExtDiag(idx)%unit = 'w/m**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
@@ -4544,7 +4544,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'qrain'
     ExtDiag(idx)%desc = 'nsst sensible heat flux due to rainfall'
-    ExtDiag(idx)%unit = 'w/m2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
