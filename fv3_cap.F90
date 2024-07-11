@@ -1,16 +1,20 @@
-!--------------- FV3 ATM solo model ----------------
-!
-!*** The FV3 atmosphere grid component nuopc cap
-!
-! Author:  Jun Wang@noaa.gov
-!
-! revision history
-! 11 Oct 2016: J. Wang          Initial code
-! 18 Apr 2017: J. Wang          set up fcst grid component and write grid components
-! 24 Jul 2017: J. Wang          initialization and time stepping changes for coupling
-! 02 Nov 2017: J. Wang          Use Gerhard's transferable RouteHandle
-!
+!> @file
+!> @brief The FV3 atmosphere grid component nuopc cap.
+!> @author Jun Wang @date 01/2017
 
+!> @brief The FV3 atmosphere grid component nuopc cap.
+!>
+!> FV3 ATM solo model
+!>
+!> ## Module History
+!> Date | Author | Modification
+!> -----|--------|-------------
+!> 11 Oct 2016 | J. Wang | Initial code
+!> 18 Apr 2017 | J. Wang | set up fcst grid component and write grid components
+!> 24 Jul 2017 | J. Wang | initialization and time stepping changes for coupling
+!> 02 Nov 2017 | J. Wang | Use Gerhard's transferable RouteHandle
+!>
+!> @author Jun Wang @date 01/2017
 module fv3atm_cap_mod
 
   use ESMF
@@ -56,30 +60,61 @@ module fv3atm_cap_mod
 !
 !-----------------------------------------------------------------------
 !
-
+  !> ???
   type(ESMF_GridComp)                         :: fcstComp
+
+  !> ???
   type(ESMF_State)                            :: fcstState
+
+  !> ???
   type(ESMF_FieldBundle), allocatable         :: fcstFB(:)
+
+  !> ???
   integer,dimension(:), allocatable           :: fcstPetList
+
+  !> ???
   integer, save                               :: FBCount
 
+  !> ???
   type(ESMF_GridComp),    allocatable         :: wrtComp(:)
+  
+  !> ???
   type(ESMF_State),       allocatable         :: wrtState(:)
+
+  !> ???
   type(ESMF_FieldBundle), allocatable         :: wrtFB(:,:)
 
+  !> ???
   type(ESMF_RouteHandle), allocatable         :: routehandle(:,:)
+
+  !> ???
   type(ESMF_RouteHandle), allocatable         :: gridRedistRH(:,:)
+
+  !> ???
   type(ESMF_Grid), allocatable                :: srcGrid(:,:), dstGrid(:,:)
+
+  !> ???
   logical, allocatable                        :: is_moving_FB(:)
 
+  !> ???
   logical                                     :: profile_memory = .true.
+
+  !> ???
   logical                                     :: write_runtimelog = .false.
+
+  !> ???
   logical                                     :: lprint = .false.
 
+  !> ???
   integer                                     :: mype = -1
+
+  !> ???
   integer                                     :: dbug = 0
+
+  !> ???
   integer                                     :: frestart(999) = -1
 
+  !> ???
   real(kind=8)                                :: timere, timep2re
 !-----------------------------------------------------------------------
 
@@ -89,6 +124,12 @@ module fv3atm_cap_mod
 !------------------- Solo fv3atm code starts here ----------------------
 !-----------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine SetServices(gcomp, rc)
 
     type(ESMF_GridComp)  :: gcomp
@@ -169,6 +210,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine InitializeAdvertise(gcomp, rc)
 
     type(ESMF_GridComp)                    :: gcomp
@@ -972,6 +1019,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine InitializeRealize(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -1009,6 +1062,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine ModelAdvance(gcomp, rc)
 
     type(ESMF_GridComp)         :: gcomp
@@ -1038,6 +1097,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine ModelAdvance_phase1(gcomp, rc)
     type(ESMF_GridComp)         :: gcomp
     integer, intent(out)        :: rc
@@ -1092,6 +1157,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine ModelAdvance_phase2(gcomp, rc)
     type(ESMF_GridComp)         :: gcomp
     integer, intent(out)        :: rc
@@ -1246,6 +1317,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine ModelSetRunClock(gcomp, rc)
 
     type(ESMF_GridComp)         :: gcomp
@@ -1280,6 +1357,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine fv3_checkimport(gcomp, rc)
 
 !***  Check the import state fields
@@ -1369,6 +1452,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine TimestampExport_phase1(gcomp, rc)
 
     ! input arguments
@@ -1399,6 +1488,12 @@ module fv3atm_cap_mod
 
 !-----------------------------------------------------------------------------
 
+  !> ???
+  !>
+  !> @param gcomp ???
+  !> @param rc Return code.
+  !>
+  !> @author
   subroutine ModelFinalize(gcomp, rc)
 
     ! input arguments
