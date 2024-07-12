@@ -1400,7 +1400,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'pevpr_ave'
     ExtDiag(idx)%desc = 'averaged potential evaporation rate'
-    ExtDiag(idx)%unit = 'W/M**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%time_avg = .TRUE.
     allocate (ExtDiag(idx)%data(nblks))
@@ -2214,7 +2214,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'pevpr'
     ExtDiag(idx)%desc = 'instantaneous surface potential evaporation'
-    ExtDiag(idx)%unit = 'W/M**2'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
