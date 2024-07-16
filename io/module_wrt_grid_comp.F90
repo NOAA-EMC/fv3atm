@@ -28,13 +28,13 @@
 !
       use mpi_f08
       use esmf
-      use fms_mod, only : uppercase
-      use fms
-      use mpp_mod, only : mpp_init, mpp_error
+      use fms, only : fms_init, fms_end, fms_mpp_uppercase, fms_mpp_error, FATAL
+      use fms, only : NO_CALENDAR, JULIAN, GREGORIAN, THIRTY_DAY_MONTHS, NOLEAP
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
                                       n_group, num_files,                       &
+                                      fv3atm_output_dir,                        &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,                &
                                       ichunk3d,jchunk3d,kchunk3d,               &
@@ -80,6 +80,7 @@
       type(ESMF_FieldBundle)           :: gridFB
       integer                          :: FBCount
       character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)
+      character(128)                            :: FBlist_outfilename(100)
       logical                                   :: top_parent_is_global
 !
 !-----------------------------------------------------------------------
@@ -196,7 +197,7 @@
 
       integer :: attCount, jidx, idx, noutfile
       character(19)  :: newdate
-      character(128) :: FBlist_outfilename(100), outfile_name
+      character(128) :: outfile_name
       character(128),dimension(:,:), allocatable    :: outfilename
       real(8), dimension(:),         allocatable    :: slat
       real(8), dimension(:),         allocatable    :: lat, lon
@@ -215,8 +216,8 @@
       integer                                 :: grid_id
 
       logical                    :: history_file_on_native_grid
-      character(len=esmf_maxstr) :: output_grid_name
 !
+      character(ESMF_MAXSTR)      :: fb_name1, fb_name2
 !-----------------------------------------------------------------------
 !***********************************************************************
 !-----------------------------------------------------------------------
@@ -281,6 +282,15 @@
                                    label='write_nsflip:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__)) return
+
+      call ESMF_ConfigGetAttribute(config=CF,value=fv3atm_output_dir, &
+                                   label ='fv3atm_output_dir:', default='./', rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      ! Make sure fv3atm_output_dir ends with '/'
+      if (fv3atm_output_dir(len(trim(fv3atm_output_dir)):len(trim(fv3atm_output_dir))) /= '/') then
+        fv3atm_output_dir = trim(fv3atm_output_dir) // '/'
+      end if
 
       if( wrt_int_state%write_dopost ) then
 #ifdef INLINE_POST
@@ -1152,129 +1162,6 @@
 
         enddo ! FBCount
 
-        ! add output grid related attributes, only for history files(bundles), skip restart
-        if (FBlist_outfilename(i)(1:8) /= 'restart_') then
-
-            call ESMF_AttributeGet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3-nooutput", &
-                                   name="output_grid", value=output_grid_name, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-            call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                   attrList=(/"source","grid  "/), rc=rc)
-            call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                   name="source", value="FV3GFS", rc=rc)
-
-            if (trim(output_grid_name) == 'cubed_sphere_grid') then
-
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="grid", value="cubed_sphere", rc=rc)
-
-            else if (trim(output_grid_name) == 'gaussian_grid') then
-
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="grid", value="gaussian", rc=rc)
-              call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     attrList=(/"im","jm"/), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="im", value=imo(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="jm", value=jmo(grid_id), rc=rc)
-
-            else if (trim(output_grid_name) == 'regional_latlon'        &
-                .or. trim(output_grid_name) == 'regional_latlon_moving' &
-                .or. trim(output_grid_name) == 'global_latlon') then
-
-              ! for 'regional_latlon_moving' lon1/2 and lat1/2 will be overwritten in run phase
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="grid", value="latlon", rc=rc)
-              call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     attrList=(/"lon1","lat1","lon2","lat2","dlon","dlat"/), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dlon", value=dlon(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dlat", value=dlat(grid_id), rc=rc)
-              if (trim(output_grid_name) /= 'regional_latlon_moving') then
-                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                       name="lon1", value=lon1(grid_id), rc=rc)
-                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                       name="lat1", value=lat1(grid_id), rc=rc)
-                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                       name="lon2", value=lon2(grid_id), rc=rc)
-                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                       name="lat2", value=lat2(grid_id), rc=rc)
-              endif
-            else if (trim(output_grid_name) == 'rotated_latlon' &
-                .or. trim(output_grid_name) == 'rotated_latlon_moving') then
-
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="grid", value="rotated_latlon", rc=rc)
-              call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     attrList=(/"cen_lon",&
-                                                "cen_lat",&
-                                                "lon1   ",&
-                                                "lat1   ",&
-                                                "lon2   ",&
-                                                "lat2   ",&
-                                                "dlon   ",&
-                                                "dlat   "/), rc=rc)
-              ! for 'rotated_latlon_moving' cen_lon and cen_lat will be overwritten in run phase
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="cen_lon", value=cen_lon(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="cen_lat", value=cen_lat(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dlon", value=dlon(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dlat", value=dlat(grid_id), rc=rc)
-              if (trim(output_grid_name) /= 'rotated_latlon_moving') then
-                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                       name="lon1", value=lon1(grid_id), rc=rc)
-                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                       name="lat1", value=lat1(grid_id), rc=rc)
-                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                       name="lon2", value=lon2(grid_id), rc=rc)
-                call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat2", value=lat2(grid_id), rc=rc)
-              endif
-            else if (trim(output_grid_name) == 'lambert_conformal') then
-
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="grid", value="lambert_conformal", rc=rc)
-              call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     attrList=(/"cen_lon",&
-                                                "cen_lat",&
-                                                "stdlat1",&
-                                                "stdlat2",&
-                                                "nx     ",&
-                                                "ny     ",&
-                                                "lon1   ",&
-                                                "lat1   ",&
-                                                "dx     ",&
-                                                "dy     "/), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="cen_lon", value=cen_lon(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="cen_lat", value=cen_lat(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="stdlat1", value=stdlat1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="stdlat2", value=stdlat2(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="nx", value=imo(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="ny", value=jmo(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat1", value=lat1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon1", value=lon1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dx", value=dx(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dy", value=dy(grid_id), rc=rc)
-
-            end if
-        end if
-
       enddo ! end wrt_int_state%FBCount
 !
 ! add time Attribute
@@ -1776,7 +1663,7 @@
       type(write_wrap)                      :: wrap
       type(wrt_internal_state),pointer      :: wrt_int_state
 !
-      integer                               :: i,j,n,mype,nolog, grid_id, localPet
+      integer                               :: i,j,n,m, mype,nolog, grid_id, localPet
 !
       integer                               :: nf_hours,nf_seconds,nf_minutes
       integer                               :: fcst_seconds
@@ -1823,6 +1710,8 @@
       real, allocatable                     :: output_fh(:)
       logical                               :: is_restart_bundle, restart_written
       integer                               :: tileCount
+      type(ESMF_Info)                       :: fcstInfo, wrtInfo
+      character(len=ESMF_MAXSTR)            :: output_grid_name
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -1901,6 +1790,22 @@
         call ESMF_StateGet(imp_state_write, itemName="output_"//trim(fcstItemNameList(i)), &
                            fieldbundle=file_bundle, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        do m=1, wrt_int_state%FBCount
+          if (trim_regridmethod_suffix(fcstItemNameList(i)) == trim_regridmethod_suffix(FBlist_outfilename(m))) then
+
+            call ESMF_InfoGetFromHost(file_bundle, info=fcstInfo, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_InfoGetFromHost(wrt_int_state%wrtFB(m), info=wrtInfo, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_InfoUpdate(lhs=wrtInfo, rhs=fcstInfo, recursive=.true., overwrite=.true., rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            ! if (lprnt) call print_att_list(wrt_int_state%wrtFB(m), rc)
+
+          end if
+        end do
 
         ! see whether a "mirror_" FieldBundle exists, i.e. dealing with moving domain that needs updated Regrid() here.
         call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(i)), &
@@ -2140,7 +2045,7 @@
         wend = MPI_Wtime()
         if (mype == lead_write_task) then
           !** write out inline post log file
-          open(newunit=nolog,file='log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
+          open(newunit=nolog,file=trim(fv3atm_output_dir)//'log.atm.inlinepost.f'//trim(cfhour),form='FORMATTED')
           write(nolog,"('completed: fv3atm')")
           write(nolog,"('forecast hour: ',f10.3)") nfhour
           write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
@@ -2200,43 +2105,125 @@
                                    name="grid_id", value=grid_id, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-            ! update lon1/2 and lat1/2 for regional_latlon_moving
-            if (trim(output_grid(grid_id)) == 'regional_latlon_moving') then
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lon1", value=lon1(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lat1", value=lat1(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lon2", value=lon2(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lat2", value=lat2(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            if (wrtFBName(1:18) == 'cubed_sphere_grid_') then
+              output_grid_name = "cubed_sphere_grid"
+            else
+              output_grid_name = output_grid(grid_id)
             endif
 
-            ! update cen_lon/cen_lat, lon1/2 and lat1/2  for rotated_latlon_moving
-            if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+            ! add output grid related attributes, only for history files(bundles), skip restart
+            if (.not.is_restart_bundle) then
+
+              call ESMF_AttributeAdd(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     attrList=(/"source","grid  "/), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="cen_lon", value=cen_lon(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="cen_lat", value=cen_lat(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lon1", value=lon1(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lat1", value=lat1(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lon2", value=lon2(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lat2", value=lat2(grid_id), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            endif
+                                     name="source", value="FV3GFS", rc=rc)
+
+              if (trim(output_grid_name) == 'cubed_sphere_grid') then
+
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="grid", value="cubed_sphere", rc=rc)
+
+              else if (trim(output_grid_name) == 'gaussian_grid') then
+
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="grid", value="gaussian", rc=rc)
+                call ESMF_AttributeAdd(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       attrList=(/"im","jm"/), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="im", value=imo(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="jm", value=jmo(grid_id), rc=rc)
+
+              else if (trim(output_grid_name) == 'regional_latlon'        &
+                  .or. trim(output_grid_name) == 'regional_latlon_moving' &
+                  .or. trim(output_grid_name) == 'global_latlon') then
+
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="grid", value="latlon", rc=rc)
+                call ESMF_AttributeAdd(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       attrList=(/"lon1","lat1","lon2","lat2","dlon","dlat"/), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="dlon", value=dlon(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="dlat", value=dlat(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lon1", value=lon1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lat1", value=lat1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lon2", value=lon2(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lat2", value=lat2(grid_id), rc=rc)
+              else if (trim(output_grid_name) == 'rotated_latlon' &
+                  .or. trim(output_grid_name) == 'rotated_latlon_moving') then
+
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="grid", value="rotated_latlon", rc=rc)
+                call ESMF_AttributeAdd(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       attrList=(/"cen_lon",&
+                                                  "cen_lat",&
+                                                  "lon1   ",&
+                                                  "lat1   ",&
+                                                  "lon2   ",&
+                                                  "lat2   ",&
+                                                  "dlon   ",&
+                                                  "dlat   "/), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="cen_lon", value=cen_lon(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="cen_lat", value=cen_lat(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="dlon", value=dlon(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="dlat", value=dlat(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lon1", value=lon1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lat1", value=lat1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lon2", value=lon2(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lat2", value=lat2(grid_id), rc=rc)
+              else if (trim(output_grid_name) == 'lambert_conformal') then
+
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="grid", value="lambert_conformal", rc=rc)
+                call ESMF_AttributeAdd(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       attrList=(/"cen_lon",&
+                                                  "cen_lat",&
+                                                  "stdlat1",&
+                                                  "stdlat2",&
+                                                  "nx     ",&
+                                                  "ny     ",&
+                                                  "lon1   ",&
+                                                  "lat1   ",&
+                                                  "dx     ",&
+                                                  "dy     "/), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="cen_lon", value=cen_lon(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="cen_lat", value=cen_lat(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="stdlat1", value=stdlat1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="stdlat2", value=stdlat2(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="nx", value=imo(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="ny", value=jmo(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lat1", value=lat1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="lon1", value=lon1(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="dx", value=dx(grid_id), rc=rc)
+                call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                       name="dy", value=dy(grid_id), rc=rc)
+
+              end if
+
+            end if ! .not.is_restart_bundle
 
             if(step == 1) then
               file_bundle = wrt_int_state%wrtFB(nbdl)
@@ -2313,7 +2300,7 @@
               endif
 
             else ! history bundle
-              filename = trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
+              filename = trim(fv3atm_output_dir)//trim(wrtFBName)//'f'//trim(cfhour)//'.nc'
             endif
             if(mype == lead_write_task) print *,'in wrt run,filename= ',nbdl,trim(filename)
 
@@ -2444,7 +2431,7 @@
 
           if (out_phase == 1 .and. mype == lead_write_task) then
             !** write history log file
-            open(newunit=nolog, file='log.atm.f'//trim(cfhour))
+            open(newunit=nolog, file=trim(fv3atm_output_dir)//'log.atm.f'//trim(cfhour))
             write(nolog,"('completed: fv3atm')")
             write(nolog,"('forecast hour: ',f10.3)") nfhour
             write(nolog,"('valid time: ',6(i4,2x))") wrt_int_state%fdate(1:6)
@@ -3448,11 +3435,13 @@
         call ESMF_VMGet(vm=vm, mpiCommunicator=wrt_mpi_comm%mpi_val, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        if (petCount > 1) then
-          call write_restart_netcdf(wrtTileFB, trim(tileFileName), .true., wrt_mpi_comm, localPet, rc)
-        else
+        !Restrict writing cubed sphere restart files to use serial I/O due to slowness
+        ! on WCOOS2 when large number of tasks in the write group is used
+        !if (petCount > 1) then
+        !  call write_restart_netcdf(wrtTileFB, trim(tileFileName), .true., wrt_mpi_comm, localPet, rc)
+        !else
           call write_restart_netcdf(wrtTileFB, trim(tileFileName), .false., wrt_mpi_comm, localPet, rc)
-        endif
+        !endif
 
       endif
       return
@@ -4640,6 +4629,36 @@
 !-----------------------------------------------------------------------
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 !-----------------------------------------------------------------------
+      subroutine print_att_list(fb, rc)
+      type(ESMF_FieldBundle), intent(in) :: fb
+      integer, intent(out) :: rc
+
+      integer :: i
+      integer :: itemCount
+      integer :: attCount
+      character(len=ESMF_MAXSTR) :: fbName, attName
+      type(ESMF_TypeKind_Flag)   :: typekind
+
+      rc = 0
+      call ESMF_FieldBundleGet(fb, name=fbName, rc=rc)
+
+      write(0,*)'==== ', trim(fbName)
+
+      call ESMF_AttributeGet(fb, convention="NetCDF", purpose="FV3", &
+                             attnestflag=ESMF_ATTNEST_OFF, count=attCount, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      do i=1, attCount
+        call ESMF_AttributeGet(fb, convention="NetCDF", purpose="FV3", &
+                               attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
+                               typekind=typekind, itemCount=itemCount, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        write(0,*) i , trim(attName), typekind
+
+      end do
+
+      end subroutine print_att_list
 !
     end module  module_wrt_grid_comp
 !

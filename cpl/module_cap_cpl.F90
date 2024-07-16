@@ -11,7 +11,6 @@ module module_cap_cpl
 
   private
   public diagnose_cplFields
-!
   contains
 
   !-----------------------------------------------------------------------------
