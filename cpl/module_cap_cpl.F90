@@ -30,13 +30,16 @@ module module_cap_cpl
       character(len=*),parameter :: subname='(module_cap_cpl:diagnose_cplFields)'
       type(ESMF_Time) :: currTime
       type(ESMF_State) :: state
-      character(len=240) :: timestr
+      type(ESMF_TimeInterval) :: timeStep
+      character(len=240) :: import_timestr, export_timestr
       character(len=160) :: nuopcMsg
       character(len=160) :: filename
 !
-      call ESMF_ClockGet(clock_fv3, currTime=currTime, rc=rc)
+      call ESMF_ClockGet(clock_fv3, currTime=currTime, timeStep=timestep, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-      call ESMF_TimeGet(currTime, timestring=timestr, rc=rc)
+      call ESMF_TimeGet(currTime, timestring=import_timestr, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      call ESMF_TimeGet(currTime+timestep, timestring=export_timestr, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_ClockPrint(clock_fv3, options="currTime", preString="current time: ", unit=nuopcMsg)
@@ -52,7 +55,7 @@ module module_cap_cpl
 
         ! Dump Fields out
         if (statewrite_flag) then
-          write(filename,'(A)') 'fv3_cap_import_'//trim(timestr)//'.tile*.nc'
+          write(filename,'(A)') 'fv3_cap_import_'//trim(import_timestr)//'.tile*.nc'
           call State_RWFields_tiles(state,trim(filename), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
@@ -68,7 +71,7 @@ module module_cap_cpl
 
         ! Dump Fields out
         if (statewrite_flag) then
-          write(filename,'(A)') 'fv3_cap_export_'//trim(timestr)//'.tile*.nc'
+          write(filename,'(A)') 'fv3_cap_export_'//trim(export_timestr)//'.tile*.nc'
           call State_RWFields_tiles(state,trim(filename), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
@@ -236,7 +239,8 @@ module module_cap_cpl
 
       enddo
 
-      call ESMF_FieldBundleWrite(fieldbundle, fileName=trim(filename), convention=convention, purpose=purpose, rc=rc)
+      call ESMF_FieldBundleWrite(fieldbundle, fileName=trim(filename), convention=convention, purpose=purpose, &
+           timeslice=1, overwrite=.true., rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! -- Finalize
