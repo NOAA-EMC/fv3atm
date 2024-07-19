@@ -4758,12 +4758,18 @@ module post_fv3
           enddo
         enddo ! do loop for l
 
+        do l=1,lm
+         do j=jsta,jend
+          do i=ista,iend
+            tv = t(i,j,l) * (h1+d608*MAX(q(I,J,L),qmin))
+            rhomid(i,j,l) = pmid(i,j,l) / (rd*tv)
+          enddo
+         enddo
+        enddo
+
         l=lm
         do j=jsta,jend
           do i=ista,iend
-
-            tv = t(i,j,l) * (h1+d608*MAX(q(I,J,L),qmin))
-            rhomid(i,j,l) = pmid(i,j,l) / (rd*tv)
 
             dustcb(i,j) = MAX(dustcb(i,j), 0.0)
             dustallcb(i,j) = MAX(dustallcb(i,j), 0.0)
