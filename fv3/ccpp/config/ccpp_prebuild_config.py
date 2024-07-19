@@ -21,9 +21,9 @@ VARIABLE_DEFINITION_FILES = [
     'physics/physics/Radiation/RRTMG/radlw_param.f',
     'physics/physics/photochem/h2o_def.f',
     'physics/physics/photochem/module_ozphys.F90',
-    'data/CCPP_typedefs.F90',
-    'data/GFS_typedefs.F90',
-    'data/CCPP_data.F90',
+    '../fv3/ccpp/data/CCPP_typedefs.F90',
+    '../fv3/ccpp/data/GFS_typedefs.F90',
+    '../fv3/ccpp/data/CCPP_data.F90',
     ]
 
 TYPEDEFS_NEW_METADATA = {
@@ -229,7 +229,7 @@ CAPS_SOURCEFILE = '{build_dir}/physics/CCPP_CAPS.sh'
 CAPS_DIR = '{build_dir}/physics'
 
 # Directory where the suite definition files are stored
-SUITES_DIR = 'suites'
+SUITES_DIR = '../fv3/ccpp/suites'
 
 # Directory where to write static API to
 STATIC_API_DIR = '{build_dir}/physics'

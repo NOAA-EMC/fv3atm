@@ -29,7 +29,7 @@ else()
 endif()
 execute_process(COMMAND ${Python_EXECUTABLE}
                         "framework/scripts/ccpp_prebuild.py"
-                        "--config=../fv3/ccpp/config/ccpp_prebuild_config.py"
+                        "--config=config/ccpp_prebuild_config.py"
                         "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg} ${_ccpp_verbose_arg}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
@@ -99,8 +99,8 @@ endif()
 #------------------------------------------------------------------------------
 # Build CCPP framework and physics
 
-add_subdirectory(framework)
-add_subdirectory(physics)
+add_subdirectory(../../ccpp/framework)
+add_subdirectory(../../ccpp/physics)
 
 #------------------------------------------------------------------------------
 # Build fv3ccpp
@@ -109,16 +109,16 @@ add_subdirectory(physics)
 add_library(
     fv3ccpp
 
-    ../fv3/ccpp/driver/GFS_diagnostics.F90
-    ../fv3/ccpp/driver/GFS_restart.F90
-    ../fv3/ccpp/driver/GFS_init.F90
-    ../fv3/ccpp/driver/CCPP_driver.F90
+    driver/GFS_diagnostics.F90
+    driver/GFS_restart.F90
+    driver/GFS_init.F90
+    driver/CCPP_driver.F90
 
     ${CMAKE_CURRENT_BINARY_DIR}/physics/ccpp_static_api.F90
 )
 
 # Compile GFS_diagnostics.F90 without optimization, this leads to out of memory errors on wcoss_dell_p3
-set_property(SOURCE ../fv3/ccpp/driver/GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
+set_property(SOURCE driver/GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
 
 target_link_libraries(fv3ccpp PUBLIC ccpp_framework)
 target_link_libraries(fv3ccpp PUBLIC ccpp_physics)

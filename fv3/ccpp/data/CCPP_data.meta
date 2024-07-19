@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = CCPP_data
   type = module
-  dependencies = ../framework/src/ccpp_types.F90,CCPP_typedefs.F90,GFS_typedefs.F90
+  dependencies = ../../../ccpp/framework/src/ccpp_types.F90,CCPP_typedefs.F90,GFS_typedefs.F90
 
 [ccpp-arg-table]
   name = CCPP_data
