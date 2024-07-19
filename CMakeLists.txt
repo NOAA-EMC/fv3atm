@@ -25,6 +25,11 @@ endif()
 set(MPI ON)
 add_subdirectory(ccpp)
 
+
+if (MPAS AND FV3)
+  message("WARNING: Two dynamical cores cannot be used in production mode")
+endif()
+
 ###############################################################################
 ### fv3 dynamical core
 ###############################################################################
@@ -44,6 +49,17 @@ if (FV3)
   target_compile_definitions(fv3 PRIVATE BYPASS_BREED_SLP_INLINE)
 endif()
 
+###############################################################################
+### mpas dynamical core
+###############################################################################
+if (MPAS)
+  # Set any pre-processor directive needed in MPAS dycore.
+  #
+  add_subdirectory(mpas/MPAS-Model/src/core_atmosphere)
+  #DJS2024: ToDo
+  #target_compile_definitions(mpas PRIVATE)
+  
+endif()
 ###############################################################################
 ### ufsatm
 ###############################################################################
@@ -136,7 +152,8 @@ endif()
 
 if (MPAS)
   add_library(ufsatm mpas/mpas_cap.F90)
-#  add_dependencies(ufsatm mpas mpasccpp stochastic_physics)
+  # DJS2024: Expand with MPAS stuff.
+  #add_dependencies(ufsatm mpas mpasccpp stochastic_physics)
 endif()
 
 
