@@ -398,18 +398,14 @@ module stochastic_physics_wrapper_mod
              sst        (nb,1:GFS_Control%blksz(nb)) = GFS_Sfcprop%tsfco(ixs:ixe)
              lmsk       (nb,1:GFS_Control%blksz(nb)) = GFS_Sfcprop%slmsk(ixs:ixe)
              lake       (nb,1:GFS_Control%blksz(nb)) = GFS_Sfcprop%lakefrac(ixs:ixe)
-             ! DH* note - don't think we need the transfer_field logic, just use ixs:ixe?
-             !uwind      (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%ugrs(:,:)
-             call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%ugrs, uwind)
-             !vwind      (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%vgrs(:,:)
-             call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%vgrs, vwind)
-             !height     (nb,1:GFS_Control%blksz(nb),:) =  GFS_Data(nb)%Statein%phil(:,:)
-             call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%phil, height)
              condition  (nb,1:GFS_Control%blksz(nb)) = GFS_Coupling%condition(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
              ca_deep_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Coupling%ca_deep(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
              ca_turb_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Coupling%ca_turb(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
              ca_shal_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Coupling%ca_shal(GFS_Control%chunk_begin(nb):GFS_Control%chunk_end(nb))
-         enddo
+          enddo
+          call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%ugrs, uwind)
+          call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%vgrs, vwind)
+          call transfer_field_to_stochastics_3d(GFS_Control%blksz, GFS_Statein%phil, height)
          call transfer_field_to_stochastics(GFS_Control%blksz, GFS_Grid%dx, dx)
          call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtp,GFS_control%restart,GFS_Control%first_time_step,              &
             sst,lmsk,lake,uwind,vwind,height,dx,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl, Atm(mygrid)%domain_for_coupler,nblks,      &
