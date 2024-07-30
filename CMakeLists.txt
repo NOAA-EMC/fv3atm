@@ -14,7 +14,12 @@ endif()
 
 # Enable CI build & unit testing:
 if(BUILD_TESTING)
-  project(ufsatm VERSION 1.0 LANGUAGES C CXX Fortran)
+  if (FV3)
+    project(ufsatm_fv3 VERSION 1.0 LANGUAGES C CXX Fortran)
+  endif()
+  if (MPAS)
+    project(ufsatm_mpas VERSION 1.0 LANGUAGES C CXX Fortran)
+  endif()
   include(ci/CMakeLists.txt)
 endif()
 
@@ -53,12 +58,21 @@ endif()
 ### mpas dynamical core
 ###############################################################################
 if (MPAS)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/mpas/MPAS-Model/cmake/Functions/MPAS_Functions.cmake)
+  get_mpas_version(MPAS_VERSION)
+  set(MPAS_ALL_CORES atmosphere)
+  set(MPAS_CORES atmosphere CACHE STRING "MPAS cores to build. Options: ${MPAS_ALL_CORES}")
+  if(MPAS_CORES MATCHES " ") #Convert strings separated with spaces to CMake list separated with ';'
+    string(REPLACE " " ";" MPAS_CORES ${MPAS_CORES})
+    set(MPAS_CORES ${MPAS_CORES} CACHE STRING "MPAS cores to build. Options: ${MPAS_ALL_CORES}" FORCE)
+  endif()
+  option(DO_PHYSICS "Use built-in physics schemes." FALSE)  
+  message(STATUS "[OPTION] MPAS_CORES: ${MPAS_CORES}")
+
   # Set any pre-processor directive needed in MPAS dycore.
   #
-  add_subdirectory(mpas/MPAS-Model/src/core_atmosphere)
-  #DJS2024: ToDo
-  #target_compile_definitions(mpas PRIVATE)
-  
+#  add_subdirectory(mpas/MPAS-Model/src/external/ezxml)
+  add_subdirectory(mpas)
 endif()
 ###############################################################################
 ### ufsatm
@@ -122,7 +136,7 @@ else()
 endif()
 
 if (FV3)
-  add_library(ufsatm
+  add_library(ufsatm_fv3
     fv3/atmos_model.F90
     fv3/fv3_cap.F90
     fv3/module_fv3_config.F90
@@ -147,62 +161,73 @@ if (FV3)
     ${moving_nest_srcs}
     ${POST_SRC}
     )
-  add_dependencies(ufsatm fv3 fv3ccpp stochastic_physics)
+  add_dependencies(ufsatm_fv3 fv3 fv3ccpp stochastic_physics)
 endif()
 
 if (MPAS)
-  add_library(ufsatm mpas/mpas_cap.F90)
-  # DJS2024: Expand with MPAS stuff.
-  #add_dependencies(ufsatm mpas mpasccpp stochastic_physics)
-endif()
+  add_library(ufsatm_mpas mpas/mpas_cap.F90)
 
+endif()
 
 list(APPEND _ufsatm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
                                  use_WRTCOMP)
 
-target_compile_definitions(ufsatm PRIVATE "${_ufsatm_defs_private}")
+if (FV3)
+  target_compile_definitions(ufsatm_fv3 PRIVATE "${_ufsatm_defs_private}")
 
-set_target_properties(ufsatm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(ufsatm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
-                                            $<INSTALL_INTERFACE:mod>)
+  set_target_properties(ufsatm_fv3 PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+  target_include_directories(ufsatm_fv3 INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
+                                                  $<INSTALL_INTERFACE:mod>)
+endif()
+if (MPAS)
+  target_compile_definitions(ufsatm_mpas PRIVATE "${_ufsatm_defs_private}")
+
+  set_target_properties(ufsatm_mpas PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+  target_include_directories(ufsatm_mpas INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
+                                                   $<INSTALL_INTERFACE:mod>)  
+endif()
 
 if(MULTI_GASES)
   list(APPEND _ufsatm_defs_private MULTI_GASES)
 endif()
 
 if (FV3)
-  target_link_libraries(ufsatm PUBLIC fv3
-                                      fv3ccpp
-                                      stochastic_physics
-                                      fms)
+  target_link_libraries(ufsatm_fv3 PUBLIC fv3
+                                         fv3ccpp
+					 stochastic_physics
+					 fms)
+  target_link_libraries(ufsatm_fv3 PUBLIC w3emc::w3emc_d
+                                         sp::sp_d
+					 bacio::bacio_4
+					 esmf)
 endif()
 
 if (MPAS)
-  target_link_libraries(ufsatm PUBLIC mpas
-                                      mpasccpp
-				      stochastic_physics
-				      fms)
+  target_link_libraries(ufsatm_mpas PUBLIC mpas)
+#                                       mpasccpp
+#  				       stochastic_physics
+# 				       fms)
+  target_link_libraries(ufsatm_mpas PUBLIC w3emc::w3emc_d
+                                           sp::sp_d
+					   bacio::bacio_4
+					   esmf)
 endif()
-				  
-target_link_libraries(ufsatm PUBLIC w3emc::w3emc_d
-                                    sp::sp_d
-                                    bacio::bacio_4
-                                    esmf)
+
 
 if(INLINE_POST)
-  target_link_libraries(ufsatm PUBLIC upp::upp)
+  target_link_libraries(ufsatm_fv3 PUBLIC upp::upp)
 endif()
 
 if(OPENMP)
-  target_link_libraries(ufsatm PUBLIC OpenMP::OpenMP_Fortran)
+  target_link_libraries(ufsatm_fv3 PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
 ###############################################################################
 ### Install
 ###############################################################################
 install(
-  TARGETS ufsatm
+  TARGETS ufsatm_fv3 ufsatm_mpas
   EXPORT ufsatm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
