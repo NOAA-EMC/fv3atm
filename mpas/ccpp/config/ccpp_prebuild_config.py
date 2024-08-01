@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-# CCPP prebuild config for GFDL Finite-Volume Cubed-Sphere Model (FV3)
+# CCPP prebuild config for MPAS - Model for Prediction Across Scales
 
 
 ###############################################################################
 # Definitions                                                                 #
 ###############################################################################
 
-HOST_MODEL_IDENTIFIER = "FV3"
+HOST_MODEL_IDENTIFIER = "MPAS"
 
 # Add all files with metadata tables on the host model side and in CCPP,
 # relative to basedir = top-level directory of host model. This includes
@@ -21,9 +21,9 @@ VARIABLE_DEFINITION_FILES = [
     'physics/physics/Radiation/RRTMG/radlw_param.f',
     'physics/physics/photochem/h2o_def.f',
     'physics/physics/photochem/module_ozphys.F90',
-    '../ccpp/data/CCPP_typedefs.F90',
-    '../ccpp/data/GFS_typedefs.F90',
-    '../ccpp/data/CCPP_data.F90',
+    '../../../ccpp/data/CCPP_typedefs.F90',
+    '../../../ccpp/data/GFS_typedefs.F90',
+    '../../../ccpp/data/CCPP_data.F90',
     ]
 
 TYPEDEFS_NEW_METADATA = {

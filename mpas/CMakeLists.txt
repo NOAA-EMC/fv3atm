@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.19)
 
-if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -g -traceback")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -fdefault-double-8")
-elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -g -traceback")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -i4 -r8")
-else()
-  message(WARNING "Fortran compiler with ID ${CMAKE_Fortran_COMPILER_ID} will be used with CMake default options")
-endif()
+project(MPAS
+  VERSION 1.0.0
+  LANGUAGES Fortran)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/MPAS-Model/cmake/Functions/MPAS_Functions.cmake)
+
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+set(CMAKE_DIRECTORY_LABELS ${PROJECT_NAME})
+include(GNUInstallDirs)
 
 # Build product output locations
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -21,27 +21,6 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "CMake Build type" FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
-
-# Detect MPAS git version
-if(NOT MPAS_GIT_VERSION)
-    find_package(Git QUIET)
-    if(GIT_FOUND)
-        execute_process(COMMAND ${GIT_EXECUTABLE} describe --dirty
-                        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-                        OUTPUT_VARIABLE _mpas_git_version
-                        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-    else()
-        set(_mpas_git_version "Unknown")
-    endif()
-    set(MPAS_GIT_VERSION ${_mpas_git_version} CACHE STRING "MPAS-Model git version")
-endif()
- 
-# Dependencies
-find_package(OpenMP COMPONENTS Fortran)
-find_package(MPI REQUIRED COMPONENTS Fortran)
-find_package(NetCDF REQUIRED COMPONENTS Fortran C)
-find_package(PnetCDF REQUIRED COMPONENTS Fortran)
-find_package(PIO REQUIRED COMPONENTS Fortran C)
 
 # Find C pre-processor
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
@@ -56,16 +35,16 @@ endif()
 
 # Fortran module output directory for build interface
 set(MPAS_MODULE_DIR ${PROJECT_NAME}/module/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION})
+
 # Install Fortran module directory
 install(DIRECTORY ${CMAKE_BINARY_DIR}/${MPAS_MODULE_DIR}/ DESTINATION ${CMAKE_INSTALL_LIBDIR}/${MPAS_MODULE_DIR}/)
 
 # Registry file.
-set(REGISTRY_FILE MPAS-Model/src/core_atmosphere/Registry.xml)
 set(REGISTRY_FILE ${CMAKE_CURRENT_SOURCE_DIR}/MPAS-Model/src/core_atmosphere/Registry.xml)
 
-#
-# Build libraries...
-#
+###############################################################################
+# Build MPAS libraries...
+###############################################################################
 
 # MPAS Utilities (Externals)
 add_subdirectory(MPAS-Model/src/external/ezxml)
@@ -81,102 +60,72 @@ add_library(${PROJECT_NAME}::external::esmf ALIAS esmf)
 add_subdirectory(MPAS-Model/src/tools/input_gen) # Targets: namelist_gen, streams_gen
 
 # MPAS Registry
-add_subdirectory(MPAS-Model/src/tools/registry) # Targets: mpas_parse_<core_name>
+add_subdirectory(MPAS-Model/src/tools/registry)  # Targets: mpas_parse_<core_name>
 
 # MPAS framework
-add_subdirectory(MPAS-Model/src/framework) # Target: MPAS::framework
-add_subdirectory(MPAS-Model/src/operators) # Target: MPAS::operators
+add_subdirectory(MPAS-Model/src/framework)       # Target: MPAS::framework
 
-# MPAS-Atmosphere
+# MPAS operators
+add_subdirectory(MPAS-Model/src/operators)       # Target: MPAS::operators
 
-# MPAS-Model/src/core_atmosphere/diagnostics/
-set(MPAS_DYCORE_DIAGNOSTIC_SOURCES
-  mpas_atm_diagnostic_template.F
-  mpas_atm_diagnostics_manager.F
-  mpas_atm_diagnostics_utils.F
-  mpas_cloud_diagnostics.F
-  mpas_convective_diagnostics.F
-  mpas_isobaric_diagnostics.F
-  mpas_pv_diagnostics.F
-  mpas_soundings.F
-  )
-list(TRANSFORM MPAS_DYCORE_DIAGNOSTIC_SOURCES PREPEND MPAS-Model/src/core_atmosphere/diagnostics/)
+# MPAS atmosphere
+add_subdirectory(MPAS-Model/src/core_atmosphere) # Target: core_atmosphere
+add_library(mpas ALIAS core_atmosphere)
 
-# MPAS-Model/src/core_atmosphere/dynamics/
-set(MPAS_DYCORE_DYNAMICS_SOURCES
-  mpas_atm_boundaries.F
-  mpas_atm_iau.F
-  mpas_atm_time_integration.F
-  )
-list(TRANSFORM MPAS_DYCORE_DYNAMICS_SOURCES PREPEND MPAS-Model/src/core_atmosphere/dynamics/)
+############################################################################### 
+# Package Configurations
+############################################################################### 
+include(CMakePackageConfigHelpers)
 
-# MPAS-Model/src/core_atmosphere/core_atosphere
-set(MPAS_DYCORE_SOURCES
-  mpas_atm_dimensions.F
-  mpas_atm_threading.F
-  mpas_atm_core.F
-  mpas_atm_core_interface.F
-  mpas_atm_halos.F
-  )
-list(TRANSFORM MPAS_DYCORE_SOURCES PREPEND MPAS-Model/src/core_atmosphere/)
+# Build-tree target exports
+export(EXPORT ${PROJECT_NAME}ExportsExternal NAMESPACE ${PROJECT_NAME}::external:: FILE ${PROJECT_NAME}-targets-external.cmake)
+export(EXPORT ${PROJECT_NAME}Exports NAMESPACE ${PROJECT_NAME}:: FILE ${PROJECT_NAME}-targets.cmake)
+export(EXPORT ${PROJECT_NAME}ExportsCore NAMESPACE ${PROJECT_NAME}::core:: FILE ${PROJECT_NAME}-targets-core.cmake)
 
-# Generated includes
-set(MPAS_DYCORE_INCLUDES
-  block_dimension_routines.inc
-  core_variables.inc
-  define_packages.inc
-  domain_variables.inc
-  namelist_call.inc
-  namelist_defines.inc
-  setup_immutable_streams.inc
-  structs_and_variables.inc
-  )
-      
-# Create library
-add_library(mpas_dycore ${MPAS_DYCORE_SOURCES}
-                        ${MPAS_DYCORE_DIAGNOSTIC_SOURCES}
-			${MPAS_DYCORE_DYNAMICS_SOURCES})
-		      
-# Compilation definitions
-set(MPAS_DYCORE_COMPILE_DEFINITIONS
-  mpas=1
-  MPAS_NATIVE_TIMERS
-  )
+# CMake Config file install location
+set(CONFIG_INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules DESTINATION ${CONFIG_INSTALL_DESTINATION})
 
-# Link library
-target_compile_definitions(mpas_dycore PRIVATE ${MPAS_DYCORE_COMPILE_DEFINITIONS})
-set_MPAS_DEBUG_flag(mpas_dycore)
-set(CORE_MODULE_DIR ${MPAS_MODULE_DIR}/mpas_dycore)
-set_target_properties(mpas_dycore PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/${CORE_MODULE_DIR})
-target_include_directories(mpas_dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${CORE_MODULE_DIR}>
-  $<INSTALL_INTERFACE:${CORE_MODULE_DIR}>)
-#
-target_link_libraries(mpas_dycore PUBLIC framework operators)
+####
+set(BINDIR ${CMAKE_BINARY_DIR}/bin)
+set(CORE_DATADIR_ROOT ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
+set(CMAKE_MODULE_INSTALL_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
+configure_package_config_file(
+  MPAS-Model/cmake/PackageConfig.cmake.in ${PROJECT_NAME_LOWER}-config.cmake
+  INSTALL_DESTINATION .
+  INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}
+  PATH_VARS BINDIR CORE_DATADIR_ROOT CMAKE_MODULE_INSTALL_PATH)
 
+###
+set(BINDIR ${CMAKE_INSTALL_BINDIR})
+set(CORE_DATADIR_ROOT ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
+set(CMAKE_MODULE_INSTALL_PATH ${CONFIG_INSTALL_DESTINATION}/Modules)
+configure_package_config_file(
+  MPAS-Model/cmake/PackageConfig.cmake.in install/${PROJECT_NAME_LOWER}-config.cmake
+  INSTALL_DESTINATION ${CONFIG_INSTALL_DESTINATION}
+  PATH_VARS BINDIR CORE_DATADIR_ROOT CMAKE_MODULE_INSTALL_PATH)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/install/${PROJECT_NAME_LOWER}-config.cmake
+  DESTINATION ${CONFIG_INSTALL_DESTINATION})
 
-#Per-core generated output and tables directory location
-set(CORE_DATADIR ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/mpas_dycore)
-file(MAKE_DIRECTORY ${CORE_DATADIR})
-option(DO_PHYSICS "Use built-in physics schemes." FALSE)
+###
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}-config-version.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}-config-version.cmake
+  DESTINATION ${CONFIG_INSTALL_DESTINATION})
 
-# Process registry.
-add_custom_command(OUTPUT Registry_processed.xml
-  COMMAND ${CPP_EXECUTABLE} -E -P ${CPP_EXTRA_FLAGS} ${REGISTRY_FILE} > Registry_processed.xml
-  COMMENT "CORE atmosphere: Pre-Process Registry"
-  DEPENDS ${REGISTRY_FILE})
-add_custom_command(OUTPUT ${MPAS_DYCORE_INCLUDES}
-  COMMAND mpas_parse_atmosphere Registry_processed.xml
-  COMMENT "CORE atmosphere: Parse Registry"
-  DEPENDS mpas_parse_atmosphere Registry_processed.xml)
-add_custom_command(OUTPUT namelist.atmosphere
-  WORKING_DIRECTORY ${CORE_DATADIR}
-  COMMAND mpas_namelist_gen ${CMAKE_CURRENT_BINARY_DIR}/Registry_processed.xml namelist.atmosphere in_defaults=true
-  COMMENT "CORE atmosphere: Generate Namelist"
-  DEPENDS mpas_namelist_gen Registry_processed.xml)
-add_custom_command(OUTPUT streams.atmosphere
-  WORKING_DIRECTORY ${CORE_DATADIR}
-  COMMAND mpas_streams_gen ${CMAKE_CURRENT_BINARY_DIR}/Registry_processed.xml streams.atmosphere stream_list.atmosphere. listed
-  COMMENT "CORE atmosphere: Generate Streams"
-  DEPENDS mpas_streams_gen Registry_processed.xml)
-add_custom_target(gen_atmosphere DEPENDS ${MPAS_DYCORE_INCLUDES} namelist.atmosphere streams.atmosphere)
-add_dependencies(mpas_dycore gen_atmosphere)
+###
+install(EXPORT ${PROJECT_NAME}ExportsExternal
+        NAMESPACE ${PROJECT_NAME}::external::
+        FILE ${PROJECT_NAME_LOWER}-targets-external.cmake
+        DESTINATION ${CONFIG_INSTALL_DESTINATION})
+install(EXPORT ${PROJECT_NAME}Exports
+        NAMESPACE ${PROJECT_NAME}::
+        FILE ${PROJECT_NAME_LOWER}-targets.cmake
+        DESTINATION ${CONFIG_INSTALL_DESTINATION})
+install(EXPORT ${PROJECT_NAME}ExportsCore
+	NAMESPACE ${PROJECT_NAME}::core::
+        FILE ${PROJECT_NAME_LOWER}-targets-core.cmake
+        DESTINATION ${CONFIG_INSTALL_DESTINATION})

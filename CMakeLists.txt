@@ -30,15 +30,11 @@ endif()
 set(MPI ON)
 add_subdirectory(ccpp)
 
-
-if (MPAS AND FV3)
-  message("WARNING: Two dynamical cores cannot be used in production mode")
-endif()
-
 ###############################################################################
 ### fv3 dynamical core
 ###############################################################################
 if (FV3)
+  set(DYCORE_TARGET ufsatm_fv3)
   # These ifdefs need to be turned ON in the dycore.
   set(use_WRTCOMP ON)
   set(GFS_PHYS    ON)
@@ -58,7 +54,12 @@ endif()
 ### mpas dynamical core
 ###############################################################################
 if (MPAS)
+  set(DYCORE_TARGET ufsatm_mpas)
+
+  # Include MPAS Cmake tools.
   include(${CMAKE_CURRENT_SOURCE_DIR}/mpas/MPAS-Model/cmake/Functions/MPAS_Functions.cmake)
+  
+  # Set any pre-processor directive needed in MPAS dycore.
   get_mpas_version(MPAS_VERSION)
   set(MPAS_ALL_CORES atmosphere)
   set(MPAS_CORES atmosphere CACHE STRING "MPAS cores to build. Options: ${MPAS_ALL_CORES}")
@@ -66,12 +67,17 @@ if (MPAS)
     string(REPLACE " " ";" MPAS_CORES ${MPAS_CORES})
     set(MPAS_CORES ${MPAS_CORES} CACHE STRING "MPAS cores to build. Options: ${MPAS_ALL_CORES}" FORCE)
   endif()
-  option(DO_PHYSICS "Use built-in physics schemes." FALSE)  
-  message(STATUS "[OPTION] MPAS_CORES: ${MPAS_CORES}")
+  set(DO_MPASDA OFF)
+  set(DO_PHYSICS FALSE)
 
-  # Set any pre-processor directive needed in MPAS dycore.
-  #
-#  add_subdirectory(mpas/MPAS-Model/src/external/ezxml)
+  # Source files for MPAS dynamical core drivers.
+  set(MPAS_MAIN_SRC      ${CMAKE_CURRENT_SOURCE_DIR}/mpas/ufs_mpas.F90)
+  set(MPAS_SUBDRIVER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/mpas/ufs_mpas_subdriver.F90)
+
+  # MPAS NUOPC cap.
+  set(MPAS_NUOPC_CAP     ${CMAKE_CURRENT_SOURCE_DIR}/mpas/mpas_cap.F90)
+
+  # MPAS dynamical core
   add_subdirectory(mpas)
 endif()
 ###############################################################################
@@ -136,7 +142,7 @@ else()
 endif()
 
 if (FV3)
-  add_library(ufsatm_fv3
+  add_library(${DYCORE_TARGET}
     fv3/atmos_model.F90
     fv3/fv3_cap.F90
     fv3/module_fv3_config.F90
@@ -161,73 +167,65 @@ if (FV3)
     ${moving_nest_srcs}
     ${POST_SRC}
     )
-  add_dependencies(ufsatm_fv3 fv3 fv3ccpp stochastic_physics)
+  add_dependencies(${DYCORE_TARGET} fv3 fv3ccpp stochastic_physics)
 endif()
 
 if (MPAS)
-  add_library(ufsatm_mpas mpas/mpas_cap.F90)
-
+  add_library(${DYCORE_TARGET}
+    ${MPAS_MAIN_SRC}
+    ${MPAS_SUBDRIVER_SRC}
+    ${MPAS_NUOPC_CAP}
+    )
+  add_dependencies(${DYCORE_TARGET} mpas)
 endif()
 
 list(APPEND _ufsatm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
                                  use_WRTCOMP)
 
-if (FV3)
-  target_compile_definitions(ufsatm_fv3 PRIVATE "${_ufsatm_defs_private}")
 
-  set_target_properties(ufsatm_fv3 PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-  target_include_directories(ufsatm_fv3 INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
+target_compile_definitions(${DYCORE_TARGET} PRIVATE "${_ufsatm_defs_private}")
+
+set_target_properties(${DYCORE_TARGET} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_include_directories(${DYCORE_TARGET} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                                   $<INSTALL_INTERFACE:mod>)
-endif()
-if (MPAS)
-  target_compile_definitions(ufsatm_mpas PRIVATE "${_ufsatm_defs_private}")
-
-  set_target_properties(ufsatm_mpas PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-  target_include_directories(ufsatm_mpas INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
-                                                   $<INSTALL_INTERFACE:mod>)  
-endif()
 
 if(MULTI_GASES)
   list(APPEND _ufsatm_defs_private MULTI_GASES)
 endif()
 
 if (FV3)
-  target_link_libraries(ufsatm_fv3 PUBLIC fv3
+  target_link_libraries(${DYCORE_TARGET} PUBLIC fv3
                                          fv3ccpp
 					 stochastic_physics
 					 fms)
-  target_link_libraries(ufsatm_fv3 PUBLIC w3emc::w3emc_d
-                                         sp::sp_d
-					 bacio::bacio_4
-					 esmf)
 endif()
 
 if (MPAS)
-  target_link_libraries(ufsatm_mpas PUBLIC mpas)
+  target_link_libraries(${DYCORE_TARGET} PUBLIC mpas)
 #                                       mpasccpp
 #  				       stochastic_physics
 # 				       fms)
-  target_link_libraries(ufsatm_mpas PUBLIC w3emc::w3emc_d
-                                           sp::sp_d
-					   bacio::bacio_4
-					   esmf)
 endif()
+target_link_libraries(${DYCORE_TARGET} PUBLIC w3emc::w3emc_d
+                                              sp::sp_d
+					      bacio::bacio_4
+					      esmf)
 
 
 if(INLINE_POST)
-  target_link_libraries(ufsatm_fv3 PUBLIC upp::upp)
+  target_link_libraries(${DYCORE_TARGET} PUBLIC upp::upp)
 endif()
 
 if(OPENMP)
-  target_link_libraries(ufsatm_fv3 PUBLIC OpenMP::OpenMP_Fortran)
+  target_link_libraries(${DYCORE_TARGET} PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
 ###############################################################################
 ### Install
 ###############################################################################
 install(
-  TARGETS ufsatm_fv3 ufsatm_mpas
+  TARGETS ${DYCORE_TARGET}
   EXPORT ufsatm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
