@@ -452,10 +452,18 @@ module CCPP_typedefs
      integer                             :: ie
      integer                             :: isd
      integer                             :: ied
+     integer                             :: isc1
+     integer                             :: iec1
+     integer                             :: isc2
+     integer                             :: iec2
      integer                             :: js
      integer                             :: je
      integer                             :: jsd
      integer                             :: jed
+     integer                             :: jsc1
+     integer                             :: jec1
+     integer                             :: jsc2
+     integer                             :: jec2
      integer                             :: ng
      integer                             :: npz
      integer                             :: npzp1
@@ -690,7 +698,7 @@ contains
     allocate (Interstitial%sigma           (IM))
     allocate (Interstitial%sigmaf          (IM))
     allocate (Interstitial%sigmafrac       (IM,Model%levs))
-    allocate (Interstitial%sigmatot        (IM,Model%levs))
+    allocate (Interstitial%sigmatot        (IM,Model%levs+1))
     allocate (Interstitial%snowc           (IM))
     allocate (Interstitial%snohf           (IM))
     allocate (Interstitial%snowmt          (IM))
@@ -1557,6 +1565,18 @@ contains
     integer,        intent(in)           :: mpirank
     integer,        intent(in)           :: mpiroot
     !
+    integer :: isc1, jsc1, iec1, jec1
+    integer :: isc2, jsc2, iec2, jec2
+    !
+    isc1 = lbound(delp, dim=1)
+    jsc1 = lbound(delp, dim=2)
+    iec1 = ubound(delp, dim=1)
+    jec1 = ubound(delp, dim=2)
+    isc2 = lbound(delz, dim=1)
+    jsc2 = lbound(delz, dim=2)
+    iec2 = ubound(delz, dim=1)
+    jec2 = ubound(delz, dim=2)
+    !
 #ifdef MOIST_CAPPA
     Interstitial%npzcappa = npz
     allocate (Interstitial%cappa  (isd:ied, jsd:jed, 1:npz) )
@@ -1594,13 +1614,22 @@ contains
     Interstitial%ie         =  ie
     Interstitial%isd        =  isd
     Interstitial%ied        =  ied
+    Interstitial%isc1       =  isc1
+    Interstitial%iec1       =  iec1
+    Interstitial%isc2       =  isc2
+    Interstitial%iec2       =  iec2
     Interstitial%js         =  js
     Interstitial%je         =  je
     Interstitial%jsd        =  jsd
     Interstitial%jed        =  jed
+    Interstitial%jsc1       =  jsc1
+    Interstitial%jec1       =  jec1
+    Interstitial%jsc2       =  jsc2
+    Interstitial%jec2       =  jec2
     Interstitial%ng         =  ng
     Interstitial%npz        =  npz
     Interstitial%npzp1      =  npz+1
+    !
     ! Set up links from GFDL_interstitial DDT to ATM DDT
     Interstitial%delp       => delp
     Interstitial%delz       => delz
@@ -1617,6 +1646,7 @@ contains
     if (do_qs) Interstitial%qs => qs
     if (do_qg) Interstitial%qg => qg
     if (do_qa) Interstitial%qc => qc
+    !
 #ifdef USE_COND
     Interstitial%npzq_con = npz
 #else
