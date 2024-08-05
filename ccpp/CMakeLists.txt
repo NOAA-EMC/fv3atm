@@ -21,7 +21,7 @@ if (FV3)
         GFS_init.F90
         CCPP_driver.F90
         )
-  list(TRANSFORM DYCORE_CCPP_SRCS PREPEND ../fv3/ccpp/driver/)
+  list(TRANSFORM DYCORE_CCPP_SRCS PREPEND ../ccpp/driver/)
   
   # Add dycore-specific preprocessor flag (needed for some physics schemes)
   add_definitions(-DFV3)
@@ -34,14 +34,14 @@ endif()
 if (MPAS)
   message(STATUS "Build CCPP interface to MPAS dynamical core")
   set(CCPP_TARGET mpasccpp)
-  set(CCPP_PREBUILD_CONFIG ../fv3/ccpp/config/ccpp_prebuild_config.py)
+  set(CCPP_PREBUILD_CONFIG ../mpas/ccpp/config/ccpp_prebuild_config.py)
   set(DYCORE_CCPP_SRCS
         GFS_diagnostics.F90
         GFS_restart.F90
         GFS_init.F90
 	CCPP_driver.F90
         )
-      list(TRANSFORM DYCORE_CCPP_SRCS PREPEND ../fv3/ccpp/driver/)
+      list(TRANSFORM DYCORE_CCPP_SRCS PREPEND ../ccpp/driver/)
   add_definitions(-DFV3)
 endif()
 

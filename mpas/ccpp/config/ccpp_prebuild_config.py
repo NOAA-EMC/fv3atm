@@ -21,9 +21,9 @@ VARIABLE_DEFINITION_FILES = [
     'physics/physics/Radiation/RRTMG/radlw_param.f',
     'physics/physics/photochem/h2o_def.f',
     'physics/physics/photochem/module_ozphys.F90',
-    '../../../ccpp/data/CCPP_typedefs.F90',
-    '../../../ccpp/data/GFS_typedefs.F90',
-    '../../../ccpp/data/CCPP_data.F90',
+    '../ccpp/data/CCPP_typedefs.F90',
+    '../ccpp/data/GFS_typedefs.F90',
+    '../ccpp/data/CCPP_data.F90',
     ]
 
 TYPEDEFS_NEW_METADATA = {
