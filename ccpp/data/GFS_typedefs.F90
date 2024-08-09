@@ -81,7 +81,6 @@ module GFS_typedefs
 !    GFS_cldprop_type        !< cloud fields needed by radiation from physics
 !    GFS_radtend_type        !< radiation tendencies needed in physics
 !    GFS_diag_type           !< fields targetted for diagnostic output
-!    GFS_data_type           !< combined type of all of the above except GFS_control_type
 
 !--------------------------------------------------------------------------------
 ! GFS_init_type
@@ -749,7 +748,11 @@ module GFS_typedefs
     integer              :: nblks           !< for explicit data blocking: number of blocks
     integer,     pointer :: blksz(:)        !< for explicit data blocking: block sizes of all blocks
     integer              :: ncols           !< total number of columns for all blocks
-
+    !
+    integer              :: nchunks         !< number of chunks of an array that are used in the CCPP run phase
+    integer,     pointer :: chunk_begin(:)  !< first indices of chunks of an array for the CCPP run phase
+    integer,     pointer :: chunk_end(:)    !< last indices of chunks of an array for the CCPP run phase
+    !
     integer              :: fire_aux_data_levels !< vertical levels of fire auxiliary data
 
 !--- coupling parameters
@@ -1647,50 +1650,50 @@ module GFS_typedefs
 !!
   type GFS_grid_type
 
-    real (kind=kind_phys), pointer :: xlon   (:)    => null()   !< grid longitude in radians, ok for both 0->2pi
-                                                                !! or -pi -> +pi ranges
-    real (kind=kind_phys), pointer :: xlat   (:)    => null()   !< grid latitude in radians, default to pi/2 ->
-                                                                !! -pi/2 range, otherwise adj in subr called
-    real (kind=kind_phys), pointer :: xlat_d (:)    => null()   !< grid latitude in degrees, default to 90 ->
-                                                                !! -90 range, otherwise adj in subr called
-    real (kind=kind_phys), pointer :: xlon_d (:)    => null()   !< grid longitude in degrees, default to 0 ->
-                                                                !! 360 range, otherwise adj in subr called
-    real (kind=kind_phys), pointer :: sinlat (:)    => null()   !< sine of the grids corresponding latitudes
-    real (kind=kind_phys), pointer :: coslat (:)    => null()   !< cosine of the grids corresponding latitudes
-    real (kind=kind_phys), pointer :: area   (:)    => null()   !< area of the grid cell
-    real (kind=kind_phys), pointer :: dx     (:)    => null()   !< relative dx for the grid cell
+    real (kind=kind_phys), pointer :: xlon   (:)        !< grid longitude in radians, ok for both 0->2pi
+                                                        !! or -pi -> +pi ranges
+    real (kind=kind_phys), pointer :: xlat   (:)        !< grid latitude in radians, default to pi/2 ->
+                                                        !! -pi/2 range, otherwise adj in subr called
+    real (kind=kind_phys), pointer :: xlat_d (:)        !< grid latitude in degrees, default to 90 ->
+                                                        !! -90 range, otherwise adj in subr called
+    real (kind=kind_phys), pointer :: xlon_d (:)        !< grid longitude in degrees, default to 0 ->
+                                                        !! 360 range, otherwise adj in subr called
+    real (kind=kind_phys), pointer :: sinlat (:)        !< sine of the grids corresponding latitudes
+    real (kind=kind_phys), pointer :: coslat (:)        !< cosine of the grids corresponding latitudes
+    real (kind=kind_phys), pointer :: area   (:)        !< area of the grid cell
+    real (kind=kind_phys), pointer :: dx     (:)        !< relative dx for the grid cell
 
 !--- grid-related interpolation data for prognostic ozone
-    real (kind=kind_phys), pointer :: ddy_o3    (:) => null()   !< interpolation     weight for ozone
-    integer,               pointer :: jindx1_o3 (:) => null()   !< interpolation  low index for ozone
-    integer,               pointer :: jindx2_o3 (:) => null()   !< interpolation high index for ozone
+    real (kind=kind_phys), pointer :: ddy_o3    (:)     !< interpolation     weight for ozone
+    integer,               pointer :: jindx1_o3 (:)     !< interpolation  low index for ozone
+    integer,               pointer :: jindx2_o3 (:)     !< interpolation high index for ozone
 
 !--- grid-related interpolation data for stratosphere water
-    real (kind=kind_phys), pointer :: ddy_h     (:) => null()   !< interpolation     weight for h2o
-    integer,               pointer :: jindx1_h  (:) => null()   !< interpolation  low index for h2o
-    integer,               pointer :: jindx2_h  (:) => null()   !< interpolation high index for h2o
+    real (kind=kind_phys), pointer :: ddy_h     (:)     !< interpolation     weight for h2o
+    integer,               pointer :: jindx1_h  (:)     !< interpolation  low index for h2o
+    integer,               pointer :: jindx2_h  (:)     !< interpolation high index for h2o
 
 !--- grid-related interpolation data for prognostic iccn
-    real (kind=kind_phys), pointer :: ddy_ci    (:) => null()   !< interpolation     weight for iccn
-    integer,               pointer :: jindx1_ci (:) => null()   !< interpolation  low index for iccn
-    integer,               pointer :: jindx2_ci (:) => null()   !< interpolation high index for iccn
-    real (kind=kind_phys), pointer :: ddx_ci    (:) => null()   !< interpolation     weight for iccn
-    integer,               pointer :: iindx1_ci (:) => null()   !< interpolation  low index for iccn
-    integer,               pointer :: iindx2_ci (:) => null()   !< interpolation high index for iccn
+    real (kind=kind_phys), pointer :: ddy_ci    (:)     !< interpolation     weight for iccn
+    integer,               pointer :: jindx1_ci (:)     !< interpolation  low index for iccn
+    integer,               pointer :: jindx2_ci (:)     !< interpolation high index for iccn
+    real (kind=kind_phys), pointer :: ddx_ci    (:)     !< interpolation     weight for iccn
+    integer,               pointer :: iindx1_ci (:)     !< interpolation  low index for iccn
+    integer,               pointer :: iindx2_ci (:)     !< interpolation high index for iccn
 
 !--- grid-related interpolation data for prescribed aerosols
-    real (kind=kind_phys), pointer :: ddy_aer    (:) => null()   !< interpolation     weight for iaerclm
-    integer,               pointer :: jindx1_aer (:) => null()   !< interpolation  low index for iaerclm
-    integer,               pointer :: jindx2_aer (:) => null()   !< interpolation high index for iaerclm
-    real (kind=kind_phys), pointer :: ddx_aer    (:) => null()   !< interpolation     weight for iaerclm
-    integer,               pointer :: iindx1_aer (:) => null()   !< interpolation  low index for iaerclm
-    integer,               pointer :: iindx2_aer (:) => null()   !< interpolation high index for iaerclm
+    real (kind=kind_phys), pointer :: ddy_aer    (:)    !< interpolation     weight for iaerclm
+    integer,               pointer :: jindx1_aer (:)    !< interpolation  low index for iaerclm
+    integer,               pointer :: jindx2_aer (:)    !< interpolation high index for iaerclm
+    real (kind=kind_phys), pointer :: ddx_aer    (:)    !< interpolation     weight for iaerclm
+    integer,               pointer :: iindx1_aer (:)    !< interpolation  low index for iaerclm
+    integer,               pointer :: iindx2_aer (:)    !< interpolation high index for iaerclm
 
 !--- grid-related interpolation data for cires_ugwp_v1
-    real (kind=kind_phys), pointer :: ddy_j1tau  (:) => null()   !< interpolation     weight for  tau_ugwp
-    real (kind=kind_phys), pointer :: ddy_j2tau  (:) => null()   !< interpolation     weight for  tau_ugwp
-    integer,               pointer :: jindx1_tau (:) => null()   !< interpolation  low index for tau_ugwp
-    integer,               pointer :: jindx2_tau (:) => null()   !< interpolation high index for tau_ugwp
+    real (kind=kind_phys), pointer :: ddy_j1tau  (:)    !< interpolation     weight for  tau_ugwp
+    real (kind=kind_phys), pointer :: ddy_j2tau  (:)    !< interpolation     weight for  tau_ugwp
+    integer,               pointer :: jindx1_tau (:)    !< interpolation  low index for tau_ugwp
+    integer,               pointer :: jindx2_tau (:)    !< interpolation high index for tau_ugwp
 
     contains
       procedure :: create   => grid_create   !<   allocate array data
@@ -2175,24 +2178,6 @@ module GFS_typedefs
       procedure :: phys_zero => diag_phys_zero
   end type GFS_diag_type
 
-!----------------------------------------------------------
-! combined type of all of the above except GFS_control_type
-!----------------------------------------------------------
-!! \section arg_table_GFS_data_type
-!! \htmlinclude GFS_data_type.html
-!!
-  type GFS_data_type
-     type(GFS_statein_type)  :: Statein
-     type(GFS_stateout_type) :: Stateout
-     type(GFS_sfcprop_type)  :: Sfcprop
-     type(GFS_coupling_type) :: Coupling
-     type(GFS_grid_type)     :: Grid
-     type(GFS_tbd_type)      :: Tbd
-     type(GFS_cldprop_type)  :: Cldprop
-     type(GFS_radtend_type)  :: Radtend
-     type(GFS_diag_type)     :: Intdiag
-  end type GFS_data_type
-
 !----------------
 ! PUBLIC ENTITIES
 !----------------
@@ -2201,7 +2186,6 @@ module GFS_typedefs
          GFS_coupling_type
   public GFS_control_type,  GFS_grid_type,     GFS_tbd_type, &
          GFS_cldprop_type,  GFS_radtend_type,  GFS_diag_type
-  public GFS_data_type
 
 !*******************************************************************************************
   CONTAINS
@@ -2209,12 +2193,14 @@ module GFS_typedefs
 !------------------------
 ! GFS_statein_type%create
 !------------------------
-  subroutine statein_create (Statein, IM, Model)
+  subroutine statein_create (Statein, Model)
     implicit none
 
     class(GFS_statein_type)             :: Statein
-    integer,                 intent(in) :: IM
     type(GFS_control_type),  intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     !--- level geopotential and pressures
     allocate (Statein%phii  (IM,Model%levs+1))
@@ -2276,13 +2262,15 @@ module GFS_typedefs
 !-------------------------
 ! GFS_stateout_type%create
 !-------------------------
-  subroutine stateout_create (Stateout, IM, Model)
+  subroutine stateout_create (Stateout, Model)
 
     implicit none
 
     class(GFS_stateout_type)           :: Stateout
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     allocate (Stateout%gu0 (IM,Model%levs))
     allocate (Stateout%gv0 (IM,Model%levs))
@@ -2300,13 +2288,15 @@ module GFS_typedefs
 !------------------------
 ! GFS_sfcprop_type%create
 !------------------------
-  subroutine sfcprop_create (Sfcprop, IM, Model)
+  subroutine sfcprop_create (Sfcprop, Model)
 
     implicit none
 
     class(GFS_sfcprop_type)            :: Sfcprop
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     !--- physics and radiation
     allocate (Sfcprop%slmsk    (IM))
@@ -2875,13 +2865,15 @@ module GFS_typedefs
 !-------------------------
 ! GFS_coupling_type%create
 !-------------------------
-  subroutine coupling_create (Coupling, IM, Model)
+  subroutine coupling_create (Coupling, Model)
 
     implicit none
 
     class(GFS_coupling_type)           :: Coupling
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     !--- radiation out
     !--- physics in
@@ -4342,6 +4334,16 @@ module GFS_typedefs
     allocate(Model%blksz(1:Model%nblks))
     Model%blksz            = blksz
     Model%ncols            = sum(Model%blksz)
+    ! DH*
+    Model%nchunks          = size(blksz)
+    allocate(Model%chunk_begin(Model%nchunks))
+    allocate(Model%chunk_end(Model%nchunks))
+    Model%chunk_begin(1) = 1
+    Model%chunk_end(1) = Model%chunk_begin(1) + blksz(1) - 1
+    do i=2,Model%nchunks
+        Model%chunk_begin(i) = Model%chunk_end(i-1) + 1
+        Model%chunk_end(i) = Model%chunk_begin(i) + blksz(i) - 1
+    end do
 
 !--- coupling parameters
     Model%cplflx           = cplflx
@@ -7026,14 +7028,15 @@ module GFS_typedefs
 !----------------
 ! GFS_grid%create
 !----------------
-  subroutine grid_create (Grid, IM, Model)
+  subroutine grid_create (Grid, Model)
 
     implicit none
 
     class(GFS_grid_type)               :: Grid
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
 
+    IM = Model%ncols
     allocate (Grid%xlon   (IM))
     allocate (Grid%xlat   (IM))
     allocate (Grid%xlat_d (IM))
@@ -7127,14 +7130,15 @@ module GFS_typedefs
 !--------------------
 ! GFS_tbd_type%create
 !--------------------
-  subroutine tbd_create (Tbd, IM, Model)
+  subroutine tbd_create (Tbd, Model)
 
     implicit none
 
     class(GFS_tbd_type)                :: Tbd
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
 
+    IM = Model%ncols
 !--- In
 !--- sub-grid cloud radiation
     if ( Model%isubc_lw == 2 .or. Model%isubc_sw == 2 ) then
@@ -7168,19 +7172,16 @@ module GFS_typedefs
     Tbd%ozpl  = clear_val
 
 !--- ccn and in needs
-    ! DH* allocate only for MG? *DH
     allocate (Tbd%in_nm  (IM,Model%levs))
     allocate (Tbd%ccn_nm (IM,Model%levs))
     Tbd%in_nm  = clear_val
     Tbd%ccn_nm = clear_val
 
 !--- aerosol fields
-    ! DH* allocate only for MG? *DH
     allocate (Tbd%aer_nm  (IM,Model%levs,ntrcaer))
     Tbd%aer_nm = clear_val
 
 !--- tau_amf for  NGWs
-    ! DH* allocate only for UGWP ? *DH
     allocate (Tbd%tau_amf(im) )
     Tbd%tau_amf = clear_val
 
@@ -7325,13 +7326,15 @@ module GFS_typedefs
 !------------------------
 ! GFS_cldprop_type%create
 !------------------------
-  subroutine cldprop_create (Cldprop, IM, Model)
+  subroutine cldprop_create (Cldprop, Model)
 
     implicit none
 
     class(GFS_cldprop_type)            :: Cldprop
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     allocate (Cldprop%cv  (IM))
     allocate (Cldprop%cvt (IM))
@@ -7347,13 +7350,15 @@ module GFS_typedefs
 !******************************************
 ! GFS_radtend_type%create
 !******************************************
-  subroutine radtend_create (Radtend, IM, Model)
+  subroutine radtend_create (Radtend, Model)
 
     implicit none
 
     class(GFS_radtend_type)            :: Radtend
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer :: IM
+
+    IM = Model%ncols
 
     !--- Out (radiation only)
     allocate (Radtend%sfcfsw (IM))
@@ -7625,15 +7630,15 @@ module GFS_typedefs
 !----------------
 ! GFS_diag%create
 !----------------
-  subroutine diag_create (Diag, IM, Model)
+  subroutine diag_create (Diag, Model)
     use parse_tracers,    only: get_tracer_index
     class(GFS_diag_type)               :: Diag
-    integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
-
-!
+    integer :: IM
     logical, save :: linit
     logical :: have_pbl, have_dcnv, have_scnv, have_mp, have_oz_phys
+
+    IM = Model%ncols
 
     if(Model%print_diff_pgr) then
       allocate(Diag%old_pgr(IM))
