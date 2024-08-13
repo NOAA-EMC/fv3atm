@@ -1,6 +1,6 @@
 # This is the main CMake file for ufsatm.
 #
-# Dusan Jovic, Alex Richert
+# Dusan Jovic, Alex Richert, Dustin Swales
 cmake_minimum_required(VERSION 3.19)
 
 # Handle user build options.
@@ -23,18 +23,39 @@ if(BUILD_TESTING)
   include(ci/CMakeLists.txt)
 endif()
 
-###############################################################################
-### CCPP
-###############################################################################
+# Set variables for all dycore build options in UFSATM.
+set(DYCORE_TARGET_MPAS ufsatm_mpas)
+set(DYCORE_TARGET_FV3  ufsatm_fv3)
 
+###############################################################################
+### All dynamical cores
+###############################################################################
+# CCPP
 set(MPI ON)
 add_subdirectory(ccpp)
 
+if(CCPP_32BIT)
+  add_definitions(-DCCPP_32BIT)
+else()
+  remove_definitions(-DCCPP_32BIT)
+endif()
+
+# Pnetcdf
+if(NOT PARALLEL_NETCDF)
+  list(APPEND _ufsatm_defs_private NO_PARALLEL_NETCDF)
+endif()
+
+#
+if(MULTI_GASES)
+  list(APPEND _ufsatm_defs_private MULTI_GASES)
+endif()
+
 ###############################################################################
-### fv3 dynamical core
+### UFSATM with FV3 dynamical core
 ###############################################################################
 if (FV3)
-  set(DYCORE_TARGET ufsatm_fv3)
+  set(DYCORE_TARGET ${DYCORE_TARGET_FV3})
+
   # These ifdefs need to be turned ON in the dycore.
   set(use_WRTCOMP ON)
   set(GFS_PHYS    ON)
@@ -43,105 +64,62 @@ if (FV3)
   if(MOVING_NEST)
     set(MOVING_NEST ON)
   endif()
+
   if(HYDRO)
     set(HYDRO ON)
   endif()
   add_subdirectory(fv3/atmos_cubed_sphere)
   target_compile_definitions(fv3 PRIVATE BYPASS_BREED_SLP_INLINE)
-endif()
 
-###############################################################################
-### mpas dynamical core
-###############################################################################
-if (MPAS)
-  set(DYCORE_TARGET ufsatm_mpas)
-
-  # Include MPAS Cmake tools.
-  include(${CMAKE_CURRENT_SOURCE_DIR}/mpas/MPAS-Model/cmake/Functions/MPAS_Functions.cmake)
-  
-  # Set any pre-processor directive needed in MPAS dycore.
-  get_mpas_version(MPAS_VERSION)
-  set(MPAS_ALL_CORES atmosphere)
-  set(MPAS_CORES atmosphere CACHE STRING "MPAS cores to build. Options: ${MPAS_ALL_CORES}")
-  if(MPAS_CORES MATCHES " ") #Convert strings separated with spaces to CMake list separated with ';'
-    string(REPLACE " " ";" MPAS_CORES ${MPAS_CORES})
-    set(MPAS_CORES ${MPAS_CORES} CACHE STRING "MPAS cores to build. Options: ${MPAS_ALL_CORES}" FORCE)
-  endif()
-  set(DO_MPASDA OFF)
-  set(DO_PHYSICS FALSE)
-
-  # Source files for MPAS dynamical core drivers.
-  set(MPAS_MAIN_SRC      ${CMAKE_CURRENT_SOURCE_DIR}/mpas/ufs_mpas.F90)
-  set(MPAS_SUBDRIVER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/mpas/ufs_mpas_subdriver.F90)
-
-  # MPAS NUOPC cap.
-  set(MPAS_NUOPC_CAP     ${CMAKE_CURRENT_SOURCE_DIR}/mpas/mpas_cap.F90)
-
-  # MPAS dynamical core
-  add_subdirectory(mpas)
-endif()
-###############################################################################
-### ufsatm
-###############################################################################
-if(INLINE_POST)
-  set(BUILD_POSTEXEC OFF)
-  add_subdirectory(upp)
-  set(POST_SRC io/post_nems_routines.F90 io/post_fv3.F90)
-  list(APPEND _ufsatm_defs_private INLINE_POST)
-endif()
-
-if(CCPP_32BIT)
-  add_definitions(-DCCPP_32BIT)
-else()
-  remove_definitions(-DCCPP_32BIT)
-endif()
-
-if(NOT PARALLEL_NETCDF)
-  list(APPEND _ufsatm_defs_private NO_PARALLEL_NETCDF)
-endif()
-
-if(MOVING_NEST)
-  list(APPEND _ufsatm_defs_private MOVING_NEST)
-  if(NOT HYDRO)
-    list(APPEND _ufsatm_defs_private MOIST_CAPPA USE_COND)
+  if(INLINE_POST)
+    set(BUILD_POSTEXEC OFF)
+    add_subdirectory(upp)
+    set(POST_SRC io/post_nems_routines.F90 io/post_fv3.F90)
+    list(APPEND _ufsatm_defs_private INLINE_POST)
   endif()
 
-  if(DEBUG)
-    list(APPEND _ufsatm_defs_private DEBUG)
-  endif()
-  if(GFS_PHYS)
-    list(APPEND _ufsatm_defs_private GFS_PHYS)
-  endif()
-  if(GFS_TYPES)
-    list(APPEND _ufsatm_defs_private GFS_TYPES)
-  endif()
-  if(USE_GFSL63)
-    list(APPEND _ufsatm_defs_private USE_GFSL63)
-  endif()
-  if(INTERNAL_FILE_NML)
-    list(APPEND _ufsatm_defs_private INTERNAL_FILE_NML)
-  endif()
-  if(ENABLE_QUAD_PRECISION)
-    list(APPEND _ufsatm_defs_private ENABLE_QUAD_PRECISION)
-  endif()
-  if(32BIT)
-    list(APPEND _ufsatm_defs_private OVERLOAD_R4 OVERLOAD_R8)
+  if(MOVING_NEST)
+    list(APPEND _ufsatm_defs_private MOVING_NEST)
+    if(NOT HYDRO)
+      list(APPEND _ufsatm_defs_private MOIST_CAPPA USE_COND)
+    endif()
+
+    if(DEBUG)
+      list(APPEND _ufsatm_defs_private DEBUG)
+    endif()
+    if(GFS_PHYS)
+      list(APPEND _ufsatm_defs_private GFS_PHYS)
+    endif()
+    if(GFS_TYPES)
+      list(APPEND _ufsatm_defs_private GFS_TYPES)
+    endif()
+    if(USE_GFSL63)
+      list(APPEND _ufsatm_defs_private USE_GFSL63)
+    endif()
+    if(INTERNAL_FILE_NML)
+      list(APPEND _ufsatm_defs_private INTERNAL_FILE_NML)
+    endif()
+    if(ENABLE_QUAD_PRECISION)
+      list(APPEND _ufsatm_defs_private ENABLE_QUAD_PRECISION)
+    endif()
+    if(32BIT)
+      list(APPEND _ufsatm_defs_private OVERLOAD_R4 OVERLOAD_R8)
+    endif()
+
+    list(APPEND moving_nest_srcs
+      fv3/moving_nest/bounding_box.F90
+      fv3/moving_nest/fv_tracker.F90
+      fv3/moving_nest/fv_moving_nest.F90
+      fv3/moving_nest/fv_moving_nest_main.F90
+      fv3/moving_nest/fv_moving_nest_physics.F90
+      fv3/moving_nest/fv_moving_nest_types.F90
+      fv3/moving_nest/fv_moving_nest_utils.F90
+      )
+  else()
+    list(APPEND moving_nest_srcs "")
   endif()
 
-  list(APPEND moving_nest_srcs
-    fv3/moving_nest/bounding_box.F90
-    fv3/moving_nest/fv_tracker.F90
-    fv3/moving_nest/fv_moving_nest.F90
-    fv3/moving_nest/fv_moving_nest_main.F90
-    fv3/moving_nest/fv_moving_nest_physics.F90
-    fv3/moving_nest/fv_moving_nest_types.F90
-    fv3/moving_nest/fv_moving_nest_utils.F90
-  )
-else()
-   list(APPEND moving_nest_srcs "")
-endif()
-
-if (FV3)
+  # FV3 drivers and dependencies
   add_library(${DYCORE_TARGET}
     fv3/atmos_model.F90
     fv3/fv3_cap.F90
@@ -168,9 +146,43 @@ if (FV3)
     ${POST_SRC}
     )
   add_dependencies(${DYCORE_TARGET} fv3 fv3ccpp stochastic_physics)
+
+  list(APPEND _ufsatm_defs_private GFS_PHYS
+                                   INTERNAL_FILE_NML
+                                   use_WRTCOMP)
 endif()
 
+###############################################################################
+### UFSATM with MPAS dynamical core.
+###############################################################################
 if (MPAS)
+  set(DYCORE_TARGET ${DYCORE_TARGET_MPAS})
+
+  # Include MPAS Cmake tools.
+  include(${CMAKE_CURRENT_SOURCE_DIR}/mpas/MPAS-Model/cmake/Functions/MPAS_Functions.cmake)
+
+  # Set any pre-processor directive needed in MPAS dycore.
+  get_mpas_version(MPAS_VERSION)
+  set(MPAS_ALL_CORES atmosphere)
+  set(MPAS_CORES atmosphere CACHE STRING "MPAS cores to build. Options: ${MPAS_ALL_CORES}")
+  if(MPAS_CORES MATCHES " ") #Convert strings separated with spaces to CMake list separated with ';'
+    string(REPLACE " " ";" MPAS_CORES ${MPAS_CORES})
+    set(MPAS_CORES ${MPAS_CORES} CACHE STRING "MPAS cores to build. Options: ${MPAS_ALL_CORES}" FORCE)
+  endif()
+  set(DO_MPASDA OFF)
+  set(DO_PHYSICS FALSE)
+
+  # Source files for MPAS dynamical core drivers.
+  set(MPAS_MAIN_SRC      ${CMAKE_CURRENT_SOURCE_DIR}/mpas/ufs_mpas.F90)
+  set(MPAS_SUBDRIVER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/mpas/ufs_mpas_subdriver.F90)
+
+  # MPAS NUOPC cap.
+  set(MPAS_NUOPC_CAP     ${CMAKE_CURRENT_SOURCE_DIR}/mpas/mpas_cap.F90)
+
+  # MPAS dynamical core
+  add_subdirectory(mpas)
+
+  # MPAS drivers and dependencies
   add_library(${DYCORE_TARGET}
     ${MPAS_MAIN_SRC}
     ${MPAS_SUBDRIVER_SRC}
@@ -179,26 +191,23 @@ if (MPAS)
   add_dependencies(${DYCORE_TARGET} mpas)
 endif()
 
-list(APPEND _ufsatm_defs_private GFS_PHYS
-                                 INTERNAL_FILE_NML
-                                 use_WRTCOMP)
-
-
+###############################################################################
+### Link libraries
+###############################################################################
 target_compile_definitions(${DYCORE_TARGET} PRIVATE "${_ufsatm_defs_private}")
 
 set_target_properties(${DYCORE_TARGET} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(${DYCORE_TARGET} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                                   $<INSTALL_INTERFACE:mod>)
 
-if(MULTI_GASES)
-  list(APPEND _ufsatm_defs_private MULTI_GASES)
-endif()
-
 if (FV3)
   target_link_libraries(${DYCORE_TARGET} PUBLIC fv3
                                          fv3ccpp
 					 stochastic_physics
 					 fms)
+  if(INLINE_POST)
+    target_link_libraries(${DYCORE_TARGET} PUBLIC upp::upp)
+  endif()				       
 endif()
 
 if (MPAS)
@@ -207,22 +216,19 @@ if (MPAS)
 #  				       stochastic_physics
 # 				       fms)
 endif()
+
+# Always include EMC libraries in dycore install
 target_link_libraries(${DYCORE_TARGET} PUBLIC w3emc::w3emc_d
                                               sp::sp_d
 					      bacio::bacio_4
 					      esmf)
-
-
-if(INLINE_POST)
-  target_link_libraries(${DYCORE_TARGET} PUBLIC upp::upp)
-endif()
-
+# OpenMP
 if(OPENMP)
   target_link_libraries(${DYCORE_TARGET} PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
 ###############################################################################
-### Install
+### Install UFSATM
 ###############################################################################
 install(
   TARGETS ${DYCORE_TARGET}
