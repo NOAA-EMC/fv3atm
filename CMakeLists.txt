@@ -45,11 +45,6 @@ if(NOT PARALLEL_NETCDF)
   list(APPEND _ufsatm_defs_private NO_PARALLEL_NETCDF)
 endif()
 
-#
-if(MULTI_GASES)
-  list(APPEND _ufsatm_defs_private MULTI_GASES)
-endif()
-
 ###############################################################################
 ### UFSATM with FV3 dynamical core
 ###############################################################################
@@ -104,6 +99,9 @@ if (FV3)
     endif()
     if(32BIT)
       list(APPEND _ufsatm_defs_private OVERLOAD_R4 OVERLOAD_R8)
+    endif()
+    if(MULTI_GASES)
+      list(APPEND _ufsatm_defs_private MULTI_GASES)
     endif()
 
     list(APPEND moving_nest_srcs
