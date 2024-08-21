@@ -4662,7 +4662,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntfsmoke)
+        ExtDiag(idx)%data(nb)%var3 => Statein%qgrs(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%ntfsmoke)
       enddo
     endif
 
