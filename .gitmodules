@@ -8,8 +8,9 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/dustinswales/ccpp-physics
-  branch = feature/refactor_h2ophys
+  #url = https://github.com/ufs-community/ccpp-physics
+  url = https://github.com/grantfirl/ccpp-physics
+  branch = combo_213_218
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
