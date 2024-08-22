@@ -1199,6 +1199,7 @@ module GFS_typedefs
     integer              :: ichoice         = 0 !< flag for closure of C3/GF deep convection
     integer              :: ichoicem        = 13!< flag for closure of C3/GF mid convection
     integer              :: ichoice_s       = 3 !< flag for closure of C3/GF shallow convection
+    logical              :: gf_coldstart     !< flag for cold start GF 
     integer              :: conv_cf_opt      !< option for convection scheme cloud fraction computation
                                              !< 0: Chaboureau-Bechtold
                                              !< 1: Xu-Randall
@@ -4228,6 +4229,7 @@ module GFS_typedefs
     integer              :: ichoice         = 0 !< flag for closure of C3/GF deep convection
     integer              :: ichoicem        = 13!< flag for closure of C3/GF mid convection
     integer              :: ichoice_s       = 3 !< flag for closure of C3/GF shallow convection
+    logical              :: gf_coldstart  = .false.   !< flag for cold start GF 
 
 !-- chem nml variables for RRFS-SD
     real(kind=kind_phys) :: dust_drylimit_factor  = 1.0
@@ -4425,7 +4427,7 @@ module GFS_typedefs
                                do_smoke_transport,smoke_conv_wet_coef,n_dbg_lines,          &
                                add_fire_moist_flux, sc_factor, plume_alpha,                 &
                           !--- C3/GF closures
-                               ichoice,ichoicem,ichoice_s,                                  &
+                               ichoice,ichoicem,ichoice_s,gf_coldstart,                     &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
                           !          and (maybe) convection suppression
                                fh_dfi_radar, radar_tten_limits, do_cap_suppress,            &
@@ -4682,6 +4684,7 @@ module GFS_typedefs
     Model%ichoice_s = ichoice_s
     Model%ichoicem  = ichoicem
     Model%ichoice   = ichoice
+    Model%gf_coldstart  = gf_coldstart
 
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
@@ -6792,6 +6795,7 @@ module GFS_typedefs
         print*,'ichoice_s          : ', Model%ichoice_s
         print*,'ichoicem           : ', Model%ichoicem
         print*,'ichoice            : ', Model%ichoice
+        print*,'gf_coldstart       : ', Model%gf_coldstart
       endif
       if(model%rrfs_sd) then
         print *, ' '
