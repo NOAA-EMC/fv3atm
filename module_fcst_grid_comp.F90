@@ -293,8 +293,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! Write grid to netcdf file
     if( cplprint_flag ) then
       write (myGridStr,"(I0)") mygrid
-      call wrt_fcst_grid(grid, "diagnostic_FV3_fcstGrid"//trim(mygridStr)//".nc", &
-                         regridArea=.TRUE., rc=rc)
+      if (trim(name)=="global") then
+        call wrt_fcst_grid(grid, "diagnostic_FV3_fcstGrid"//trim(mygridStr)//".tile*.nc", &
+                           regridArea=.TRUE., rc=rc)
+      else
+        call wrt_fcst_grid(grid, "diagnostic_FV3_fcstGrid"//trim(mygridStr)//".nc", &
+                           regridArea=.TRUE., rc=rc)
+      end if
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
 
@@ -1363,6 +1368,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       integer                    :: unit
       real(kind=8)               :: mpi_wtime, tbeg1
 !
+      integer                                :: FBCount, i
+      logical                                :: isPresent
+      character(len=esmf_maxstr),allocatable :: itemNameList(:)
+      type(ESMF_StateItem_Flag), allocatable :: itemTypeList(:)
+      type(ESMF_FieldBundle)                 :: fcstExportFB
 !-----------------------------------------------------------------------
 !***********************************************************************
 !-----------------------------------------------------------------------
@@ -1404,6 +1414,39 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
               close( unit )
           endif
       endif
+
+      ! update fhzero
+      call ESMF_StateGet(exportState, itemCount=FBCount, rc=rc)
+
+      allocate (itemNameList(FBCount))
+      allocate (itemTypeList(FBCount))
+      call ESMF_StateGet(exportState, &
+                         itemNameList=itemNameList, &
+                         itemTypeList=itemTypeList, &
+                         rc=rc)
+      do i=1, FBcount
+        if (itemTypeList(i) == ESMF_STATEITEM_FIELDBUNDLE) then
+          call ESMF_StateGet(exportState, itemName=itemNameList(i), &
+                             fieldbundle=fcstExportFB, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          call ESMF_AttributeGet(fcstExportFB, convention="NetCDF", purpose="FV3", &
+                                 name="fhzero", isPresent=isPresent, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          if (isPresent) then
+            call ESMF_AttributeSet(fcstExportFB, convention="NetCDF", purpose="FV3", name="fhzero", value=GFS_control%fhzero, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          endif
+        else
+          !***### anything but a FieldBundle in the state is unexpected here
+          call ESMF_LogSetError(ESMF_RC_ARG_BAD,                                 &
+                                msg="Only FieldBundles supported in fcstState.", &
+                                line=__LINE__, file=__FILE__, rcToReturn=rc)
+          return
+        endif
+
+      enddo
 
       if (mype == 0) write(*,'(A,I16,A,F16.6)')'PASS: fcstRUN phase 2, n_atmsteps = ', &
                                                n_atmsteps,' time is ',mpi_wtime()-tbeg1
