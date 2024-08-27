@@ -407,7 +407,7 @@ subroutine update_atmos_radiation_physics (Atmos)
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
         call fv3atm_checksum(GFS_control, GFS_Statein, GFS_Stateout, GFS_Grid, GFS_Tbd, GFS_Cldprop, GFS_Sfcprop, GFS_Radtend, GFS_Coupling, Atm_block)
       endif
-      call getiauforcing(GFS_control,IAU_data)
+      call getiauforcing(GFS_control,IAU_data,Atm(mygrid))
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
 
 !--- execute the atmospheric timestep finalize step
@@ -725,7 +725,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Atm(mygrid)%flagstruct%do_skeb = GFS_control%do_skeb
 
 !  initialize the IAU module
-   call iau_initialize (GFS_control,IAU_data,Init_parm)
+   call iau_initialize (GFS_control,IAU_data,Init_parm,Atm(mygrid))
 
    Init_parm%blksz           => null()
    Init_parm%ak              => null()
