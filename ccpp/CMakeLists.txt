@@ -43,11 +43,15 @@ endif()
 #------------------------------------------------------------------------------
 # Add host-model specific preprocessor flag (needed for some physics schemes)
 add_definitions(-DFV3)
+add_definitions(-DOLD_MPTBLS)
 
 #------------------------------------------------------------------------------
 # Set MPI flags for C/C++/Fortran preprocessor
 if(MPI)
   add_definitions(-DMPI)
+endif()
+if (OLD_MPTBLS)
+  add_definitions(-DOLD_MPTBLS)
 endif()
 
 #------------------------------------------------------------------------------

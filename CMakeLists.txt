@@ -23,6 +23,7 @@ endif()
 ###############################################################################
 
 set(MPI ON)
+set(OLD_MPTBLS ON)
 add_subdirectory(ccpp)
 
 ###############################################################################
@@ -162,6 +163,11 @@ endif()
 
 if(OPENMP)
   target_link_libraries(fv3atm PUBLIC OpenMP::OpenMP_Fortran)
+endif()
+
+if(BUILD_TESTING)
+  include(CTest)
+  add_subdirectory(tests)
 endif()
 
 ###############################################################################
