@@ -2363,6 +2363,30 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
+[hflx_fire]
+  standard_name = kinematic_surface_upward_sensible_heat_flux_of_fire
+  long_name = kinematic surface upward sensible heat flux of fire
+  units = K m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_fire_coupling)
+[evap_fire]
+  standard_name = surface_upward_specific_humidity_flux_of_fire
+  long_name = kinematic surface upward latent heat flux of fire
+  units = kg kg-1 m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_fire_coupling)
+[smoke_fire]
+  standard_name = smoke_emission_of_fire
+  long_name = smoke emission of fire
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_fire_coupling)
 
 ########################################################################
 [ccpp-table-properties]
@@ -2472,7 +2496,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. flag_for_chemistry_coupling .or. flag_for_land_coupling)
+  active = (flag_for_surface_flux_coupling .or. flag_for_chemistry_coupling .or. flag_for_land_coupling .or. do_fire_coupling)
 [snow_cpl]
   standard_name = cumulative_lwe_thickness_of_snow_amount_for_coupling
   long_name = total snow precipitation
@@ -2480,7 +2504,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. flag_for_stochastic_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata .or. flag_for_land_coupling)
+  active = (flag_for_surface_flux_coupling .or. flag_for_stochastic_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata .or. flag_for_land_coupling .or. do_fire_coupling)
 [dusfc_cpl]
   standard_name = cumulative_surface_x_momentum_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc x momentum flux multiplied by timestep
@@ -2744,7 +2768,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling)
+  active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling .or. do_fire_coupling)
 [q2mi_cpl]
   standard_name = specific_humidity_at_2m_for_coupling
   long_name = instantaneous Q2m
@@ -2752,7 +2776,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling)
+  active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling .or. do_fire_coupling)
 [u10mi_cpl]
   standard_name = x_wind_at_10m_for_coupling
   long_name = instantaneous U10m
@@ -2784,7 +2808,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling .or. flag_for_land_coupling)
+  active = (flag_for_surface_flux_coupling .or. flag_for_air_quality_coupling .or. flag_for_land_coupling .or. do_fire_coupling)
 [ulwsfcin_cpl]
   standard_name = surface_upwelling_longwave_flux_from_coupled_process
   long_name = surface upwelling LW flux for coupling
@@ -3631,6 +3655,12 @@
 [rrfs_sd]
   standard_name = do_smoke_coupling
   long_name = flag controlling rrfs_sd collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cpl_fire]
+  standard_name = do_fire_coupling
+  long_name = flag controlling fire_behavior collection (default off)
   units = flag
   dimensions = ()
   type = logical
@@ -6546,6 +6576,12 @@
 [ntsmoke]
   standard_name = index_for_smoke_in_tracer_concentration_array
   long_name = tracer index for smoke
+  units = index
+  dimensions = ()
+  type = integer
+[ntfsmoke]
+  standard_name = index_for_fire_smoke_in_tracer_concentration_array
+  long_name = tracer index for fire smoke
   units = index
   dimensions = ()
   type = integer
