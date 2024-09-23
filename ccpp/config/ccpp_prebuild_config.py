@@ -21,6 +21,7 @@ VARIABLE_DEFINITION_FILES = [
     'physics/physics/Radiation/RRTMG/radlw_param.f',
     'physics/physics/photochem/h2o_def.f',
     'physics/physics/photochem/module_ozphys.F90',
+    'physics/physics/MP/TEMPO/tempo/module_mp_thompson_params.F90',
     'data/CCPP_typedefs.F90',
     'data/GFS_typedefs.F90',
     'data/CCPP_data.F90',
@@ -44,6 +45,10 @@ TYPEDEFS_NEW_METADATA = {
     'module_ozphys' : {
         'module_ozphys' : '',
         'ty_ozphys'     : '',
+        },
+    'module_mp_thompson_params' : {
+        'module_mp_thompson_params' : '',
+        'ty_tempo_cfg'     : '',
         },
     'CCPP_typedefs' : {
         'GFS_interstitial_type' : 'GFS_Interstitial(cdata%thrd_no)',
@@ -162,6 +167,7 @@ SCHEME_FILES = [
     'physics/physics/MP/Thompson/mp_thompson_pre.F90',
     'physics/physics/MP/Thompson/mp_thompson.F90',
     'physics/physics/MP/Thompson/mp_thompson_post.F90',
+    'physics/physics/MP/TEMPO/tempo/module_mp_thompson_params.F90',
     'physics/physics/MP/TEMPO/mp_tempo_pre.F90',
     'physics/physics/MP/TEMPO/mp_tempo.F90',
     'physics/physics/MP/TEMPO/mp_tempo_post.F90',
