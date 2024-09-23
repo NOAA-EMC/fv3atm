@@ -23,6 +23,10 @@ endif()
 ###############################################################################
 
 set(MPI ON)
+# DJS asks Anders: These two PP directives are needed in TEMPO. We should avoid
+# using PP directives if possible, so let's plan to remove them if feasible.
+set(OLD_MPTBLS ON)
+set(ccpp_default ON)
 add_subdirectory(ccpp)
 
 ###############################################################################

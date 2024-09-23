@@ -4308,6 +4308,12 @@
   units = flag
   dimensions = ()
   type = integer
+[imp_physics_tempo]
+  standard_name = identifier_for_tempo_microphysics_scheme
+  long_name = choice of TEMPO microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imp_physics_wsm6]
   standard_name = identifier_for_wsm6_microphysics_scheme
   long_name = choice of WSM6 microphysics scheme
@@ -4832,6 +4838,12 @@
   units = flag
   dimensions = ()
   type = logical
+[lthailaware]
+  standard_name = flag_for_hail_physics
+  long_name = flag for hail physics
+  units = flag
+  dimensions = ()
+  type = logical
 [mraerosol]
   standard_name = do_merra2_aerosol_awareness
   long_name = flag for merra2 aerosol-aware physics for example the thompson microphysics
@@ -4882,6 +4894,12 @@
   units = count
   dimensions = ()
   type = integer
+[tempo_cfg]
+  standard_name = configuration_for_TEMPO_microphysics
+  long_name = configuration information for TEMPO microphysics
+  units = mixed
+  dimensions = ()
+  type = ty_tempo_cfg
 [thpsnmp_is_init]
   standard_name = flag_for_thompson_mp_scheme_initialization
   long_name = flag carrying scheme initialization status
@@ -10072,6 +10090,7 @@
   relative_path = ../physics/physics/
   dependencies = hooks/machine.F,hooks/physcons.F90
   dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f
+  dependencies = MP/TEMPO/tempo/module_mp_thompson_params.F90
   dependencies = photochem/module_ozphys.F90,photochem/module_h2ophys.F90
   dependencies = MP/GFDL/GFDL_parse_tracers.F90
 

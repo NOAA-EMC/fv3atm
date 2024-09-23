@@ -49,6 +49,12 @@ add_definitions(-DFV3)
 if(MPI)
   add_definitions(-DMPI)
 endif()
+if (OLD_MPTBLS)
+  add_definitions(-DOLD_MPTBLS)
+endif()
+if (ccpp_default)
+  add_definitions(-Dccpp_default)
+endif()
 
 #------------------------------------------------------------------------------
 # Set flag for 32bit dynamics build
