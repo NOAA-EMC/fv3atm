@@ -105,9 +105,6 @@ if (FV3)
     if(32BIT)
       list(APPEND _ufsatm_defs_private OVERLOAD_R4 OVERLOAD_R8)
     endif()
-    if(MULTI_GASES)
-      list(APPEND _ufsatm_defs_private MULTI_GASES)
-    endif()
 
     list(APPEND moving_nest_srcs
       fv3/moving_nest/bounding_box.F90
@@ -122,6 +119,10 @@ if (FV3)
     list(APPEND moving_nest_srcs "")
   endif()
 
+  if(MULTI_GASES)
+    list(APPEND _ufsatm_defs_private MULTI_GASES)
+  endif()
+  
   # FV3 drivers and dependencies
   add_library(${DYCORE_TARGET}
     fv3/atmos_model.F90
