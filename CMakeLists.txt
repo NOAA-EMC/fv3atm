@@ -45,6 +45,11 @@ if(NOT PARALLEL_NETCDF)
   list(APPEND _ufsatm_defs_private NO_PARALLEL_NETCDF)
 endif()
 
+if(BUILD_TESTING)
+  include(CTest)
+  add_subdirectory(tests)
+endif()
+
 ###############################################################################
 ### UFSATM with FV3 dynamical core
 ###############################################################################
