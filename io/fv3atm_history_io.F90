@@ -67,6 +67,7 @@ module fv3atm_history_io_mod
     real(kind=kind_phys),dimension(:,:,:),pointer:: uwork3d => null()
     logical                    :: uwork_set = .false.
     character(128)             :: uwindname = "(noname)"
+    real(4), dimension(:,:,:),allocatable :: rad_save, rad_dt_save, rad_accum
 
     !--- miscellaneous other variables
     logical :: use_wrtgridcomp_output = .FALSE.
@@ -115,12 +116,12 @@ CONTAINS
   !! This routine transfers diagnostic data to the FMS diagnostic
   !!  manager for eventual output to the history files.
   subroutine fv3atm_diag_output(time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
-       dt, time_int, time_intfull, time_radsw, time_radlw)
+       dt, time_int, time_intfull, time_radsw, time_radlw,dt_atmos)
     !--- subroutine interface variable definitions
     type(time_type),           intent(in) :: time
     type(GFS_externaldiag_type),       intent(in) :: diag(:)
     type (block_control_type), intent(in) :: atm_block
-    integer,                   intent(in) :: nx, ny, levs, ntcw, ntoz
+    integer,                   intent(in) :: nx, ny, levs, ntcw, ntoz, dt_atmos
     real(kind=kind_phys),      intent(in) :: dt
     real(kind=kind_phys),      intent(in) :: time_int
     real(kind=kind_phys),      intent(in) :: time_intfull
@@ -128,7 +129,7 @@ CONTAINS
     real(kind=kind_phys),      intent(in) :: time_radlw
 
     call shared_history_data%output(time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
-         dt, time_int, time_intfull, time_radsw, time_radlw)
+         dt, time_int, time_intfull, time_radsw, time_radlw, dt_atmos)
 
   end subroutine fv3atm_diag_output
 
@@ -268,9 +269,15 @@ CONTAINS
     allocate(hist%buffer_phys_bl(hist%isco:hist%ieco,hist%jsco:hist%jeco,nrgst_bl))
     allocate(hist%buffer_phys_nb(hist%isco:hist%ieco,hist%jsco:hist%jeco,nrgst_nb))
     allocate(hist%buffer_phys_windvect(3,hist%isco:hist%ieco,hist%jsco:hist%jeco,nrgst_vctbl))
+    allocate(hist%rad_save(hist%tot_diag_idx,hist%isco:hist%ieco,hist%jsco:hist%jeco))
+    allocate(hist%rad_dt_save(hist%tot_diag_idx,hist%isco:hist%ieco,hist%jsco:hist%jeco))
+    allocate(hist%rad_accum(hist%tot_diag_idx,hist%isco:hist%ieco,hist%jsco:hist%jeco))
     hist%buffer_phys_bl = zero
     hist%buffer_phys_nb = zero
     hist%buffer_phys_windvect = zero
+    hist%rad_save = zero
+    hist%rad_dt_save = zero
+    hist%rad_accum = zero
     if(mpp_pe() == mpp_root_pe()) print *,'in fv3atm_diag_register, nrgst_bl=',nrgst_bl,' nrgst_nb=',nrgst_nb, &
          ' nrgst_vctbl=',nrgst_vctbl, 'hist%isco=',hist%isco,hist%ieco,'hist%jsco=',hist%jsco,hist%jeco,' hist%num_axes_phys=', hist%num_axes_phys
 
@@ -282,7 +289,7 @@ CONTAINS
   !! implementation of the public fv3atm_diag_output routine. Never
   !! call this directly.
   subroutine history_type_output(hist, time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
-       dt, time_int, time_intfull, time_radsw, time_radlw)
+       dt, time_int, time_intfull, time_radsw, time_radlw,dt_atmos)
     !--- subroutine interface variable definitions
     class(history_type)                   :: hist
     type(time_type),           intent(in) :: time
@@ -294,6 +301,7 @@ CONTAINS
     real(kind=kind_phys),      intent(in) :: time_intfull
     real(kind=kind_phys),      intent(in) :: time_radsw
     real(kind=kind_phys),      intent(in) :: time_radlw
+    integer, intent(in) :: dt_atmos
     !--- local variables
     integer :: i, j, k, idx, nb, ix, ii, jj, levo_3d
     character(len=2) :: xtra
@@ -305,13 +313,15 @@ CONTAINS
     real(kind=kind_phys), dimension(:,:,:), allocatable :: var3
 #endif
     real(kind=kind_phys) :: rtime_int, rtime_intfull, lcnvfac
-    real(kind=kind_phys) :: rtime_radsw, rtime_radlw
+    real(kind=kind_phys) :: rtime_radsw, rtime_radlw, this_radfh
+    real(kind=kind_phys) :: rad_old, rad_dt, rad_save
 
     rtime_int     = one/time_int
     rtime_intfull = one/time_intfull
     rtime_radsw   = one/time_radsw
     rtime_radlw   = one/time_radlw
 
+    !intradrem = mod(time_int,time_radsw)
     !     if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. time avg, time_int=',time_int
     history_loop: do idx = 1,hist%tot_diag_idx
       has_id: if (diag(idx)%id > 0) then
@@ -321,13 +331,13 @@ CONTAINS
             lcnvfac = lcnvfac*rtime_intfull
             !             if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. full time avg, field=',trim(Diag(idx)%name),' time=',time_intfull
           else if ( trim(diag(idx)%time_avg_kind) == 'rad_lw' ) then
-            lcnvfac = lcnvfac*min(rtime_radlw,rtime_int)
+            lcnvfac = lcnvfac*rtime_radlw/int(time_int/dt_atmos)
             !             if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. rad longwave avg, field=',trim(Diag(idx)%name),' time=',time_radlw
           else if ( trim(diag(idx)%time_avg_kind) == 'rad_sw' ) then
-            lcnvfac = lcnvfac*min(rtime_radsw,rtime_int)
+            lcnvfac = lcnvfac*rtime_radsw/int(time_int/dt_atmos)
             !             if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. rad shortwave avg, field=',trim(Diag(idx)%name),' time=',time_radsw
           else if ( trim(diag(idx)%time_avg_kind) == 'rad_swlw_min' ) then
-            lcnvfac = lcnvfac*min(max(rtime_radsw,rtime_radlw),rtime_int)
+            lcnvfac = lcnvfac*max(rtime_radsw,rtime_radlw)/int(time_int/dt_atmos)
             !             if(mpp_pe()==mpp_root_pe())print *,'in,fv3atm_io. rad swlw min avg, field=',trim(Diag(idx)%name),' time=',time_radlw,time_radsw,time_int
           else
             lcnvfac = lcnvfac*rtime_int
@@ -445,7 +455,43 @@ CONTAINS
                   ii = i + Atm_block%isc -1
                   nb = Atm_block%blkno(ii,jj)
                   ix = Atm_block%ixp(ii,jj)
-                  var2(i,j) = Diag(idx)%data(nb)%var2(ix)*lcnvfac
+                  if ( trim(diag(idx)%time_avg_kind) == 'rad_sw' .or. trim(diag(idx)%time_avg_kind) == 'rad_lw' .or. trim(diag(idx)%time_avg_kind) == 'rad_swlw_min') then
+                    select case (trim(diag(idx)%time_avg_kind))
+                      case ('rad_sw')
+                        this_radfh = time_radsw
+                      case ('rad_lw')
+                        this_radfh = time_radlw
+                      case ('rad_swlw_min')
+                        this_radfh = min(time_radsw,time_radlw)
+                      case default
+
+                    end select
+
+                    if (time_int == dt_atmos ) then
+                      var2(i,j) = Diag(idx)%data(nb)%var2(ix)*lcnvfac
+                      hist%rad_accum(idx,ii,jj) = Diag(idx)%data(nb)%var2(ix)
+                       
+                      if (mod(time_int,this_radfh) == dt_atmos) then
+                        hist%rad_dt_save(idx,ii,jj) = Diag(idx)%data(nb)%var2(ix)
+                        hist%rad_save(idx,ii,jj) = Diag(idx)%data(nb)%var2(ix)
+                      endif
+                    elseif (mod(time_int,this_radfh) == dt_atmos) then
+                      rad_save = hist%rad_save(idx,ii,jj)
+                      hist%rad_save(idx,ii,jj) = Diag(idx)%data(nb)%var2(ix)
+                      rad_dt = Diag(idx)%data(nb)%var2(ix) - rad_save
+                      hist%rad_dt_save(idx,ii,jj) = rad_dt
+                      rad_old =  hist%rad_accum(idx,ii,jj)
+                      var2(i,j) = (rad_old+rad_dt)*lcnvfac
+                      hist%rad_accum(idx,ii,jj) = rad_old+rad_dt
+                    else
+                      rad_old = hist%rad_accum(idx,ii,jj)
+                      rad_dt = hist%rad_dt_save(idx,ii,jj)
+                      var2(i,j) = (rad_old+rad_dt) *lcnvfac
+                      hist%rad_accum(idx,ii,jj) = rad_old+rad_dt 
+                    endif
+                  else
+                    var2(i,j) = Diag(idx)%data(nb)%var2(ix)*lcnvfac
+                  endif
                 enddo
               enddo
             endif if_mask
