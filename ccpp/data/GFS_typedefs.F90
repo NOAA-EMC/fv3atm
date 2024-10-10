@@ -16,6 +16,8 @@ module GFS_typedefs
    use module_radlw_parameters,  only: topflw_type, sfcflw_type
    use module_ozphys,            only: ty_ozphys
    use module_h2ophys,           only: ty_h2ophys
+   use land_iau_mod,             only: land_iau_external_data_type, land_iau_control_type, &
+                                       land_iau_state_type  
 
    implicit none
 
@@ -480,7 +482,12 @@ module GFS_typedefs
 
     !--- For smoke and dust auxiliary inputs
     real (kind=kind_phys), pointer :: fire_in   (:,:)   => null()  !< fire auxiliary inputs
-
+    
+    !--- Land IAU DDTs
+    type(land_iau_external_data_type) :: land_iau_data
+    type(land_iau_control_type)       :: land_iau_control
+    type(land_iau_state_type)         :: land_iau_state
+                                        
     contains
       procedure :: create  => sfcprop_create  !<   allocate array data
   end type GFS_sfcprop_type
