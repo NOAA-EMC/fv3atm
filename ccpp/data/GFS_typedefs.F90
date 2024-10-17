@@ -17,8 +17,7 @@ module GFS_typedefs
    use module_ozphys,            only: ty_ozphys
    use module_h2ophys,           only: ty_h2ophys
    use land_iau_mod,             only: land_iau_external_data_type, land_iau_control_type, &
-                                       land_iau_state_type  
-   use land_iau_mod,             only: land_iau_mod_set_control
+                                       land_iau_state_type, land_iau_mod_set_control
 
    implicit none
 
