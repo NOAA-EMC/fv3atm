@@ -4301,7 +4301,7 @@
   long_name = choice of GFDL microphysics scheme
   units = flag
   dimensions = ()
-  type = integer  
+  type = integer
 [imp_physics_thompson]
   standard_name = identifier_for_thompson_microphysics_scheme
   long_name = choice of Thompson microphysics scheme

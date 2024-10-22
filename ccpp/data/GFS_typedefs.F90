@@ -4728,7 +4728,6 @@ module GFS_typedefs
 
 !--- GFDL MP parameters
     Model%lgfdlmprad       = lgfdlmprad
-    
 !--- Thompson,GFDL,NSSL MP parameter
     Model%lrefres          = lrefres
 
@@ -4825,7 +4824,7 @@ module GFS_typedefs
     Model%exticeden        = exticeden
     if (Model%exticeden .and. &
       (Model%imp_physics /= Model%imp_physics_gfdl .and. Model%imp_physics /= Model%imp_physics_thompson .and. &
-       Model%imp_physics /= Model%imp_physics_nssl)) then
+       Model%imp_physics /= Model%imp_physics_nssl )) then
       !see GFS_MP_generic_post.F90; exticeden is only compatible with GFDL,
       !Thompson, or NSSL MP
       print *,' Using exticeden = T is only valid when using GFDL, Thompson, or NSSL microphysics.'
@@ -6171,7 +6170,7 @@ module GFS_typedefs
                  ' mg_do_ice_gmao=',  Model%mg_do_ice_gmao,  ' mg_do_liq_liu=', Model%mg_do_liq_liu
 
     elseif (Model%imp_physics == Model%imp_physics_gfdl) then !GFDL microphysics
-       Model%npdf3d  = 0
+      Model%npdf3d  = 0
       if(Model%effr_in) then
         Model%num_p3d = 5
         Model%nleffr  = 1
@@ -6703,7 +6702,7 @@ module GFS_typedefs
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_gfdl) then
-        print *, ' GFDL microphysical parameters (version 1)'
+        print *, ' GFDL microphysical parameters'
         print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad
         print *, ' lrefres                : ', Model%lrefres
         print *, ' '
