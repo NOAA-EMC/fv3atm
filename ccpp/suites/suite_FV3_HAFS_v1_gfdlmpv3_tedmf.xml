@@ -4,7 +4,7 @@
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
-      <scheme>fv_sat_adj_v3</scheme>
+      <scheme>fv_sat_adj</scheme>
     </subcycle>
   </group>
   <group name="time_vary">
@@ -65,7 +65,7 @@
       <scheme>unified_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
-      <scheme>h2ophys</scheme>
+      <scheme>GFS_photochemistry</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
       <scheme>GFS_DCNV_generic_pre</scheme>
@@ -77,7 +77,7 @@
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
-      <scheme>gfdl_cld_mp_v3</scheme>
+      <scheme>gfdl_cloud_microphys_v3</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
       <scheme>GFS_physics_post</scheme>
