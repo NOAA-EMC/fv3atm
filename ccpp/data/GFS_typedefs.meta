@@ -4271,12 +4271,6 @@
   long_name = choice of GFDL microphysics scheme
   units = flag
   dimensions = ()
-  type = integer
-[imp_physics_gfdl_v3]
-  standard_name = identifier_for_gfdl_microphysics_v3_scheme
-  long_name = choice of GFDL microphysics scheme version 3
-  units = flag
-  dimensions = ()
   type = integer  
 [imp_physics_thompson]
   standard_name = identifier_for_thompson_microphysics_scheme
@@ -10020,8 +10014,6 @@
   dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f
   dependencies = photochem/h2o_def.f,photochem/module_ozphys.F90
   dependencies = MP/GFDL_parse_tracers.F90
-  dependencies = MP/GFDL/v1_2019/module_gfdl_cloud_microphys.F90
-  dependencies = MP/GFDL/v3_2022/module_gfdl_cloud_microphys_v3.F90
 
 [ccpp-arg-table]
   name = GFS_typedefs
