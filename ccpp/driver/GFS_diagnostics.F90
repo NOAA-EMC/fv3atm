@@ -4653,6 +4653,19 @@ module GFS_diagnostics
       enddo
     end if thompson_extended_diagnostics
 
+    if (Model%cpl_fire .and. Model%ntfsmoke>0) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'fsmoke'
+      ExtDiag(idx)%desc = 'smoke concentration'
+      ExtDiag(idx)%unit = 'kg kg-1'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Statein%qgrs(Model%chunk_begin(nb):Model%chunk_end(nb),:,Model%ntfsmoke)
+      enddo
+    endif
+
     if (Model%rrfs_sd .and. Model%ntsmoke>0) then
 
       idx = idx + 1
