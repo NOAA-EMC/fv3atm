@@ -112,6 +112,27 @@ else(CCPP_32BIT)
   endif()
 endif(CCPP_32BIT)
 
+# Set flags for SAMF Deep Convection (32-bit option)
+option(SAMFDEEP_32BIT "Compile SAMF Deep Convection with 32-bit precision" OFF)
+
+if(SAMFDEEP_32BIT)
+  message(STATUS "Compile CCPP SAMFDEEP with 32-bit precision")
+
+  # Note: We do NOT use add_definitions(-DSAMFDEEP_USE_SP) here.
+  # The macro is applied locally in physics/CMakeLists.txt only to specific files
+  # to protect 64-bit bridge files (generic_pre/post).
+
+  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set(CMAKE_Fortran_FLAGS_SAMFDEEP "-real-size 32 -DSAMFDEEP_USE_SP")
+  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+    set(CMAKE_Fortran_FLAGS_SAMFDEEP "-fno-default-real-8 -fdefault-double-8 -DSAMFDEEP_USE_SP")
+  endif()
+else()
+  message(STATUS "Compile CCPP SAMFDEEP with 64-bit precision")
+  # Default to standard physics flags (64-bit)
+  set(CMAKE_Fortran_FLAGS_SAMFDEEP ${CMAKE_Fortran_FLAGS_PHYSICS})
+endif()
+
 #------------------------------------------------------------------------------
 # Set flags for rte-rrtmgp radiation
 if(RRTMGP_32BIT)
