@@ -118,7 +118,7 @@ option(SAMFCNV_32BIT "Compile SAMF Convection with 32-bit precision" OFF)
 if(SAMFCNV_32BIT)
 	message(STATUS "Compile CCPP SAMFCNV with 32-bit precision")
 
-	# Note: We do NOT use add_definitions(-DSAMFCNV_USE_SP) here.
+  # Note: We do NOT use add_definitions(-DSAMFCNV_USE_SP) here.
   # The macro is applied locally in physics/CMakeLists.txt only to specific files
   # to protect 64-bit bridge files (generic_pre/post).
 
