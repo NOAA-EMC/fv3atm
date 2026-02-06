@@ -6665,13 +6665,13 @@
   dimensions = ()
   type = integer
 [index_of_process_scnv]
-  standard_name = index_of_shallow_convection_process_process_in_cumulative_change_index
+  standard_name = index_of_shallow_convection_process_in_cumulative_change_index
   long_name = index of shallow convection process in second dimension of array cumulative change index
   units = index
   dimensions = ()
   type = integer
 [index_of_process_mp]
-  standard_name = index_of_microphysics_process_process_in_cumulative_change_index
+  standard_name = index_of_microphysics_process_in_cumulative_change_index
   long_name = index of microphysics transport process in second dimension of array cumulative change index
   units = index
   dimensions = ()
@@ -8613,7 +8613,7 @@
   dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifer_for_scale_aware_mass_flux_deep_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection .or. control_for_shallow_convection_scheme == identifier_for_c3_shallow_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_c3_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifier_for_scale_aware_mass_flux_deep_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection .or. control_for_shallow_convection_scheme == identifier_for_c3_shallow_convection)
 [cactiv]
   standard_name = counter_for_grell_freitas_convection
   long_name = convective activity memory
