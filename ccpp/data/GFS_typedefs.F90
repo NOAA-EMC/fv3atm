@@ -835,6 +835,19 @@ module GFS_typedefs
                                             !< (yr, mon, day, t-zone, hr, min, sec, mil-sec)
     integer              :: idate(4)        !< initial date with different size and ordering
                                             !< (hr, mon, day, yr)
+!--- tendency control
+    integer              :: tend_opt_swrad
+    integer              :: tend_opt_lwrad
+    integer              :: tend_opt_rad_scaler
+    integer              :: tend_opt_surface
+    integer              :: tend_opt_pbl
+    integer              :: tend_opt_gwd
+    integer              :: tend_opt_photochem
+    integer              :: tend_opt_deep_conv
+    integer              :: tend_opt_shal_conv
+    integer              :: tend_opt_mp
+    integer              :: tend_opt_stoch
+    
     logical              :: gfs_phys_time_vary_is_init=.false. !< GFS_phys_time_vary interstitial initialization flag
 
 !--- radiation control parameters
@@ -967,6 +980,10 @@ module GFS_typedefs
     logical              :: top_at_1                !< Vertical ordering flag.
     integer              :: iSFC                    !< Vertical index for surface
     integer              :: iTOA                    !< Vertical index for TOA
+    logical              :: is_init_lw_gas_optics   = .false.  !< flag to denote whether LW radiation gas optics have been initialized
+    logical              :: is_init_sw_gas_optics   = .false.  !< flag to denote whether SW radiation gas optics have been initialized
+    logical              :: is_init_lw_cloud_optics = .false.  !< flag to denote whether LW radiation cloud optics have been initialized
+    logical              :: is_init_sw_cloud_optics = .false.  !< flag to denote whether SW radiation cloud optics have been initialized
 
 !--- microphysical switch
     logical              :: convert_dry_rho = .true.       !< flag for converting mass/number concentrations from moist to dry
@@ -3508,6 +3525,23 @@ module GFS_typedefs
     integer              :: thermodyn_id   =  1              !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id    =  1              !< valid for GFS only for get_prs/phi
 
+    !--- time-coupling options after a scheme completes
+    ! 1 = immediately apply tendencies
+    ! 2 = add tendencies to a sum to be applied later
+    ! 3 = add tendencies to a sum and apply the accumulated sum to the state
+    ! 4 = ignore output tendencies (e.g. some other scheme may use/apply them)
+    integer              :: tend_opt_swrad      = 4
+    integer              :: tend_opt_lwrad      = 4
+    integer              :: tend_opt_rad_scaler = 2
+    integer              :: tend_opt_surface    = 2
+    integer              :: tend_opt_pbl        = 2
+    integer              :: tend_opt_gwd        = 3
+    integer              :: tend_opt_photochem  = 1
+    integer              :: tend_opt_deep_conv  = 1
+    integer              :: tend_opt_shal_conv  = 1
+    integer              :: tend_opt_mp         = 1
+    integer              :: tend_opt_stoch      = 1
+
     !--- coupling parameters
     logical              :: cplflx         = .false.         !< default no cplflx collection
     logical              :: cplice         = .false.         !< default no cplice collection (used together with cplflx)
@@ -4205,6 +4239,11 @@ module GFS_typedefs
                                fhzero, fhzero_array, fhzero_fhour, ldiag3d, qdiag3d, lssav, &
                                naux2d, dtend_select, naux3d, aux2d_time_avg,                &
                                aux3d_time_avg, fhcyc, thermodyn_id, sfcpress_id,            &
+                          !--- tendency application controls
+                               tend_opt_swrad, tend_opt_lwrad, tend_opt_rad_scaler,         &
+                               tend_opt_surface, tend_opt_pbl, tend_opt_gwd,                &
+                               tend_opt_photochem, tend_opt_deep_conv, tend_opt_shal_conv,  &
+                               tend_opt_mp, tend_opt_stoch,                                 &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
                                cplchm, cpllnd, cpllnd2atm, cpl_imp_mrg, cpl_imp_dbg,        &
@@ -4629,8 +4668,20 @@ module GFS_typedefs
         Model%chunk_begin(i) = Model%chunk_end(i-1) + 1
         Model%chunk_end(i) = Model%chunk_begin(i) + blksz(i) - 1
     end do
+!--- tendency controls
+    Model%tend_opt_swrad      = tend_opt_swrad
+    Model%tend_opt_lwrad      = tend_opt_lwrad
+    Model%tend_opt_rad_scaler = tend_opt_rad_scaler
+    Model%tend_opt_surface    = tend_opt_surface
+    Model%tend_opt_pbl        = tend_opt_pbl
+    Model%tend_opt_gwd        = tend_opt_gwd
+    Model%tend_opt_photochem  = tend_opt_photochem
+    Model%tend_opt_deep_conv  = tend_opt_deep_conv
+    Model%tend_opt_shal_conv  = tend_opt_shal_conv
+    Model%tend_opt_mp         = tend_opt_mp
+    Model%tend_opt_stoch      = tend_opt_stoch
+    
     Model%ipr = min(minval(Model%blksz), 10)
-
 !--- coupling parameters
     Model%cplflx           = cplflx
     Model%cplice           = cplice
@@ -5490,26 +5541,45 @@ module GFS_typedefs
     if( Model%ntoz <= 0 )  &
     Model%ntoz             = get_physics_tracer_index('spo3', Model)
 #endif
-    Model%ntcw             = get_physics_tracer_index('liq_wat', Model)
-    Model%ntiw             = get_physics_tracer_index('ice_wat', Model)
-    Model%ntrw             = get_physics_tracer_index('rainwat', Model)
-    Model%ntsw             = get_physics_tracer_index('snowwat', Model)
-    Model%ntgl             = get_physics_tracer_index('graupel', Model)
-    Model%nthl             = get_physics_tracer_index('hailwat', Model)
-    Model%ntclamt          = get_physics_tracer_index('cld_amt', Model)
-    Model%ntlnc            = get_physics_tracer_index('water_nc', Model)
-    Model%ntinc            = get_physics_tracer_index('ice_nc', Model)
-    Model%ntrnc            = get_physics_tracer_index('rain_nc', Model)
-    Model%ntsnc            = get_physics_tracer_index('snow_nc', Model)
-    Model%ntgnc            = get_physics_tracer_index('graupel_nc', Model)
-    Model%nthnc            = get_physics_tracer_index('hail_nc', Model)
-    Model%ntccn            = get_physics_tracer_index('ccn_nc', Model)
-    Model%ntccna           = get_physics_tracer_index('ccna_nc', Model)
-    Model%ntgv             = get_physics_tracer_index('graupel_vol', Model)
-    Model%nthv             = get_physics_tracer_index('hail_vol', Model)
-    Model%ntrz             = get_physics_tracer_index('rain_ref', Model)
-    Model%ntgz             = get_physics_tracer_index('graupel_ref', Model)
-    Model%nthz             = get_physics_tracer_index('hail_ref', Model)
+    if (Model%dycore_active == Model%dycore_fv3) then
+       Model%ntcw             = get_physics_tracer_index('liq_wat', Model)
+       Model%ntiw             = get_physics_tracer_index('ice_wat', Model)
+       Model%ntrw             = get_physics_tracer_index('rainwat', Model)
+       Model%ntsw             = get_physics_tracer_index('snowwat', Model)
+       Model%ntgl             = get_physics_tracer_index('graupel', Model)
+       Model%nthl             = get_physics_tracer_index('hailwat', Model)
+       Model%ntclamt          = get_physics_tracer_index('cld_amt', Model)
+       Model%ntlnc            = get_physics_tracer_index('water_nc', Model)
+       Model%ntinc            = get_physics_tracer_index('ice_nc', Model)
+       Model%ntrnc            = get_physics_tracer_index('rain_nc', Model)
+       Model%ntsnc            = get_physics_tracer_index('snow_nc', Model)
+       Model%ntgnc            = get_physics_tracer_index('graupel_nc', Model)
+       Model%nthnc            = get_physics_tracer_index('hail_nc', Model)
+       Model%ntccn            = get_physics_tracer_index('ccn_nc', Model)
+       Model%ntccna           = get_physics_tracer_index('ccna_nc', Model)
+       Model%ntgv             = get_physics_tracer_index('graupel_vol', Model)
+       Model%nthv             = get_physics_tracer_index('hail_vol', Model)
+       Model%ntrz             = get_physics_tracer_index('rain_ref', Model)
+       Model%ntgz             = get_physics_tracer_index('graupel_ref', Model)
+       Model%nthz             = get_physics_tracer_index('hail_ref', Model)
+       Model%ntwa             = get_physics_tracer_index('liq_aero', Model)
+       Model%ntia             = get_physics_tracer_index('ice_aero', Model)
+    endif
+    if (Model%dycore_active == Model%dycore_mpas) then
+       Model%ntcw             = get_physics_tracer_index('qc', Model)
+       Model%ntiw             = get_physics_tracer_index('qi', Model)
+       Model%ntrw             = get_physics_tracer_index('qr', Model)
+       Model%ntsw             = get_physics_tracer_index('qs', Model)
+       Model%ntgl             = get_physics_tracer_index('qg', Model)
+       Model%nthl             = get_physics_tracer_index('qh', Model)
+       Model%ntinc            = get_physics_tracer_index('ni', Model)
+       Model%ntrnc            = get_physics_tracer_index('nr', Model)
+       Model%ntsnc            = get_physics_tracer_index('ns', Model)
+       Model%ntgnc            = get_physics_tracer_index('ng', Model)
+       Model%nthnc            = get_physics_tracer_index('nh', Model)
+       Model%ntwa             = get_physics_tracer_index('nwfa', Model)
+       Model%ntia             = get_physics_tracer_index('nifa', Model)
+    endif
     Model%ntke             = get_physics_tracer_index('sgs_tke', Model)
     Model%ntsigma          = get_physics_tracer_index('sigmab', Model)
     Model%ntomega          = get_physics_tracer_index('omegab', Model)
@@ -6810,8 +6880,11 @@ module GFS_typedefs
         if (j > 1) then
           read(fscav(i)(j+1:), *, iostat=ios) tem
           if (ios /= 0) cycle
-          n = get_physics_tracer_index(adjustl(fscav(i)(:j-1)), Model) - Model%ntchs + 1
-          if (n > 0) Model%fscav(n) = tem
+          n = get_physics_tracer_index(adjustl(fscav(i)(:j-1)), Model)
+          if (n /= physics_no_tracer) then
+            n = n - Model%ntchs + 1
+            if (n > 0) Model%fscav(n) = tem
+          endif
         endif
       enddo
     endif
@@ -6861,9 +6934,12 @@ module GFS_typedefs
       if (Model%dycore_active == Model%dycore_fv3) then
          print *, ' hydrostatic       : ', Model%hydrostatic
       endif
-      print *, ' '
-      print *, 'grid extent parameters'
-      if (Model%dycore_active == Model%dycore_fv3) then
+   endif
+
+   if (Model%dycore_active == Model%dycore_fv3) then
+      if (Model%me == Model%master) then
+         print *, ' '
+         print *, 'grid extent parameters (FV3)'
          print *, ' isc               : ', Model%isc
          print *, ' jsc               : ', Model%jsc
          print *, ' nx                : ', Model%nx
@@ -6874,10 +6950,18 @@ module GFS_typedefs
          print *, ' lonr              : ', Model%lonr
          print *, ' latr              : ', Model%latr
       end if
+   endif
+
+   if (Model%dycore_active == Model%dycore_mpas) then
+      print *, ' '
+      print *, 'grid extent parameters (MPAS) for processor ',Model%me
       print *, ' nblks             : ', Model%nblks
       print *, ' blksz(1)          : ', Model%blksz(1)
       print *, ' blksz(nblks)      : ', Model%blksz(Model%nblks)
       print *, ' Model%ncols       : ', Model%ncols
+   endif
+
+   if (Model%me == Model%master) then
       print *, ' '
       print *, 'coupling parameters'
       print *, ' cplflx            : ', Model%cplflx
