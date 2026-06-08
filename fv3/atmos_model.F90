@@ -80,14 +80,14 @@ use GFS_typedefs,       only: GFS_init_type, GFS_kind_phys => kind_phys
 use GFS_restart,        only: GFS_restart_type, GFS_restart_populate
 use GFS_diagnostics,    only: GFS_externaldiag_type, &
                               GFS_externaldiag_populate
-use CCPP_data,          only: ccpp_suite, GFS_control, &
+use CCPP_data,          only: GFS_control, &
                               GFS_statein, GFS_stateout, &
                               GFS_grid, GFS_tbd, GFS_cldprop, &
                               GFS_sfcprop, GFS_radtend, &
                               GFS_coupling, GFS_intdiag, &
                               GFS_interstitial
 use GFS_init,           only: GFS_initialize
-use CCPP_driver,        only: CCPP_step
+use CCPP_driver,        only: CCPP_step, ccpp_suite
 use mod_ufsatm_util,    only: get_atmos_tracer_types
 use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper,stochastic_physics_wrapper_end
 

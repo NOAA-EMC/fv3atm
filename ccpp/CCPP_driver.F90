@@ -8,22 +8,31 @@ module CCPP_driver
                                 ccpp_physics_timestep_final,         &
                                 ccpp_physics_final,                  &
                                 ccpp_final
-
   use CCPP_data,          only: GFS_control,                         &
                                 GFS_Intdiag,                         &
                                 GFS_Interstitial
+  use iso_fortran_env,    only: error_unit
 
   implicit none
 
-  character(len=512) :: errmsg
+  !--------------------------------------------------------!
+  ! CCPP control (mandatory) data.
+  !--------------------------------------------------------!
+  integer :: mythread
+  integer :: nthreads
+  integer :: nphys_threads
+  integer :: lb
+  integer :: ub
   integer :: errflg
-#define CCPP_PHYSICS_STATIC_ARGS lb=1, ub=1, mythread=1, nthreads=1, nphys_threads=1
+  character(len=512) :: errmsg
+  character(len=256) :: ccpp_suite='undefined'
+  character(len=256) :: group_name='undefined'
 
-!--------------------------------------------------------!
-!  Flag for non-uniform block sizes (last block smaller) !
-!  and number of OpenMP threads (with special thread     !
-!  number nthrdsX in case of non-uniform block sizes)    !
-!--------------------------------------------------------!
+  !--------------------------------------------------------!
+  !  Flag for non-uniform block sizes (last block smaller) !
+  !  and number of OpenMP threads (with special thread     !
+  !  number nthrdsX in case of non-uniform block sizes)    !
+  !--------------------------------------------------------!
   logical :: non_uniform_blocks
   integer :: nthrds, nthrdsX
 
@@ -100,7 +109,8 @@ module CCPP_driver
     else if (trim(step)=="physics_init") then
 
       call ccpp_physics_init( suite_name=trim(ccpp_suite), group_name='all', &
-           errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+           errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+           mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
       if (errflg/=0) then
          write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_init: ' // trim(errmsg) // '. Exiting...'
          error stop
@@ -110,16 +120,27 @@ module CCPP_driver
     else if (trim(step)=="timestep_init") then
 
       call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name='time_vary', &
-           errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+           errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+           mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
       if (errflg/=0) then
          write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group time_vary: ' // trim(errmsg) // '. Exiting...'
          error stop
       end if
 
+      ! DJS This doesn't do anything other than set the correct ccpp_group_state for radiation_run phase
+      call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name='radiation', &
+           errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+           mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
+      if (errflg/=0) then
+         write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group radiation: ' // trim(errmsg) // '. Exiting...'
+         error stop
+      end if
+      
       if (trim(dycore)=='fv3') then
          ! call timestep_init for "phys_ps"---required for Land IAU
          call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name="phys_ps", &
-              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+              mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
          if (errflg/=0) then
             write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group phys_ps: ' // trim(errmsg) // '. Exiting...'
             error stop
@@ -127,7 +148,8 @@ module CCPP_driver
          
          ! call timestep_init for "phys_ts"---required for Land IAU
          call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name="phys_ts", &
-              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+              mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
          if (errflg/=0) then
             write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group phys_ts: ' // trim(errmsg) // '. Exiting...'
             error stop
@@ -137,14 +159,16 @@ module CCPP_driver
       if (trim(dycore)=='mpas') then
          ! Physics group
          call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name="physics", &
-              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+              mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
          if (errflg/=0) then
             write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group physics: ' // trim(errmsg) // '. Exiting...'
             error stop
          end if
          ! Microphysics group
          call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name="microphysics", &
-              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+               mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
          if (errflg/=0) then
             write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group microphysics: ' // trim(errmsg) // '. Exiting...'
             error stop
@@ -195,7 +219,7 @@ module CCPP_driver
 
 !$OMP parallel num_threads (nthrds)                        &
 !$OMP          default (none)                              &
-!$OMP          shared (nblks, ccpp_suite,     &
+!$OMP          shared (nblks, ccpp_suite, errmsg, errflg,  &
 !$OMP                  step, GFS_Control, GFS_Interstitial,&
 !$OMP                  dycore)                             &
 !$OMP          private (nb, nt, ierr2)                     &
@@ -216,14 +240,16 @@ module CCPP_driver
               call GFS_Interstitial(nt)%reset(GFS_control)
               ! Process-split physics
               call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="phys_ps", &
-                   errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+                   errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_begin(nb), &
+                   mythread=nb, nthreads=1, nphys_threads=GFS_control%nthreads)
               if (errflg/=0) then
                  write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group phys_ps: ' // trim(errmsg) // '. Exiting...'
                  error stop
               end if
               ! Time-split physics
               call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="phys_ts", &
-                   errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+                   errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_begin(nb), &
+                    mythread=nb, nthreads=1, nphys_threads=GFS_control%nthreads)
               if (errflg/=0) then
                  write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group phys_ts: ' // trim(errmsg) // '. Exiting...'
                  error stop
@@ -232,7 +258,8 @@ module CCPP_driver
            if (trim(dycore)=="mpas") then
               ! Physics
               call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="physics", &
-                   errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+                   errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_begin(nb), &
+                   mythread=nb, nthreads=1, nphys_threads=GFS_control%nthreads)
               if (errflg/=0) then
                  write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group physics: ' // trim(errmsg) // '. Exiting...'
                  error stop
@@ -244,8 +271,9 @@ module CCPP_driver
               call GFS_Interstitial(nt)%reset(GFS_control)
            endif
            ! Radiation
-           call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name=trim(step), &
-                errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+           call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="radiation", &
+                errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_begin(nb), &
+                mythread=nb, nthreads=1, nphys_threads=GFS_control%nthreads)
            if (errflg/=0) then
               write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group radiation: ' // trim(errmsg) // '. Exiting...'
               error stop
@@ -254,7 +282,8 @@ module CCPP_driver
            if (trim(step)=="microphysics") then
               if (trim(dycore)=="mpas") then
                  call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="microphysics", &
-                      errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+                      errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_begin(nb), &
+                      mythread=nb, nthreads=1, nphys_threads=GFS_control%nthreads)
                  if (errflg/=0) then
                     write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group microphysics: ' // trim(errmsg) // '. Exiting...'
                     error stop
@@ -276,7 +305,8 @@ module CCPP_driver
     else if (trim(step)=="timestep_final") then
 
       call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="time_vary", &
-            errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+           errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+           mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
       if (errflg/=0) then
          write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group time_vary: ' // trim(errmsg) // '. Exiting...'
          error stop
@@ -285,7 +315,8 @@ module CCPP_driver
       if (trim(dycore)=='fv3') then
          ! call timestep_final for "phys_ps"---required for Land IAU
          call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="phys_ps", &
-              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+              mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
          if (errflg/=0) then
             write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group phys_ps: ' // trim(errmsg) // '. Exiting...'
             error stop
@@ -293,7 +324,8 @@ module CCPP_driver
 
          ! call timestep_final for "phys_ts"---required for Land IAU
          call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="phys_ts", &
-              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+              mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
          if (errflg/=0) then
             write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group phys_ts: ' // trim(errmsg) // '. Exiting...'
             error stop
@@ -301,7 +333,8 @@ module CCPP_driver
       endif
       if (trim(dycore)=='mpas') then
          call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="physics", &
-            errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+              mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
          if (errflg/=0) then
             write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group physics: ' // trim(errmsg) // '. Exiting...'
             error stop
@@ -309,7 +342,8 @@ module CCPP_driver
 
 
          call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="microphysics", &
-              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+              mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
          if (errflg/=0) then
             write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group microphysics: ' // trim(errmsg) // '. Exiting...'
             error stop
@@ -319,7 +353,8 @@ module CCPP_driver
     ! Physics final (same for all dynamical cores)
     else if (trim(step)=="physics_final") then
        call ccpp_physics_final(suite_name=trim(ccpp_suite), group_name='all', &
-            errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+            errmsg=errmsg, errflg=errflg, lb=1, ub=GFS_control%ncols,         &
+            mythread=1, nthreads=nthrdsX, nphys_threads=nthrdsX)
        if (errflg/=0) then
           write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_final: ' // trim(errmsg) // '. Exiting...'
           error stop

@@ -124,6 +124,9 @@ list(APPEND io_srcs
 
 # Eventually these could be shared by MPAS, and merged with {io_srcs} list.
 list(APPEND fv3_io_srcs
+  ccpp/driver/GFS_diagnostics.F90
+  ccpp/driver/GFS_restart.F90
+  ccpp/driver/GFS_init.F90
   io/fv3atm_common_io.F90
   io/fv3atm_clm_lake_io.F90
   io/fv3atm_rrfs_sd_io.F90

@@ -6,7 +6,7 @@
 [ccpp-arg-table]
   name = CCPP_driver
   type = control
-[ suite_name ]
+[ ccpp_suite ]
   standard_name = suite_name
   long_name = name of the CCPP suite to dispatch to
   units = none

@@ -385,9 +385,11 @@ target_link_libraries(${CCPP_TARGET} w3emc::w3emc_d)
 
 set_target_properties(${CCPP_TARGET} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
 target_include_directories(${CCPP_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}>)
-#OG
-#set_target_properties(${CCPP_TARGET} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-#target_include_directories(${CCPP_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
+
+# UFSFV3 requires FMS
+if(FV3)
+  target_link_libraries(${CCPP_TARGET} fms)
+endif()
 
 #------------------------------------------------------------------------------
 # Install
