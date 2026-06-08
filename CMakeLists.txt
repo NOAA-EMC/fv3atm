@@ -24,13 +24,56 @@ if(BUILD_UFSATM_TESTING)
   include(ci/CMakeLists.txt)
 endif()
 
-# Set variables for all dycore build options in UFSATM.
-set(DYCORE_TARGET_MPAS ufsatm_mpas)
-set(DYCORE_TARGET_FV3  ufsatm_fv3)
+enable_testing()
+include(cmake/ccpp_capgen.cmake)
+
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMakeModules/Modules)
+
+###############################################################################
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to 'Release' as none was specified.")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
+endif()
+
+###############################################################################
+# Add required preprocessor flags for build type
+if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+  ADD_DEFINITIONS(-DDEBUG)
+endif ()
+
+# Add -DCCPP preprocessor flag (needed to preprocess GFS_typedefs.F90 from FV3)
+ADD_DEFINITIONS(-DCCPP)
+
+# Set MPI flags for C/C++/Fortran preprocessor
+ADD_DEFINITIONS(-DMPI)
+
+if(NOT HYDRO)
+  add_definitions(-DMOIST_CAPPA -DUSE_COND -DNEMS_GSM)
+endif()
+add_definitions(-DNEMS_GSM)
+
+if (FV3)
+  add_definitions(-DINTERNAL_FILE_NML)
+endif()
+
+if(MULTI_GASES)
+  add_definitions(-DMULTI_GASES)
+endif()
+
+if(IDEA_PHYS)
+  add_definitions(-DIDEA_PHYS)
+endif()
 
 ###############################################################################
 ### Dynamical Cores
 ###############################################################################
+# Set variables for all dycore build options in UFSATM.
+set(DYCORE_TARGET_MPAS ufsatm_mpas)
+set(DYCORE_TARGET_FV3  ufsatm_fv3)
 
 # CCPP
 set(MPI ON)

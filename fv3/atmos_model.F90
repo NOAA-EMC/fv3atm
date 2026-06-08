@@ -414,10 +414,10 @@ subroutine update_atmos_radiation_physics (Atmos)
       call getiauforcing(GFS_control,IAU_data,Atm(mygrid))
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
 
-!--- execute the atmospheric timestep finalize step
+!--- execute the atmospheric timestep final step
       call mpp_clock_begin(setupClock)
-      call CCPP_step (step="timestep_finalize", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_finalize step failed')
+      call CCPP_step (step="timestep_final", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_final step failed')
       call mpp_clock_end(setupClock)
 
     endif
@@ -733,6 +733,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
         GFS_Stateout%gq0 = GFS_Statein%qgrs
     endif
 
+   ! Register CCPP
+   call CCPP_step (step="register", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP register step failed')
    ! Initialize the CCPP framework
    call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
@@ -1074,13 +1077,13 @@ subroutine atmos_model_end (Atmos)
     endif
 
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
-!   standard/slow physics (from CCPP) are finalized in CCPP_step 'physics_finalize'.
-    call CCPP_step (step="physics_finalize", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
-    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_finalize step failed')
+!   standard/slow physics (from CCPP) are finalized in CCPP_step 'physics_final'.
+    call CCPP_step (step="physics_final", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_final step failed')
 
-!   The CCPP framework for all cdata structures is finalized in CCPP_step 'finalize'.
-    call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
-    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
+!   The CCPP framework is finalized in CCPP_step 'final'.
+    call CCPP_step (step="final", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP final step failed')
 
     deallocate (Atmos%lon, Atmos%lat)
     deallocate (Atmos%lon_bnd, Atmos%lat_bnd)

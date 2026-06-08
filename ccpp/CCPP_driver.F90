@@ -1,27 +1,23 @@
 module CCPP_driver
 
-  use ccpp_types,         only: ccpp_t
-
-  use ccpp_static_api,    only: ccpp_physics_init,                   &
+  use ufs_ccpp_cap,       only: ccpp_register,                       &
+                                ccpp_init,                           &
+                                ccpp_physics_init,                   &
                                 ccpp_physics_timestep_init,          &
                                 ccpp_physics_run,                    &
-                                ccpp_physics_timestep_finalize,      &
-                                ccpp_physics_finalize
+                                ccpp_physics_timestep_final,         &
+                                ccpp_physics_final,                  &
+                                ccpp_final
 
-  use CCPP_data,          only: cdata_tile,                          &
-                                cdata_domain,                        &
-                                cdata_block,                         &
-                                ccpp_suite,                          &
-                                GFS_control,                         &
+  use CCPP_data,          only: GFS_control,                         &
                                 GFS_Intdiag,                         &
                                 GFS_Interstitial
 
   implicit none
 
-!--------------------------------------------------------!
-!  Pointer to CCPP containers defined in CCPP_data       !
-!--------------------------------------------------------!
-  type(ccpp_t), pointer :: cdata => null()
+  character(len=512) :: errmsg
+  integer :: errflg
+#define CCPP_PHYSICS_STATIC_ARGS lb=1, ub=1, mythread=1, nthreads=1, nphys_threads=1
 
 !--------------------------------------------------------!
 !  Flag for non-uniform block sizes (last block smaller) !
@@ -67,8 +63,16 @@ module CCPP_driver
 
     ierr = 0
 
+    ! CCPP register (same for all dynamical cores)
+    if (trim(step)=="register") then
+       call ccpp_register(suite_name=trim(ccpp_suite), errmsg=errmsg, errflg=errflg)
+       if (errflg/=0) then
+          write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_register: ' // trim(errmsg) // '. Exiting...'
+          error stop
+       end if
+       
     ! CCPP Framework init (same for all dynamical cores)
-    if (trim(step)=="init") then
+    else if (trim(step)=="init") then
 
       ! Get and set number of OpenMP threads (module
       ! variable) that are available to run physics
@@ -85,90 +89,65 @@ module CCPP_driver
       else
         nthrdsX = nthrds
       end if
-
-      ! For physics running over the entire domain, block, chunk and thread
-      ! numbers are not used; set to safe values
-      cdata_domain%blk_no = 1
-      cdata_domain%chunk_no = 1
-      cdata_domain%thrd_no = 1
-      cdata_domain%thrd_cnt = 1
-
-      ! Allocate cdata structures for blocks and threads
-      if (.not.allocated(cdata_block)) allocate(cdata_block(1:nblks,1:nthrdsX))
-
-      ! Loop over all blocks and threads
-      do nt=1,nthrdsX
-        do nb=1,nblks
-          ! Assign the correct block, chunk and thread numbers
-          ! Note that we can use block number as chunk number
-          cdata_block(nb,nt)%blk_no = nb
-          cdata_block(nb,nt)%chunk_no = nb
-          cdata_block(nb,nt)%thrd_no = nt
-          cdata_block(nb,nt)%thrd_cnt = nthrdsX
-        end do
-      end do
+      
+      call ccpp_init(suite_name=trim(ccpp_suite), errmsg=errmsg, errflg=errflg)
+      if (errflg/=0) then
+         write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_init: ' // trim(errmsg) // '. Exiting...'
+         error stop
+      end if
+     
     ! Physics init (same for all dynamical cores)
     else if (trim(step)=="physics_init") then
 
-      ! Since the physics init step is independent of the blocking structure,
-      ! we can use cdata_domain. And since we don't use threading on the host
-      ! model side, we can allow threading inside the physics init routines.
-      GFS_control%nthreads = nthrds
-
-      call ccpp_physics_init(cdata_domain, suite_name=trim(ccpp_suite), ierr=ierr)
-      if (ierr/=0) then
-        write(0,'(a)') "An error occurred in ccpp_physics_init"
-        write(0,'(a)') trim(cdata_domain%errmsg)
-        return
+      call ccpp_physics_init( suite_name=trim(ccpp_suite), group_name='all', &
+           errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+      if (errflg/=0) then
+         write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_init: ' // trim(errmsg) // '. Exiting...'
+         error stop
       end if
 
     ! Timestep init = time_vary (dycore specific)
     else if (trim(step)=="timestep_init") then
 
-      ! Since the physics timestep init step is independent of the blocking structure,
-      ! we can use cdata_domain. And since we don't use threading on the host
-      ! model side, we can allow threading inside the timestep init (time_vary) routines.
-      GFS_control%nthreads = nthrds
-
-      call ccpp_physics_timestep_init(cdata_domain, suite_name=trim(ccpp_suite), group_name="time_vary", ierr=ierr)
-      if (ierr/=0) then
-        write(0,'(a)') "An error occurred in ccpp_physics_timestep_init for group time_vary"
-        write(0,'(a)') trim(cdata_domain%errmsg)
-        return
+      call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name='time_vary', &
+           errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+      if (errflg/=0) then
+         write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group time_vary: ' // trim(errmsg) // '. Exiting...'
+         error stop
       end if
 
       if (trim(dycore)=='fv3') then
          ! call timestep_init for "phys_ps"---required for Land IAU
-         call ccpp_physics_timestep_init(cdata_domain, suite_name=trim(ccpp_suite),group_name="phys_ps", ierr=ierr)
-         if (ierr/=0) then
-            write(0,'(a)') "An error occurred in ccpp_physics_timestep_init for group phys_ps"
-            write(0,'(a)') trim(cdata_domain%errmsg)
-            return
+         call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name="phys_ps", &
+              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+         if (errflg/=0) then
+            write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group phys_ps: ' // trim(errmsg) // '. Exiting...'
+            error stop
          end if
-
+         
          ! call timestep_init for "phys_ts"---required for Land IAU
-         call ccpp_physics_timestep_init(cdata_domain, suite_name=trim(ccpp_suite),group_name="phys_ts", ierr=ierr)
-         if (ierr/=0) then
-            write(0,'(a)') "An error occurred in ccpp_physics_timestep_init for group phys_ts"
-            write(0,'(a)') trim(cdata_domain%errmsg)
-            return
+         call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name="phys_ts", &
+              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+         if (errflg/=0) then
+            write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group phys_ts: ' // trim(errmsg) // '. Exiting...'
+            error stop
          end if
       endif
 
       if (trim(dycore)=='mpas') then
          ! Physics group
-         call ccpp_physics_timestep_init(cdata_domain, suite_name=trim(ccpp_suite),group_name="physics", ierr=ierr)
-         if (ierr/=0) then
-            write(0,'(a)') "An error occurred in ccpp_physics_timestep_init for group physics"
-            write(0,'(a)') trim(cdata_domain%errmsg)
-            return
+         call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name="physics", &
+              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+         if (errflg/=0) then
+            write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group physics: ' // trim(errmsg) // '. Exiting...'
+            error stop
          end if
-
-         call ccpp_physics_timestep_init(cdata_domain, suite_name=trim(ccpp_suite),group_name="microphysics", ierr=ierr)
-         if (ierr/=0) then
-            write(0,'(a)') "An error occurred in ccpp_physics_timestep_init for group microphysics"
-            write(0,'(a)') trim(cdata_domain%errmsg)
-            return
+         ! Microphysics group
+         call ccpp_physics_timestep_init(suite_name=trim(ccpp_suite), group_name="microphysics", &
+              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+         if (errflg/=0) then
+            write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_init for group microphysics: ' // trim(errmsg) // '. Exiting...'
+            error stop
          end if
       end if
 
@@ -216,7 +195,7 @@ module CCPP_driver
 
 !$OMP parallel num_threads (nthrds)                        &
 !$OMP          default (none)                              &
-!$OMP          shared (nblks, cdata_block, ccpp_suite,     &
+!$OMP          shared (nblks, ccpp_suite,     &
 !$OMP                  step, GFS_Control, GFS_Interstitial,&
 !$OMP                  dycore)                             &
 !$OMP          private (nb, nt, ierr2)                     &
@@ -236,30 +215,27 @@ module CCPP_driver
               ! Reset GFS_Interstitial DDT fields for this thread
               call GFS_Interstitial(nt)%reset(GFS_control)
               ! Process-split physics
-              call ccpp_physics_run(cdata_block(nb,nt), suite_name=trim(ccpp_suite), group_name="phys_ps", ierr=ierr2)
-              if (ierr2/=0) then
-                 write(0,'(2a,3(a,i4),a)') "An error occurred in ccpp_physics_run for group ", "phys_ps", &
-                                           ", block/chunk ", nb, " and thread ", nt, " (nt=", nt, "):"
-                 write(0,'(a)') trim(cdata_block(nb,nt)%errmsg)
-                 ierr = ierr + ierr2
-              endif
+              call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="phys_ps", &
+                   errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              if (errflg/=0) then
+                 write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group phys_ps: ' // trim(errmsg) // '. Exiting...'
+                 error stop
+              end if
               ! Time-split physics
-              call ccpp_physics_run(cdata_block(nb,nt), suite_name=trim(ccpp_suite), group_name="phys_ts", ierr=ierr2)
-              if (ierr2/=0) then
-                 write(0,'(2a,3(a,i4),a)') "An error occurred in ccpp_physics_run for group ", "phys_ts", &
-                                           ", block/chunk ", nb, " and thread ", nt, " (nt=", nt, "):"
-                 write(0,'(a)') trim(cdata_block(nb,nt)%errmsg)
-                 ierr = ierr + ierr2
-              endif
+              call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="phys_ts", &
+                   errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              if (errflg/=0) then
+                 write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group phys_ts: ' // trim(errmsg) // '. Exiting...'
+                 error stop
+              end if
            endif
            if (trim(dycore)=="mpas") then
               ! Physics
-              call ccpp_physics_run(cdata_block(nb,nt), suite_name=trim(ccpp_suite), group_name="physics", ierr=ierr2)
-              if (ierr2/=0) then
-                 write(0,'(2a,3(a,i4),a)') "An error occurred in ccpp_physics_run for group ", "physics", &
-                                           ", block/chunk ", nb, " and thread ", nt, " (nt=", nt, "):"
-                 write(0,'(a)') trim(cdata_block(nb,nt)%errmsg)
-                 ierr = ierr + ierr2
+              call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="physics", &
+                   errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+              if (errflg/=0) then
+                 write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group physics: ' // trim(errmsg) // '. Exiting...'
+                 error stop
               endif
            endif
         else
@@ -268,26 +244,24 @@ module CCPP_driver
               call GFS_Interstitial(nt)%reset(GFS_control)
            endif
            ! Radiation
-           call ccpp_physics_run(cdata_block(nb,nt), suite_name=trim(ccpp_suite), group_name=trim(step), ierr=ierr2)
-           if (ierr2/=0) then
-              write(0,'(2a,3(a,i4),a)') "An error occurred in ccpp_physics_run for group ", trim(step), &
-                   ", block/chunk ", nb, " and thread ", nt, " (nt=", nt, "):"
-              write(0,'(a)') trim(cdata_block(nb,nt)%errmsg)
-              ierr = ierr + ierr2
-           endif
+           call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name=trim(step), &
+                errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+           if (errflg/=0) then
+              write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group radiation: ' // trim(errmsg) // '. Exiting...'
+              error stop
+           end if
            ! Microphysics (MPAS only)
            if (trim(step)=="microphysics") then
               if (trim(dycore)=="mpas") then
-                 call ccpp_physics_run(cdata_block(nb,nt), suite_name=trim(ccpp_suite), group_name="microphysics", ierr=ierr2)
-                 if (ierr2/=0) then
-                    write(0,'(2a,3(a,i4),a)') "An error occurred in ccpp_physics_run for group ", "microphysics", &
-                                              ", block/chunk ", nb, " and thread ", nt, " (nt=", nt, "):"
-                    write(0,'(a)') trim(cdata_block(nb,nt)%errmsg)
-                    ierr = ierr + ierr2
-                 endif
+                 call ccpp_physics_run(suite_name=trim(ccpp_suite), group_name="microphysics", &
+                      errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+                 if (errflg/=0) then
+                    write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group microphysics: ' // trim(errmsg) // '. Exiting...'
+                    error stop
+                 end if
               else
-                 write(0,'(a)') "An error occurred in ccpp_physics_run for group microphysics. Group microphysics only valid with MPAS dycore."
-                 ierr = ierr + 1
+                 write(error_unit,'(a)') "An error occurred in ccpp_physics_run for group microphysics. Group microphysics only valid with MPAS dycore."
+                 error stop
               endif
            endif
         endif
@@ -298,80 +272,70 @@ module CCPP_driver
 !$OMP end parallel
       if (ierr/=0) return
 
-    ! Timestep finalize = time_vary
-    else if (trim(step)=="timestep_finalize") then
+    ! Timestep final = time_vary
+    else if (trim(step)=="timestep_final") then
 
-      ! Since the physics timestep finalize step is independent of the blocking structure,
-      ! we can use cdata_domain. And since we don't use threading on the host model side,
-      ! we can allow threading inside the timestep finalize (time_vary) routines.
-      GFS_control%nthreads = nthrds
-
-      call ccpp_physics_timestep_finalize(cdata_domain, suite_name=trim(ccpp_suite), group_name="time_vary", ierr=ierr)
-      if (ierr/=0) then
-        write(0,'(a)') "An error occurred in ccpp_physics_timestep_finalize for group time_vary"
-        write(0,'(a)') trim(cdata_domain%errmsg)
-        return
+      call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="time_vary", &
+            errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+      if (errflg/=0) then
+         write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group time_vary: ' // trim(errmsg) // '. Exiting...'
+         error stop
       end if
 
       if (trim(dycore)=='fv3') then
-         ! call timestep_finalize for "phys_ps"---required for Land IAU
-         call ccpp_physics_timestep_finalize(cdata_domain, suite_name=trim(ccpp_suite), group_name="phys_ps", ierr=ierr)
-         if (ierr/=0) then
-            write(0,'(a)') "An error occurred in ccpp_physics_timestep_finalize for group phys_ps"
-            write(0,'(a)') trim(cdata_domain%errmsg)
-            return
+         ! call timestep_final for "phys_ps"---required for Land IAU
+         call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="phys_ps", &
+              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+         if (errflg/=0) then
+            write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group phys_ps: ' // trim(errmsg) // '. Exiting...'
+            error stop
          end if
 
-         ! call timestep_finalize for "phys_ts"---required for Land IAU
-         call ccpp_physics_timestep_finalize(cdata_domain, suite_name=trim(ccpp_suite), group_name="phys_ts", ierr=ierr)
-         if (ierr/=0) then
-            write(0,'(a)') "An error occurred in ccpp_physics_timestep_finalize for group phys_ts"
-            write(0,'(a)') trim(cdata_domain%errmsg)
-            return
+         ! call timestep_final for "phys_ts"---required for Land IAU
+         call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="phys_ts", &
+              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+         if (errflg/=0) then
+            write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group phys_ts: ' // trim(errmsg) // '. Exiting...'
+            error stop
          end if
       endif
       if (trim(dycore)=='mpas') then
-         call ccpp_physics_timestep_finalize(cdata_domain, suite_name=trim(ccpp_suite), group_name="physics", ierr=ierr)
-         if (ierr/=0) then
-            write(0,'(a)') "An error occurred in ccpp_physics_timestep_finalize for group physics"
-            write(0,'(a)') trim(cdata_domain%errmsg)
-            return
+         call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="physics", &
+            errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+         if (errflg/=0) then
+            write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group physics: ' // trim(errmsg) // '. Exiting...'
+            error stop
          end if
 
-         call ccpp_physics_timestep_finalize(cdata_domain, suite_name=trim(ccpp_suite), group_name="microphysics", ierr=ierr)
-         if (ierr/=0) then
-            write(0,'(a)') "An error occurred in ccpp_physics_timestep_finalize for group microphysics"
-            write(0,'(a)') trim(cdata_domain%errmsg)
-            return
+
+         call ccpp_physics_timestep_final(suite_name=trim(ccpp_suite), group_name="microphysics", &
+              errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+         if (errflg/=0) then
+            write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_timestep_final group microphysics: ' // trim(errmsg) // '. Exiting...'
+            error stop
          end if
       endif
 
-    ! Physics finalize (same for all dynamical cores)
-    else if (trim(step)=="physics_finalize") then
-
-      ! Since the physics finalize step is independent of the blocking structure,
-      ! we can use cdata_domain. And since we don't use threading on the host
-      ! model side, we can allow threading inside the physics finalize routines.
-      GFS_control%nthreads = nthrds
-
-      call ccpp_physics_finalize(cdata_domain, suite_name=trim(ccpp_suite), ierr=ierr)
-      if (ierr/=0) then
-        write(0,'(a)') "An error occurred in ccpp_physics_finalize"
-        write(0,'(a)') trim(cdata_domain%errmsg)
-        return
-      end if
-
-    ! Finalize (same for all dynamical cores)
-    else if (trim(step)=="finalize") then
-      ! Deallocate cdata structure for blocks and threads
-      if (allocated(cdata_block)) deallocate(cdata_block)
-
+    ! Physics final (same for all dynamical cores)
+    else if (trim(step)=="physics_final") then
+       call ccpp_physics_final(suite_name=trim(ccpp_suite), group_name='all', &
+            errmsg=errmsg, errflg=errflg, CCPP_PHYSICS_STATIC_ARGS)
+       if (errflg/=0) then
+          write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_final: ' // trim(errmsg) // '. Exiting...'
+          error stop
+       end if
+       
+    ! Frameowrk final (same for all dynamical cores)
+    else if (trim(step)=="final") then
+       call ccpp_final(suite_name=trim(ccpp_suite), errmsg=errmsg, errflg=errflg)
+       if (errflg/=0) then
+          write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_final: ' // trim(errmsg) // '. Exiting...'
+          error stop
+       end if
     else
-
-      write(0,'(2a)') 'Error, undefined CCPP step ', trim(step)
-      ierr = 1
-      return
-
+       write(error_unit,'(2a)') 'Error, undefined CCPP step ', trim(step)
+       error stop
+       
     end if
 
   end subroutine CCPP_step

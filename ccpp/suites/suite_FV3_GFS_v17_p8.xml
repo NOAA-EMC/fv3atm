@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v17_p8" version="1">
+<suite name="FV3_GFS_v17_p8" version="1.0">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -50,7 +50,6 @@
       <scheme>sfc_diag</scheme>
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
-      <scheme>GFS_PBL_generic_pre</scheme>
       <scheme>satmedmfvdifq</scheme>
       <scheme>canopy_driver</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
