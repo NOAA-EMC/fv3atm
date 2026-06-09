@@ -105,6 +105,7 @@ set(SCHEME_METADATA_FILES
   "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/sgscloud_radpre.meta"
   "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/sgscloud_radpost.meta"
   "${SCHEME_FILES_DIR}/PBL/MYNN_EDMF/mynnedmf_wrapper.meta"
+  "${SCHEME_FILES_DIR}/PBL/MYNN_EDMF/mynnedmf_wrapper_post.meta"
   "${SCHEME_FILES_DIR}/CONV/Grell_Freitas/cu_gf_driver_pre.meta"
   "${SCHEME_FILES_DIR}/CONV/Grell_Freitas/cu_gf_driver.meta"
   "${SCHEME_FILES_DIR}/CONV/Grell_Freitas/cu_gf_driver_post.meta"
