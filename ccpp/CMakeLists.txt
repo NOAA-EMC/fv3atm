@@ -255,11 +255,6 @@ ccpp_validator(VERBOSITY ${CCPP_VERBOSITY}
                METADATA_FILES ${HOST_METADATA_FILES}
                TYPE "HOST")
 
-
-if (32BIT)
-  set(CCPP_KINDS "kind_phys=REAL32")
-  message(STATUS "Compile CCPP fast physics with 32-bit precision")
-endif()
 if(CCPP_32BIT)
   message(STATUS "Compile CCPP slow physics with 32-bit precision")
   set(CCPP_KINDS "kind_phys=REAL32")
