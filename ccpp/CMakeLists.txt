@@ -288,6 +288,56 @@ message(STATUS "List of filtered scheme files: ${SCHEME_FORTRAN_FILES}")
 message(STATUS "List of capgen-generated files: ${CAPGEN_FILES}")
 
 #------------------------------------------------------------------------------
+# Compile options for physics files
+#------------------------------------------------------------------------------
+
+set(NO_OPENMP_SOURCES
+    ${SCHEME_FILES_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics_constants.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_concentrations.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics_util_string.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rrtmgp-frontend/mo_gas_optics_rrtmgp.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rrtmgp-kernels/mo_gas_optics_rrtmgp_kernels.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rrtmgp-frontend/mo_cloud_optics_rrtmgp.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_rrtmgp_clr_all_sky.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_fluxes_byband.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/extensions/solar_variability/mo_solar_variability.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_heating_rates.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_fluxes_bygpoint.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_compute_bc.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_cloud_sampling.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_util_array_validation.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_config.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_source_functions.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_sw.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_fluxes.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_lw.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-kernels/mo_rte_util_array.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-kernels/mo_rte_solver_kernels.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-kernels/mo_optical_props_kernels.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-kernels/mo_fluxes_broadband_kernels.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_kind.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_optical_props.F90
+)
+
+message(STATUS "Disabling OpenMP for rte-rrtmgp radiation")
+if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+  set_source_files_properties(
+    ${NO_OPENMP_SOURCES}
+    PROPERTIES
+    COMPILE_OPTIONS "-fno-openmp"
+  )
+elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+  set_source_files_properties(
+   ${NO_OPENMP_SOURCES}
+   PROPERTIES
+   COMPILE_OPTIONS "-qno-openmp"
+  )
+else()
+  message(FATAL_ERROR "Flags to disable OpenMP not defined for Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
+endif()
+
+#------------------------------------------------------------------------------
 # Set flag for 32bit dynamics build
 #------------------------------------------------------------------------------
 if(32BIT)
@@ -299,6 +349,7 @@ else()
   remove_definitions(-DOVERLOAD_R8)
   remove_definitions(-DOVERLOAD_R4)
 endif()
+message(STATUS "Compiler flags1: ${CMAKE_Fortran_FLAGS}")
 
 #------------------------------------------------------------------------------
 # Set flag for 32bit physics build
@@ -308,20 +359,21 @@ if(CCPP_32BIT)
   add_definitions(-DSINGLE_PREC)
   add_definitions(-DRTE_USE_SP)
   if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS_PHYSICS  "-real-size 32")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 32")
   elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_Fortran_FLAGS_PHYSICS  "-fno-default-real-8 -fdefault-double-8")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fno-default-real-8 -fdefault-double-8")
   endif()
 else(CCPP_32BIT)
   message(STATUS "Compile CCPP slow physics with 64-bit precision")
   remove_definitions(-DSINGLE_PREC)
   remove_definitions(-DRTE_USE_SP)
   if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS_PHYSICS  "-real-size 64")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 64")
   elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_Fortran_FLAGS_PHYSICS  "-fdefault-real-8 -fdefault-double-8")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -fdefault-double-8")
   endif()
 endif(CCPP_32BIT)
+message(STATUS "Compiler flags2: ${CMAKE_Fortran_FLAGS}")
 
 #------------------------------------------------------------------------------
 # Set flags for rte-rrtmgp radiation
@@ -330,14 +382,13 @@ if(RRTMGP_32BIT)
   message(STATUS "Compile CCPP RTE-RRTMGP with 32-bit precision")
   add_definitions(-DRTE_USE_SP)
   if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS_RTERRTMGP  "-real-size 32")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 32")
   elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_Fortran_FLAGS_RTERRTMGP  "-fno-default-real-8 -fdefault-double-8")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fno-default-real-8 -fdefault-double-8")
   endif()
 else()
   message(STATUS "Compile CCPP RTE-RRTMGP with 64-bit precision")
   remove_definitions(-DRTE_USE_SP)
-  set(CMAKE_Fortran_FLAGS_RTERRTMGP  ${CMAKE_Fortran_FLAGS_PHYSICS})
 endif()
 
 #------------------------------------------------------------------------------
