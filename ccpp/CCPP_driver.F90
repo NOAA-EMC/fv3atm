@@ -28,9 +28,9 @@ module CCPP_driver
   character(len=256) :: ccpp_suite='undefined'
   character(len=256) :: group_name='undefined'
 
-  !--------------------------------------------------------!
-  ! Number of OpenMP threads
-  !--------------------------------------------------------!
+!--------------------------------------------------------!
+!  Number of OpenMP threads                             !
+!--------------------------------------------------------!
   integer :: nthrds
 
   !--------------------------------------------------------!
@@ -89,7 +89,7 @@ CONTAINS
           ierr=errflg
           return
        end if
-     
+
     ! Physics init (same for all dynamical cores)
     else if (trim(step)=="physics_init") then
 
