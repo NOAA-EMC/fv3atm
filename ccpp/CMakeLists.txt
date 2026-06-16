@@ -57,6 +57,7 @@ set(SCHEME_METADATA_FILES
   "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_surface_generic_post.meta"
   "${SCHEME_FILES_DIR}/PBL/SATMEDMF/satmedmfvdifq.meta"
   "${SCHEME_FILES_DIR}/PBL/SATMEDMF/satmedmfvdif.meta"
+  "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_PBL_generic_pre.meta"
   "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_PBL_generic_post.meta"
   "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_GWD_generic_pre.meta"
   "${SCHEME_FILES_DIR}/GWD/unified_ugwp.meta"
