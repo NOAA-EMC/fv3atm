@@ -290,11 +290,74 @@ message(STATUS "List of filtered scheme files: ${SCHEME_FORTRAN_FILES}")
 message(STATUS "List of capgen-generated files: ${CAPGEN_FILES}")
 
 #------------------------------------------------------------------------------
-# Compile options for physics files
+# Set compile options for either 32/64bit physics build
 #------------------------------------------------------------------------------
+if(CCPP_32BIT)
+  message(STATUS "Compile CCPP slow physics with 32-bit precision")
+  add_definitions(-DSINGLE_PREC)
+  add_definitions(-DRTE_USE_SP)
+  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set_source_files_properties(
+      ${CAPGEN_DEPENDENCIES} ${SCHEME_FORTRAN_FILES} ${HOST_FORTRAN_FILES} ${CAPGEN_FILES}
+      PROPERTIES
+      COMPILE_OPTIONS "-real-size 32"
+    )
+  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+    set_source_files_properties(
+      ${CAPGEN_DEPENDENCIES} ${SCHEME_FORTRAN_FILES} ${HOST_FORTRAN_FILES} ${CAPGEN_FILES}
+      PROPERTIES
+      COMPILE_OPTIONS "-fno-default-real-8;-fdefault-double-8"
+    )
+  endif()
+else(CCPP_32BIT)
+  message(STATUS "Compile CCPP slow physics with 64-bit precision")
+  remove_definitions(-DSINGLE_PREC)
+  remove_definitions(-DRTE_USE_SP)
+  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set_source_files_properties(
+      ${CAPGEN_DEPENDENCIES} ${SCHEME_FORTRAN_FILES} ${HOST_FORTRAN_FILES} ${CAPGEN_FILES}
+      PROPERTIES
+      COMPILE_OPTIONS "-real-size 64"
+    )
+  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+    set_source_files_properties(
+      ${CAPGEN_DEPENDENCIES} ${SCHEME_FORTRAN_FILES} ${HOST_FORTRAN_FILES} ${CAPGEN_FILES}
+      PROPERTIES
+      COMPILE_OPTIONS "-fdefault-real-8;-fdefault-double-8"
+    )
+  endif()
+endif(CCPP_32BIT)
 
+#------------------------------------------------------------------------------
+# Set compiler options for 32bit dynamics build	(only fv_sat_adj.F90)
+#------------------------------------------------------------------------------
+set(SCHEMES_DYNAMICS ${SCHEME_FILES_DIR}/MP/GFDL/fv_sat_adj.F90)
+
+if(32BIT)
+  message(STATUS "Compile CCPP fast physics with 32-bit precision")
+  add_definitions(-DOVERLOAD_R4)
+  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set_property(SOURCE ${SCHEMES_DYNAMICS} APPEND PROPERTY COMPILE_OPTIONS -real-size 32)
+  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+    set_property(SOURCE ${SCHEMES_DYNAMICS} APPEND PROPERTY COMPILE_OPTIONS -fno-default-real-8 -fdefault-double-8)
+  endif()
+else()
+  message(STATUS "Compile CCPP fast physics with 64-bit precision")
+  remove_definitions(-DOVERLOAD_R8)
+  remove_definitions(-DOVERLOAD_R4)
+  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set_property(SOURCE ${SCHEMES_DYNAMICS} APPEND PROPERTY COMPILE_OPTIONS -real-size 64)
+  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+    set_property(SOURCE ${SCHEMES_DYNAMICS} APPEND PROPERTY COMPILE_OPTIONS -fdefault-real-8 -fdefault-double-8)
+  endif()
+endif()
+
+#------------------------------------------------------------------------------
+# Disable openmp for rte-rrtmgp source files
+#------------------------------------------------------------------------------
+message(STATUS "Disabling OpenMP for rte-rrtmgp radiation")
 set(NO_OPENMP_SOURCES
-    ${SCHEME_FILES_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics_constants.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_concentrations.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics_util_string.F90
@@ -322,96 +385,37 @@ set(NO_OPENMP_SOURCES
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_optical_props.F90
 )
 
-message(STATUS "Disabling OpenMP for rte-rrtmgp radiation")
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-  set_source_files_properties(
-    ${NO_OPENMP_SOURCES}
-    PROPERTIES
-    COMPILE_OPTIONS "-fno-openmp"
-  )
+  set_property(SOURCE ${NO_OPENMP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -fno-openmp)
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-  set_source_files_properties(
-   ${NO_OPENMP_SOURCES}
-   PROPERTIES
-   COMPILE_OPTIONS "-qno-openmp"
-  )
+  set_property(SOURCE ${NO_OPENMP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -qno-openmp)
 else()
   message(FATAL_ERROR "Flags to disable OpenMP not defined for Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
 endif()
 
 #------------------------------------------------------------------------------
-# Set flag for 32bit dynamics build
+# For CAPS, remove bounds checks with Intel Classic (ifort), Intel LLVM (ifx),
+# and GNU (gfortran) to avoid the compilation being killed or taking forever
 #------------------------------------------------------------------------------
-if(32BIT)
-  message(STATUS "Compile CCPP fast physics with 32-bit precision")
-  add_definitions(-DOVERLOAD_R4)
-  set(CMAKE_Fortran_FLAGS_DYNAMICS "")
-else()
-  message(STATUS "Compile CCPP fast physics with 64-bit precision")
-  remove_definitions(-DOVERLOAD_R8)
-  remove_definitions(-DOVERLOAD_R4)
-endif()
-message(STATUS "Compiler flags1: ${CMAKE_Fortran_FLAGS}")
-
-#------------------------------------------------------------------------------
-# Set flag for 32bit physics build
-#------------------------------------------------------------------------------
-if(CCPP_32BIT)
-  message(STATUS "Compile CCPP slow physics with 32-bit precision")
-  add_definitions(-DSINGLE_PREC)
-  add_definitions(-DRTE_USE_SP)
-  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 32")
-  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fno-default-real-8 -fdefault-double-8")
-  endif()
-else(CCPP_32BIT)
-  message(STATUS "Compile CCPP slow physics with 64-bit precision")
-  remove_definitions(-DSINGLE_PREC)
-  remove_definitions(-DRTE_USE_SP)
-  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 64")
-  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -fdefault-double-8")
-  endif()
-endif(CCPP_32BIT)
-message(STATUS "Compiler flags2: ${CMAKE_Fortran_FLAGS}")
-
-#------------------------------------------------------------------------------
-# Set flags for rte-rrtmgp radiation
-#------------------------------------------------------------------------------
-if(RRTMGP_32BIT)
-  message(STATUS "Compile CCPP RTE-RRTMGP with 32-bit precision")
-  add_definitions(-DRTE_USE_SP)
-  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 32")
-  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fno-default-real-8 -fdefault-double-8")
-  endif()
-else()
-  message(STATUS "Compile CCPP RTE-RRTMGP with 64-bit precision")
-  remove_definitions(-DRTE_USE_SP)
+message(STATUS "Removing optimization level for autogenerated Caps")
+if (${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
+  set_property(SOURCE ${CAPGEN_FILES} APPEND PROPERTY COMPILE_OPTIONS -check nobounds)
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
+  set_property(SOURCE ${CAPGEN_FILES} APPEND PROPERTY COMPILE_OPTIONS -fcheck=no-bounds)
 endif()
 
 #------------------------------------------------------------------------------
 # Build CCPP_TARGET
 #------------------------------------------------------------------------------
 set(BUILD_SHARED_LIBS OFF)
-add_library(${CCPP_TARGET} STATIC
+add_library(${CCPP_TARGET}
   ${CAPGEN_DEPENDENCIES}
   ${SCHEME_FORTRAN_FILES}
   ${HOST_FORTRAN_FILES}
   ${CAPGEN_FILES}
 )
 
-# Compile GFS_diagnostics.F90 without optimization, this leads to out of memory errors on wcoss_dell_p3
-if (FV3)
-  set_property(SOURCE driver/GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
-endif()
-
-#target_link_libraries(${CCPP_TARGET} PUBLIC ccpp_framework)
-#target_link_libraries(${CCPP_TARGET} PUBLIC ccpp_physics)
-
+target_link_libraries(${CCPP_TARGET} MPI::MPI_Fortran)
 if(OPENMP)
   target_link_libraries(${CCPP_TARGET} OpenMP::OpenMP_Fortran)
 endif()

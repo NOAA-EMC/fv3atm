@@ -24,7 +24,6 @@ if(BUILD_UFSATM_TESTING)
   include(ci/CMakeLists.txt)
 endif()
 
-enable_testing()
 include(cmake/ccpp_capgen.cmake)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMakeModules/Modules)
@@ -221,6 +220,9 @@ if (FV3)
   else()
     list(APPEND cdeps_inline_srcs "")
   endif()
+
+  # Set compiler options for specific files
+  set_property(SOURCE ccpp/driver/GFS_diagnostics.F90 APPEND PROPERTY COMPILE_OPTIONS "-O0")
 
   # FV3 drivers and dependencies
   add_library(${DYCORE_TARGET}
