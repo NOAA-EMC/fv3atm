@@ -154,10 +154,10 @@ CONTAINS
 
 !$OMP parallel num_threads (nthrds)                        &
 !$OMP          default (none)                              &
-!$OMP          shared (nblks, ccpp_suite, errmsg, errflg,  &
+!$OMP          shared (nblks, ccpp_suite,                  &
 !$OMP                  step, GFS_Control, GFS_Interstitial,&
-!$OMP                  dycore)                             &
-!$OMP          private (nb, nt, nthrds)                    &
+!$OMP                  dycore, nthrds)                     &
+!$OMP          private (nb, nt, errmsg, errflg)            &
 !$OMP          reduction (+:ierr)
 #ifdef _OPENMP
        nt = omp_get_thread_num()+1
@@ -201,20 +201,21 @@ CONTAINS
                 endif
              endif
           else
-             if (trim(step)=="radiation") then
-                ! Reset GFS_Interstitial DDT fields for this thread
-                call GFS_Interstitial(nt)%reset(GFS_control)
-             endif
+             ! DH* WHY WAS THIS FOR RADIATION ONLY??? PERFORMANCE?
+             ! Reset GFS_Interstitial DDT fields for this thread
+             call GFS_Interstitial(nt)%reset(GFS_control)
+             ! *DH
              ! Radiation
-             call ccpp_physics_run(ccpp_suite=trim(ccpp_suite), group_name="radiation", &
-                  errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_end(nb), &
-                  mythread=nt, nthreads=nthrds, nphys_threads=1)
-             if (errflg/=0) then
-                write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group radiation: ' // trim(errmsg) // '. Exiting...'
-                ierr = ierr + errflg
-             end if
+             if (trim(step)=="radiation") then
+                call ccpp_physics_run(ccpp_suite=trim(ccpp_suite), group_name="radiation", &
+                     errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_end(nb), &
+                     mythread=nt, nthreads=nthrds, nphys_threads=1)
+                if (errflg/=0) then
+                   write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group radiation: ' // trim(errmsg) // '. Exiting...'
+                   ierr = ierr + errflg
+                end if
              ! Microphysics (MPAS only)
-             if (trim(step)=="microphysics") then
+             else if (trim(step)=="microphysics") then
                 if (trim(dycore)=="mpas") then
                    call ccpp_physics_run(ccpp_suite=trim(ccpp_suite), group_name="microphysics", &
                         errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_end(nb), &
@@ -227,7 +228,20 @@ CONTAINS
                    write(error_unit,'(a)') "An error occurred in ccpp_physics_run for group microphysics. Group microphysics only valid with MPAS dycore."
                    ierr = ierr + errflg
                 endif
-             endif
+             ! Stochastic physics
+             else if (trim(step)=="stochastics") then
+                call ccpp_physics_run(ccpp_suite=trim(ccpp_suite), group_name="stochastics", &
+                     errmsg=errmsg, errflg=errflg, lb=GFS_control%chunk_begin(nb), ub=GFS_control%chunk_end(nb), &
+                     mythread=nt, nthreads=nthrds, nphys_threads=1)
+                if (errflg/=0) then
+                   write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run for group stochastics: ' // trim(errmsg) // '. Exiting...'
+                   ierr = ierr + errflg
+                end if
+             ! Catchall
+             else
+                write(error_unit,'(a,i0,a)') 'An error occurred in ccpp_physics_run: unknown group ' // trim(step) // '. Exiting...'
+                ierr = ierr + 1
+             end if
           endif
           call GFS_Interstitial(nt)%destroy(GFS_control)
        end do
