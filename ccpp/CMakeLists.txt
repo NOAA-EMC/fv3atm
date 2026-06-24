@@ -17,9 +17,8 @@ set(PROJECT "CCPP-UFS")
 set(SCHEME_FILES_DIR "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/physics/physics")
 set(SCHEME_METADATA_FILES
   # time-vary
-  "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_time_vary_pre.fv3.meta"
   "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_rrtmg_setup.meta"
-  "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_rad_time_vary.fv3.meta"
+  "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_time_vary_pre.fv3.meta"
   "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_phys_time_vary.fv3.meta"
   # radiation
   "${SCHEME_FILES_DIR}/Radiation/RRTMG/radsw_param.meta"
@@ -136,6 +135,20 @@ set(SCHEME_METADATA_FILES
   "${SCHEME_FILES_DIR}/PBL/YSU/ysuvdif.meta"
   "${SCHEME_FILES_DIR}/PBL/SATMEDMF/canopy_driver.meta"
 )
+
+# Dycore (FV3) specific interstitial files.
+if (FV3)
+  list(APPEND SCHEME_METADATA_FILES
+    "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_rad_time_vary.fv3.meta"
+  )
+endif()
+
+# Dycore (MPAS) specific interstitial files.
+if (MPAS)
+  list(APPEND SCHEME_METADATA_FILES
+    "${SCHEME_FILES_DIR}/Interstitials/UFS_SCM_NEPTUNE/GFS_rad_time_vary.mpas.meta"
+  )
+endif()
 
 # Create list of scheme source files from metadata files
 ccpp_source_files(SCHEME_FORTRAN_FILES ${SCHEME_METADATA_FILES})
