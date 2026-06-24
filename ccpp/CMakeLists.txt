@@ -447,6 +447,9 @@ add_library(${CCPP_TARGET}
   ${HOST_FORTRAN_FILES}
   ${CAPGEN_FILES}
 )
+if(FV3 OR MPAS)
+  target_link_libraries(${CCPP_TARGET} fms)
+endif()
 
 target_link_libraries(${CCPP_TARGET} MPI::MPI_Fortran)
 if(OPENMP)

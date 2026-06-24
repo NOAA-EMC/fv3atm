@@ -23,7 +23,7 @@ module atmos_model_mod
   use CCPP_data,             only : UFSATM_cldprop      => GFS_cldprop
   use CCPP_data,             only : UFSATM_radtend      => GFS_radtend
   use CCPP_data,             only : UFSATM_coupling     => GFS_coupling
-  use CCPP_data,             only : ccpp_suite
+  use CCPP_driver,           only : ccpp_suite
   use CCPP_driver,           only : CCPP_step
   ! MPAS
   use mpas_log,              only : mpas_log_write
