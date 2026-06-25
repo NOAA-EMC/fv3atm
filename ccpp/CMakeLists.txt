@@ -370,7 +370,7 @@ endif()
 # Disable openmp for rte-rrtmgp source files
 #------------------------------------------------------------------------------
 message(STATUS "Disabling OpenMP for rte-rrtmgp radiation")
-set(NO_OPENMP_SOURCES
+set(RRTMGP_SOURCES
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics_constants.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_concentrations.F90
@@ -400,11 +400,26 @@ set(NO_OPENMP_SOURCES
 )
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-  set_property(SOURCE ${NO_OPENMP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -fno-openmp)
+  set_property(SOURCE ${RRTMGP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -fno-openmp)
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-  set_property(SOURCE ${NO_OPENMP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -qno-openmp)
+  set_property(SOURCE ${RRTMGP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -qno-openmp)
 else()
   message(FATAL_ERROR "Flags to disable OpenMP not defined for Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
+endif()
+
+#------------------------------------------------------------------------------
+# Set flags for 32-bit rte-rrtmgp radiation
+#------------------------------------------------------------------------------
+if(RRTMGP_32BIT)
+  message(STATUS "Compile CCPP RTE-RRTMGP with 32-bit precision")
+  add_definitions(-DRTE_USE_SP)
+  if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+    set_property(SOURCE ${RRTMGP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -fno-default-real-8 -fdefault-double-8)
+  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set_property(SOURCE ${RRTMGP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -real-size 32)
+  else()
+    message(FATAL_ERROR "rte-rrtmgp 32-bit not supported for Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
+  endif()
 endif()
 
 #------------------------------------------------------------------------------
