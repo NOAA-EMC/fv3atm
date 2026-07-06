@@ -9,6 +9,7 @@ module module_mpas_config
   use mpi_f08
   use pio, only : iosystem_desc_t, file_desc_t, io_desc_t
   use esmf
+  use mpas_derived_types,  only : MPAS_Time_Type
 
   implicit none
 
@@ -38,30 +39,70 @@ module module_mpas_config
 
   !> Flag to decide if write grid component writes out restart files
   logical                  :: quilting_restart = .false.
-  
+
   !> Output frequency if this array has only two elements and the value of
   !! the second eletment is -1. Otherwise, it is the specific output forecast
   !! hours
   real,dimension(:),allocatable :: output_fh
 
+  !> Restart frequency
+  real,dimension(:),allocatable :: restart_fh
+
+  !>
+  integer :: out_file_index     = 1
+  integer :: restart_file_index = 1
+  type (MPAS_Time_Type), allocatable :: mpas_output_times(:)
+  type (MPAS_Time_Type), allocatable :: mpas_restart_times(:)
+
   !> Calendar type
   character(17)            :: calendar='                 '
 
   !> MPAS Initial Condition file (via UFSATM NML)
-  character(len=256) :: ic_filename
+  character(len=256) :: ic_filename=""
 
   !> MPAS Lateral Boundary Condition file (via UFSATM NML)
-  character(len=256) :: lbc_filename
+  character(len=256) :: lbc_filename=""
 
+  !> MPAS stream_list files (i.e. runtime contol over which fields to write)
+  character(len=256) :: stream_list_history=""
+  character(len=256) :: stream_list_restart=""
+  character(len=256) :: stream_list_diag=""
+  integer :: stream_list_history_funit
+  integer :: stream_list_restart_funit
+  integer :: stream_list_diag_funit
+  
+  !> MPAS tracer file (via UFSATM NML)
+  character(len=256) :: tracer_filename="tracer_table"
+  integer :: tracer_funit
+
+  !> UFSATM namelist filename
+  character(len=256) :: nml_filename = "input.nml"
+  integer :: nml_funit
+  character(len=256) :: mpas_errfilename = "mpas_err.log"
+  integer :: mpas_errfile_funit
+  character(len=256) :: mpas_logfilename = "mpas_out.log"
+  integer :: mpas_logfile_funit
+
+  
   !> PIO
-  type(iosystem_desc_t), pointer :: pio_subsystem
+  type(iosystem_desc_t), pointer :: pio_subsystem_ic
+  type(iosystem_desc_t), pointer :: pio_subsystem_lbc
+  type(iosystem_desc_t), pointer :: pio_subsystem_output
+  type(iosystem_desc_t), pointer :: pio_subsystem_restart
+  type(file_desc_t), target :: pioid_ic
+  type(file_desc_t), target :: pioid_lbc
+  type(file_desc_t), target :: pioid_output
+  type(file_desc_t), target :: pioid_restart
+  type(io_desc_t) :: pio_iodesc
   integer :: pio_iotype
   integer :: pio_ioformat
   integer :: pio_stride
   integer :: pio_numiotasks
-  type(file_desc_t), target :: pioid
-  type(io_desc_t) :: pio_iodesc
-  
+  logical :: pio_subsystem_output_file_created = .false.
+  integer :: pio_subsystem_output_record = 1
+  integer, parameter :: TIMELEVEL_NOW = 1 ! current time
+  integer, parameter :: TIMELEVEL_NEXT = 2 ! updated/next time
+
   !> MPAS Grid information
   real(r8), target, allocatable :: zref(:)
   real(r8), target, allocatable :: zref_edge(:)
@@ -77,10 +118,13 @@ module module_mpas_config
   integer :: nVertLevels   ! number of vertical layers (midpoints)
 
   integer, pointer :: &
+       nCells,          & ! number of cells in task
        nCellsSolve,     & ! number of cells that a task solves
        nEdgesSolve,     & ! number of edges (velocity) that a task solves
        nVerticesSolve,  & ! number of vertices (vorticity) that a task solves
        nVertLevelsSolve
+
+  real(r4), pointer :: latCell(:), lonCell(:)
 
   !> Global gridded data
   integer :: nCellsGlobal     ! global number of cells/columns
@@ -91,5 +135,5 @@ module module_mpas_config
   real(r4), allocatable :: latCellGlobal(:)
   real(r4), allocatable :: lonCellGlobal(:)
   real(r4), allocatable :: areaCellGlobal(:)
-  
+
 end module module_mpas_config

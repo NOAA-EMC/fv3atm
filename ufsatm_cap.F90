@@ -38,10 +38,12 @@ module ufsatm_cap_mod
 #ifdef MPAS
   use module_mpas_config,     only: output_fh, dt_atmos, calendar,           &
                                     fcst_mpi_comm, pio_ioformat, pio_iotype, &
-                                    pio_subsystem, pio_stride,               &
+                                    pio_subsystem_ic, pio_stride, pio_subsystem_lbc, &
+                                    pio_subsystem_output, &
                                     pio_numiotasks, pio_iodesc, cpl_grid_id, &
                                     cplprint_flag, first_kdt, quilting,      &
                                     quilting_restart
+  use module_mpas_config,     only: mpas_output_times, mpas_restart_times
 #endif
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
@@ -66,6 +68,7 @@ module ufsatm_cap_mod
 #ifdef UFS_TRACING
   use ufs_trace_mod
 #endif
+  use shr_is_restart_fh_mod, only : init_is_restart_fh, is_restart_fh_type
 
   implicit none
   private
@@ -100,6 +103,10 @@ module ufsatm_cap_mod
   integer, allocatable                        :: frestart(:)
 
   real(kind=8)                                :: timere, timep2re
+  type(is_restart_fh_type)                    :: restartfh_info
+  type(is_restart_fh_type)                    :: outputfh_info
+  type(is_restart_fh_type)                    :: diagfh_info
+  type(is_restart_fh_type)                    :: dafh_info
 !-----------------------------------------------------------------------
 
   contains
@@ -161,7 +168,7 @@ module ufsatm_cap_mod
     call NUOPC_CompSpecialize(gcomp, specLabel=label_Advance, &
                               specPhaseLabel="phase1", specRoutine=ModelAdvance_phase1, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-#ifdef FV3
+
     ! setup Run/Advance phase: phase2
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
                                  phaseLabelList=(/"phase2"/), userRoutine=routine_Run, rc=rc)
@@ -178,7 +185,7 @@ module ufsatm_cap_mod
     call NUOPC_CompSpecialize(gcomp, specLabel=label_SetRunClock, &
                                      specRoutine=ModelSetRunClock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
+#ifdef FV3
     ! specializations required to support 'inline' run sequences
     call NUOPC_CompSpecialize(gcomp, specLabel=label_CheckImport, &
                               specPhaseLabel="phase1", specRoutine=ufsatm_checkimport, rc=rc)
@@ -236,6 +243,7 @@ module ufsatm_cap_mod
     real                                   :: nfhmax
     real                                   :: output_startfh, outputfh, outputfh2(2)
     logical                                :: loutput_fh, lfreq
+    logical                                :: lrestart_fh
     character(ESMF_MAXSTR)                 :: gc_name, fb_name
     integer,dimension(:), allocatable      :: petList, originPetList, targetPetList
     character(len=esmf_maxstr),allocatable :: fcstItemNameList(:)
@@ -383,8 +391,8 @@ module ufsatm_cap_mod
           return
        end if
     else
-       cvalue = 'NETCDF'
-       pio_iotype = PIO_IOTYPE_NETCDF
+       cvalue = 'PNETCDF'
+       pio_iotype = PIO_IOTYPE_PNETCDF
     end if
 
     ! pio_root
@@ -466,8 +474,14 @@ module ufsatm_cap_mod
     end if
 
     ! Initialize PIO
-    allocate(pio_subsystem)
-    call pio_init(mype, fcst_mpi_comm%mpi_val, pio_numiotasks, 0, pio_stride, pio_rearranger, pio_subsystem, base=pio_root)
+    allocate(pio_subsystem_ic)
+    call pio_init(mype, fcst_mpi_comm%mpi_val, pio_numiotasks, 0, pio_stride, pio_rearranger, pio_subsystem_ic, base=pio_root)
+    allocate(pio_subsystem_lbc)
+    call pio_init(mype, fcst_mpi_comm%mpi_val, pio_numiotasks, 0, pio_stride, pio_rearranger, pio_subsystem_lbc, base=pio_root)
+
+    allocate(pio_subsystem_output)
+    call pio_init(mype, fcst_mpi_comm%mpi_val, pio_numiotasks, 0, pio_stride, &
+         pio_rearranger, pio_subsystem_output, base=pio_root)
 
     ! PIO debug related options
     ! pio_debug_level
@@ -614,7 +628,7 @@ module ufsatm_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     endif ! quilting
-!
+    !
     call ESMF_ConfigGetAttribute(config=CF, value=dt_atmos, label ='dt_atmos:',   rc=rc)
     call ESMF_ConfigGetAttribute(config=CF, value=nfhmax,   label ='nhours_fcst:',rc=rc)
     if(mype == 0) print *,'af ufs config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax
@@ -1224,7 +1238,6 @@ module ufsatm_cap_mod
     endif
 !
 !-- set up output forecast time if output_fh is specified
-#ifdef FV3
     if (noutput_fh > 0 ) then
 !--- use output_fh to sepcify output forecast time
       loutput_fh = .true.
@@ -1256,7 +1269,6 @@ module ufsatm_cap_mod
       endif ! end loutput_fh
     endif
     if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh)),'lflname_fulltime=',lflname_fulltime
-#endif
     if ( quilting ) then
       do i=1, write_groups
         call ESMF_InfoGetFromHost(wrtState(i), info=info, rc=rc)
@@ -1328,7 +1340,7 @@ module ufsatm_cap_mod
     integer                   :: ist, i
     integer, intent(inout)    :: noutput_fh
     real, intent(inout)       :: output_startfh
-
+    
     if( output_startfh == 0) then
       ! If the output time in output_fh array contains first time stamp output,
       ! check the rest of output time, otherwise, check all the output time.
@@ -1404,7 +1416,7 @@ module ufsatm_cap_mod
 !-----------------------------------------------------------------------------
 
   subroutine ModelAdvance(gcomp, rc)
-    
+
     use mpi_f08, only : MPI_Wtime
 
     type(ESMF_GridComp)         :: gcomp
@@ -1424,10 +1436,10 @@ module ufsatm_cap_mod
 
     call ModelAdvance_phase1(gcomp, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-#ifdef FV3
+
     call ModelAdvance_phase2(gcomp, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-#endif
+
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving UFSATM ModelAdvance: ")
 
     timere = MPI_Wtime()
@@ -1682,6 +1694,7 @@ module ufsatm_cap_mod
     type(ESMF_Clock)            :: dclock, mclock
     type(ESMF_TimeInterval)     :: dtimestep, mtimestep
     type(ESMF_Time)             :: mcurrtime, mstoptime
+    integer :: dtime, ifout
 
 !-----------------------------------------------------------------------------
 
@@ -1703,6 +1716,32 @@ module ufsatm_cap_mod
     call ESMF_ClockSet(mclock, timeStep=mtimestep, stopTime=mstoptime, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+#ifdef MPAS
+    ! Setup MPAS output stream times.
+    call ESMF_TimeIntervalGet( dtimestep, s=dtime, rc=rc )
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call init_is_restart_fh(mcurrTime, dtime, .false., outputfh_info, key='output_fh')
+    allocate(mpas_output_times(size(outputfh_info%restartFhTimes)))
+    do ifout =1,size(outputfh_info%restartFhTimes)
+       mpas_output_times(ifout)%t = outputfh_info%restartFhTimes(ifout)
+    end do
+
+    ! Setup MPAS history stream times.
+    call ESMF_TimeIntervalGet( dtimestep, s=dtime, rc=rc )
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call init_is_restart_fh(mcurrTime, dtime, .false., restartfh_info)
+    allocate(mpas_restart_times(size(restartfh_info%restartFhTimes)))
+    do ifout =1,size(restartfh_info%restartFhTimes)
+       mpas_restart_times(ifout)%t = restartfh_info%restartFhTimes(ifout)
+    end do
+
+    ! Setup MPAS diagnostic stream times.
+    ! NOT YET IMPLEMENTED
+    ! This will default to being the same as the output stream.
+
+    ! Setup MPAS da stream times.
+    ! NOT YET IMPLEMENTED
+#endif
   end subroutine ModelSetRunClock
 
 !-----------------------------------------------------------------------------

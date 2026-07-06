@@ -10,24 +10,13 @@ module module_fcst_grid_comp
   use mpi_f08
   use esmf
   use nuopc
-  use time_manager_mod,   only: time_type, set_calendar_type, set_time, set_date,           &
-                                month_name, operator(+), operator(-), operator (<),         &
-                                operator (>), operator (/=), operator (/), operator (==),   &
-                                operator (*), THIRTY_DAY_MONTHS, JULIAN, GREGORIAN, NOLEAP, &
-                                NO_CALENDAR, date_to_string, get_date, get_time
   use atmos_model_mod,    only: atmos_model_init, atmos_model_end, atmos_control_type
   use atmos_model_mod,    only: atmos_model_radiation_physics, atmos_model_dynamics,        &
-                                atmos_model_microphysics
-  use constants_mod,      only: constants_init
-  use fms_mod,            only: error_mesg, fms_init, fms_end, write_version_number,        &
-                                uppercase
-  use mpp_mod,            only: mpp_init, mpp_pe, mpp_npes, mpp_root_pe,                    &
-                                mpp_set_current_pelist, mpp_error, FATAL, WARNING, NOTE
-  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin
-  use sat_vapor_pres_mod, only: sat_vapor_pres_init
-  use diag_manager_mod,   only: diag_manager_init, diag_manager_end,                        &
-                                diag_manager_set_time_end
+                                atmos_model_microphysics, update_atmos_model_state
   use module_mpas_config, only: dt_atmos, fcst_mpi_comm, fcst_ntasks, calendar
+  use CCPP_data,          only: GFS_control
+  use mpas_log,            only : mpas_log_write
+  use mpas_derived_types,  only : MPAS_LOG_CRIT
 
   implicit none
   private
@@ -41,7 +30,11 @@ module module_fcst_grid_comp
   integer :: date_init(6)
 
   integer :: mype = 0
+  integer, parameter :: THIRTY_DAY_MONTHS = 1,      JULIAN = 2, &
+                        GREGORIAN = 3,              NOLEAP = 4, &
+                        NO_CALENDAR = 0,  INVALID_CALENDAR =-1
 
+  
   public SetServices
 
 contains
@@ -76,6 +69,11 @@ contains
                                     userRoutine=fcst_run_phase_1, phase=1, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+    ! Run Phase 2
+    call ESMF_GridCompSetEntryPoint(fcst_comp, ESMF_METHOD_RUN, &
+                                    userRoutine=fcst_run_phase_2, phase=2, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
     ! Finalize
     call ESMF_GridCompSetEntryPoint(fcst_comp, ESMF_METHOD_FINALIZE, &
                                     userRoutine=fcst_finalize, rc=rc)
@@ -99,9 +97,8 @@ contains
     type(ESMF_Config) :: cf
     real(kind=8) :: tbeg1
     logical :: fexist
-    integer :: initClock, io_unit, calendar_type_res, date_res(6), date_init_res(6)
+    integer :: io_unit, calendar_type_res, date_res(6), date_init_res(6)
     integer,dimension(6) :: date, date_end, days
-    type(time_type) :: Time_init, Time, Time_step, Time_end, Time_restart, Time_step_restart
 
     ! Initialize ESMF error message.
     rc = ESMF_SUCCESS
@@ -124,15 +121,7 @@ contains
     call ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call fms_init(fcst_mpi_comm%mpi_val)
-    call mpp_init()
-    initClock = mpp_clock_id( 'Initialization' )
-    call mpp_clock_begin (initClock) !nesting problem
-
-    call constants_init
-    call sat_vapor_pres_init
-
-    select case( uppercase(trim(calendar)) )
+    select case( ESMF_UtilStringUpperCase(trim(calendar)) )
     case( 'JULIAN' )
         calendar_type = JULIAN
     case( 'GREGORIAN' )
@@ -144,11 +133,12 @@ contains
     case( 'NO_CALENDAR' )
         calendar_type = NO_CALENDAR
     case default
-        call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
-                                'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
+        call mpas_log_write( 'fcst_initialize: calendar must be one of '// &
+                             'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.',&
+                             messageType=MPAS_LOG_CRIT)
     end select
 
-    call set_calendar_type (calendar_type)
+    !call set_calendar_type (calendar_type)
 
     !
     ! Set atmos time.
@@ -162,9 +152,6 @@ contains
                        YY=date_init(1), MM=date_init(2), DD=date_init(3), &
                        H=date_init(4),  M =date_init(5), S =date_init(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
-                           date_init(4), date_init(5), date_init(6))
     if (mype == 0) write(*,'(A,6I5)') 'in fcst_initialize, StartTime=',date_init
 
     date=0
@@ -172,9 +159,6 @@ contains
                        YY=date(1), MM=date(2), DD=date(3), &
                        H=date(4),  M =date(5), S =date(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    Time = set_date (date(1), date(2), date(3),  &
-                     date(4), date(5), date(6))
     if (mype == 0) write(*,'(A,6I5)') 'in fcst_initialize, CurrTime =',date
 
     date_end=0
@@ -182,9 +166,6 @@ contains
                        YY=date_end(1), MM=date_end(2), DD=date_end(3), &
                        H=date_end(4),  M =date_end(5), S =date_end(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
-                           date_end(4), date_end(5), date_end(6))
     if (mype == 0) write(*,'(A,6I5)') 'in fcst_initialize, StopTime =',date_end
 
     !
@@ -233,17 +214,13 @@ contains
        endif ! fexist
     endif ! mype == 0
 
-    call diag_manager_init (TIME_INIT=date)
-    call diag_manager_set_time_end(Time_end)
-
-    Time_step = set_time (dt_atmos,0)
     if (mype == 0) write(*,*)'fcst_initialize, time_init=', date_init,'time=',date,'time_end=',date_end,'dt_atmos=',dt_atmos
 
     ! #######################################################################################
     ! Initialize component models.
     ! atmos_model_init() calls the MPAS dycore initialization.
     ! #######################################################################################
-    call atmos_model_init(Atmos, Time_init, Time, Time_end, Time_step, fcst_mpi_comm, calendar)
+    call atmos_model_init(Atmos, fcst_mpi_comm, calendar, CurrTime, StartTime, StopTime)
 
     ! Timing info (debug mode)
     if (mype == 0) write(*,*)'PASS(fcst_initialize): Time is ', mpi_wtime() - tbeg1
@@ -290,25 +267,105 @@ contains
     ! Locals
     integer             :: seconds
     real(kind=8)        :: mpi_wtime, tbeg1
+    logical,save        :: first=.true.
+    integer,save        :: dt_cap=0
+    type(ESMF_Time)     :: currTime,stopTime,startTIme
+    
+    ! Timing info.
+    tbeg1 = mpi_wtime()
 
-    ! Initialize ESMF error message. 
+    ! Initialize ESMF error message.
     rc = ESMF_SUCCESS
 
-    ! Timing info (debug mode)
-    tbeg1 = mpi_wtime()
-    call get_time(Atmos%Time - Atmos%Time_init, seconds)
+    call ESMF_ClockGet(clock, currTime=currTime, startTime=startTime, rc=rc)
+    call ESMF_TimeIntervalGet(currTime-StartTime, s=seconds, rc=rc)
     n_atmsteps = seconds/dt_atmos
 
+    if (first) then
+       call ESMF_ClockGet(clock, currTime=currTime, stopTime=stopTime, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+       call ESMF_TimeIntervalGet(stopTime-currTime, s=dt_cap, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+       first=.false.
+    endif
+    
+    if ( dt_cap > 0 .and. mod(seconds, dt_cap) == 0 ) then
+       Atmos%isAtCapTime = .true.
+    else
+       Atmos%isAtCapTime = .false.
+    endif
+    
     ! Call forecast integration subroutines...
     call atmos_model_radiation_physics (Atmos)
     call atmos_model_dynamics (Atmos)
     call atmos_model_microphysics (Atmos)
-    
+
     ! Timing info (debug mode)
     if (mype == 0) write(*,'(A,I16,A,F16.6)')'PASS(fcstRUN phase 1), n_atmsteps = ', &
                                                n_atmsteps,' time is ',mpi_wtime()-tbeg1
   end subroutine fcst_run_phase_1
 
+  ! ###########################################################################################
+  ! Run phase(2) for the ESMF forecast grid component
+  ! ###########################################################################################
+  subroutine fcst_run_phase_2(fcst_comp, importState, exportState, clock, rc)
+    type(ESMF_GridComp) :: fcst_comp
+    type(ESMF_State)    :: importState, exportState
+    type(ESMF_Clock)    :: clock
+    integer,intent(out) :: rc
+
+    real(kind=8)                           :: mpi_wtime, tbeg1
+    integer                                :: FBCount, i
+    logical                                :: isPresent
+    character(len=esmf_maxstr),allocatable :: itemNameList(:)
+    type(ESMF_StateItem_Flag), allocatable :: itemTypeList(:)
+    type(ESMF_FieldBundle)                 :: fcstExportFB
+    ! Timing info.
+    tbeg1 = mpi_wtime()
+
+    ! Initialize ESMF error message.
+    rc = ESMF_SUCCESS
+
+    call update_atmos_model_state(Atmos)
+
+    ! update fhzero
+    call ESMF_StateGet(exportState, itemCount=FBCount, rc=rc)
+
+    allocate (itemNameList(FBCount))
+    allocate (itemTypeList(FBCount))
+    call ESMF_StateGet(exportState, &
+                       itemNameList=itemNameList, &
+                       itemTypeList=itemTypeList, &
+                       rc=rc)
+    do i=1, FBcount
+       if (itemTypeList(i) == ESMF_STATEITEM_FIELDBUNDLE) then
+          call ESMF_StateGet(exportState, itemName=itemNameList(i), &
+                             fieldbundle=fcstExportFB, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          call ESMF_AttributeGet(fcstExportFB, convention="NetCDF", purpose="MPAS", &
+                                 name="fhzero", isPresent=isPresent, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          if (isPresent) then
+             call ESMF_AttributeSet(fcstExportFB, convention="NetCDF", purpose="FV3", name="fhzero", value=GFS_control%fhzero, rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          endif
+       else
+          !***### anything but a FieldBundle in the state is unexpected here
+          call ESMF_LogSetError(ESMF_RC_ARG_BAD,                                 &
+                                msg="Only FieldBundles supported in fcstState.", &
+                                line=__LINE__, file=__FILE__, rcToReturn=rc)
+          return
+       endif
+    enddo
+    
+    if (mype == 0) write(*,'(A,I16,A,F16.6)')'PASS: fcstRUN phase 2, n_atmsteps = ', &
+                                              n_atmsteps,' time is ',mpi_wtime()-tbeg1
+
+  end subroutine fcst_run_phase_2
   ! ###########################################################################################
   ! Finalize the ESMF forecast grid component.
   ! ###########################################################################################
@@ -328,8 +385,6 @@ contains
     tbeg1 = mpi_wtime()
     
     call atmos_model_end (Atmos)
-    call diag_manager_end (Atmos%Time)
-    call fms_end
 
     ! Timing info (debug mode)
     if (mype == 0) write(*,*)'PASS(fcst_finalize): total is ', mpi_wtime() - tbeg1
