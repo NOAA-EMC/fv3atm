@@ -97,7 +97,7 @@ function(ccpp_validator)
   cmake_parse_arguments(arg "${optionalArgs}" "${oneValueArgs}" "${multi_value_keywords}" ${ARGN})
 
   # Error if script file not found.
-  set(CCPP_VALIDATOR_CMD_LIST "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen-ng/ccpp_validator.py")
+  set(CCPP_VALIDATOR_CMD_LIST "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen/ccpp_validator.py")
   if(NOT EXISTS ${CCPP_VALIDATOR_CMD_LIST})
     message(FATAL_ERROR "function(ccpp_validator): Could not find ccpp_validator.py.  Looked for ${CCPP_VALIDATOR_CMD_LIST}.")
   endif()
@@ -160,7 +160,7 @@ function(ccpp_validator)
 endfunction()
 
 
-# CMake wrapper for ccpp_capgen_ng.py
+# CMake wrapper for ccpp_capgen.py
 #
 # TRACE          - ON/OFF (Default: OFF) - Add --trace flag to capgen call
 # HOST_NAME      - String name of host (drives <host>_ccpp_cap.F90 filename
@@ -172,8 +172,8 @@ endfunction()
 # SUITES         - CMake list of suite xml files
 # KIND_SPECS     - Comma-separated kind mappings, e.g. "kind_phys=REAL32" or
 #                  "kind_phys=my_mod:kind_r4,kind_dyn=REAL64".  Each pair is
-#                  forwarded as `--kind-type <pair>` to capgen-ng (see the
-#                  capgen-ng docstring for the `<name>=[<module>:]<spec>`
+#                  forwarded as `--kind-type <pair>` to capgen (see the
+#                  capgen docstring for the `<name>=[<module>:]<spec>`
 #                  grammar; bare ISO specs default to iso_fortran_env).
 function(ccpp_capgen)
   set(optionalArgs TRACE)
@@ -183,9 +183,9 @@ function(ccpp_capgen)
   cmake_parse_arguments(arg "${optionalArgs}" "${oneValueArgs}" "${multi_value_keywords}" ${ARGN})
 
   # Error if script file not found.
-  set(CCPP_CAPGEN_CMD_LIST "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen-ng/ccpp_capgen_ng.py")
+  set(CCPP_CAPGEN_CMD_LIST "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen/ccpp_capgen.py")
   if(NOT EXISTS ${CCPP_CAPGEN_CMD_LIST})
-    message(FATAL_ERROR "function(ccpp_capgen): Could not find ccpp_capgen_ng.py.  Looked for ${CCPP_CAPGEN_CMD_LIST}.")
+    message(FATAL_ERROR "function(ccpp_capgen): Could not find ccpp_capgen.py.  Looked for ${CCPP_CAPGEN_CMD_LIST}.")
   endif()
 
   # Interpret parsed arguments
@@ -227,7 +227,7 @@ function(ccpp_capgen)
   if(DEFINED arg_KIND_SPECS)
     # Accept either a comma-separated string ("kind_phys=REAL64,kind_dyn=REAL32")
     # or a CMake list of pairs.  Each pair becomes a separate
-    # `--kind-type <pair>` argv pair so capgen-ng's argparse sees one
+    # `--kind-type <pair>` argv pair so capgen's argparse sees one
     # `--kind-type` per pair (the flag is `action='append'`).
     string(REPLACE "," ";" KIND_SPEC_LIST "${arg_KIND_SPECS}")
     foreach(pair IN LISTS KIND_SPEC_LIST)
@@ -278,7 +278,7 @@ function(ccpp_datafile)
   set(mandatoryArgs DATATABLE REPORT_NAME)
   cmake_parse_arguments(arg "" "${mandatoryArgs}" "" ${ARGN})
 
-  set(CCPP_DATAFILE_CMD "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen-ng/ccpp_datafile.py")
+  set(CCPP_DATAFILE_CMD "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen/ccpp_datafile.py")
 
   if(NOT EXISTS ${CCPP_DATAFILE_CMD})
     message(FATAL_ERROR "function(ccpp_datafile): Could not find ccpp_datafile.py.  Looked for ${CCPP_DATAFILE_CMD}.")
