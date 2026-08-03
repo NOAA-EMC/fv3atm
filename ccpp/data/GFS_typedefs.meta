@@ -2777,7 +2777,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling))
+  active = (flag_for_surface_flux_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling) .or. flag_for_catchem_coupling)
 [dqsfci_cpl]
   standard_name = surface_upward_latent_heat_flux_for_coupling
   long_name = instantaneous sfc latent heat flux
@@ -2785,7 +2785,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling))
+  active = (flag_for_surface_flux_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling) .or. flag_for_catchem_coupling)
 [dlwsfci_cpl]
   standard_name = surface_downwelling_longwave_flux_for_coupling
   long_name = instantaneous sfc downward lw flux
@@ -2849,7 +2849,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling))
+  active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling) .or. flag_for_catchem_coupling)
 [nnirbmi_cpl]
   standard_name = surface_net_downwelling_direct_nir_shortwave_flux_for_coupling
   long_name = instantaneous net nir beam sfc downward sw flux
@@ -2889,7 +2889,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling))
+  active = (flag_for_surface_flux_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling) .or. flag_for_catchem_coupling)
 [q2mi_cpl]
   standard_name = specific_humidity_at_2m_for_coupling
   long_name = instantaneous Q2m
@@ -2897,7 +2897,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling))
+  active = (flag_for_surface_flux_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling) .or. flag_for_catchem_coupling)
 [u10mi_cpl]
   standard_name = x_wind_at_10m_for_coupling
   long_name = instantaneous U10m
@@ -2929,7 +2929,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling))
+  active = (flag_for_surface_flux_coupling .or. flag_for_land_coupling .or. do_fire_coupling .or. (flag_for_air_quality_coupling .and. .not. flag_for_surface_flux_coupling) .or. flag_for_catchem_coupling)
 [ulwsfcin_cpl]
   standard_name = surface_upwelling_longwave_flux_from_coupled_process
   long_name = surface upwelling LW flux for coupling
@@ -3769,6 +3769,12 @@
 [cplaqm]
   standard_name = flag_for_air_quality_coupling
   long_name = flag controlling cplaqm collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cplcat]
+  standard_name = flag_for_catchem_coupling
+  long_name = flag controlling cplcat collection (default off)
   units = flag
   dimensions = ()
   type = logical
