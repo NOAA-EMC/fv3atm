@@ -1,4 +1,4 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	url = https://github.com/EricSinsky-NOAA/GFDL_atmos_cubed_sphere
-	branch = issue93
+	url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
+	branch = production/GEFS.v12
