@@ -22,6 +22,8 @@ if(BUILD_UFSATM_TESTING)
     project(ufsatm_mpas VERSION 1.0 LANGUAGES C CXX Fortran)
   endif()
   include(ci/CMakeLists.txt)
+else()
+  set(PARENT_DIR "UFSATM")
 endif()
 
 include(cmake/ccpp_capgen.cmake)

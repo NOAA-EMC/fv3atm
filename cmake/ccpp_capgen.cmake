@@ -97,7 +97,7 @@ function(ccpp_validator)
   cmake_parse_arguments(arg "${optionalArgs}" "${oneValueArgs}" "${multi_value_keywords}" ${ARGN})
 
   # Error if script file not found.
-  set(CCPP_VALIDATOR_CMD_LIST "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen/ccpp_validator.py")
+  set(CCPP_VALIDATOR_CMD_LIST "${CMAKE_SOURCE_DIR}/${PARENT_DIR}/ccpp/framework/capgen/ccpp_validator.py")
   if(NOT EXISTS ${CCPP_VALIDATOR_CMD_LIST})
     message(FATAL_ERROR "function(ccpp_validator): Could not find ccpp_validator.py.  Looked for ${CCPP_VALIDATOR_CMD_LIST}.")
   endif()
@@ -183,7 +183,7 @@ function(ccpp_capgen)
   cmake_parse_arguments(arg "${optionalArgs}" "${oneValueArgs}" "${multi_value_keywords}" ${ARGN})
 
   # Error if script file not found.
-  set(CCPP_CAPGEN_CMD_LIST "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen/ccpp_capgen.py")
+  set(CCPP_CAPGEN_CMD_LIST "${CMAKE_SOURCE_DIR}/${PARENT_DIR}/ccpp/framework/capgen/ccpp_capgen.py")
   if(NOT EXISTS ${CCPP_CAPGEN_CMD_LIST})
     message(FATAL_ERROR "function(ccpp_capgen): Could not find ccpp_capgen.py.  Looked for ${CCPP_CAPGEN_CMD_LIST}.")
   endif()
@@ -278,7 +278,7 @@ function(ccpp_datafile)
   set(mandatoryArgs DATATABLE REPORT_NAME)
   cmake_parse_arguments(arg "" "${mandatoryArgs}" "" ${ARGN})
 
-  set(CCPP_DATAFILE_CMD "${CMAKE_SOURCE_DIR}/UFSATM/ccpp/framework/capgen/ccpp_datafile.py")
+  set(CCPP_DATAFILE_CMD "${CMAKE_SOURCE_DIR}/${PARENT_DIR}/ccpp/framework/capgen/ccpp_datafile.py")
 
   if(NOT EXISTS ${CCPP_DATAFILE_CMD})
     message(FATAL_ERROR "function(ccpp_datafile): Could not find ccpp_datafile.py.  Looked for ${CCPP_DATAFILE_CMD}.")
