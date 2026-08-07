@@ -6,8 +6,8 @@ set(PROJECT "CCPP-UFS")
 
 #------------------------------------------------------------------------------
 #
-# Create list of SCHEME_FILES, HOST_FILES, and SUITE_FILES
-# Paths should be relative to CMAKE_SOURCE_DIR (this file's directory)
+# Create list of SCHEME_FILES, HOST_FILES, and SUITE_FILES.
+# Paths should be relative to CMAKE_SOURCE_DIR (this file's directory).
 #
 #------------------------------------------------------------------------------
 
