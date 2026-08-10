@@ -2,7 +2,7 @@ module GFS_typedefs
 
    use mpi_f08
    use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
-   use physcons,                 only: rhowater
+   use physcons,                 only: rhowater, con_rocp
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, NBDSW
    use module_radlw_parameters,  only: topflw_type, sfcflw_type, NBDLW
    use module_mp_tempo_cfgs,     only: ty_tempo_cfgs
@@ -6003,7 +6003,7 @@ module GFS_typedefs
        endif
     else
        !--- Climatological ozone
-       err_message = Model%ozphys%load_o3clim('global_o3prdlos.f77',kozc)
+       err_message = Model%ozphys%load_o3clim('global_o3prdlos.f77',kozc,con_rocp)
     end if
 
     !--- NRL h2o photochemistry physics.
