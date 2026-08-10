@@ -2,18 +2,7 @@ module GFS_typedefs
 
    use mpi_f08
    use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
-   use physcons,                 only: con_cp, con_fvirt, con_g, rholakeice,           &
-                                       con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
-                                       con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
-                                       con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
-                                       con_sbc, con_tice, cimin, con_p0, rhowater,     &
-                                       con_csol, con_epsqs, con_rocp, con_rog,         &
-                                       con_omega, con_rerth, con_psat, karman, rainmin,&
-                                       con_c, con_plnk, con_boltz, con_solr_2008,      &
-                                       con_solr_2002, con_thgni, con_1ovg, con_rgas,   &
-                                       con_avgd, con_amd, con_amw, con_one, con_p001,  &
-                                       con_secinday
-
+   use physcons,                 only: rhowater
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, NBDSW
    use module_radlw_parameters,  only: topflw_type, sfcflw_type, NBDLW
    use module_mp_tempo_cfgs,     only: ty_tempo_cfgs
@@ -3432,7 +3421,7 @@ module GFS_typedefs
                                  cny, gnx, gny, ak, bk, hydrostatic)
 
 !--- modules
-    use physcons,         only: con_rerth, con_pi
+    use physcons,         only: con_rerth, con_pi, con_p0
     use mersenne_twister, only: random_setseed, random_number
 !
     implicit none
@@ -8769,9 +8758,10 @@ module GFS_typedefs
 
   function get_physics_tracer_index (name, Model)
     !This function uses the FMS version of get_tracer_index, but changes the missing tracer index to the value used throughout the physics code, rather than the one used in FMS
+#ifdef FV3
     use tracer_manager_mod, only: get_tracer_index, NO_TRACER
     use field_manager_mod, only: MODEL_ATMOS
-
+#endif
     character(len=*),  intent(in) :: name
     type(GFS_control_type), intent(in) :: Model
 
@@ -8779,16 +8769,16 @@ module GFS_typedefs
     integer :: get_physics_tracer_index
 
     ! UFS-FV3 uses FMS
+#ifdef FV3
     if (Model%dycore_active == Model%dycore_fv3) then
        get_physics_tracer_index = get_tracer_index(MODEL_ATMOS, name, verbose = (Model%me == Model%master) .and. Model%debug)
+       if (get_physics_tracer_index == NO_TRACER) get_physics_tracer_index = physics_no_tracer
     endif
-
+#endif
     ! UFS-MPAS does not use FMS
     if (Model%dycore_active == Model%dycore_mpas) then
        get_physics_tracer_index = get_constituent_index(name, Model%tracer_names)
     endif
-
-    if (get_physics_tracer_index == NO_TRACER) get_physics_tracer_index = physics_no_tracer
 
   end function get_physics_tracer_index
 
