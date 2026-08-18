@@ -2,7 +2,7 @@ module GFS_typedefs
 
    use mpi_f08
    use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
-   use physcons,                 only: rhowater
+   use physcons,                 only: rhowater, con_rocp
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, NBDSW
    use module_radlw_parameters,  only: topflw_type, sfcflw_type, NBDLW
    use module_mp_tempo_cfgs,     only: ty_tempo_cfgs
@@ -60,6 +60,10 @@ module GFS_typedefs
   integer, parameter :: LTP = 0   ! no extra top layer
   !integer, parameter :: LTP = 1   ! add an extra top layer
   integer, parameter :: con_zero = 0
+
+  ! transferred from module physcons
+  real(kind=kind_phys),parameter:: con_qamin = 1.e-16_kind_phys !< Minimum aerosol concentration
+
 !----------------
 ! Data Containers
 !----------------
@@ -1070,7 +1074,7 @@ module GFS_typedefs
     integer              :: decfl           !< deformed CFL factor
     type(ty_tempo_cfgs)  :: tempo_cfgs      !< Tempo MP configuration information.
     logical              :: thompson_mp_is_init=.false. !< Local scheme initialization flag
-    logical              :: tempo_mp_is_init=.false. !< Local scheme initialization flag    
+    logical              :: tempo_mp_is_init=.false. !< Local scheme initialization flag
     real(kind=kind_phys) :: nt_c_l          !< prescribed cloud liquid water number concentration over land
     real(kind=kind_phys) :: nt_c_o          !< prescribed cloud liquid water number concentration over ocean
     real(kind=kind_phys) :: av_i            !< transition value of coefficient matching at crossover from cloud ice to snow
@@ -3355,7 +3359,7 @@ module GFS_typedefs
       allocate (Coupling%nifa2d (IM))
       Coupling%nwfa2d   = clear_val
       Coupling%nifa2d   = clear_val
-    endif   
+    endif
 
     if(Model%rrfs_sd) then
     !--- needed for smoke aerosol option
@@ -5999,7 +6003,7 @@ module GFS_typedefs
        endif
     else
        !--- Climatological ozone
-       err_message = Model%ozphys%load_o3clim('global_o3prdlos.f77',kozc)
+       err_message = Model%ozphys%load_o3clim('global_o3prdlos.f77',kozc,con_rocp)
     end if
 
     !--- NRL h2o photochemistry physics.
