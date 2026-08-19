@@ -2,21 +2,10 @@ module GFS_typedefs
 
    use mpi_f08
    use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
-   use physcons,                 only: con_cp, con_fvirt, con_g, rholakeice,           &
-                                       con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
-                                       con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
-                                       con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
-                                       con_sbc, con_tice, cimin, con_p0, rhowater,     &
-                                       con_csol, con_epsqs, con_rocp, con_rog,         &
-                                       con_omega, con_rerth, con_psat, karman, rainmin,&
-                                       con_c, con_plnk, con_boltz, con_solr_2008,      &
-                                       con_solr_2002, con_thgni, con_1ovg, con_rgas,   &
-                                       con_avgd, con_amd, con_amw, con_one, con_p001,  &
-                                       con_secinday
-
+   use physcons,                 only: rhowater
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, NBDSW
    use module_radlw_parameters,  only: topflw_type, sfcflw_type, NBDLW
-   use module_mp_tempo_params,   only: ty_tempo_cfg
+   use module_mp_tempo_cfgs,     only: ty_tempo_cfgs
    use module_ozphys,            only: ty_ozphys
    use module_h2ophys,           only: ty_h2ophys
    use land_iau_mod,             only: land_iau_external_data_type, land_iau_control_type, &
@@ -791,6 +780,7 @@ module GFS_typedefs
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplaqm          !< default no cplaqm collection
+    logical              :: cplcat          !< default no cplcat collection
     logical              :: cplchm          !< default no cplchm collection
     logical              :: cpllnd          !< default no cpllnd collection
     logical              :: cpllnd2atm      !< default no lnd->atm coupling
@@ -1078,8 +1068,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: dt_inner        !< time step for the inner loop in s
     logical              :: sedi_semi       !< flag for semi Lagrangian sedi of rain
     integer              :: decfl           !< deformed CFL factor
-    type(ty_tempo_cfg)   :: tempo_cfg       !< Thompson MP configuration information.
+    type(ty_tempo_cfgs)  :: tempo_cfgs      !< Tempo MP configuration information.
     logical              :: thompson_mp_is_init=.false. !< Local scheme initialization flag
+    logical              :: tempo_mp_is_init=.false. !< Local scheme initialization flag    
     real(kind=kind_phys) :: nt_c_l          !< prescribed cloud liquid water number concentration over land
     real(kind=kind_phys) :: nt_c_o          !< prescribed cloud liquid water number concentration over ocean
     real(kind=kind_phys) :: av_i            !< transition value of coefficient matching at crossover from cloud ice to snow
@@ -3105,14 +3096,14 @@ module GFS_typedefs
     endif
 
     ! -- additional coupling options for air quality
-    if (Model%cplflx .or. Model%cpllnd .or. Model%cpl_fire .or. (Model%cplaqm .and. .not.Model%cplflx)) then
+    if (Model%cplflx .or. Model%cpllnd .or. Model%cpl_fire .or. (Model%cplaqm .and. .not.Model%cplflx) .or. Model%cplcat) then
       allocate (Coupling%psurfi_cpl  (IM))
       allocate (Coupling%nswsfci_cpl (IM))
       Coupling%psurfi_cpl  = clear_val
       Coupling%nswsfci_cpl = clear_val
     endif
 
-    if (Model%cplflx .or. Model%cpl_fire .or. (Model%cplaqm .and. .not.Model%cplflx)) then
+    if (Model%cplflx .or. Model%cpl_fire .or. (Model%cplaqm .and. .not.Model%cplflx) .or. Model%cplcat) then
       allocate (Coupling%dtsfci_cpl  (IM))
       allocate (Coupling%dqsfci_cpl  (IM))
       allocate (Coupling%t2mi_cpl    (IM))
@@ -3349,14 +3340,22 @@ module GFS_typedefs
     endif
 
     !--- needed for Thompson's aerosol option
-    if((Model%imp_physics == Model%imp_physics_thompson .or. &
-         Model%imp_physics == Model%imp_physics_tempo) .and. &
+    if((Model%imp_physics == Model%imp_physics_thompson) .and. &
          (Model%ltaerosol .or. Model%mraerosol)) then
       allocate (Coupling%nwfa2d (IM))
       allocate (Coupling%nifa2d (IM))
       Coupling%nwfa2d   = clear_val
       Coupling%nifa2d   = clear_val
     endif
+
+    !--- needed for Tempo's aerosol option
+    if((Model%imp_physics == Model%imp_physics_tempo) .and. &
+         (Model%ltaerosol)) then
+      allocate (Coupling%nwfa2d (IM))
+      allocate (Coupling%nifa2d (IM))
+      Coupling%nwfa2d   = clear_val
+      Coupling%nifa2d   = clear_val
+    endif   
 
     if(Model%rrfs_sd) then
     !--- needed for smoke aerosol option
@@ -3422,7 +3421,7 @@ module GFS_typedefs
                                  cny, gnx, gny, ak, bk, hydrostatic)
 
 !--- modules
-    use physcons,         only: con_rerth, con_pi
+    use physcons,         only: con_rerth, con_pi, con_p0
     use mersenne_twister, only: random_setseed, random_number
 !
     implicit none
@@ -3515,6 +3514,7 @@ module GFS_typedefs
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplaqm         = .false.         !< default no cplaqm collection
+    logical              :: cplcat         = .false.         !< default no cplcat collection
     logical              :: cplchm         = .false.         !< default no cplchm collection
     logical              :: cpllnd         = .false.         !< default no cpllnd collection
     logical              :: cpllnd2atm     = .false.         !< default no cpllnd2atm coupling
@@ -4210,7 +4210,7 @@ module GFS_typedefs
                                tend_opt_mp, tend_opt_stoch,                                 &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
-                               cplchm, cpllnd, cpllnd2atm,                                  &
+                               cplchm, cplcat, cpllnd, cpllnd2atm,                          &
                                cpl_fire, rrfs_sd, use_cice_alb,                             &
 #ifdef IDEA_PHYS
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
@@ -4661,7 +4661,8 @@ module GFS_typedefs
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
     Model%cplaqm           = cplaqm
-    Model%cplchm           = cplchm .or. cplaqm
+    Model%cplcat           = cplcat
+    Model%cplchm           = cplchm .or. cplaqm .or. cplcat
     Model%cpllnd           = cpllnd
     Model%cpllnd2atm       = cpllnd2atm
     Model%use_cice_alb     = use_cice_alb
@@ -5006,12 +5007,8 @@ module GFS_typedefs
 
 !--- TEMPO MP parameters
     ! DJS to Anders: Maybe we put more of these nml options into the TEMPO configuration type?
-    Model%tempo_cfg%aerosol_aware = (ltaerosol .or. mraerosol)
-    Model%tempo_cfg%hail_aware    = lthailaware
-    if (Model%ltaerosol .and. Model%mraerosol) then
-       write(0,*) 'Logic error: Only one TEMPO aerosol option can be true, either ltaerosol or mraerosol)'
-       stop
-    end if
+    Model%tempo_cfgs%aerosolaware_flag = ltaerosol
+    Model%tempo_cfgs%hailaware_flag    = lthailaware
 
 !--- F-A MP parameters
     Model%rhgrd            = rhgrd
@@ -6932,6 +6929,7 @@ module GFS_typedefs
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplaqm            : ', Model%cplaqm
+      print *, ' cplcat            : ', Model%cplcat
       print *, ' cplchm            : ', Model%cplchm
       print *, ' cpllnd            : ', Model%cpllnd
       print *, ' cpllnd2atm        : ', Model%cpllnd2atm
@@ -8760,9 +8758,10 @@ module GFS_typedefs
 
   function get_physics_tracer_index (name, Model)
     !This function uses the FMS version of get_tracer_index, but changes the missing tracer index to the value used throughout the physics code, rather than the one used in FMS
+#ifdef FV3
     use tracer_manager_mod, only: get_tracer_index, NO_TRACER
     use field_manager_mod, only: MODEL_ATMOS
-
+#endif
     character(len=*),  intent(in) :: name
     type(GFS_control_type), intent(in) :: Model
 
@@ -8770,16 +8769,16 @@ module GFS_typedefs
     integer :: get_physics_tracer_index
 
     ! UFS-FV3 uses FMS
+#ifdef FV3
     if (Model%dycore_active == Model%dycore_fv3) then
        get_physics_tracer_index = get_tracer_index(MODEL_ATMOS, name, verbose = (Model%me == Model%master) .and. Model%debug)
+       if (get_physics_tracer_index == NO_TRACER) get_physics_tracer_index = physics_no_tracer
     endif
-
+#endif
     ! UFS-MPAS does not use FMS
     if (Model%dycore_active == Model%dycore_mpas) then
        get_physics_tracer_index = get_constituent_index(name, Model%tracer_names)
     endif
-
-    if (get_physics_tracer_index == NO_TRACER) get_physics_tracer_index = physics_no_tracer
 
   end function get_physics_tracer_index
 

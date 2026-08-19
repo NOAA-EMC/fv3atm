@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_HRRR_gf_nogwd" version="1.0">
+<suite name="FV3_WoFS_v0_tempo"  version="1.0">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -38,8 +38,11 @@
     <subcycle loop="2">
       <scheme>module_sf_mynnsfc_driver</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
-      <scheme>lsm_ruc</scheme>
-      <scheme>clm_lake</scheme>
+      <scheme>sfc_nst_pre</scheme>
+      <scheme>sfc_nst</scheme>
+      <scheme>sfc_nst_post</scheme>
+      <scheme>lsm_noah</scheme>
+      <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
     <!-- End of surface iteration loop -->
@@ -48,10 +51,12 @@
       <scheme>sfc_diag</scheme>
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
-      <scheme>rrfs_smoke_wrapper</scheme>
       <scheme>mynnedmf_wrapper</scheme>
       <scheme>mynnedmf_wrapper_post</scheme>
-      <scheme>rrfs_smoke_postpbl</scheme>
+      <scheme>GFS_GWD_generic_pre</scheme>
+      <scheme>cires_ugwp</scheme>
+      <scheme>cires_ugwp_post</scheme>
+      <scheme>GFS_GWD_generic_post</scheme>
     </subcycle>
   </group>
   <group name="phys_ts">
@@ -59,16 +64,9 @@
       <scheme>GFS_photochemistry</scheme>
       <scheme>GFS_photochemistry_post</scheme>
       <scheme>get_phi_fv3</scheme>
-      <scheme>GFS_suite_interstitial_3</scheme>
-      <scheme>cu_gf_driver_pre</scheme>
-      <scheme>cu_gf_driver</scheme>
-      <scheme>GFS_DCNV_generic_post</scheme>
-      <scheme>GFS_suite_interstitial_4</scheme>
-      <scheme>cnvc90</scheme>
-      <scheme>mp_thompson</scheme>
-      <scheme>mp_thompson_post</scheme>
+      <scheme>mp_tempo</scheme>
+      <scheme>mp_tempo_post</scheme>      
       <scheme>GFS_MP_generic_post</scheme>
-      <scheme>cu_gf_driver_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
       <scheme>GFS_physics_post</scheme>
     </subcycle>
