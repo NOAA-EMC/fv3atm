@@ -343,27 +343,6 @@ else(CCPP_32BIT)
   endif()
 endif(CCPP_32BIT)
 
-# Set flags for SAMF Convection (32-bit option)
-option(SAMFCNV_32BIT "Compile SAMF Convection with 32-bit precision" OFF)
-
-if(SAMFCNV_32BIT)
-	message(STATUS "Compile CCPP SAMFCNV with 32-bit precision")
-
-  # Note: We do NOT use add_definitions(-DSAMFCNV_USE_SP) here.
-  # The macro is applied locally in physics/CMakeLists.txt only to specific files
-  # to protect 64-bit bridge files (generic_pre/post).
-
-  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-	  set(CMAKE_Fortran_FLAGS_SAMFCNV "-real-size 32 -DSAMFCNV_USE_SP")
-  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-	  set(CMAKE_Fortran_FLAGS_SAMFCNV "-fno-default-real-8 -fdefault-double-8 -DSAMFCNV_USE_SP")
-  endif()
-else()
-	message(STATUS "Compile CCPP SAMFCNV with 64-bit precision")
-  # Default to standard physics flags (64-bit)
-  set(CMAKE_Fortran_FLAGS_SAMFCNV ${CMAKE_Fortran_FLAGS_PHYSICS})
-endif()
-
 #------------------------------------------------------------------------------
 # Set compiler options for 32bit dynamics build	(only fv_sat_adj.F90)
 #------------------------------------------------------------------------------
@@ -441,6 +420,39 @@ if(RRTMGP_32BIT)
     set_property(SOURCE ${RRTMGP_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -real-size 32)
   else()
     message(FATAL_ERROR "rte-rrtmgp 32-bit not supported for Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
+  endif()
+endif()
+
+#------------------------------------------------------------------------------
+# Set flags for SAMF Convection (32-bit option)
+#------------------------------------------------------------------------------
+option(SAMFCNV_32BIT "Compile SAMF Convection with 32-bit precision" OFF)
+
+if(SAMFCNV_32BIT)
+  message(STATUS "Compile CCPP SAMFCNV with 32-bit precision")
+
+  set(SAMF_NAMES
+    mo_conv_kind.F90
+    samfdeepcnv.f
+    samfshalcnv.f
+    progomega_calc.f90
+    progsigma_calc.f90
+  )
+  set(SAMF_FORTRAN_FILES)
+
+  # SCHEME_FORTRAN_FILES 목록에서 SAMF 소스 파일 풀경로 필터링
+  foreach(NAME IN LISTS SAMF_NAMES)
+    set(TMP_LIST ${SCHEME_FORTRAN_FILES})
+    list(FILTER TMP_LIST INCLUDE REGEX ".*${NAME}$")
+    list(APPEND SAMF_FORTRAN_FILES ${TMP_LIST})
+  endforeach()
+
+  if(SAMF_FORTRAN_FILES)
+    if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+      set_property(SOURCE ${SAMF_FORTRAN_FILES} APPEND PROPERTY COMPILE_OPTIONS "-real-size;32;-DSAMFCNV_USE_SP")
+    elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+      set_property(SOURCE ${SAMF_FORTRAN_FILES} APPEND PROPERTY COMPILE_OPTIONS "-fno-default-real-8;-fdefault-double-8;-DSAMFCNV_USE_SP")
+    endif()
   endif()
 endif()
 
