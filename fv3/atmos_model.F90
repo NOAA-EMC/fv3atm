@@ -80,14 +80,14 @@ use GFS_typedefs,       only: GFS_init_type, GFS_kind_phys => kind_phys
 use GFS_restart,        only: GFS_restart_type, GFS_restart_populate
 use GFS_diagnostics,    only: GFS_externaldiag_type, &
                               GFS_externaldiag_populate
-use CCPP_data,          only: ccpp_suite, GFS_control, &
+use CCPP_data,          only: GFS_control, &
                               GFS_statein, GFS_stateout, &
                               GFS_grid, GFS_tbd, GFS_cldprop, &
                               GFS_sfcprop, GFS_radtend, &
                               GFS_coupling, GFS_intdiag, &
                               GFS_interstitial
 use GFS_init,           only: GFS_initialize
-use CCPP_driver,        only: CCPP_step
+use CCPP_driver,        only: CCPP_step, ccpp_suite
 use mod_ufsatm_util,    only: get_atmos_tracer_types
 use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper,stochastic_physics_wrapper_end
 
@@ -414,10 +414,10 @@ subroutine update_atmos_radiation_physics (Atmos)
       call getiauforcing(GFS_control,IAU_data,Atm(mygrid))
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
 
-!--- execute the atmospheric timestep finalize step
+!--- execute the atmospheric timestep final step
       call mpp_clock_begin(setupClock)
-      call CCPP_step (step="timestep_finalize", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_finalize step failed')
+      call CCPP_step (step="timestep_final", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_final step failed')
       call mpp_clock_end(setupClock)
 
     endif
@@ -733,6 +733,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
         GFS_Stateout%gq0 = GFS_Statein%qgrs
     endif
 
+   ! Register CCPP
+   call CCPP_step (step="register", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP register step failed')
    ! Initialize the CCPP framework
    call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
@@ -1074,13 +1077,13 @@ subroutine atmos_model_end (Atmos)
     endif
 
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
-!   standard/slow physics (from CCPP) are finalized in CCPP_step 'physics_finalize'.
-    call CCPP_step (step="physics_finalize", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
-    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_finalize step failed')
+!   standard/slow physics (from CCPP) are finalized in CCPP_step 'physics_final'.
+    call CCPP_step (step="physics_final", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_final step failed')
 
-!   The CCPP framework for all cdata structures is finalized in CCPP_step 'finalize'.
-    call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
-    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
+!   The CCPP framework is finalized in CCPP_step 'final'.
+    call CCPP_step (step="final", nblks=Atm_block%nblks, ierr=ierr, dycore='fv3')
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP final step failed')
 
     deallocate (Atmos%lon, Atmos%lat)
     deallocate (Atmos%lon_bnd, Atmos%lat_bnd)
@@ -1552,7 +1555,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      if (GFS_Control%cplaqm) then
+      if (GFS_Control%cplaqm .or. GFS_Control%cplcat) then
 
         call cplFieldGet(state,'canopy_moisture_storage', farrayPtr2d=canopy, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -1617,8 +1620,8 @@ subroutine update_atmos_chemistry(state, rc)
         call cplFieldGet(state,'vegetation_type', farrayPtr2d=vtype, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      else
+      end if
+      if (.not. GFS_Control%cplaqm) then
 
         call cplFieldGet(state,'inst_liq_nonconv_tendency_levels', &
                          farrayPtr3d=pflls, rc=localrc)
@@ -1720,7 +1723,7 @@ subroutine update_atmos_chemistry(state, rc)
       u10m = reshape(GFS_Coupling%u10mi_cpl, shape(u10m))
       v10m = reshape(GFS_Coupling%v10mi_cpl, shape(v10m))
 
-      if (GFS_Control%cplaqm) then
+      if (GFS_Control%cplaqm .or. GFS_Control%cplcat) then
         cmm = reshape(GFS_IntDiag%cmm, shape(cmm))
         canopy = reshape(GFS_Sfcprop%canopy, shape(canopy))
         !oro(i,j)    = max(0.d0, GFS_Data(nb)%Sfcprop%oro(ix))
@@ -1755,7 +1758,8 @@ subroutine update_atmos_chemistry(state, rc)
         psfc   = reshape(GFS_Coupling%psurfi_cpl, shape(psfc))
         q2m    = reshape(GFS_Coupling%q2mi_cpl, shape(q2m))
         t2m    = reshape(GFS_Coupling%t2mi_cpl, shape(t2m))
-      else
+      end if
+      if (.not. GFS_Control%cplaqm) then
         !flake(i,j)  = max(zero, GFS_Data(nb)%Sfcprop%lakefrac(ix))
         flake = reshape(GFS_Sfcprop%lakefrac, shape(flake))
         where (flake<zero) flake = zero
@@ -1814,7 +1818,7 @@ subroutine update_atmos_chemistry(state, rc)
         write(6,'("update_atmos: pflls  - min/max/avg",3g16.6)') minval(pflls),  maxval(pflls),  sum(pflls)/size(pflls)
         write(6,'("update_atmos: u10m   - min/max/avg",3g16.6)') minval(u10m),   maxval(u10m),   sum(u10m)/size(u10m)
         write(6,'("update_atmos: v10m   - min/max/avg",3g16.6)') minval(v10m),   maxval(v10m),   sum(v10m)/size(v10m)
-        if (GFS_Control%cplaqm) then
+        if (GFS_Control%cplaqm .or. GFS_Control%cplcat) then
           write(6,'("update_atmos: canopy - min/max/avg",3g16.6)') minval(canopy), maxval(canopy), sum(canopy)/size(canopy)
           write(6,'("update_atmos: cmm    - min/max/avg",3g16.6)') minval(cmm),    maxval(cmm),    sum(cmm)/size(cmm)
           write(6,'("update_atmos: dqsfc  - min/max/avg",3g16.6)') minval(dqsfc),  maxval(dqsfc),  sum(dqsfc)/size(dqsfc)
@@ -1831,7 +1835,8 @@ subroutine update_atmos_chemistry(state, rc)
           write(6,'("update_atmos: xlai   - min/max/avg",3g16.6)') minval(xlai),   maxval(xlai),   sum(xlai)/size(xlai)
           write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
           write(6,'("update_atmos: vtype  - min/max/avg",3g16.6)') minval(vtype),  maxval(vtype),  sum(vtype)/size(vtype)
-        else
+        end if
+        if (.not. GFS_Control%cplaqm) then
           write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
           write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
           write(6,'("update_atmos: shfsfc - min/max/avg",3g16.6)') minval(shfsfc), maxval(shfsfc), sum(shfsfc)/size(shfsfc)
