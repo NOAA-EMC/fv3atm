@@ -537,7 +537,7 @@ contains
     ! Initialize stochastic pattern generation
     call mpas_pool_get_config(domain_ptr % blocklist % configs, 'do_sppt', do_sppt)
     if (do_sppt) then
-       call stochastic_physics_pattern_init(domain_ptr, ierr)
+       call stochastic_physics_pattern_init(domain_ptr)
        if (ierr /= 0) then
           call mpas_log_write('Failed stochastic_physics_pattern_init call')
           return
@@ -662,7 +662,7 @@ contains
        ! Update stochastic physics pattern
        call mpas_pool_get_config(domain_ptr % blocklist % configs, 'do_sppt', do_sppt)
        if (do_sppt) then
-          call stochastic_physics_pattern_adv(domain_ptr, itimestep, ierr)
+          call stochastic_physics_pattern_adv(domain_ptr, itimestep)
        endif
 
        ! Integrate forward one dycore time step
