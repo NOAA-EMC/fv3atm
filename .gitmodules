@@ -8,7 +8,8 @@
   branch = feature/capgen-v1
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/ufs-community/ccpp-physics
+  #url = https://github.com/ufs-community/ccpp-physics
+  url = https://github.com/RuiyuSun/ccpp-physics
   branch = ufs/dev
 [submodule "upp"]
   path = upp
