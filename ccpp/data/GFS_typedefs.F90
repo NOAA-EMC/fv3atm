@@ -1309,6 +1309,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: betascu         !< Tuning parameter for prog. closure shallow clouds
     real(kind=kind_phys) :: betamcu         !< Tuning parameter for prog. closure midlevel clouds
     real(kind=kind_phys) :: betadcu         !< Tuning parameter for prog. closure deep clouds
+    real(kind=kind_phys) :: lbb1            !< Tuning parameter for prog updraft entrainment term
+    real(kind=kind_phys) :: lbb2            !< Tuning parameter for prog updraft buoyancy term
+    real(kind=kind_phys) :: lbb3            !< Tuning parameter for prog updraft shear term
+    real(kind=kind_phys) :: dt_decay        !< Tuning parameter for prog updraft decay time
+    
     logical              :: sigmab_coldstart !< flag to cold start sigmab
 
     !--- MYNN parameters/switches
@@ -3922,6 +3927,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: betascu           = 8.0 !< Tuning parameter for prog. closure shallow clouds
     real(kind=kind_phys) :: betamcu           = 1.0 !< Tuning parameter for prog. closure midlevel clouds
     real(kind=kind_phys) :: betadcu           = 2.0 !< Tuning parameter for prog. closure deep clouds
+    real(kind=kind_phys) :: lbb1              = 4.0 !< Tuning parameter for prog. updraft entrainment term
+    real(kind=kind_phys) :: lbb2              = 0.8 !< Tuning parameter for prog. updraft entrainment term
+    real(kind=kind_phys) :: lbb3              = 1.0 !< Tuning parameter for prog. updraft entrainment term
+    real(kind=kind_phys) :: dt_decay          = 3600. !< Tuning parameter for prog. updraft decay time
+    
     logical              :: sigmab_coldstart  = .false. !< flag to cold start sigmab
     ! *DH
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
@@ -4291,7 +4301,8 @@ module GFS_typedefs
                                ugwp_seq_update, var_ric, coef_ric_l, coef_ric_s, hurr_pbl,  &
                                do_myjsfc, do_myjpbl,                                        &
                                hwrf_samfdeep, hwrf_samfshal,progsigma,progomega,betascu,    &
-                               betamcu, betadcu,h2o_phys, pdfcld, shcnvcw, redrag,          &
+                               betamcu, betadcu, lbb1, lbb2, lbb3, dt_decay, h2o_phys,      &
+                               pdfcld, shcnvcw, redrag,                                     &
                                hybedmf, satmedmf, tte_edmf, sigmab_coldstart,               &
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                xr_cnvcld, random_clds, shal_cnv, imfshalcnv, imfdeepcnv,    &
@@ -5204,24 +5215,38 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
-    !--prognostic closure - check
-    if ((progsigma .and. imfdeepcnv/=2) .and. (progsigma .and. imfdeepcnv/=5)) then
-       write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
+    !-- Prognostic closure check
+    if (progsigma .and. .not. (                         &
+         imfdeepcnv == Model%imfdeepcnv_samf .or.             &
+         imfdeepcnv == Model%imfdeepcnv_c3   .or.             &
+         imfshalcnv == Model%imfshalcnv_samf .or.             &
+         imfshalcnv == Model%imfshalcnv_c3)) then
+       
+       write(*,*) 'Logic error: progsigma requires SAMF or C3 deep/shallow convection'
        stop
-    end if
+    endif
     Model%progsigma = progsigma
     Model%betascu = betascu
     Model%betamcu = betamcu
     Model%betadcu = betadcu
     Model%sigmab_coldstart = sigmab_coldstart
 
-    !--prognostic closure - check
-    if (progomega .and. imfdeepcnv/=2) then
-       write(*,*) 'Logic error: progomega requires imfdeepcnv=2'
+    !-- Prognostic closure check
+    if (progomega .and. .not. (                         &
+         imfdeepcnv == Model%imfdeepcnv_samf .or.             &
+         imfdeepcnv == Model%imfdeepcnv_c3   .or.             &
+         imfshalcnv == Model%imfshalcnv_samf .or.             &
+         imfshalcnv == Model%imfshalcnv_c3)) then
+       write(*,*) 'Logic error: progomega requires SAMF or C3 deep/shallow convection'
        stop
-    end if
+    endif
+    
     Model%progomega = progomega
-
+    Model%lbb1 = lbb1
+    Model%lbb2 = lbb2
+    Model%lbb3 = lbb3
+    Model%dt_decay = dt_decay
+    
     if (oz_phys .and. oz_phys_2015) then
        write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
        stop
@@ -7363,6 +7388,10 @@ module GFS_typedefs
       print *, 'betascu            : ', Model%betascu
       print *, 'betamcu            : ', Model%betamcu
       print *, 'betadcu            : ', Model%betadcu
+      print *, 'lbb1               : ', Model%lbb1
+      print *, 'lbb2               : ', Model%lbb2
+      print *, 'lbb3               : ', Model%lbb3
+      print *, 'dt_decay           : ', Model%dt_decay
       print *, 'sigmab_coldstart   : ', Model%sigmab_coldstart
       print *, ' '
       print *, 'cellular automata'
