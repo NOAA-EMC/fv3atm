@@ -85,8 +85,6 @@ module ufs_mpas_io
        var_info_type('cf3'                             , 'real'      , 0), &
        var_info_type('coeffs_reconstruct'              , 'real'      , 3), &
        var_info_type('dcEdge'                          , 'real'      , 1), &
-       var_info_type('defc_a'                          , 'real'      , 2), &
-       var_info_type('defc_b'                          , 'real'      , 2), &
        var_info_type('deriv_two'                       , 'real'      , 3), &
        var_info_type('dss'                             , 'real'      , 2), &
        var_info_type('dvEdge'                          , 'real'      , 1), &
@@ -271,7 +269,6 @@ module ufs_mpas_io
   !> #########################################################################################
   type(var_info_type), parameter :: history_var_info_list(*) = [ &
   var_info_type('stoch_pattern_sppt'              , 'real',       2), &
-       var_info_type('stoch_pattern_gg'                , 'real',       2), & 
        var_info_type('Time'                            , 'real'      , 0), &
        var_info_type('initial_time'                    , 'character' , 0), &
        var_info_type('divergence'                      , 'real'      , 2), &

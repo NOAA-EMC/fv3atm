@@ -202,10 +202,17 @@ contains
     call mpas_log_write('config_run_duration = '//trim(int2str(tod))//'_'//sec2hms(total_time))
 
     ! Set other MPAS required configuration information.
-    call mpas_pool_add_config(domain_ptr % configs, 'config_restart_timestamp_name', 'restart_timestamp')
-    call mpas_pool_add_config(domain_ptr % configs, 'config_IAU_option',             'off')
-    call mpas_pool_add_config(domain_ptr % configs, 'config_do_DAcycling',           .false.)
-    call mpas_pool_add_config(domain_ptr % configs, 'config_halo_exch_method',       'mpas_halo')
+    call mpas_pool_add_config(domain_ptr % configs, 'config_restart_timestamp_name',  'restart_timestamp')
+    call mpas_pool_add_config(domain_ptr % configs, 'config_IAU_option',              'off')
+    call mpas_pool_add_config(domain_ptr % configs, 'config_do_DAcycling',            .false.)
+    call mpas_pool_add_config(domain_ptr % configs, 'config_halo_exch_method',        'mpas_halo')
+    call mpas_pool_add_config(domain_ptr % configs, 'config_gpu_aware_mpi',           .false.)
+    call mpas_pool_add_config(domain_ptr % configs, 'config_mix_scalars',             .false.)
+    call mpas_pool_add_config(domain_ptr % configs, 'config_les_model',               'none')
+    call mpas_pool_add_config(domain_ptr % configs, 'config_les_surface',             'none')
+    call mpas_pool_add_config(domain_ptr % configs, 'config_surface_heat_flux',       0.)
+    call mpas_pool_add_config(domain_ptr % configs, 'config_surface_moisture_flux',   0.)
+    call mpas_pool_add_config(domain_ptr % configs, 'config_surface_drag_coefficient',0.)
 
     !
     ! Initialize MPAS infrastructure (phase 2)
@@ -783,7 +790,7 @@ contains
     real(r8)                :: mpas_coef_3rd_order                 = 0.25_r8
     real(r8)                :: mpas_smagorinsky_coef               = 0.125_r8
     logical                 :: mpas_mix_full                       = .true.
-    real(r8)                :: mpas_epssm                          = 0.1_r8
+    !real(r8)                :: mpas_epssm                          = 0.1_r8
     real(r8)                :: mpas_smdiv                          = 0.1_r8
     real(r8)                :: mpas_apvm_upwinding                 = 0.5_r8
     logical                 :: mpas_h_ScaleWithMesh                = .true.
@@ -795,6 +802,10 @@ contains
     logical                 :: mpas_rayleigh_damp_u                = .false.
     real(r8)                :: mpas_rayleigh_damp_u_timescale_days = 5.0_r8
     integer                 :: mpas_number_rayleigh_damp_u_levels  = 6
+    real(r8)                :: mpas_epssm_minimum                  = 0.1
+    real(r8)                :: mpas_epssm_maximum                  = 0.5
+    real(r8)                :: mpas_epssm_transition_bottom_z      = 3000.
+    real(r8)                :: mpas_epssm_transition_top_z         = 50000.
     ! Namelist limited_area
     logical                 :: mpas_apply_lbcs                     = .false.
     ! Namelist PIO
@@ -841,12 +852,13 @@ contains
          mpas_scalar_eddy_mix, mpas_u_vadv_order,                                             &
          mpas_w_vadv_order, mpas_theta_vadv_order, mpas_scalar_vadv_order,                    &
          mpas_scalar_advection, mpas_positive_definite, mpas_monotonic, mpas_coef_3rd_order,  &
-         mpas_smagorinsky_coef, mpas_mix_full, mpas_epssm, mpas_smdiv, mpas_apvm_upwinding,   &
+         mpas_smagorinsky_coef, mpas_mix_full, mpas_smdiv, mpas_apvm_upwinding,   &
          mpas_h_ScaleWithMesh
     !
     namelist /mpas_damping/ mpas_zd, mpas_xnutr, mpas_cam_coef, mpas_cam_damping_levels,      &
          mpas_rayleigh_damp_u, mpas_rayleigh_damp_u_timescale_days,                           &
-         mpas_number_rayleigh_damp_u_levels
+         mpas_number_rayleigh_damp_u_levels, mpas_epssm_minimum, mpas_epssm_maximum,          &
+         mpas_epssm_transition_bottom_z, mpas_epssm_transition_top_z
     !
     namelist /mpas_limited_area/  mpas_apply_lbcs
     !
@@ -952,7 +964,7 @@ contains
     call mpi_bcast(mpas_coef_3rd_order,                 1, mpi_real8,     master, mpicomm, mpierr)
     call mpi_bcast(mpas_smagorinsky_coef,               1, mpi_real8,     master, mpicomm, mpierr)
     call mpi_bcast(mpas_mix_full,                       1, mpi_logical,   master, mpicomm, mpierr)
-    call mpi_bcast(mpas_epssm,                          1, mpi_real8,     master, mpicomm, mpierr)
+    !call mpi_bcast(mpas_epssm,                          1, mpi_real8,     master, mpicomm, mpierr)
     call mpi_bcast(mpas_smdiv,                          1, mpi_real8,     master, mpicomm, mpierr)
     call mpi_bcast(mpas_apvm_upwinding,                 1, mpi_real8,     master, mpicomm, mpierr)
     call mpi_bcast(mpas_h_ScaleWithMesh,                1, mpi_logical,   master, mpicomm, mpierr)
@@ -964,6 +976,10 @@ contains
     call mpi_bcast(mpas_rayleigh_damp_u,                1, mpi_logical,   master, mpicomm, mpierr)
     call mpi_bcast(mpas_rayleigh_damp_u_timescale_days, 1, mpi_real8,     master, mpicomm, mpierr)
     call mpi_bcast(mpas_number_rayleigh_damp_u_levels,  1, mpi_integer,   master, mpicomm, mpierr)
+    call mpi_bcast(mpas_epssm_minimum,                  1, mpi_real8,     master, mpicomm, mpierr)
+    call mpi_bcast(mpas_epssm_maximum,                  1, mpi_real8,     master, mpicomm, mpierr)
+    call mpi_bcast(mpas_epssm_transition_bottom_z,      1, mpi_real8,     master, mpicomm, mpierr)
+    call mpi_bcast(mpas_epssm_transition_top_z,         1, mpi_real8,     master, mpicomm, mpierr)
     !
     call mpi_bcast(mpas_apply_lbcs,                     1, mpi_logical,   master, mpicomm, mpierr)
     !
@@ -1034,7 +1050,7 @@ contains
     call mpas_pool_add_config(configPool, 'config_coef_3rd_order',                 real(mpas_coef_3rd_order,kind=RKIND))
     call mpas_pool_add_config(configPool, 'config_smagorinsky_coef',               real(mpas_smagorinsky_coef,kind=RKIND))
     call mpas_pool_add_config(configPool, 'config_mix_full',                       mpas_mix_full)
-    call mpas_pool_add_config(configPool, 'config_epssm',                          real(mpas_epssm,kind=RKIND))
+    !call mpas_pool_add_config(configPool, 'config_epssm',                          real(mpas_epssm,kind=RKIND))
     call mpas_pool_add_config(configPool, 'config_smdiv',                          real(mpas_smdiv,kind=RKIND))
     call mpas_pool_add_config(configPool, 'config_apvm_upwinding',                 real(mpas_apvm_upwinding,kind=RKIND))
     call mpas_pool_add_config(configPool, 'config_h_ScaleWithMesh',                mpas_h_ScaleWithMesh)
@@ -1046,6 +1062,10 @@ contains
     call mpas_pool_add_config(configPool, 'config_rayleigh_damp_u',                mpas_rayleigh_damp_u)
     call mpas_pool_add_config(configPool, 'config_rayleigh_damp_u_timescale_days', real(mpas_rayleigh_damp_u_timescale_days,kind=RKIND))
     call mpas_pool_add_config(configPool, 'config_number_rayleigh_damp_u_levels',  mpas_number_rayleigh_damp_u_levels)
+    call mpas_pool_add_config(configPool, 'config_epssm_minimum',                  real(mpas_epssm_minimum))
+    call mpas_pool_add_config(configPool, 'config_epssm_maximum',                  real(mpas_epssm_maximum))
+    call mpas_pool_add_config(configPool, 'config_epssm_transition_bottom_z',      real(mpas_epssm_transition_bottom_z))
+    call mpas_pool_add_config(configPool, 'config_epssm_transition_top_z',         real(mpas_epssm_transition_top_z))
     !
     call mpas_pool_add_config(configPool, 'config_apply_lbcs',                     mpas_apply_lbcs)
     !
@@ -1123,7 +1143,6 @@ contains
        call mpas_log_write('   mpas_coef_3rd_order                 = '//int2str(int(mpas_coef_3rd_order)))
        call mpas_log_write('   mpas_smagorinsky_coef               = '//int2str(int(mpas_smagorinsky_coef)))
        call mpas_log_write('   mpas_mix_full                       = '//log2str(mpas_mix_full))
-       call mpas_log_write('   mpas_epssm                          = '//int2str(int(mpas_epssm)))
        call mpas_log_write('   mpas_smdiv                          = '//int2str(int(mpas_smdiv)))
        call mpas_log_write('   mpas_apvm_upwinding                 = '//int2str(int(mpas_apvm_upwinding)))
        call mpas_log_write('   mpas_h_ScaleWithMesh                = '//log2str(mpas_h_ScaleWithMesh))
@@ -1134,6 +1153,10 @@ contains
        call mpas_log_write('   mpas_rayleigh_damp_u                = '//log2str(mpas_rayleigh_damp_u))
        call mpas_log_write('   mpas_rayleigh_damp_u_timescale_days = '//int2str(int(mpas_rayleigh_damp_u_timescale_days)))
        call mpas_log_write('   mpas_number_rayleigh_damp_u_levels  = '//int2str(mpas_number_rayleigh_damp_u_levels))
+       call mpas_log_write('   mpas_epssm_minimum                  = '//int2str(int(mpas_epssm_minimum)))
+       call mpas_log_write('   mpas_epssm_maximum                  = '//int2str(int(mpas_epssm_maximum)))
+       call mpas_log_write('   mpas_epssm_transition_bottom_z      = '//int2str(int(mpas_epssm_transition_bottom_z)))
+       call mpas_log_write('   mpas_epssm_transition_top_z         = '//int2str(int(mpas_epssm_transition_top_z)))
        call mpas_log_write('   mpas_apply_lbcs                     = '//log2str(mpas_apply_lbcs))
        call mpas_log_write('   mpas_pio_num_iotasks                = '//int2str(mpas_pio_num_iotasks))
        call mpas_log_write('   mpas_pio_stride                     = '//int2str(mpas_pio_stride))

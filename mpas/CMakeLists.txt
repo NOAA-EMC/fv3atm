@@ -25,7 +25,7 @@ endif()
 # Find C pre-processor
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
   find_program(CPP_EXECUTABLE NAMES cpp REQUIRED)
-  set(CPP_EXTRA_FLAGS -traditional -DMPAS_UFS_DYCORE)
+  set(CPP_EXTRA_FLAGS -traditional -DMPAS_UFS_DYCORE -DSTOCHASTIC_PHYSICS)
 elseif(CMAKE_C_COMPILER_ID MATCHES "(Apple)?Clang" )
   find_program(CPP_EXECUTABLE NAMES cpp REQUIRED)
 else()
