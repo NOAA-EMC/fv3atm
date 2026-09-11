@@ -379,6 +379,7 @@ set(RRTMGP_SOURCES
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/gas-optics-template/mo_gas_optics.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/gas-optics-template/mo_gas_concentrations.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/gas-optics-template/mo_gas_optics_util_string.F90
+    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/gas-optics-template/mo_gas_optics_constants.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/mo_rte_util_array_validation.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/mo_rte_config.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/mo_source_functions.F90
@@ -387,8 +388,6 @@ set(RRTMGP_SOURCES
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/mo_rte_lw.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/frontend/mo_optical_props.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_fluxes_broadband_kernels.F90
-    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_gas_optics_constants.F90
-    ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_gas_optics_utils.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_optical_props_kernels.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_rte_kind.F90
     ${SCHEME_FILES_DIR}/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_rte_solver_kernels.F90
