@@ -2,18 +2,7 @@ module GFS_typedefs
 
    use mpi_f08
    use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
-   use physcons,                 only: con_cp, con_fvirt, con_g, rholakeice,           &
-                                       con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
-                                       con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
-                                       con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
-                                       con_sbc, con_tice, cimin, con_p0, rhowater,     &
-                                       con_csol, con_epsqs, con_rocp, con_rog,         &
-                                       con_omega, con_rerth, con_psat, karman, rainmin,&
-                                       con_c, con_plnk, con_boltz, con_solr_2008,      &
-                                       con_solr_2002, con_thgni, con_1ovg, con_rgas,   &
-                                       con_avgd, con_amd, con_amw, con_one, con_p001,  &
-                                       con_secinday
-
+   use physcons,                 only: rhowater
    use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, NBDSW
    use module_radlw_parameters,  only: topflw_type, sfcflw_type, NBDLW
    use module_mp_tempo_cfgs,     only: ty_tempo_cfgs
@@ -791,6 +780,7 @@ module GFS_typedefs
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplaqm          !< default no cplaqm collection
+    logical              :: cplcat          !< default no cplcat collection
     logical              :: cplchm          !< default no cplchm collection
     logical              :: cpllnd          !< default no cpllnd collection
     logical              :: cpllnd2atm      !< default no lnd->atm coupling
@@ -1319,6 +1309,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: betascu         !< Tuning parameter for prog. closure shallow clouds
     real(kind=kind_phys) :: betamcu         !< Tuning parameter for prog. closure midlevel clouds
     real(kind=kind_phys) :: betadcu         !< Tuning parameter for prog. closure deep clouds
+    real(kind=kind_phys) :: lbb1            !< Tuning parameter for prog updraft entrainment term
+    real(kind=kind_phys) :: lbb2            !< Tuning parameter for prog updraft buoyancy term
+    real(kind=kind_phys) :: lbb3            !< Tuning parameter for prog updraft shear term
+    real(kind=kind_phys) :: dt_decay        !< Tuning parameter for prog updraft decay time
+    
     logical              :: sigmab_coldstart !< flag to cold start sigmab
 
     !--- MYNN parameters/switches
@@ -3106,14 +3101,14 @@ module GFS_typedefs
     endif
 
     ! -- additional coupling options for air quality
-    if (Model%cplflx .or. Model%cpllnd .or. Model%cpl_fire .or. (Model%cplaqm .and. .not.Model%cplflx)) then
+    if (Model%cplflx .or. Model%cpllnd .or. Model%cpl_fire .or. (Model%cplaqm .and. .not.Model%cplflx) .or. Model%cplcat) then
       allocate (Coupling%psurfi_cpl  (IM))
       allocate (Coupling%nswsfci_cpl (IM))
       Coupling%psurfi_cpl  = clear_val
       Coupling%nswsfci_cpl = clear_val
     endif
 
-    if (Model%cplflx .or. Model%cpl_fire .or. (Model%cplaqm .and. .not.Model%cplflx)) then
+    if (Model%cplflx .or. Model%cpl_fire .or. (Model%cplaqm .and. .not.Model%cplflx) .or. Model%cplcat) then
       allocate (Coupling%dtsfci_cpl  (IM))
       allocate (Coupling%dqsfci_cpl  (IM))
       allocate (Coupling%t2mi_cpl    (IM))
@@ -3431,7 +3426,7 @@ module GFS_typedefs
                                  cny, gnx, gny, ak, bk, hydrostatic)
 
 !--- modules
-    use physcons,         only: con_rerth, con_pi
+    use physcons,         only: con_rerth, con_pi, con_p0
     use mersenne_twister, only: random_setseed, random_number
 !
     implicit none
@@ -3524,6 +3519,7 @@ module GFS_typedefs
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplaqm         = .false.         !< default no cplaqm collection
+    logical              :: cplcat         = .false.         !< default no cplcat collection
     logical              :: cplchm         = .false.         !< default no cplchm collection
     logical              :: cpllnd         = .false.         !< default no cpllnd collection
     logical              :: cpllnd2atm     = .false.         !< default no cpllnd2atm coupling
@@ -3931,6 +3927,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: betascu           = 8.0 !< Tuning parameter for prog. closure shallow clouds
     real(kind=kind_phys) :: betamcu           = 1.0 !< Tuning parameter for prog. closure midlevel clouds
     real(kind=kind_phys) :: betadcu           = 2.0 !< Tuning parameter for prog. closure deep clouds
+    real(kind=kind_phys) :: lbb1              = 4.0 !< Tuning parameter for prog. updraft entrainment term
+    real(kind=kind_phys) :: lbb2              = 0.8 !< Tuning parameter for prog. updraft entrainment term
+    real(kind=kind_phys) :: lbb3              = 1.0 !< Tuning parameter for prog. updraft entrainment term
+    real(kind=kind_phys) :: dt_decay          = 3600. !< Tuning parameter for prog. updraft decay time
+    
     logical              :: sigmab_coldstart  = .false. !< flag to cold start sigmab
     ! *DH
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
@@ -4219,7 +4220,7 @@ module GFS_typedefs
                                tend_opt_mp, tend_opt_stoch,                                 &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
-                               cplchm, cpllnd, cpllnd2atm,                                  &
+                               cplchm, cplcat, cpllnd, cpllnd2atm,                          &
                                cpl_fire, rrfs_sd, use_cice_alb,                             &
 #ifdef IDEA_PHYS
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
@@ -4300,7 +4301,8 @@ module GFS_typedefs
                                ugwp_seq_update, var_ric, coef_ric_l, coef_ric_s, hurr_pbl,  &
                                do_myjsfc, do_myjpbl,                                        &
                                hwrf_samfdeep, hwrf_samfshal,progsigma,progomega,betascu,    &
-                               betamcu, betadcu,h2o_phys, pdfcld, shcnvcw, redrag,          &
+                               betamcu, betadcu, lbb1, lbb2, lbb3, dt_decay, h2o_phys,      &
+                               pdfcld, shcnvcw, redrag,                                     &
                                hybedmf, satmedmf, tte_edmf, sigmab_coldstart,               &
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                xr_cnvcld, random_clds, shal_cnv, imfshalcnv, imfdeepcnv,    &
@@ -4670,7 +4672,8 @@ module GFS_typedefs
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
     Model%cplaqm           = cplaqm
-    Model%cplchm           = cplchm .or. cplaqm
+    Model%cplcat           = cplcat
+    Model%cplchm           = cplchm .or. cplaqm .or. cplcat
     Model%cpllnd           = cpllnd
     Model%cpllnd2atm       = cpllnd2atm
     Model%use_cice_alb     = use_cice_alb
@@ -5212,24 +5215,38 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
-    !--prognostic closure - check
-    if ((progsigma .and. imfdeepcnv/=2) .and. (progsigma .and. imfdeepcnv/=5)) then
-       write(*,*) 'Logic error: progsigma requires imfdeepcnv=2 or 5'
+    !-- Prognostic closure check
+    if (progsigma .and. .not. (                         &
+         imfdeepcnv == Model%imfdeepcnv_samf .or.             &
+         imfdeepcnv == Model%imfdeepcnv_c3   .or.             &
+         imfshalcnv == Model%imfshalcnv_samf .or.             &
+         imfshalcnv == Model%imfshalcnv_c3)) then
+       
+       write(*,*) 'Logic error: progsigma requires SAMF or C3 deep/shallow convection'
        stop
-    end if
+    endif
     Model%progsigma = progsigma
     Model%betascu = betascu
     Model%betamcu = betamcu
     Model%betadcu = betadcu
     Model%sigmab_coldstart = sigmab_coldstart
 
-    !--prognostic closure - check
-    if (progomega .and. imfdeepcnv/=2) then
-       write(*,*) 'Logic error: progomega requires imfdeepcnv=2'
+    !-- Prognostic closure check
+    if (progomega .and. .not. (                         &
+         imfdeepcnv == Model%imfdeepcnv_samf .or.             &
+         imfdeepcnv == Model%imfdeepcnv_c3   .or.             &
+         imfshalcnv == Model%imfshalcnv_samf .or.             &
+         imfshalcnv == Model%imfshalcnv_c3)) then
+       write(*,*) 'Logic error: progomega requires SAMF or C3 deep/shallow convection'
        stop
-    end if
+    endif
+    
     Model%progomega = progomega
-
+    Model%lbb1 = lbb1
+    Model%lbb2 = lbb2
+    Model%lbb3 = lbb3
+    Model%dt_decay = dt_decay
+    
     if (oz_phys .and. oz_phys_2015) then
        write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
        stop
@@ -6937,6 +6954,7 @@ module GFS_typedefs
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplaqm            : ', Model%cplaqm
+      print *, ' cplcat            : ', Model%cplcat
       print *, ' cplchm            : ', Model%cplchm
       print *, ' cpllnd            : ', Model%cpllnd
       print *, ' cpllnd2atm        : ', Model%cpllnd2atm
@@ -7370,6 +7388,10 @@ module GFS_typedefs
       print *, 'betascu            : ', Model%betascu
       print *, 'betamcu            : ', Model%betamcu
       print *, 'betadcu            : ', Model%betadcu
+      print *, 'lbb1               : ', Model%lbb1
+      print *, 'lbb2               : ', Model%lbb2
+      print *, 'lbb3               : ', Model%lbb3
+      print *, 'dt_decay           : ', Model%dt_decay
       print *, 'sigmab_coldstart   : ', Model%sigmab_coldstart
       print *, ' '
       print *, 'cellular automata'
@@ -8765,9 +8787,10 @@ module GFS_typedefs
 
   function get_physics_tracer_index (name, Model)
     !This function uses the FMS version of get_tracer_index, but changes the missing tracer index to the value used throughout the physics code, rather than the one used in FMS
+#ifdef FV3
     use tracer_manager_mod, only: get_tracer_index, NO_TRACER
     use field_manager_mod, only: MODEL_ATMOS
-
+#endif
     character(len=*),  intent(in) :: name
     type(GFS_control_type), intent(in) :: Model
 
@@ -8775,16 +8798,16 @@ module GFS_typedefs
     integer :: get_physics_tracer_index
 
     ! UFS-FV3 uses FMS
+#ifdef FV3
     if (Model%dycore_active == Model%dycore_fv3) then
        get_physics_tracer_index = get_tracer_index(MODEL_ATMOS, name, verbose = (Model%me == Model%master) .and. Model%debug)
+       if (get_physics_tracer_index == NO_TRACER) get_physics_tracer_index = physics_no_tracer
     endif
-
+#endif
     ! UFS-MPAS does not use FMS
     if (Model%dycore_active == Model%dycore_mpas) then
        get_physics_tracer_index = get_constituent_index(name, Model%tracer_names)
     endif
-
-    if (get_physics_tracer_index == NO_TRACER) get_physics_tracer_index = physics_no_tracer
 
   end function get_physics_tracer_index
 
